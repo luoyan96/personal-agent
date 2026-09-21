@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const contractVersion = '0.1.0' as const
+export const contractVersion = '0.2.0' as const
 export const Id = z.string().regex(/^[A-Za-z0-9_-]{1,96}$/)
 export const Text = z.string().min(1).max(8000)
 export const Title = z.string().min(1).max(200)
@@ -31,7 +31,7 @@ export const Action = z.enum(['confirm', 'invite', 'decide', 'claim', 'start', '
 export const Blocker = z.strictObject({ reason: Text, requestedMemberId: Id.nullable(), requestedAction: Text, resumeStatus: z.enum(['ready', 'in_progress', 'changes_requested']) })
 export const Access = z.strictObject({ visibility: z.enum(['participants', 'lab_summary']), summary: Text.nullable() })
 export const Task = z.strictObject({ id: Id, labId: Id, parentTaskId: Id.nullable(), planId: Id, planVersion: Version, title: Title, taskType: z.enum(['paper', 'grant', 'ip', 'experiment', 'training', 'report', 'other']), goal: Text, acceptanceCriteria: Text, initiatorId: Id, leadId: Id.nullable(), reviewerId: Id, participantIds: z.array(Id).max(100), status: TaskStatus, blocker: Blocker.nullable(), dependencies: z.array(Dependency).max(100), schedule: Schedule, access: Access, version: Version, createdAt: Instant, updatedAt: Instant, allowedActions: z.array(Action).max(20) }).superRefine((v, ctx) => { if ((v.status === 'blocked') !== (v.blocker !== null)) ctx.addIssue({ code: 'custom', message: 'blocked requires blocker; other states forbid it' }) })
-export const TaskSummary = z.strictObject({ projection: z.literal('claim_summary'), id: Id, labId: Id, title: Title, summary: Text, deliverable: Text, acceptanceCriteria: Text, schedule: Schedule, initiatorId: Id, reviewerId: Id, version: Version, allowedActions: z.array(z.literal('claim')).max(1) })
+export const TaskSummary = z.strictObject({ projection: z.literal('claim_summary'), id: Id, labId: Id, title: Title, summary: Text, deliverable: Text, acceptanceCriteria: Text, schedule: Schedule, initiatorId: Id, reviewerId: Id, version: Version, allowedActions: z.array(z.enum(['claim', 'decide'])).max(2), pendingInvitation: z.strictObject({ id: Id, version: Version, scope: Text, schedule: Schedule }).nullable() })
 export const Commitment = z.strictObject({ scope: Text, schedule: Schedule, acceptedAt: Instant })
 export const Assignment = z.strictObject({ id: Id, taskId: Id, kind: z.enum(['self', 'invitation', 'claim', 'public_agent']), memberId: Id.nullable(), capability: PublicCapabilityRef.nullable(), status: z.enum(['pending', 'accepted', 'declined', 'withdrawn', 'transfer_pending', 'transferred', 'cancelled']), commitment: Commitment.nullable(), transferToMemberId: Id.nullable(), version: Version }).superRefine((v, c) => { if (v.status === 'accepted' && !v.commitment) c.addIssue({ code: 'custom', message: 'accepted commitment required' }); if (['pending', 'declined'].includes(v.status) && v.commitment) c.addIssue({ code: 'custom', message: 'unaccepted invitation is not commitment' }) })
 export const Availability = z.strictObject({ from: z.iso.date(), to: z.iso.date(), timezone: Timezone, level: z.enum(['available', 'limited', 'unavailable']), hours: z.number().min(0).max(168).nullable(), updatedAt: Instant }).refine(v => v.from <= v.to, 'invalid interval')
@@ -48,9 +48,9 @@ export const Artifact = z.strictObject({ id: Id, taskId: Id, filename: Title, me
 export const PlanningRequest = z.strictObject({ id: Id, status: z.enum(['queued', 'running', 'draft', 'failed', 'cancelled']), planId: Id.nullable(), failure: Text.nullable(), version: Version })
 export const Knowledge = z.strictObject({ id: Id, taskId: Id, conclusion: Text, sources: z.array(Source).max(100), confirmedBy: Id, version: Version })
 export const Sharing = z.strictObject({ id: Id, taskId: Id, deliverableId: Id, revision: Version, decision: z.enum(['share_selected', 'decline', 'revoke']), selectedText: Text.nullable(), purpose: z.literal('public_capability_improvement'), version: Version })
-export const Health = z.strictObject({ status: z.enum(['ok', 'unavailable']), contractVersion: z.literal(contractVersion), checks: z.strictObject({ database: z.enum(['ok', 'unavailable', 'not_checked']), storage: z.enum(['ok', 'unavailable', 'not_checked']), authentication: z.literal('not_implemented'), harness: z.literal('not_verified') }) })
-export const ErrorCode = z.enum(['UNAUTHENTICATED', 'NOT_FOUND', 'FORBIDDEN', 'VALIDATION_ERROR', 'VERSION_CONFLICT', 'IDEMPOTENCY_CONFLICT', 'ALREADY_CLAIMED', 'DEPENDENCY_BLOCKED', 'CAPABILITY_UNAVAILABLE', 'MODEL_UNAVAILABLE', 'CURSOR_EXPIRED', 'SERVICE_UNAVAILABLE', 'NOT_IMPLEMENTED', 'PAYLOAD_TOO_LARGE', 'RATE_LIMITED', 'INTERNAL_ERROR'])
-export const errorStatus = { UNAUTHENTICATED: 401, NOT_FOUND: 404, FORBIDDEN: 403, VALIDATION_ERROR: 400, VERSION_CONFLICT: 409, IDEMPOTENCY_CONFLICT: 409, ALREADY_CLAIMED: 409, DEPENDENCY_BLOCKED: 409, CAPABILITY_UNAVAILABLE: 503, MODEL_UNAVAILABLE: 503, CURSOR_EXPIRED: 410, SERVICE_UNAVAILABLE: 503, NOT_IMPLEMENTED: 501, PAYLOAD_TOO_LARGE: 413, RATE_LIMITED: 429, INTERNAL_ERROR: 500 } as const
+export const Health = z.strictObject({ status: z.enum(['ok', 'unavailable']), contractVersion: z.literal(contractVersion), checks: z.strictObject({ database: z.enum(['ok', 'unavailable', 'not_checked']), storage: z.enum(['ok', 'unavailable', 'not_checked']), authentication: z.enum(['ok', 'unavailable', 'not_checked']), harness: z.literal('not_verified') }) })
+export const ErrorCode = z.enum(['UNAUTHENTICATED', 'NOT_FOUND', 'FORBIDDEN', 'VALIDATION_ERROR', 'VERSION_CONFLICT', 'IDEMPOTENCY_CONFLICT', 'ALREADY_CLAIMED', 'DEPENDENCY_BLOCKED', 'CAPABILITY_UNAVAILABLE', 'MODEL_UNAVAILABLE', 'CURSOR_EXPIRED', 'SERVICE_UNAVAILABLE', 'NOT_IMPLEMENTED', 'PAYLOAD_TOO_LARGE', 'RATE_LIMITED', 'INVALID_STATE', 'INTERNAL_ERROR'])
+export const errorStatus = { UNAUTHENTICATED: 401, NOT_FOUND: 404, FORBIDDEN: 403, VALIDATION_ERROR: 400, VERSION_CONFLICT: 409, IDEMPOTENCY_CONFLICT: 409, ALREADY_CLAIMED: 409, DEPENDENCY_BLOCKED: 409, CAPABILITY_UNAVAILABLE: 503, MODEL_UNAVAILABLE: 503, CURSOR_EXPIRED: 410, SERVICE_UNAVAILABLE: 503, NOT_IMPLEMENTED: 501, PAYLOAD_TOO_LARGE: 413, RATE_LIMITED: 429, INVALID_STATE: 409, INTERNAL_ERROR: 500 } as const
 export const ErrorResponse = z.strictObject({ error: z.strictObject({ code: ErrorCode, message: Title, requestId: Id }) })
 export const data = <T extends z.ZodType>(schema: T) => z.strictObject({ data: schema })
 export const page = <T extends z.ZodType>(schema: T) => z.strictObject({ data: z.array(schema).max(100), nextCursor: z.string().max(2048).nullable() })
@@ -59,3 +59,7 @@ export type PlanModel = z.infer<typeof Plan>
 export type MemberModel = z.infer<typeof Member>
 export type AssignmentModel = z.infer<typeof Assignment>
 export type ExecutionModel = z.infer<typeof Execution>
+
+export type DeliverableModel = z.infer<typeof Deliverable>
+export type ScheduleModel = z.infer<typeof Schedule>
+export type TaskSummaryModel = z.infer<typeof TaskSummary>
