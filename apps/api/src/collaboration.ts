@@ -47,15 +47,18 @@ export class Collaboration {
     return Task.parse(JSON.parse(String(this.db.prepare('SELECT document FROM tasks WHERE id=?').get(taskId)!.document)))
   }
   assignment(assignmentId: string) {
-    const row = this.db.prepare('SELECT * FROM assignments WHERE id=?').get(assignmentId)
-    if (!row) fail('NOT_FOUND')
-    this.taskRow(String(row.task_id))
+    const metadata = this.db.prepare('SELECT task_id,member_id FROM assignments WHERE id=?').get(assignmentId)
+    if (!metadata) fail('NOT_FOUND')
+    this.taskRow(String(metadata.task_id))
+    if (metadata.member_id !== this.actor.id && this.access(String(metadata.task_id)) !== 'full') fail('NOT_FOUND')
+    const row = this.db.prepare('SELECT document,offer_scope,offer_schedule FROM assignments WHERE id=?').get(assignmentId)!
     return { model: Assignment.parse(JSON.parse(String(row.document))), scope: String(row.offer_scope), schedule: JSON.parse(String(row.offer_schedule)) as ScheduleModel }
   }
   deliverable(deliverableId: string): DeliverableModel {
-    const row = this.db.prepare('SELECT task_id,document FROM deliverables WHERE id=?').get(deliverableId)
-    if (!row) fail('NOT_FOUND')
-    this.task(String(row.task_id))
+    const metadata = this.db.prepare('SELECT task_id FROM deliverables WHERE id=?').get(deliverableId)
+    if (!metadata) fail('NOT_FOUND')
+    this.task(String(metadata.task_id))
+    const row = this.db.prepare('SELECT document FROM deliverables WHERE id=?').get(deliverableId)!
     return Deliverable.parse(JSON.parse(String(row.document)))
   }
   member(memberId: string) {
@@ -287,6 +290,7 @@ export class Collaboration {
       const row = this.taskRow(assignment.taskId); this.checkVersion(Number(row.version), body.expectedTaskVersion)
       if (assignment.status !== 'pending' || row.status !== 'awaiting_acceptance' || row.lead_id) fail('INVALID_STATE')
       const task = Task.parse(JSON.parse(String(this.db.prepare('SELECT document FROM tasks WHERE id=?').get(assignment.taskId)!.document)))
+      this.db.prepare('INSERT INTO invitation_decisions VALUES (?,?,?,?,?,?,?)').run(assignment.id, this.actor.id, assignment.version, task.version, body.decision, body.comment, now())
       assignment.status = body.decision; assignment.version++
       if (body.decision === 'accepted') {
         assignment.commitment = { scope: offer.scope, schedule: offer.schedule, acceptedAt: now() }
