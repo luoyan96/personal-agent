@@ -19,7 +19,7 @@ export class Intent<K extends RouteName> {
 
 export class ApiClient {
   csrfToken = '';
-  constructor(private transport: typeof fetch = fetch) {}
+  constructor(private transport: typeof fetch = (input, init) => fetch(input, init)) {}
   async call<K extends RouteName>(name: K, input: RequestFor<K>, signal?: AbortSignal): Promise<ResponseFor<K>> {
     const endpoint = routes[name];
     const parsed = endpoint.request.safeParse(input);

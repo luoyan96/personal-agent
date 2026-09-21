@@ -1,4 +1,32 @@
-# F0 前端预览
+# F1 人类协作前端
+
+真实模式支持密码登录、手工方案创建/编辑/确认、邀请接受/拒绝、开放认领、开始、文本成果提交、退回修改与指定版本验收。AI 建议不可用，完整聚合/人员负荷/复杂协调留在 F2。沿用 F0 的原生 TypeScript、Vite、图标、样式和轻量 hash 导航，无固定侧栏。
+
+先按 [B1 联调包](../../docs/development/b1-handoff.md) 在自己的工作目录构建、迁移、准备合成账号；API 运行于 `127.0.0.1:3100`，`APP_ORIGIN=http://127.0.0.1:4175`。另开终端运行：
+
+```sh
+pnpm --filter @research-agent/web dev --port 4175
+```
+
+打开 `http://127.0.0.1:4175/`，用本地 `.runtime/test-credentials.json` 的账号登录。A/B/C 要用独立浏览器 profile/context；同一 profile 的多个标签共享 cookie，不能当不同身份。凭据文件被 Git 忽略，不截图、不上传。前端无身份切换、服务端密钥或 `VITE_*` 认证变量，`/api` 同源代理保留 Origin/CSRF 校验。
+
+操作路径：入口 → 手工创建方案 → 填写目标/交付/验收/承接方式 → 保存 → 确认已保存版本 → 任务详情。B 在“我参与的”打开待回应邀请；开放认领在“实验室”基本列表。承接后开始、提交；A 退回，B 重提，A 验收。方案保存后的 `#/plans/{id}` 链接可收藏继续；本阶段没有草案历史列表。任务详情从服务恢复，未保存编辑只在当前页面内存保留，不冒充持久化任务。
+
+错误保留输入和原请求；“重试同一请求”复用原 key/原正文。409 不自动换版本：读取最新状态、比较，再明确放弃原请求并重新确认。不同意图使用新 key；命令在途屏蔽重复点击。服务/契约/权限错误不回退演示数据。验收不共享私有方法或反馈。
+
+契约 **0.2.0**，上游 `44deea7b245081fe090767f33830f4d83a26a41e`；B1 服务 `1c762ae62f805473cb00434e5bf091179b0c0ed7` 加补丁 `0647661f683b28fde177a8312ec2a940f299130e`。`src/api.ts` 直接校验共享请求和响应，`src/collaboration.ts` 渲染权威响应，`src/main.ts` 仅选择真实模式或开发预览。没有新增依赖/根 workspace/锁文件修改。
+
+真实浏览器自动回归脚本 `scripts/check-f1-browser.mjs` 使用已安装 Playwright 1.62.1；通过 `PLAYWRIGHT_MODULE` 指向外部安装的 `index.mjs`，或由环境提供 `playwright` 包。`F1_BROWSER_CHANNEL=msedge` 可使用本机 Edge。先构建/迁移/准备凭据并启动上述 Vite，停止自己占用 3100 的 API 后，从根运行：
+
+```sh
+node apps/web/scripts/check-f1-browser.mjs --manage-api
+```
+
+脚本管理自己启动的 API（含重启），创建三个独立 cookie context，通过真实 UI/HTTP 验证 A1–A5；唯一请求注入是主动断网失败，不伪造成功响应。截图/不含凭据的结果默认写入 `.runtime/f1-browser`；可用 `F1_EVIDENCE_DIR` 指定目录。默认 UI URL 4175，可用 `F1_BASE_URL` 指定；`F1_CREDENTIALS_FILE` 指定本地凭据文件。脚本会新增合成任务，不重置已有数据库。它作为显式本地联调检查，不要求默认 CI 安装浏览器；根 CI 自动覆盖前端编译/类型/单测/契约和生产隔离，以及后端真实 HTTP 事务测试。
+
+本阶段证据见 [F1 报告](../../docs/development/reports/G1-F-2026-09-21.md)。以下保留 F0 的开发演示说明，不能用它代替 F1 真实验收。
+
+## F0 开发演示（隔离保留）
 
 只实现需求入口、实验室总览、任务详情及其导航。任务与承诺、文献与交付均为合成展示，不代表后台已经执行。没有登录、任务写入、真实 AI 或本地任务持久化。
 
@@ -25,13 +53,13 @@ pnpm --filter @research-agent/web preview --port 4174
 pnpm --filter @research-agent/web check:production
 ```
 
-真实模式目前是显式不可用 adapter，未猜测 API 路径或认证策略。`dev:demo` 是唯一演示开关；无 `VITE_*` 凭据或身份变量。生产构建拒绝 `--mode demo`，演示模块经编译常量裁剪；真实模式失败不回退。查询参数只选择开发场景，无法打开生产 fixtures。没有 localStorage、假登录或状态写入。
+`dev:demo` 是唯一演示开关；无 `VITE_*` 凭据或身份变量。生产构建拒绝 `--mode demo`，演示模块经编译常量裁剪；真实模式失败不回退。查询参数只选择开发场景，无法打开生产 fixtures。演示没有 localStorage、假登录或状态写入。
 
 ## 结构与边界
 
 | 文件 | 用途 |
 | --- | --- |
-| src/main.ts | 轻量 hash 导航、页头、入口、看板卡片、成员表、详情表、状态面板、原生 dialog |
+| src/preview.ts | 原 F0 轻量 hash 导航、页头、入口、看板卡片、成员表、详情表、状态面板、原生 dialog |
 | src/style.css | 暖白/绿色视觉、4/2/1 列响应式、可横向滚动的表格、焦点样式 |
 | src/view-model.ts | 仅供渲染的投影，不是后端 DTO 或另一套状态机；真实读取未接通 |
 | src/fixture-adapter.ts | 独立合成展示数据，无写入命令或状态流转 |
@@ -56,7 +84,6 @@ pnpm --filter @research-agent/web check:production
 
 浏览器证据和逐项结果见 [G0-F 报告](../../docs/development/reports/G0-F-2026-09-21.md)。基础 CI 不等于 Harness、真实模型、服务权限或多人协作验证。
 
-## 后续页面清单（未实现）
+## F0 原阶段后续清单（历史）
 
 02 协作方案、04 认领、07 验收和 03 聚焦待办基本版留在 F1；08/09 的真实聚合与异常扩展留在 F2；真实 AI 留在 F3；05/06 能力与共享留在 F4。本轮不进入这些批次。
-
