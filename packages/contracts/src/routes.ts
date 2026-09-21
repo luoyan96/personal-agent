@@ -13,7 +13,7 @@ const overview = z.strictObject({ counts: z.strictObject({ unassigned: z.number(
 // Every request has params/query/headers/body. Query numbers are decoded by clients
 // before parsing. HTTP cookies are deliberately not part of serializable fixtures.
 function route<P extends z.ZodType, Q extends z.ZodType, B extends z.ZodType, R extends z.ZodType>(method: 'GET' | 'POST' | 'PATCH', path: string, stage: 'B0' | 'B1' | 'B2' | 'B3' | 'B4', params: P, query: Q, body: B, response: R, status: number, rule: string, access = 'session', keyed = method !== 'GET') {
-  return { method, path: `/api/v1${path}`, stage, status, access, rule, implemented: stage === 'B0', request: z.strictObject({ params, query, headers: keyed ? headers : empty, body }), response,
+  return { method, path: `/api/v1${path}`, stage, status, access, rule, implemented: stage === 'B0' || stage === 'B1', request: z.strictObject({ params, query, headers: keyed ? headers : empty, body }), response,
     errors: m.ErrorResponse, errorStatuses: m.errorStatus, idempotent: keyed }
 }
 export const routes = {
@@ -64,4 +64,3 @@ export const routes = {
 export type RouteName = keyof typeof routes
 export type RequestFor<K extends RouteName> = z.input<(typeof routes)[K]['request']>
 export type ResponseFor<K extends RouteName> = z.output<(typeof routes)[K]['response']>
-

@@ -1,4 +1,6 @@
-# Shared contract 0.1.0
+# Shared contract 0.2.0
+
+B1 从 0.1.0 升级为 0.2.0。`TaskSummary.pendingInvitation` 是必填可空字段（仅当前受邀者得到 id/version/scope/schedule）；摘要 allowedActions 增加 decide。`Health.checks.authentication` 改为 ok/unavailable/not_checked；增加 409 INVALID_STATE。B1 路由已实现；B2–B4 仍不可用，规划请求只返回 MODEL_UNAVAILABLE。Task、Plan、Assignment、Deliverable 与看板状态形状保持不变。严格使用旧 0.1.0 Schema 的客户端需整体升级包并重新生成样例，不能只复制新字段。
 
 唯一可执行定义：[models.ts](src/models.ts)、[routes.ts](src/routes.ts)。面向前端的静态文件：[OpenAPI 3.1](openapi.json)、[合成请求响应与场景](examples.json)。协议规则：[protocol.md](protocol.md)。每个路由有 method、path、stage、implemented、request、response、status、rule；request/response 是可直接 parse 的 Zod Schema。
 
@@ -15,9 +17,11 @@ const request: RequestFor<'claim'> = {
   body: { expectedVersion: 1 },
 }
 routes.claim.request.parse(request)
-// Future B1 client: ResponseFor<'claim'>; B0 server returns 501, not this fixture.
+// B1 client: ResponseFor<'claim'>. Add authenticated Cookie, Origin, X-CSRF-Token at the HTTP layer.
 ```
 
 `pnpm build && pnpm contracts:export` 更新 JSON；`pnpm check:b0` 校验样例及服务；根 CI 检查生成文件未漂移。前端引入 workspace 包时使用 `workspace:*`，等待契约提交集成后再安装，不复制 Schema。fixture 子入口只用于明确标识的开发演示，不在生产 API 中导入。样例声明 synthetic=true 与 contractVersion；privateCapabilityOwner 与 privateCapabilityOther 是不同读取者的合成投影，并非权限实现证据。
 
 语义 refine 在 Zod 中执行；JSON Schema/OpenAPI 无法表达所有跨对象约束（授权、环、版本、日期来源等），服务仍需事务规则验证。生成结构样例仅演示形状，核心行为场景是 examples.json.scenarios；两者均通过同一 Schema。二进制下载的结构样例是字节 120（文本 x），线上使用 binary body，不是 JSON 包装。
+
+受邀者从 tasks(scope=mine) 或 task 获取 invitationSummary：用 pendingInvitation.id 作 decision 路径参数；pendingInvitation.version 作 expectedVersion；摘要 version 作 expectedTaskVersion。接受后重新读 task 得到完整详情；拒绝后该摘要不再可见。操作者始终来自会话，不能在正文添加 actorId。

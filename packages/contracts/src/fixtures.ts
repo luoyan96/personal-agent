@@ -13,7 +13,8 @@ const error = (code: z.infer<typeof m.ErrorCode>) => ({ error: { code, message: 
 export const fixtures = {
   missingDeadlineDraft: { schema: m.data(m.Plan), value: { data: plan } },
   invitationPlan: { schema: m.data(m.Plan), value: { data: plan } },
-  claimSummary: { schema: m.data(m.TaskSummary), value: { data: { projection: 'claim_summary', id: 'task_claim', labId: 'lab_synthetic', title: '合成认领事项', summary: '仅公开的必要摘要', deliverable: '清单', acceptanceCriteria: '缺项明确', schedule: unknownSchedule, initiatorId: 'member_A', reviewerId: 'member_A', version: 1, allowedActions: ['claim'] } } },
+  claimSummary: { schema: m.data(m.TaskSummary), value: { data: { projection: 'claim_summary', id: 'task_claim', labId: 'lab_synthetic', title: '合成认领事项', summary: '仅公开的必要摘要', deliverable: '清单', acceptanceCriteria: '缺项明确', schedule: unknownSchedule, initiatorId: 'member_A', reviewerId: 'member_A', version: 1, allowedActions: ['claim'], pendingInvitation: null } } },
+  invitationSummary: { schema: m.data(m.TaskSummary), value: { data: { projection: 'claim_summary', id: 'task_invited', labId: 'lab_synthetic', title: '合成受邀事项', summary: '接受前必要摘要', deliverable: '材料清单', acceptanceCriteria: '缺项明确', schedule: unknownSchedule, initiatorId: 'member_A', reviewerId: 'member_A', version: 1, allowedActions: ['decide'], pendingInvitation: { id: 'invitation_B', version: 1, scope: '材料清单', schedule: unknownSchedule } } } },
   blockedTask: { schema: m.data(m.Task), value: { data: m.Task.parse(task) } },
   pendingReview: { schema: m.data(m.Deliverable), value: { data: deliverable } },
   cancelledTask: { schema: m.data(m.Task), value: { data: m.Task.parse({ ...task, status: 'cancelled', blocker: null, allowedActions: [], version: 4 }) } },

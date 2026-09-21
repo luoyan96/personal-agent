@@ -8,4 +8,4 @@ for (const [name, value] of Object.entries({ 'openapi.json': specification(), 'e
     if (await readFile(path, 'utf8') !== content) throw new Error(`${name} is stale; run pnpm contracts:export`)
   } else await writeFile(path, content)
 }
-console.log('Contract 0.1.0: OpenAPI and synthetic examples verified.')
+console.log('Contract 0.2.0: OpenAPI and synthetic examples verified.')
