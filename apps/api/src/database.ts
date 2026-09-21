@@ -1,12 +1,15 @@
 import { DatabaseSync } from 'node:sqlite'
-import { readFileSync, mkdirSync } from 'node:fs'
+import { readFileSync, mkdirSync, existsSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { createHash } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 
-const migration = readFileSync(new URL('../migrations/001-foundation.sql', import.meta.url), 'utf8')
-const checksum = createHash('sha256').update(migration).digest('hex')
+const migrations = ['001-foundation.sql', '002-collaboration.sql'].map((name, index) => {
+  const sql = readFileSync(new URL(`../migrations/${name}`, import.meta.url), 'utf8')
+  return { version: index + 1, sql, checksum: createHash('sha256').update(sql).digest('hex') }
+})
 export function openDatabase(path: string, create = false) {
   if (create) mkdirSync(dirname(path), { recursive: true })
+  if (!create && !existsSync(path)) throw new Error('Database missing')
   // Startup must not silently create a missing database or apply migrations.
   const db = new DatabaseSync(path, { open: false })
   db.open()
@@ -22,16 +25,17 @@ export function migrate(db: DatabaseSync) {
   transaction(db, () => {
     db.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, checksum TEXT NOT NULL, applied_at TEXT NOT NULL) STRICT')
     const rows = db.prepare('SELECT version, checksum FROM schema_migrations ORDER BY version').all()
-    if (rows.some(row => row.version !== 1 || row.checksum !== checksum)) throw new Error('Unknown migration or checksum mismatch')
-    if (rows.length === 0) {
-      db.exec(migration)
-      db.prepare('INSERT INTO schema_migrations VALUES (1, ?, ?)').run(checksum, new Date().toISOString())
+    if (rows.some((row, index) => row.version !== migrations[index]?.version || row.checksum !== migrations[index]?.checksum)) throw new Error('Unknown migration or checksum mismatch')
+    for (const migration of migrations.slice(rows.length)) {
+      db.exec(migration.sql)
+      db.prepare('INSERT INTO schema_migrations VALUES (?, ?, ?)').run(migration.version, migration.checksum, new Date().toISOString())
     }
+    db.prepare("INSERT INTO runtime_meta VALUES ('signing_key',?) ON CONFLICT(key) DO NOTHING").run(randomBytes(32).toString('hex'))
   })
 }
 export function checkDatabase(db: DatabaseSync) {
-  const rows = db.prepare('SELECT version, checksum FROM schema_migrations').all()
-  if (rows.length !== 1 || rows[0]?.version !== 1 || rows[0]?.checksum !== checksum) throw new Error('Migration required')
+  const rows = db.prepare('SELECT version, checksum FROM schema_migrations ORDER BY version').all()
+  if (rows.length !== migrations.length || rows.some((row, index) => row.version !== migrations[index]?.version || row.checksum !== migrations[index]?.checksum)) throw new Error('Migration required')
   if (db.prepare('PRAGMA journal_mode').get()?.journal_mode !== 'wal') throw new Error('WAL required')
   transaction(db, () => {
     db.prepare('INSERT INTO health_probe VALUES (?, ?)').run('readiness', new Date().toISOString())

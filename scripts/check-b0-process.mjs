@@ -44,7 +44,7 @@ try {
     const health = await response.json()
     assert.equal(health.data.checks.database, 'ok')
     assert.equal(health.data.checks.storage, 'ok')
-    assert.equal(health.data.checks.authentication, 'not_implemented')
+    assert.equal(health.data.checks.authentication, 'ok')
     assert.equal(health.data.checks.harness, 'not_verified')
     await stop()
   }
