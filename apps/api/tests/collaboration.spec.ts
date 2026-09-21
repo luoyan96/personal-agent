@@ -1,8 +1,8 @@
 import { randomBytes } from 'node:crypto'
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { once } from 'node:events'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -135,6 +135,7 @@ describe('B1 A1–A5: two real HTTP processes, file SQLite, real passwords', () 
     const declined = await request('invitationDecision', input)
     expect(declined.status).toBe(200); expect(declined.value.data.commitment).toBeNull()
     expect((await request('invitationDecision', input)).value).toEqual(declined.value)
+    expect(db.prepare('SELECT comment FROM invitation_decisions WHERE assignment_id=?').get(offer.id)!.comment).toBe('Synthetic decline')
     expect((await request('task', { client: clients.B, params: { id: declinedId } })).status).toBe(404)
     const after = await detail(declinedId)
     expect(after.task.status).toBe('unassigned'); expect(after.task.leadId).toBeNull()
@@ -174,8 +175,10 @@ describe('B1 A1–A5: two real HTTP processes, file SQLite, real passwords', () 
     const input = { client: clients.B, params: { id: taskId }, body: { expectedVersion: 3, summary: 'Synthetic text v1; no private method identifiers', artifactRefs: [], sources: [] }, key: key() }
     const first = await request('submit', input); expect(first.status).toBe(201)
     expect((await request('submit', input)).value).toEqual(first.value)
+    expect((await request('submit', { ...input, body: { ...input.body, summary: 'Changed payload with reused key' } })).value.error?.code).toBe('IDEMPOTENCY_CONFLICT')
     expect((await detail(taskId)).task.status).toBe('in_review')
     const reviewInput = { client: clients.A, params: { id: first.value.data.id }, body: { expectedVersion: 1, expectedTaskVersion: 4, revision: 1, decision: 'changes_requested', comment: 'Add missing evidence' }, key: key() }
+    expect((await request('review', { ...reviewInput, client: clients.C, key: key() })).status).toBe(404)
     const returned = await request('review', reviewInput); expect(returned.status).toBe(200)
     expect((await request('review', reviewInput)).value).toEqual(returned.value)
     expect((await detail(taskId)).task.status).toBe('changes_requested')
@@ -267,5 +270,25 @@ describe('B1 A1–A5: two real HTTP processes, file SQLite, real passwords', () 
     await expect(provisionTestAccounts(db, 'production', accounts)).rejects.toThrow()
     const encoded = await passwordHash('synthetic-noncommitted-test-password')
     expect(encoded.startsWith('scrypt-v1$')).toBe(true)
+  }, 20000)
+  it('local credential CLI and authenticated demo seed repeat without resetting identities or progress', async () => {
+    const credentialsPath = join(directory, 'credentials.json')
+    writeFileSync(credentialsPath, JSON.stringify(accounts), { mode: 0o600 })
+    const env = { ...process.env, NODE_ENV: 'test', APP_ORIGIN: origin, DATABASE_PATH: databasePath, BLOB_ROOT: join(directory, 'blobs'), TEST_CREDENTIALS_FILE: credentialsPath, API_URL: address }
+    for (let n = 0; n < 2; n++) {
+      const result = spawnSync(process.execPath, [resolve('apps/api/dist/credentials.js')], { env, encoding: 'utf8', windowsHide: true })
+      expect(result.status).toBe(0)
+      for (const account of accounts) expect(result.stdout + result.stderr).not.toContain(account.password)
+    }
+    expect((await request('me', { client: clients.A })).status).toBe(200)
+    const before = Number(db.prepare('SELECT count(*) n FROM tasks').get()!.n)
+    for (let n = 0; n < 2; n++) {
+      const result = spawnSync(process.execPath, [resolve('scripts/seed-b1-demo.mjs')], { env, encoding: 'utf8', windowsHide: true })
+      expect(result.status, result.stderr).toBe(0)
+      expect(db.prepare('SELECT count(*) n FROM tasks').get()!.n).toBe(before + 3)
+    }
+    const denied = spawnSync(process.execPath, [resolve('apps/api/dist/credentials.js')], { env: { ...env, NODE_ENV: 'production', APP_ORIGIN: 'https://synthetic.example' }, encoding: 'utf8', windowsHide: true })
+    expect(denied.status).not.toBe(0)
+    for (const account of accounts) expect(denied.stdout + denied.stderr).not.toContain(account.password)
   }, 20000)
 })
