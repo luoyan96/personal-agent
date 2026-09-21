@@ -9,6 +9,6 @@ export default defineConfig(({ command, mode }) => {
     define: {
       __DEMO__: JSON.stringify(command === "serve" && mode === "demo"),
     },
-    server: { strictPort: true },
+    server: { strictPort: true, proxy: { '/api': { target: 'http://127.0.0.1:3100' } } },
   };
 });
