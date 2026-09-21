@@ -18,7 +18,10 @@
     "check:b0": "node scripts/export-contracts.mjs --check && vitest run packages/contracts/tests apps/api/tests && node scripts/check-b0-process.mjs",
     "api:start": "node apps/api/dist/main.js",
     "db:migrate": "node apps/api/dist/manage.js migrate",
-    "db:seed": "node apps/api/dist/manage.js seed"
+    "db:seed": "node apps/api/dist/manage.js seed",
+    "db:credentials": "node apps/api/dist/credentials.js",
+    "check:b1": "node scripts/export-contracts.mjs --check && vitest run apps/api/tests/collaboration.spec.ts",
+    "seed:collaboration": "node scripts/seed-b1-demo.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.0",

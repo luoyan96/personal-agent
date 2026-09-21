@@ -2,6 +2,7 @@ import { mkdtempSync, mkdirSync, rmSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
 import { readConfig } from '../src/config.js'
 import { openDatabase, migrate, seed, transaction, checkDatabase } from '../src/database.js'
@@ -17,6 +18,18 @@ function setup() {
   return { dir, config }
 }
 describe('B0 real service and persistence', () => {
+  it('upgrades an actual B0 001 database without rewriting the applied migration or losing rows', () => {
+    const { config } = setup(); const db = openDatabase(config.databasePath, true); cleanups.push(() => db.close())
+    const sql = readFileSync(new URL('../migrations/001-foundation.sql', import.meta.url), 'utf8')
+    db.exec('CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY,checksum TEXT NOT NULL,applied_at TEXT NOT NULL) STRICT')
+    db.exec(sql)
+    db.prepare('INSERT INTO schema_migrations VALUES (1,?,?)').run(createHash('sha256').update(sql).digest('hex'), '2026-09-21T00:00:00Z')
+    seed(db, 'test'); migrate(db); migrate(db)
+    expect(db.prepare('SELECT count(*) n FROM members').get()!.n).toBe(3)
+    expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(2)
+    expect(db.prepare('SELECT applied_at FROM schema_migrations WHERE version=1').get()!.applied_at).toBe('2026-09-21T00:00:00Z')
+    checkDatabase(db)
+  })
   it('migration/seed are repeatable; reopening preserves rows; no usable dev credentials', () => {
     const { config } = setup()
     let db = openDatabase(config.databasePath, true)
@@ -75,7 +88,7 @@ describe('B0 real service and persistence', () => {
   })
   it('all future routes are explicit 501, unknown is 404, errors redact request body', async () => {
     const { config } = setup(); const app = createServer(config); cleanups.push(() => app.close())
-    for (const route of Object.values(routes).filter(r => !r.implemented)) {
+    for (const route of Object.values(routes).filter(r => !r.implemented && r !== routes.planRequest)) {
       const res = await app.inject({ method: route.method, url: route.path.replace('{id}', 'synthetic'), ...(route.method === 'GET' ? {} : { payload: { actorId: 'fake', private: 'sentinel' } }) })
       expect(res.statusCode).toBe(501); expect(res.json().error.code).toBe('NOT_IMPLEMENTED'); expect(res.body).not.toContain('sentinel')
     }
