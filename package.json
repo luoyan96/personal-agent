@@ -12,7 +12,7 @@
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "check:content": "node scripts/check-content.mjs",
-    "ci": "pnpm check:content && pnpm build && pnpm typecheck && node scripts/export-contracts.mjs --check && pnpm test && node scripts/check-b0-process.mjs",
+    "ci": "pnpm check:content && pnpm build && pnpm typecheck && node scripts/export-contracts.mjs --check && pnpm test && node scripts/check-b0-process.mjs && pnpm --filter @research-agent/web check:production",
     "demo": "node scripts/demo.mjs",
     "contracts:export": "node scripts/export-contracts.mjs",
     "check:b0": "node scripts/export-contracts.mjs --check && vitest run packages/contracts/tests apps/api/tests && node scripts/check-b0-process.mjs",
