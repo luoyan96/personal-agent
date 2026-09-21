@@ -11,6 +11,10 @@ for (const file of await readdir(directory)) {
     "本周较满",
     "林同学已接受前期成果整理",
     "文献依据清单.md",
+    "synthetic_a",
+    "test-credentials.json",
+    "member_A",
+    "AUTH_BYPASS",
   ]) {
     if (code.includes(marker))
       throw new Error(`Production contains fixture marker: ${marker}`);

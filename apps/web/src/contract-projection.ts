@@ -3,7 +3,7 @@ import type { TaskModel, AssignmentModel } from "@research-agent-platform/contra
 import type { TaskCardView } from "./view-model";
 
 // Translations only. Legal transitions and aggregation semantics belong to B0.
-const labels: Record<TaskModel["status"], string> = {
+export const labels: Record<TaskModel["status"], string> = {
   unassigned: "待安排",
   awaiting_acceptance: "待承接",
   ready: "待开始",
