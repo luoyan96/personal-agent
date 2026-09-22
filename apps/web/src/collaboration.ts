@@ -21,6 +21,20 @@ let dirty = false;
 let busy = false;
 let retryCommand: (() => Promise<void>) | undefined;
 const drafts = new Map<string, string>();
+function resetEditor() {
+  editor = undefined;
+  editorRoute = '';
+  currentPlan = undefined;
+  refreshedPlan = undefined;
+  dirty = false;
+}
+function clearOwnedContext() {
+  resetEditor();
+  drafts.clear();
+  command.discard();
+  retryCommand = undefined;
+  draftOwner = undefined;
+}
 const route = () => location.hash.slice(1) || '/';
 const link = (path: string, label: string, cls = '') => `<a class="${cls}" href="#${e(path)}">${label}</a>`;
 const icon = (name: string) => `<i class="ph ph-${name}" aria-hidden="true"></i>`;
@@ -41,7 +55,7 @@ function shell() {
   document.querySelector<HTMLButtonElement>('[data-skip]')!.onclick = () => document.querySelector<HTMLElement>('main')!.focus();
   action('logout', async () => {
     await api.call('logout', {params:{},query:{},headers:{},body:{}});
-    session = undefined; api.csrfToken = ''; members = []; editor = undefined; currentPlan = undefined; drafts.clear(); command.discard(); retryCommand = undefined;
+    session = undefined; api.csrfToken = ''; members = []; clearOwnedContext();
     location.hash = '/login'; await load();
   });
 }
@@ -113,6 +127,7 @@ function login() {
 function entry() {
   content(`<section class="entry"><p class="eyebrow">从一件要完成的事开始</p><h1>今天，想把什么事情推进一步？</h1><p class="intro">说出目标，由你确认需要的人与分工。</p><form data-form="entry" class="composer"><label class="sr-only" for="goal">描述你的需求</label><textarea id="goal" name="goal" required maxlength="8000" placeholder="我有一份科研项目申请书要写……"></textarea><div class="composer-actions"><span class="fine">AI 建议尚未接通；你可以手工编辑方案。</span><button class="primary" type="submit">手工创建方案</button></div></form><div class="suggestions">${['科研论文','科研项目','知识产权','实验与数据','学生培养','汇报事务'].map(t => `<button data-prompt="${t}">${t}</button>`).join('')}</div><div class="recent">${link('/lab','查看我参与的真实任务 ' + icon('arrow-right'))}</div><p class="fine">继续未确认草案请打开保存后的方案链接。附件与完整实验室聚合将在后续阶段接通。</p></section>`, '需求入口');
   form('entry', async data => {
+    resetEditor();
     editor = {labId:session!.member.labId,goal:String(data.get('goal')),proposedItems:[],unresolvedQuestions:[]};
     editorRoute = '/plans/new'; currentPlan = undefined; dirty = true; addItem(); location.hash = '/plans/new';
   });
@@ -197,7 +212,9 @@ async function load() {
   try {
     if(path==='/login'){login();return;}
     const auth=await api.read('session',{}, {},signal);session=auth.data;api.csrfToken=session.csrfToken;
-    if(draftOwner && draftOwner!==session.member.id){drafts.clear();editor=undefined;editorRoute='';currentPlan=undefined;refreshedPlan=undefined;command.discard();retryCommand=undefined;dirty=false;}
+    // A 401 hides private content but keeps the whole context for same-owner retry.
+    // Explicit logout and authentication as another member discard it together.
+    if(draftOwner && draftOwner!==session.member.id) clearOwnedContext();
     draftOwner=session.member.id;
     members=[];let cursor: string|undefined;
     do {const response=await api.read('members',{id:session.member.labId},{limit:100,...(cursor?{cursor}:{})},signal);members.push(...response.data);cursor=response.nextCursor??undefined;}while(cursor);
@@ -207,10 +224,10 @@ async function load() {
     else if(path.startsWith('/tasks/'))await taskDetail(path.slice(7),signal);
     else if(path.startsWith('/plans/')){
       if(path==='/plans/new'){
-        if(editorRoute!==path){currentPlan=undefined;editor={labId:session.member.labId,goal:'',proposedItems:[],unresolvedQuestions:[]};editorRoute=path;addItem();}
+        if(!editor || editorRoute!==path){resetEditor();editor={labId:session.member.labId,goal:'',proposedItems:[],unresolvedQuestions:[]};editorRoute=path;addItem();}
       }else{
         const response=await api.read('getPlan',{id:path.slice(7)},{},signal);
-        if(editorRoute===path&&dirty&&currentPlan){refreshedPlan=response.data;}
+        if(editor&&editorRoute===path&&dirty&&currentPlan){refreshedPlan=response.data;}
         else {currentPlan=response.data;refreshedPlan=undefined;editor={labId:response.data.labId,goal:response.data.goal,proposedItems:structuredClone(response.data.proposedItems),unresolvedQuestions:[...response.data.unresolvedQuestions]};editorRoute=path;dirty=false;}
       }
       planEditor();
