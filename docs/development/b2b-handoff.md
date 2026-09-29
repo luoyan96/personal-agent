@@ -22,7 +22,7 @@
 
 停自己的 API 并完整备份 SQLite/WAL 后运行 pnpm build、pnpm db:migrate；重复执行校验 checksum，不重置数据。DATABASE_PATH、BLOB_ROOT、APP_ORIGIN、HOST、PORT、NODE_ENV 沿用 B2a；本地合成账号继续 db:seed / db:credentials，凭据只在忽略目录。附件文件与数据库一起备份；普通事务失败清理本次新文件，进程崩溃可能留下无元数据孤儿，绝不通过目录直接读取。正式备份恢复、恶意文档扫描及配额运维未验收。
 
-确切契约与服务 SHA、验证结果见本批阶段报告。F2b 浏览器和共同 G2 不由后端服务测试代替。本批不开放真实通知、AI worker 或进入 B3，不部署/合并。
+确切契约与服务 SHA、验证结果见 [B2b 阶段报告](reports/B2b-backend-2026-09-29.md)。F2b 浏览器和共同 G2 不由后端服务测试代替。本批不开放真实通知、AI worker 或进入 B3，不部署/合并。
 
 ## 实际启动与合成联调
 
