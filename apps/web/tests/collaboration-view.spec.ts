@@ -1,8 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { fixtures } from '@research-agent-platform/contracts/fixtures';
-import { taskCard } from '../src/collaboration-view';
+import { planCard, taskCard } from '../src/collaboration-view';
 
 describe('service task card presentation', () => {
+  it('links a saved plan to the existing editor without exposing its proposed assignments', () => {
+    const plan = fixtures.missingDeadlineDraft.schema.parse(fixtures.missingDeadlineDraft.value).data;
+    const html = planCard({ ...plan, goal: '<script>goal</script>' });
+    expect(html).toContain(`href="#/plans/${plan.id}"`);
+    expect(html).toContain('已保存版本 1');
+    expect(html).toContain('创建于');
+    expect(html).not.toContain('最近更新');
+    expect(html).not.toContain(plan.proposedItems[0]!.deliverable);
+    expect(html).toContain('&lt;script&gt;goal');
+  });
   it('keeps a pending invitation distinct from a commitment and does not invent task status', () => {
     const task = fixtures.invitationSummary.schema.parse(fixtures.invitationSummary.value).data;
     const html = taskCard(task, id => id);
