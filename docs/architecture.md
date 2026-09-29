@@ -1,10 +1,10 @@
 # 当前代码与目标平台
 
-截至 2026-09-29，集成分支已有两个基础包、共享契约、B1 API 与 F1 网页。多人任务权威状态在 SQLite 事务数据库中；G1 人类协作已复核。真实 Harness/模型、worker、完整聚合与授权知识复用未接通。当前范围见[第一阶段范围与当前状态](phase-one.md)，启动见[B1 联调包](development/b1-handoff.md)。
+截至 2026-09-29，集成分支已有两个基础包、共享契约、B2a API 与 F2a 网页。多人任务权威状态在 SQLite 事务数据库中；G1 人类协作与 B2a/F2a 日常任务已复核。真实 Harness/模型、worker、复杂协调与授权知识复用未接通。当前范围见[第一阶段范围与当前状态](phase-one.md)，启动见[B2a 联调包](development/b2a-handoff.md)。
 
 ```text
-apps/web（F1 真实协作） → apps/api（B1 会话、鉴权、事务） → SQLite
-        ↕ 共享 Schema：packages/contracts 0.2.0
+apps/web（F2a 日常协作） → apps/api（B2a 会话、鉴权、事务、查询快照） → SQLite
+        ↕ 共享 Schema：packages/contracts 0.3.0
 
 agents/skills（唯一方法来源）
         ↓ 构建时复制
@@ -14,6 +14,8 @@ packages/research-core（Project / Artifact 与本地存储）
         ↓ 计划通过适配调用
 integrations/deepseek-harness（源码已迁入，SDK 与运行待验证）
 ```
+
+当前读取使用绑定身份、实验室与数据版本的短期快照。业务或权限变化会使旧快照失效；页面清理旧组合并要求重新读取。它不是历史数据快照，也不是实时推送；成员承诺按权限过滤，自报时间不等于实际负荷。
 
 目标平台前台围绕一个需求入口、一份协作方案和持续进展展开；任务分配、状态和权限由后台维护。服务端需支持方案版本、确认去重、邀请与认领、成员承诺、任务依赖、变更、交付和验收；隔离的执行环境运行 Harness，通过按任务授权的数据接口读取资料与提交成果。规则见[任务分配与能力边界](task-allocation.md)。其中人的协作基础已实现；依赖、变更和执行等扩展仍按后续关口验证，不能把目标结构当完成状态。
 
