@@ -21,6 +21,8 @@
     "db:seed": "node apps/api/dist/manage.js seed",
     "db:credentials": "node apps/api/dist/credentials.js",
     "check:b1": "node scripts/export-contracts.mjs --check && vitest run apps/api/tests/collaboration.spec.ts",
+    "check:b2b": "node scripts/export-contracts.mjs --check && vitest run apps/api/tests/coordination.spec.ts apps/api/tests/collaboration.spec.ts apps/api/tests/discovery.spec.ts apps/api/tests/foundation.spec.ts",
+    "seed:coordination": "node scripts/seed-b2b-demo.mjs",
     "check:b2a": "node scripts/export-contracts.mjs --check && vitest run apps/api/tests/discovery.spec.ts apps/api/tests/collaboration.spec.ts apps/api/tests/foundation.spec.ts",
     "seed:discovery": "node scripts/seed-b2a-demo.mjs",
     "seed:collaboration": "node scripts/seed-b1-demo.mjs"

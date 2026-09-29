@@ -1,9 +1,11 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
-import { Assignment, Availability, Deliverable, Member, Plan, PlanSummary, Task, TaskEvent, TaskSummary, taskColumns, routes } from '@research-agent-platform/contracts'
+import { Assignment, Availability, Artifact, ChangeProposal, DependencyImpact, Deliverable, Member, Plan, PlanSummary, Task, TaskEvent, TaskSummary, taskColumns, routes } from '@research-agent-platform/contracts'
 import type { AssignmentModel, DeliverableModel, PlanModel, RequestFor, RouteName, ScheduleModel, TaskModel } from '@research-agent-platform/contracts'
 import { hash, signingKey } from './auth.js'
 import type { Actor } from './auth.js'
+import { Coordination, coordinationCommands } from './coordination.js'
+import type { CoordinationCommand } from './coordination.js'
 import { fail } from './errors.js'
 
 const now = () => new Date().toISOString()
@@ -14,13 +16,15 @@ function canonical(value: unknown): string {
   if (value && typeof value === 'object') return `{${Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, v]) => `${JSON.stringify(key)}:${canonical(v)}`).join(',')}}`
   return JSON.stringify(value)
 }
-export const collaborationCommands = ['overview', 'plans', 'actionItems', 'availability', 'me', 'members', 'createPlan', 'getPlan', 'editPlan', 'confirmPlan', 'tasks', 'task', 'invite', 'invitationDecision', 'claim', 'start', 'submit', 'review'] as const satisfies readonly RouteName[]
+export const collaborationCommands = [...coordinationCommands, 'overview', 'plans', 'actionItems', 'availability', 'me', 'members', 'createPlan', 'getPlan', 'editPlan', 'confirmPlan', 'tasks', 'task', 'invite', 'invitationDecision', 'claim', 'start', 'submit', 'review'] as const satisfies readonly RouteName[]
 export type CollaborationCommand = typeof collaborationCommands[number]
-type Handlers = { [K in CollaborationCommand]: (request: RequestFor<K>) => unknown }
+type Handlers = { [K in Exclude<CollaborationCommand,CoordinationCommand>]: (request: RequestFor<K>) => unknown }
 
 export class Collaboration {
   readSnapshot?: { token: string; at: string; expiresAt: string }
-  constructor(readonly db: DatabaseSync, readonly actor: Actor) {}
+  readonly createdBlobs: string[] = []
+  readonly coordination = new Coordination(this)
+  constructor(readonly db: DatabaseSync, readonly actor: Actor, readonly blobRoot?: string) {}
   sameLab(labId: string) { if (this.actor.labId !== labId) fail('NOT_FOUND') }
   checkVersion(actual: number, expected: number) { if (actual !== expected) fail('VERSION_CONFLICT') }
   revision() { return createHmac('sha256', signingKey(this.db)).update(String(this.db.prepare("SELECT value FROM runtime_meta WHERE key='revision'").get()!.value)).digest('hex') }
@@ -93,6 +97,13 @@ export class Collaboration {
       if (['in_progress', 'changes_requested'].includes(task.status)) allowedActions.push('submit')
     }
     if (task.reviewerId === this.actor.id && task.status === 'in_review') allowedActions.push('review')
+    if(task.status!=='cancelled') {
+      if(task.leadId && [task.leadId,task.initiatorId].includes(this.actor.id)) allowedActions.push('propose_change')
+      if(task.initiatorId===this.actor.id) {allowedActions.push('revoke_access');if(task.status!=='completed')allowedActions.push('cancel')}
+      if(task.status!=='completed' && [task.leadId,task.initiatorId].includes(this.actor.id)) allowedActions.push('upload')
+      if(task.leadId===this.actor.id && task.status!=='completed') {allowedActions.push('withdraw');if(task.status==='blocked') allowedActions.push('resume');else if(['ready','in_progress','changes_requested'].includes(task.status)) allowedActions.push('block')}
+      if([task.leadId,task.reviewerId].includes(this.actor.id) && this.db.prepare('SELECT 1 FROM dependency_impacts WHERE task_id=? AND acknowledged=0').get(task.id)) allowedActions.push('acknowledge_impacts')
+    }
     return { ...task, allowedActions }
   }
   summary(taskId: string) {
@@ -107,7 +118,7 @@ export class Collaboration {
     const task = this.actions(this.task(taskId))
     if (!detail) return task
     return { task, assignments: this.db.prepare('SELECT document FROM assignments WHERE task_id=? ORDER BY id').all(taskId).map(r => Assignment.parse(JSON.parse(String(r.document)))),
-      deliverables: this.db.prepare('SELECT document FROM deliverables WHERE task_id=? ORDER BY revision').all(taskId).map(r => Deliverable.parse(JSON.parse(String(r.document)))), executions: [] }
+      deliverables: this.db.prepare('SELECT document FROM deliverables WHERE task_id=? ORDER BY revision').all(taskId).map(r => Deliverable.parse(JSON.parse(String(r.document)))), executions: [], changes: this.db.prepare('SELECT document FROM change_proposals WHERE task_id=? ORDER BY rowid').all(taskId).map(r=>ChangeProposal.parse(JSON.parse(String(r.document)))), dependencyImpacts: this.db.prepare('SELECT document FROM dependency_impacts WHERE task_id=? ORDER BY acknowledged,rowid DESC LIMIT 100').all(taskId).map(r=>{const impact=DependencyImpact.parse(JSON.parse(String(r.document)));const v=this.visible();const visible=this.db.prepare(`SELECT t.id ${v.sql} AND t.id=?`).get(...v.values,impact.upstreamTaskId);return visible?impact:{...impact,upstreamTaskId:null,upstreamVersion:null}}), dependencyImpactsTruncated: Number(this.db.prepare('SELECT count(*) n FROM dependency_impacts WHERE task_id=?').get(taskId)!.n)>100, artifacts: this.db.prepare('SELECT document FROM artifacts WHERE task_id=? ORDER BY rowid').all(taskId).map(r=>Artifact.parse(JSON.parse(String(r.document)))) }
   }
   savePlan(plan: PlanModel) {
     Plan.parse(plan)
@@ -118,23 +129,27 @@ export class Collaboration {
     task.allowedActions = []
     Task.parse(task)
     this.db.prepare('UPDATE tasks SET lead_id=?,status=?,version=?,document=? WHERE id=?').run(task.leadId, task.status, task.version, encode(task), task.id)
+    this.db.prepare('INSERT INTO task_versions VALUES (?,?,?)').run(task.id,task.version,encode(task))
+    this.coordination.supersede(task)
   }
   saveAssignment(a: AssignmentModel) {
     Assignment.parse(a)
     this.db.prepare('UPDATE assignments SET status=?,version=?,document=? WHERE id=?').run(a.status, a.version, encode(a), a.id)
+    this.db.prepare('INSERT INTO assignment_versions VALUES (?,?,?)').run(a.id,a.version,encode(a))
   }
-  event(task: TaskModel, kind: string) {
-    const event = TaskEvent.parse({ id: id(), taskId: task.id, actor: { kind: 'member', memberId: this.actor.id }, kind, resourceVersion: task.version, timestamp: now(), summary: `Task ${kind}` })
+  event(task: TaskModel, kind: string, summary?: string) {
+    const event = TaskEvent.parse({ id: id(), taskId: task.id, actor: { kind: 'member', memberId: this.actor.id }, kind, resourceVersion: task.version, timestamp: now(), summary: summary ?? `Task ${kind}` })
     this.db.prepare('INSERT INTO task_events(id,task_id,document) VALUES (?,?,?)').run(event.id, task.id, encode(event))
   }
   outbox(task: TaskModel, kind: string) {
+    this.coordination.active(task)
     this.db.prepare('INSERT INTO outbox(id,dedup_key,aggregate_id,aggregate_version,kind,payload_json,available_at,created_at) VALUES (?,?,?,?,?,?,?,?)').run(id(), `${task.id}:${task.version}:${kind}`, task.id, task.version, kind, encode({ taskId: task.id }), now(), now())
   }
   grant(taskId: string, memberId: string, access: 'full' | 'summary') {
     this.db.prepare('INSERT INTO task_access VALUES (?,?,?) ON CONFLICT(task_id,member_id) DO UPDATE SET access=excluded.access').run(taskId, memberId, access)
   }
-  validateSchedule(schedule: ScheduleModel) {
-    if (schedule.committed !== null) fail('VALIDATION_ERROR')
+  validateSchedule(schedule: ScheduleModel, allowCommitment = false) {
+    if (schedule.committed !== null && (!allowCommitment || schedule.committed.source !== 'member' || !schedule.committed.confirmed)) fail('VALIDATION_ERROR')
     if (schedule.hardDeadline && (!schedule.hardDeadline.confirmed || !['user', 'authorized_material'].includes(schedule.hardDeadline.source))) fail('VALIDATION_ERROR')
   }
   validatePlan(plan: RequestFor<'createPlan'>['body']) {
@@ -161,21 +176,27 @@ export class Collaboration {
     for (const itemId of ids) visit(itemId)
   }
   authorize(name: CollaborationCommand, resourceId: string, body: unknown) {
+    if ((coordinationCommands as readonly string[]).includes(name)) {this.coordination.authorize(name as CoordinationCommand,resourceId,body);return}
     if (name === 'createPlan') { this.sameLab((body as RequestFor<'createPlan'>['body']).labId); return }
     if (['editPlan', 'confirmPlan', 'getPlan'].includes(name)) { this.plan(resourceId); return }
     if (name === 'invitationDecision') {
       const { model } = this.assignment(resourceId)
+      const state=this.db.prepare('SELECT status FROM tasks WHERE id=?').get(model.taskId)!
+      if(state.status==='cancelled') fail('INVALID_STATE')
       if (model.memberId !== this.actor.id) fail('NOT_FOUND')
       return
     }
     if (name === 'review') {
       const delivery = this.deliverable(resourceId)
+      this.coordination.active(this.task(delivery.taskId));this.coordination.attachments(delivery.taskId,delivery.artifactRefs)
       if (this.task(delivery.taskId).reviewerId !== this.actor.id) fail('FORBIDDEN')
       return
     }
     if (name === 'claim') { const row = this.taskRow(resourceId); if (row.claimable !== 1) fail('NOT_FOUND'); return }
     if (['invite', 'start', 'submit'].includes(name)) {
       const task = this.task(resourceId)
+      this.coordination.active(task)
+      if (name==='submit') {const b=body as RequestFor<'submit'>['body'];this.coordination.attachments(task.id,[...new Set([...b.artifactRefs,...b.sources.filter(s=>s.kind==='artifact').map(s=>s.locator)])])}
       if (name === 'invite' ? task.initiatorId !== this.actor.id : task.leadId !== this.actor.id) fail('FORBIDDEN')
     }
   }
@@ -191,13 +212,17 @@ export class Collaboration {
       const cached = this.db.prepare('SELECT request_hash,response_json FROM idempotency_results WHERE actor_id=? AND command=? AND resource_id=? AND key=?').get(this.actor.id, name, resource, key!)
       if (cached) {
         if (cached.request_hash !== requestHash) fail('IDEMPOTENCY_CONFLICT')
-        return route.response.parse(JSON.parse(String(cached.response_json)))
+        const value=JSON.parse(String(cached.response_json))
+        if(name==='upload') this.coordination.artifact(value.data.id)
+        if(name==='submit' || name==='review') this.coordination.attachments(value.data.taskId,value.data.artifactRefs)
+        return route.response.parse(value)
       }
     }
     if (route.method === 'GET') this.readSnapshot = this.snapshot((request.query as { snapshot?: string; cursor?: string }).snapshot, (request.query as { cursor?: string }).cursor)
-    const response = (this.handlers[name] as (r: RequestFor<K>) => unknown)(request)
+    const handler = (coordinationCommands as readonly string[]).includes(name) ? this.coordination.handlers[name as CoordinationCommand] : this.handlers[name as keyof typeof this.handlers]
+    const response = (handler as (r: RequestFor<K>) => unknown)(request)
     // Validate before commit so an invalid response cannot leave committed effects.
-    const validated = route.response.parse(route.method === 'GET' ? { ...response as object, snapshot: this.readSnapshot } : response)
+    const validated = route.response.parse(route.method === 'GET' && name !== 'content' ? { ...response as object, snapshot: this.readSnapshot } : response)
     if (route.idempotent) {
       this.db.prepare('INSERT INTO idempotency_results VALUES (?,?,?,?,?,?,?,?)').run(this.actor.id, name, resource, key!, requestHash, encode(validated), route.status, now())
       this.changed()
@@ -247,6 +272,7 @@ export class Collaboration {
     const accepted = kind !== 'invitation'
     const assignment = Assignment.parse({ id: id(), taskId: task.id, kind, memberId, capability: null, status: accepted ? 'accepted' : 'pending', commitment: accepted ? { scope, schedule, acceptedAt: now() } : null, transferToMemberId: null, version: 1 })
     this.db.prepare('INSERT INTO assignments VALUES (?,?,?,?,?,?,?,?,?)').run(assignment.id, task.id, memberId, kind, assignment.status, 1, encode(assignment), scope, encode(schedule))
+    this.db.prepare('INSERT INTO assignment_versions VALUES (?,?,?)').run(assignment.id,assignment.version,encode(assignment))
     this.grant(task.id, memberId, accepted ? 'full' : 'summary')
     return assignment
   }
@@ -287,23 +313,24 @@ export class Collaboration {
         SUM(CASE WHEN EXISTS(SELECT 1 FROM assignments a WHERE a.task_id=t.id AND a.member_id=? AND a.status='pending') AND t.status='awaiting_acceptance' THEN 1 ELSE 0 END) invitations,
         SUM(CASE WHEN acl.access='full' AND t.reviewer_id=? AND t.status='in_review' THEN 1 ELSE 0 END) reviews
         ${v.sql}`).get(this.actor.id, this.actor.id, ...v.values)!
-      return { data: { counts, submittedDeliverables: Number(deliveries.submitted), acceptedDeliverables: Number(deliveries.accepted ?? 0), blockedTaskIds: blocked.slice(0, 100).map(r => String(r.id)), blockedTaskIdsTruncated: blocked.length > 100, pendingActions: { invitationResponses: Number(actions.invitations ?? 0), deliverableReviews: Number(actions.reviews ?? 0) }, updatedAt: this.readSnapshot!.at } }
+      const changeCount=this.db.prepare(`SELECT count(*) n FROM change_proposals p WHERE p.status='pending' AND p.task_id IN (SELECT t.id ${v.sql} AND acl.access='full') AND EXISTS(SELECT 1 FROM json_each(p.document,'$.requiredMemberIds') WHERE value=?) AND NOT EXISTS(SELECT 1 FROM change_decisions d WHERE d.proposal_id=p.id AND d.member_id=?)`).get(...v.values,this.actor.id,this.actor.id)!
+      return { data: { counts, submittedDeliverables: Number(deliveries.submitted), acceptedDeliverables: Number(deliveries.accepted ?? 0), blockedTaskIds: blocked.slice(0, 100).map(r => String(r.id)), blockedTaskIdsTruncated: blocked.length > 100, pendingActions: { changeResponses: Number(changeCount.n), invitationResponses: Number(actions.invitations ?? 0), deliverableReviews: Number(actions.reviews ?? 0) }, updatedAt: this.readSnapshot!.at } }
     },
     actionItems: ({ params, query }) => {
       this.sameLab(params.id)
-      const base = { kind: 'actionItems', filter: query.kind ?? 'all', limit: query.limit ?? 30 }
-      const cursor = this.cursor(base, query.cursor), v = this.visible('mine')
-      const rows = this.db.prepare(`SELECT t.id,t.created_at,t.status ${v.sql}
-        AND ((?!='deliverable_review' AND t.status='awaiting_acceptance' AND EXISTS(SELECT 1 FROM assignments a WHERE a.task_id=t.id AND a.member_id=? AND a.status='pending'))
-          OR (?!='invitation_response' AND acl.access='full' AND t.reviewer_id=? AND t.status='in_review'))
-        AND (? IS NULL OR t.created_at<? OR (t.created_at=? AND t.id<?))
-        ORDER BY t.created_at DESC,t.id DESC LIMIT ?`).all(...v.values, base.filter, this.actor.id, base.filter, this.actor.id, cursor?.last ?? null, cursor?.created ?? '', cursor?.created ?? '', cursor?.last ?? '', base.limit + 1)
-      const last = rows[base.limit - 1]
-      return { data: rows.slice(0, base.limit).map(row => {
-        if (row.status === 'awaiting_acceptance') return { kind: 'invitation_response', task: this.summary(String(row.id)) }
-        const d = this.db.prepare('SELECT id,revision,version FROM deliverables WHERE task_id=? ORDER BY revision DESC LIMIT 1').get(row.id!)!
-        return { kind: 'deliverable_review', task: this.actions(this.task(String(row.id))), deliverableId: d.id, revision: d.revision, deliverableVersion: d.version }
-      }), nextCursor: rows.length > base.limit ? this.nextCursor(base, String(last!.id), String(last!.created_at)) : null }
+      const base={kind:'actionItems',filter:query.kind??'all',limit:query.limit??30},cursor=this.cursor(base,query.cursor),v=this.visible('mine')
+      const rows=this.db.prepare(`WITH visible AS (SELECT t.id,t.created_at,t.status,t.reviewer_id,acl.access ${v.sql}), items AS (
+        SELECT v.id,v.created_at,'invitation_response' kind,NULL proposal_id FROM visible v WHERE v.status='awaiting_acceptance' AND EXISTS(SELECT 1 FROM assignments a WHERE a.task_id=v.id AND a.member_id=? AND a.status='pending')
+        UNION ALL SELECT v.id,v.created_at,'deliverable_review',NULL FROM visible v WHERE v.status='in_review' AND v.reviewer_id=? AND v.access='full'
+        UNION ALL SELECT v.id,v.created_at,'change_response',p.id FROM visible v JOIN change_proposals p ON p.task_id=v.id AND p.status='pending' WHERE v.access='full' AND EXISTS(SELECT 1 FROM json_each(p.document,'$.requiredMemberIds') WHERE value=?) AND NOT EXISTS(SELECT 1 FROM change_decisions d WHERE d.proposal_id=p.id AND d.member_id=?)
+      ) SELECT *,id||':'||kind item_key FROM items WHERE (?='all' OR kind=?) AND (? IS NULL OR created_at<? OR (created_at=? AND id||':'||kind<?)) ORDER BY created_at DESC,item_key DESC LIMIT ?`).all(...v.values,this.actor.id,this.actor.id,this.actor.id,this.actor.id,base.filter,base.filter,cursor?.last??null,cursor?.created??'',cursor?.created??'',cursor?.last??'',base.limit+1)
+      const last=rows[base.limit-1]
+      return {data:rows.slice(0,base.limit).map(row=>{
+        if(row.kind==='invitation_response') return {kind:row.kind,task:this.summary(String(row.id))}
+        if(row.kind==='change_response') return {kind:row.kind,task:this.actions(this.task(String(row.id))),proposal:this.coordination.proposal(String(row.proposal_id))}
+        const d=this.db.prepare('SELECT id,revision,version FROM deliverables WHERE task_id=? ORDER BY revision DESC LIMIT 1').get(row.id!)!
+        return {kind:row.kind,task:this.actions(this.task(String(row.id))),deliverableId:d.id,revision:d.revision,deliverableVersion:d.version}
+      }),nextCursor:rows.length>base.limit?this.nextCursor(base,String(last!.item_key),String(last!.created_at)):null}
     },
     me: () => ({ data: this.member(this.actor.id) }),
     members: ({ params, query }) => {
@@ -340,11 +367,13 @@ export class Collaboration {
         const task = Task.parse({ id: mapping.get(item.id), labId: plan.labId, parentTaskId: null, planId: plan.id, planVersion: plan.version, title: item.title, taskType: 'other', goal: item.goal, acceptanceCriteria: item.acceptanceCriteria, initiatorId: this.actor.id, leadId: own ? this.actor.id : null, reviewerId: this.actor.id, participantIds: [], status: own ? 'ready' : 'awaiting_acceptance', blocker: null, dependencies: item.dependencies.map(dependency => ({ taskId: mapping.get(dependency), kind: 'accepted_deliverable', requiredRevision: null })), schedule: item.schedule, access: { visibility: item.allocation.kind === 'claim' ? 'lab_summary' : 'participants', summary: item.allocation.kind === 'claim' ? item.allocation.summary : null }, version: 1, createdAt: now(), updatedAt: now(), allowedActions: [] })
         const summary = TaskSummary.parse({ projection: 'claim_summary', id: task.id, labId: task.labId, title: item.title, summary: item.allocation.kind === 'claim' ? item.allocation.summary : item.deliverable, deliverable: item.deliverable, acceptanceCriteria: item.acceptanceCriteria, schedule: item.schedule, initiatorId: task.initiatorId, reviewerId: task.reviewerId, version: 1, allowedActions: [], pendingInvitation: null })
         this.db.prepare('INSERT INTO tasks VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').run(task.id, task.labId, plan.id, item.id, task.initiatorId, task.leadId, task.reviewerId, task.status, item.allocation.kind === 'claim' ? 1 : 0, 1, task.createdAt, encode(task), encode(summary))
+        this.db.prepare('INSERT INTO task_versions VALUES (?,?,?)').run(task.id,task.version,encode(task))
         this.grant(task.id, this.actor.id, 'full')
         if (own) this.createAssignment(task, 'self', this.actor.id, item.deliverable, item.schedule)
         if (item.allocation.kind === 'invitation') { this.createAssignment(task, 'invitation', item.allocation.memberId, item.deliverable, item.schedule); this.outbox(task, 'invitation_created') }
         this.event(task, 'confirmed')
       }
+      for(const taskId of mapping.values()) this.coordination.edges(this.task(taskId))
       plan.status = 'confirmed'; plan.version++; this.savePlan(plan)
       return { data: { plan, taskIds: [...mapping.values()] } }
     },
@@ -384,9 +413,11 @@ export class Collaboration {
       this.db.prepare('INSERT INTO invitation_decisions VALUES (?,?,?,?,?,?,?)').run(assignment.id, this.actor.id, assignment.version, task.version, body.decision, body.comment, now())
       assignment.status = body.decision; assignment.version++
       if (body.decision === 'accepted') {
-        assignment.commitment = { scope: offer.scope, schedule: offer.schedule, acceptedAt: now() }
-        task.leadId = this.actor.id; task.status = 'ready'; task.schedule = offer.schedule; this.grant(task.id, this.actor.id, 'full')
-      } else { task.status = 'unassigned'; this.db.prepare("DELETE FROM task_access WHERE task_id=? AND member_id=? AND access='summary'").run(task.id, this.actor.id) }
+        const schedule={...offer.schedule,committed:body.committed??offer.schedule.committed};this.validateSchedule(schedule,true)
+        assignment.commitment = { scope: offer.scope, schedule, acceptedAt: now() }
+        task.leadId = this.actor.id; task.status = 'ready'; task.schedule = assignment.commitment.schedule; this.grant(task.id, this.actor.id, 'full')
+        for(const row of this.db.prepare("SELECT document FROM assignments WHERE task_id=? AND status='withdrawn' AND json_extract(document,'$.transferToMemberId')=?").all(task.id,this.actor.id)) {const old=Assignment.parse(JSON.parse(String(row.document)));old.status='transferred';old.version++;this.saveAssignment(old)}
+      } else { if(body.committed) fail('VALIDATION_ERROR');task.status = 'unassigned'; this.db.prepare("DELETE FROM task_access WHERE task_id=? AND member_id=? AND access='summary'").run(task.id, this.actor.id) }
       this.saveAssignment(assignment); task.version++; task.updatedAt = now(); this.saveTask(task); this.event(task, body.decision)
       return { data: assignment }
     },
@@ -397,25 +428,30 @@ export class Collaboration {
       if (row.status !== 'awaiting_acceptance' || this.db.prepare("SELECT id FROM assignments WHERE task_id=? AND status='pending'").get(params.id)) fail('INVALID_STATE')
       const task = Task.parse(JSON.parse(String(this.db.prepare('SELECT document FROM tasks WHERE id=?').get(params.id)!.document)))
       const summary = TaskSummary.parse(JSON.parse(String(this.db.prepare('SELECT summary_document FROM tasks WHERE id=?').get(task.id)!.summary_document)))
-      const assignment = this.createAssignment(task, 'claim', this.actor.id, summary.deliverable, summary.schedule)
+      const schedule={...summary.schedule,committed:body.committed??null};this.validateSchedule(schedule,true)
+      const assignment = this.createAssignment(task, 'claim', this.actor.id, summary.deliverable, schedule)
+      task.schedule=schedule
       task.leadId = this.actor.id; task.status = 'ready'; task.version++; task.updatedAt = now(); this.saveTask(task); this.event(task, 'claimed')
       return { data: assignment }
     },
     start: ({ params, body }) => {
       const task = this.task(params.id); this.checkVersion(task.version, body.expectedVersion)
       if (!['ready', 'changes_requested'].includes(task.status)) fail('INVALID_STATE')
-      for (const dependency of task.dependencies) if (!this.db.prepare("SELECT id FROM tasks WHERE id=? AND status='completed'").get(dependency.taskId)) fail('DEPENDENCY_BLOCKED')
+      this.coordination.runnable(task,true)
       task.status = 'in_progress'; task.version++; task.updatedAt = now(); this.saveTask(task); this.event(task, 'started')
       return { data: this.actions(task) }
     },
     submit: ({ params, body }) => {
       const task = this.task(params.id); this.checkVersion(task.version, body.expectedVersion)
       if (!['in_progress', 'changes_requested'].includes(task.status)) fail('INVALID_STATE')
-      if (body.artifactRefs.length || body.sources.some(source => source.kind === 'artifact')) fail('NOT_IMPLEMENTED')
+      this.coordination.runnable(task,true)
+      this.coordination.attachments(task.id,body.artifactRefs)
+      for(const source of body.sources.filter(s=>s.kind==='artifact')) if(!body.artifactRefs.includes(source.locator)) fail('VALIDATION_ERROR')
       const revision = Number(this.db.prepare('SELECT COALESCE(MAX(revision),0)+1 n FROM deliverables WHERE task_id=?').get(task.id)!.n)
       if (revision > 100) fail('VALIDATION_ERROR')
-      const delivery = Deliverable.parse({ id: id(), taskId: task.id, revision, submittedBy: this.actor.id, artifactRefs: [], summary: body.summary, sources: body.sources, submittedAt: now(), review: null, version: 1 })
+      const delivery = Deliverable.parse({ id: id(), taskId: task.id, revision, submittedBy: this.actor.id, artifactRefs: body.artifactRefs, summary: body.summary, sources: body.sources, submittedAt: now(), review: null, version: 1 })
       this.db.prepare('INSERT INTO deliverables VALUES (?,?,?,?,?)').run(delivery.id, task.id, revision, 1, encode(delivery))
+      for(const artifactId of delivery.artifactRefs) this.db.prepare('INSERT INTO deliverable_artifacts VALUES (?,?,?)').run(delivery.id,artifactId,this.coordination.artifact(artifactId).model.version)
       task.status = 'in_review'; task.version++; task.updatedAt = now(); this.saveTask(task); this.event(task, 'submitted')
       return { data: delivery }
     },
@@ -425,10 +461,12 @@ export class Collaboration {
       this.checkVersion(delivery.revision, body.revision)
       const latest = Number(this.db.prepare('SELECT MAX(revision) n FROM deliverables WHERE task_id=?').get(task.id)!.n)
       if (delivery.revision !== latest || task.status !== 'in_review' || delivery.review) fail('INVALID_STATE')
+      this.coordination.runnable(task)
       delivery.review = { decision: body.decision, reviewerId: this.actor.id, revision: body.revision, comment: body.comment, at: now() }; delivery.version++
       this.db.prepare('INSERT INTO reviews VALUES (?,?,?,?)').run(delivery.id, delivery.revision, this.actor.id, encode(delivery.review))
       this.db.prepare('UPDATE deliverables SET version=?,document=? WHERE id=?').run(delivery.version, encode(delivery), delivery.id)
       task.status = body.decision === 'accepted' ? 'completed' : 'changes_requested'; task.version++; task.updatedAt = now(); this.saveTask(task); this.event(task, 'reviewed')
+      if(body.decision==='changes_requested') this.coordination.impact(task,'review_returned')
       return { data: delivery }
     },
   }

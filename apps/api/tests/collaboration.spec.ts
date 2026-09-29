@@ -244,7 +244,7 @@ describe('B1 A1–A5: two real HTTP processes, file SQLite, real passwords', () 
     await createConfirmed([item('self')])
     expect((await request('tasks', { client: clients.A, query: { labId: 'lab_synthetic', scope: 'mine', limit: 1, cursor: first.value.nextCursor! } })).status).toBe(410)
   })
-  it('unsupported AI/attachments are unavailable; invalid dependency drafts cannot dispatch', async () => {
+  it('unsupported AI and invalid input are unavailable; invalid dependency drafts cannot dispatch', async () => {
     expect((await request('planRequest', { client: clients.A, body: { labId: 'lab_synthetic', prompt: 'Synthetic prompt', inputArtifactIds: [], budget: { maxTokens: 10, maxSeconds: 10 } } })).value.error?.code).toBe('MODEL_UNAVAILABLE')
     const ai = item('self'); ai.allocation = { kind: 'public_agent', capability: null, humanLeadId: 'member_A', missingReason: 'No public runtime' }
     const draft = await request('createPlan', { client: clients.A, body: planInput([ai]) }); expect(draft.status).toBe(201)
@@ -255,7 +255,7 @@ describe('B1 A1–A5: two real HTTP processes, file SQLite, real passwords', () 
     const upstream = item('self', 'upstream'), downstream = item('self', 'downstream'); downstream.dependencies = [upstream.id]
     const { taskIds } = await createConfirmed([upstream, downstream])
     expect((await request('start', { client: clients.A, params: { id: taskIds[1]! }, body: { expectedVersion: 1 } })).value.error?.code).toBe('DEPENDENCY_BLOCKED')
-    expect((await request('upload', { client: clients.A, body: {} })).status).toBe(501)
+    expect((await request('upload', { client: clients.A, body: {} })).status).toBe(400)
   })
   it('password hashes only, login failure indistinguishable and shared persistent throttling', async () => {
     expect(db.prepare('SELECT count(*) n FROM auth_accounts').get()!.n).toBe(3)

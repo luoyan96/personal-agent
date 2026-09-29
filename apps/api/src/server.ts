@@ -9,6 +9,7 @@ import { authenticate, cookieToken, csrfToken, hash, login, requireCsrf, signing
 import { Collaboration, collaborationCommands } from './collaboration.js'
 import type { CollaborationCommand } from './collaboration.js'
 import type { RequestFor } from '@research-agent-platform/contracts'
+import { cleanBlobs } from './coordination.js'
 import { ApiError, fail } from './errors.js'
 
 export function createServer(config: Config) {
@@ -27,7 +28,7 @@ export function createServer(config: Config) {
   app.addHook('onClose', async () => { db?.close() })
   app.addHook('onSend', async (_request, reply) => { reply.header('Cache-Control', 'no-store'); reply.header('X-Contract-Version', contractVersion); reply.header('X-Content-Type-Options', 'nosniff') })
   function error(code: keyof typeof errorStatus, requestId: string) {
-    return ErrorResponse.parse({ error: { code, message: code === 'NOT_IMPLEMENTED' ? 'Endpoint is not implemented in B2a.' : 'Request could not be completed.', requestId } })
+    return ErrorResponse.parse({ error: { code, message: code === 'NOT_IMPLEMENTED' ? 'Endpoint is not implemented in B2b.' : 'Request could not be completed.', requestId } })
   }
   app.get('/api/v1/health/live', async () => data(Health).parse({ data: { status: 'ok', contractVersion, checks: { database: 'not_checked', storage: 'not_checked', authentication: 'not_checked', harness: 'not_verified' } } }))
   app.get('/api/v1/health/ready', async (_request, reply) => {
@@ -45,7 +46,7 @@ export function createServer(config: Config) {
   })
   for (const [name, route] of Object.entries(routes)) {
     if (route.stage === 'B0') continue
-    app.route({ method: route.method, url: route.path.replace(/\{id\}/g, ':id'), handler: async (request, reply) => {
+    app.route({ method: route.method, url: route.path.replace(/\{id\}/g, ':id'), ...(name==='upload'?{bodyLimit:14000000}:{}), handler: async (request, reply) => {
       if (!route.implemented && name !== 'planRequest') fail('NOT_IMPLEMENTED')
       if (route.method !== 'GET' && request.headers.origin !== config.origin) fail('FORBIDDEN')
       const connection = database()
@@ -53,6 +54,7 @@ export function createServer(config: Config) {
       // Reject malformed query numbers instead of accepting 1x, arrays, or coercing null.
       const query = { ...request.query as Record<string, unknown> }
       if ('limit' in query && typeof query.limit === 'string' && /^\d+$/.test(query.limit)) query.limit = Number(query.limit)
+      if(name==='upload' && typeof (request.body as {contentBase64?:unknown})?.contentBase64==='string' && (request.body as {contentBase64:string}).contentBase64.length>13981016) fail('PAYLOAD_TOO_LARGE')
       const parsed = route.request.safeParse({ params: request.params, query, headers: route.idempotent ? { 'Idempotency-Key': request.headers['idempotency-key'] } : {}, body: route.method === 'GET' ? null : request.body })
       if (!parsed.success) fail('VALIDATION_ERROR')
       reply.code(route.status)
@@ -66,7 +68,8 @@ export function createServer(config: Config) {
           return routes.login.response.parse({ data: new Collaboration(connection, actor).member(loggedIn.memberId) })
         })
       }
-      return transaction(connection, () => {
+      let collaboration: Collaboration | undefined
+      try { return transaction(connection, () => {
         const actor = authenticate(connection, token)
         if (route.method !== 'GET') requireCsrf(actor, request.headers['x-csrf-token'])
         if (name === 'session') return routes.session.response.parse({ data: { member: new Collaboration(connection, actor).member(actor.id), csrfToken: csrfToken(connection, token), expiresAt: actor.expiresAt } })
@@ -76,8 +79,11 @@ export function createServer(config: Config) {
         }
         if (name === 'planRequest') fail('MODEL_UNAVAILABLE')
         if (!(collaborationCommands as readonly string[]).includes(name)) fail('NOT_IMPLEMENTED')
-        return new Collaboration(connection, actor).run(name as CollaborationCommand, parsed.data as RequestFor<CollaborationCommand>)
-      })
+        collaboration = new Collaboration(connection,actor,config.blobRoot)
+        const result=collaboration.run(name as CollaborationCommand, parsed.data as RequestFor<CollaborationCommand>)
+        if(name==='content') {const file=collaboration.coordination.artifact((parsed.data.params as {id:string}).id).model;reply.header('Content-Type',file.mediaType);reply.header('Content-Disposition',`attachment; filename="download"; filename*=UTF-8''${encodeURIComponent(file.filename)}`);return Buffer.from(result as Uint8Array)}
+        return result
+      }) } catch(error) {if(collaboration) cleanBlobs(collaboration.createdBlobs);throw error}
     } })
   }
   app.setNotFoundHandler((request, reply) => reply.code(404).send(error('NOT_FOUND', request.id)))
