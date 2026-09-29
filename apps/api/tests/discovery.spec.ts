@@ -8,7 +8,7 @@ import { once } from 'node:events'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { routes, taskColumns } from '@research-agent-platform/contracts'
 import type { PlanModel, RequestFor, ResponseFor, RouteName } from '@research-agent-platform/contracts'
-import { openDatabase, migrate, seed } from '../src/database.js'
+import { openDatabase, migrate, seed, transaction } from '../src/database.js'
 import { provisionTestAccounts, signingKey } from '../src/auth.js'
 
 const origin = 'http://127.0.0.1:4173'
@@ -315,9 +315,13 @@ describe('B2a A9a: real HTTP and persistent SQLite discovery', () => {
       }
       // Copy only synthetic rows in FK order into the pre-upgrade schema.
       const tables = ['labs','members','auth_accounts','sessions','plans','plan_versions','tasks','task_access','assignments','deliverables','reviews','invitation_decisions','idempotency_results','outbox','task_events','runtime_meta']
-      for (const table of tables) for (const row of db.prepare(`SELECT * FROM ${table}`).all()) {
-        const columns = Object.keys(row); legacy.prepare(`INSERT OR REPLACE INTO ${table} (${columns.join(',')}) VALUES (${columns.map(() => '?').join(',')})`).run(...Object.values(row))
-      }
+      // Commit fixture setup once; per-row FULL fsync exceeds CI timeouts on Windows.
+      // The migration and before/after checks still run against committed B1 data.
+      transaction(legacy, () => {
+        for (const table of tables) for (const row of db.prepare(`SELECT * FROM ${table}`).all()) {
+          const columns = Object.keys(row); legacy.prepare(`INSERT OR REPLACE INTO ${table} (${columns.join(',')}) VALUES (${columns.map(() => '?').join(',')})`).run(...Object.values(row))
+        }
+      })
       const before = tables.map(t => JSON.stringify(legacy.prepare(`SELECT * FROM ${t} ORDER BY rowid`).all()))
       migrate(legacy); migrate(legacy)
       expect(tables.map(t => JSON.stringify(legacy.prepare(`SELECT * FROM ${t} ORDER BY rowid`).all()))).toEqual(before)
