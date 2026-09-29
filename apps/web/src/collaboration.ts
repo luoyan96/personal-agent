@@ -3,6 +3,7 @@ import type { MemberModel, PlanModel, RequestFor, ResponseFor, RouteName, TaskMo
 import { ApiClient, ApiError, CommandSlot, Intent } from './api';
 import { escapeHtml as e } from './view-model';
 import { labels } from './contract-projection';
+import { taskCard } from './collaboration-view';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const api = new ApiClient();
@@ -178,7 +179,7 @@ function planEditor() {
 
 async function taskList(signal: AbortSignal) {
   const result=await api.read('tasks',{}, {labId:session!.member.labId,scope,limit:30,...(pageCursor?{cursor:pageCursor}:{})},signal);
-  content(`<section class="page"><div class="page-heading"><div><h1>实验室任务</h1><p class="intro">找到当前要推进的一件事。</p></div>${link('/plans/new','手工创建方案','button')}</div><div class="scope" role="group" aria-label="任务范围">${['lab','mine'].map(s=>`<button data-scope="${s}" aria-pressed="${scope===s}">${s==='lab'?'实验室':'我参与的'}</button>`).join('')}${button('refresh','刷新')}</div><p class="banner">当前为服务返回的基本任务列表。完整实验室聚合、人员负荷和复杂协调尚未接通。</p><div class="task-list">${result.data.length?result.data.map(t=>`<article class="task-card"><span class="tag">${'status'in t?labels[t.status]:'承接前摘要'}</span><h2>${link('/tasks/'+t.id,e(t.title))}</h2><p>版本 ${t.version} · 发起 ${e(name(t.initiatorId))} · 验收 ${e(name(t.reviewerId))}</p><p>${e('goal'in t?t.goal:t.summary)}</p><div class="card-note green">${'allowedActions'in t && t.allowedActions.length ? '可处理：'+t.allowedActions.map(a=>({claim:'认领',decide:'回应邀请',start:'开始',submit:'提交成果',review:'验收',invite:'邀请成员'} as Record<string,string>)[a]??a).join('、'):'查看详情与当前安排'}</div></article>`).join(''):'<p class="state-panel">当前范围没有可见任务。</p>'}</div><div class="actions">${pageCursor?button('first-page','回到第一页'):''}${result.nextCursor?button('next-page','下一页'):''}</div></section>`, '实验室任务');
+  content(`<section class="page"><div class="page-heading"><div><h1>实验室任务</h1><p class="intro">找到当前要推进的一件事。</p></div>${link('/plans/new','手工创建方案','button')}</div><div class="scope" role="group" aria-label="任务范围">${['lab','mine'].map(s=>`<button data-scope="${s}" aria-pressed="${scope===s}">${s==='lab'?'实验室':'我参与的'}</button>`).join('')}${button('refresh','刷新')}</div><p class="banner">当前为服务返回的基本任务列表。完整实验室聚合、人员负荷和复杂协调尚未接通。</p><div class="task-list">${result.data.length?result.data.map(t=>taskCard(t,name)).join(''):'<p class="state-panel">当前范围没有可见任务。</p>'}</div><div class="actions">${pageCursor?button('first-page','回到第一页'):''}${result.nextCursor?button('next-page','下一页'):''}</div></section>`, '实验室任务');
   document.querySelectorAll<HTMLButtonElement>('[data-scope]').forEach(b=>b.onclick=()=>{scope=b.dataset.scope!;pageCursor=undefined;void load();});
   action('refresh',()=>load());action('first-page',()=>{pageCursor=undefined;return load();});action('next-page',()=>{pageCursor=result.nextCursor??undefined;return load();});
 }
