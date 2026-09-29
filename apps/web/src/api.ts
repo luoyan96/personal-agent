@@ -39,6 +39,12 @@ export class ApiClient {
       if (signal?.aborted) throw error;
       throw new ApiError('NETWORK_ERROR', '服务连接失败，请求结果可能尚未返回。内容已保留，请重试同一请求。');
     }
+    if(name === 'content' && response.ok) {
+      if(response.headers.get('X-Contract-Version') !== contractVersion) throw new ApiError('CONTRACT_MISMATCH','服务与页面契约版本不一致。');
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      if(signal?.aborted) throw new DOMException('Read cancelled','AbortError');
+      return bytes as ResponseFor<K>;
+    }
     let json: unknown;
     try { json = await response.json(); } catch { throw new ApiError('INVALID_RESPONSE', '服务响应无法读取，请刷新或重试原请求。'); }
     // A read can finish parsing after navigation or an offline event cancelled it.

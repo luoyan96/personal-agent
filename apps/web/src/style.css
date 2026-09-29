@@ -1137,3 +1137,14 @@ dialog form {
   .daily .section-heading { flex-wrap: wrap; }
   .saved-plan { padding: 16px; }
 }
+.coordination { margin-block: 18px; }
+.coordination summary,.schedule-editor summary { cursor:pointer; font-weight:600; padding-block:10px; }
+.coordination form { margin-top:18px; }
+.comparison { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+.comparison section { min-width:0; border:1px solid var(--border,#dce3df); padding:16px; border-radius:12px; }
+#coordination pre { white-space:pre-wrap; overflow-wrap:anywhere; font-family:inherit; }
+#coordination p { overflow-wrap:anywhere; }
+.time-field { min-width:0; margin:0; }
+input[type=checkbox] { width:auto; }
+@media(max-width:600px) { .comparison { grid-template-columns:1fr; } .time-field {padding:8px;} }
+.plan-items .schedule-editor { grid-column:1 / -1; }

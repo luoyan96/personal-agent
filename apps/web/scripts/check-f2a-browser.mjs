@@ -64,7 +64,7 @@ async function availability(page){await go(page,'/availability');await page.getB
 try{
   await login(a,0);await login(b,1);await login(c,2);
   results.viewports.push(await a.evaluate(()=>({innerWidth,innerHeight,clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth})));
-  check('A/B/C 独立真实会话；契约 0.3.0');
+  check(`A/B/C 独立真实会话；契约 ${contractVersion}`);
   await input(a,'描述你的需求').fill('F2a 保存后可找回 '+stamp);await button(a,'手工创建方案').click();
   await input(a,'任务标题').fill('F2a 草案确认后的任务 '+stamp);await input(a,'这一项的目标').fill('合成目标');
   await input(a,'交付什么').fill('合成清单');await input(a,'怎样算完成').fill('缺项明确');await button(a,'保存方案').click();

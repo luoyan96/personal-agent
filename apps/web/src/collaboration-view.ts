@@ -6,7 +6,7 @@ import { escapeHtml as e } from './view-model';
 // Presentation of an already-authorized service projection. No local ACL or state transitions.
 export type VisibleTask = ResponseFor<'tasks'>['data'][number];
 const actionLabels: Record<string, string> = {
-  claim: '认领', decide: '回应邀请', start: '开始', submit: '提交成果', review: '验收', invite: '邀请成员',
+  block:'报告受阻',resume:'恢复',propose_change:'提议变更',withdraw:'退出/转交',cancel:'取消',revoke_access:'撤权',upload:'上传附件',acknowledge_impacts:'复核影响',claim: '认领', decide: '回应邀请', start: '开始', submit: '提交成果', review: '验收', invite: '邀请成员',
 };
 
 export function taskCard(task: VisibleTask, memberName: (id: string) => string): string {

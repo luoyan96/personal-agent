@@ -7,6 +7,19 @@ const failure = (code: string, status: number) => response({error:{code,message:
 const intent = () => new Intent('confirmPlan',{expectedVersion:2},{id:'plan_test'});
 
 describe('F1 service boundary and retry intents',()=>{
+  it('downloads authorized binary with no-store and never treats permission failure as file content',async()=>{
+    const fetcher=vi.fn<typeof fetch>().mockResolvedValueOnce(new Response(new Uint8Array([65,66]),{headers:{'X-Contract-Version':contractVersion}})).mockResolvedValueOnce(failure('NOT_FOUND',404));
+    const client=new ApiClient(fetcher);
+    expect(await client.read('content',{id:'artifact_test'})).toEqual(new Uint8Array([65,66]));
+    expect(fetcher.mock.calls[0]?.[1]).toMatchObject({cache:'no-store',credentials:'same-origin'});
+    await expect(client.read('content',{id:'artifact_test'})).rejects.toMatchObject({code:'NOT_FOUND'});
+  });
+  it('discards binary bytes arriving after the restricted view was cleared',async()=>{
+    const controller=new AbortController();
+    const reply=new Response(new Uint8Array([65]),{headers:{'X-Contract-Version':contractVersion}});
+    vi.spyOn(reply,'arrayBuffer').mockImplementation(async()=>{controller.abort();return new Uint8Array([65]).buffer;});
+    await expect(new ApiClient(vi.fn<typeof fetch>().mockResolvedValue(reply)).read('content',{id:'artifact_test'},{},controller.signal)).rejects.toMatchObject({name:'AbortError'});
+  });
   it('rejects a late parsed response after its read was cancelled',async()=>{
     const controller=new AbortController();
     const reply=response({data:[],nextCursor:null});
