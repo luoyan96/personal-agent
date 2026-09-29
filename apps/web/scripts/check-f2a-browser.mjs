@@ -102,6 +102,18 @@ try{
   assert(!cmembers.data.some(m=>m.visibleCommitments.some(c=>[invited,reviewing,advance].includes(c.taskId))));
   check('lab/mine 卡片、全量四列计数与读取时刻匹配同一服务快照；C 看不到受限承诺');
 
+  for(const label of ['查看我参与的真实任务','查看我参与的任务']){
+    await lab(a,'lab');
+    await a.getByRole('combobox',{name:'任务状态',exact:true}).selectOption('completed');await a.locator('[data-total=unassigned]').waitFor();
+    await go(a,'/');await a.getByRole('heading',{name:'先处理与你有关的事'}).waitFor();
+    if(label==='查看我参与的任务')await a.getByText('继续推进 · 展开近期可操作事项',{exact:true}).click();
+    await a.getByRole('link',{name:label,exact:true}).click();await a.locator('[data-total=unassigned]').waitFor();
+    assert.equal(await button(a,'我参与的').getAttribute('aria-pressed'),'true');
+    assert.equal(await a.getByRole('combobox',{name:'任务状态',exact:true}).inputValue(),'');
+    await a.getByRole('link',{name:`F2a ${stamp} 推进`,exact:true}).waitFor();
+  }
+  check('首页两个“我参与的”入口清除旧实验室范围及状态筛选，恢复本人未完成任务');
+
   await availability(b);await b.getByLabel('开始日期',{exact:true}).fill('2000-01-01');await b.getByLabel('结束日期',{exact:true}).fill('2000-01-02');
   await input(b,'日期时区').fill('Asia/Shanghai');await b.getByRole('spinbutton').fill('0');await button(b,'保存我的可用时间').click();await visible(b,'可用时间已保存');await visible(b,'待更新 · 当前可用情况未知');
   await lab(a,'mine');await a.getByText('人员安排 · 授权承诺与自报可用时间',{exact:true}).click();await a.locator('[data-member=member_B]').getByText(/待更新/).waitFor();await shot(a,'members-expired');

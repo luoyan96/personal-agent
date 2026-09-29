@@ -54,6 +54,7 @@ function clearOwnedContext() {
 }
 const route = () => location.hash.slice(1) || '/';
 const link = (path: string, label: string, cls = '') => `<a class="${cls}" href="#${e(path)}">${label}</a>`;
+const myTasksLink = (label: string, cls = '') => `<a class="${cls}" data-task-scope="mine" href="#/lab">${label}</a>`;
 const icon = (name: string) => `<i class="ph ph-${name}" aria-hidden="true"></i>`;
 const name = (id: string | null) => id ? members.find(m => m.id === id)?.displayName ?? id : '待安排';
 const button = (action: string, label: string, primary = false) => `<button type="button" data-action="${action}" class="${primary ? 'primary' : ''}">${label}</button>`;
@@ -80,6 +81,7 @@ function content(html: string, title: string) {
   document.title = title + ' · Research Agent Platform';
   document.querySelector('main')!.innerHTML = html + '<div id="feedback" class="feedback" aria-live="polite"></div>';
   document.querySelectorAll<HTMLAnchorElement>('.task-card a, .saved-plan a, [data-read-link]').forEach(anchor => anchor.addEventListener('click',()=>{nextReadSnapshot=activeSnapshot?.token;}));
+  document.querySelectorAll<HTMLAnchorElement>('[data-task-scope="mine"]').forEach(anchor => anchor.addEventListener('click',()=>{scope='mine';taskFilter='';resetPages();}));
 }
 function feedback(error: unknown) {
   const err = error instanceof ApiError ? error : new ApiError('ERROR', '操作未完成，请重试。');
@@ -145,7 +147,7 @@ function login() {
   }, false);
 }
 function entry(extra = '') {
-  content(`<section class="entry entry-daily"><p class="eyebrow">从一件要完成的事开始</p><h1>今天，想把什么事情推进一步？</h1><p class="intro">说出目标，由你确认需要的人与分工。</p><form data-form="entry" class="composer"><label class="sr-only" for="goal">描述你的需求</label><textarea id="goal" name="goal" required maxlength="8000" placeholder="我有一份科研项目申请书要写……"></textarea><div class="composer-actions"><span class="fine">AI 建议尚未接通；你可以手工编辑方案。</span><button class="primary" type="submit">手工创建方案</button></div></form><div class="suggestions">${['科研论文','科研项目','知识产权','实验与数据','学生培养','汇报事务'].map(t => `<button data-prompt="${t}">${t}</button>`).join('')}</div><div class="recent">${link('/lab','查看我参与的真实任务 ' + icon('arrow-right'))}</div><p class="fine">已保存草案与本人待处理事项见下方；AI 意图识别尚未接通。</p></section>${extra}`, '需求入口');
+  content(`<section class="entry entry-daily"><p class="eyebrow">从一件要完成的事开始</p><h1>今天，想把什么事情推进一步？</h1><p class="intro">说出目标，由你确认需要的人与分工。</p><form data-form="entry" class="composer"><label class="sr-only" for="goal">描述你的需求</label><textarea id="goal" name="goal" required maxlength="8000" placeholder="我有一份科研项目申请书要写……"></textarea><div class="composer-actions"><span class="fine">AI 建议尚未接通；你可以手工编辑方案。</span><button class="primary" type="submit">手工创建方案</button></div></form><div class="suggestions">${['科研论文','科研项目','知识产权','实验与数据','学生培养','汇报事务'].map(t => `<button data-prompt="${t}">${t}</button>`).join('')}</div><div class="recent">${myTasksLink('查看我参与的真实任务 ' + icon('arrow-right'))}</div><p class="fine">已保存草案与本人待处理事项见下方；AI 意图识别尚未接通。</p></section>${extra}`, '需求入口');
   form('entry', async data => {
     resetEditor();
     editor = {labId:session!.member.labId,goal:String(data.get('goal')),proposedItems:[],unresolvedQuestions:[]};
@@ -205,7 +207,7 @@ async function dailyEntry(signal: AbortSignal) {
   ]);
   if(signal.aborted)return;
   const advance=progress.flatMap(p=>p.data).filter(t=>t.allowedActions.some(a=>a==='start'||a==='submit'));
-  entry(`<section class="daily flow" aria-label="我的日常任务">${readStamp()}<div class="section-heading"><h2>先处理与你有关的事</h2>${button('refresh','刷新')}</div><h3>需要回应或验收</h3><div class="task-list">${actions.data.map(item=>taskCard(item.task,name)).join('')||'<p class="fine">当前没有需要你回应的邀请或验收。</p>'}</div>${actions.nextCursor?link('/actions','查看全部待处理事项','button'):''}<details><summary>继续推进 · 展开近期可操作事项</summary><p class="fine">按待开始、进行中、需修改分别读取最近 6 项授权记录，只展示服务允许你开始或提交的事项；不是全量待办统计。</p><div class="task-list">${advance.map(t=>taskCard(t,name)).join('')||'<p class="fine">本页没有可直接推进的事项，可到“我参与的”查看全部记录。</p>'}</div>${link('/lab','查看我参与的任务','button')}</details><details open><summary>我的已保存草案</summary><p class="fine">仅本人未确认方案；确认后移出此列表。未保存输入不属于服务端草案。</p>${plans.data.map(planCard).join('')||'<p class="fine">尚无已保存的未确认草案。</p>'}${link('/plans',plans.nextCursor?'查看全部草案':'草案与已确认方案历史','button')}</details><p class="fine">AI 意图识别与自然语言生成尚未接通。请使用上方手工方案。</p></section>`);
+  entry(`<section class="daily flow" aria-label="我的日常任务">${readStamp()}<div class="section-heading"><h2>先处理与你有关的事</h2>${button('refresh','刷新')}</div><h3>需要回应或验收</h3><div class="task-list">${actions.data.map(item=>taskCard(item.task,name)).join('')||'<p class="fine">当前没有需要你回应的邀请或验收。</p>'}</div>${actions.nextCursor?link('/actions','查看全部待处理事项','button'):''}<details><summary>继续推进 · 展开近期可操作事项</summary><p class="fine">按待开始、进行中、需修改分别读取最近 6 项授权记录，只展示服务允许你开始或提交的事项；不是全量待办统计。</p><div class="task-list">${advance.map(t=>taskCard(t,name)).join('')||'<p class="fine">本页没有可直接推进的事项，可到“我参与的”查看全部记录。</p>'}</div>${myTasksLink('查看我参与的任务','button')}</details><details open><summary>我的已保存草案</summary><p class="fine">仅本人未确认方案；确认后移出此列表。未保存输入不属于服务端草案。</p>${plans.data.map(planCard).join('')||'<p class="fine">尚无已保存的未确认草案。</p>'}${link('/plans',plans.nextCursor?'查看全部草案':'草案与已确认方案历史','button')}</details><p class="fine">AI 意图识别与自然语言生成尚未接通。请使用上方手工方案。</p></section>`);
   action('refresh',refresh);
 }
 async function planList(signal: AbortSignal) {
