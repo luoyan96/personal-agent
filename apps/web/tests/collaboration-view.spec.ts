@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { fixtures } from '@research-agent-platform/contracts/fixtures';
-import { planCard, taskCard } from '../src/collaboration-view';
+import { availabilityText, planCard, taskCard, taskColumn } from '../src/collaboration-view';
 
 describe('service task card presentation', () => {
   it('links a saved plan to the existing editor without exposing its proposed assignments', () => {
@@ -20,6 +20,21 @@ describe('service task card presentation', () => {
     expect(html).toContain('可处理：回应邀请');
     expect(html).not.toContain('进行中');
     expect(html).not.toContain('可处理：认领');
+  });
+  it('uses the shared column mapping for an authorized summary, without guessing absent status', () => {
+    const task = fixtures.claimSummary.schema.parse(fixtures.claimSummary.value).data;
+    expect(taskColumn({...task,visibleStatus:'awaiting_acceptance'})).toBe('unassigned');
+    expect(taskColumn({...task,visibleStatus:'cancelled'})).toBeNull();
+    expect(taskColumn({...task,visibleStatus:undefined})).toBeUndefined();
+  });
+  it('keeps expired and future self-reports unknown for current availability, and preserves zero hours', () => {
+    const member = fixtures.unknownAvailability.schema.parse(fixtures.unknownAvailability.value).data;
+    expect(availabilityText(member)).toContain('未知');
+    const availability={from:'2026-01-01',to:'2026-01-02',timezone:'Asia/Shanghai',level:'available' as const,hours:0,updatedAt:'2026-01-01T00:00:00Z'};
+    expect(availabilityText({...member,availability,availabilityStatus:'expired'})).toContain('待更新 · 当前可用情况未知');
+    expect(availabilityText({...member,availability,availabilityStatus:'upcoming'})).toContain('未来区间 · 当前可用情况未知');
+    expect(availabilityText({...member,availability,availabilityStatus:'current'})).toContain('0 小时');
+    expect(availabilityText({...member,availability:{...availability,hours:null},availabilityStatus:'current'})).toContain('时数未知');
   });
   it('renders cancelled tasks separately from completed without adding unavailable actions', () => {
     const task = fixtures.cancelledTask.schema.parse(fixtures.cancelledTask.value).data;

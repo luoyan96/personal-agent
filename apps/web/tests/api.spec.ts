@@ -7,6 +7,13 @@ const failure = (code: string, status: number) => response({error:{code,message:
 const intent = () => new Intent('confirmPlan',{expectedVersion:2},{id:'plan_test'});
 
 describe('F1 service boundary and retry intents',()=>{
+  it('rejects a late parsed response after its read was cancelled',async()=>{
+    const controller=new AbortController();
+    const reply=response({data:[],nextCursor:null});
+    vi.spyOn(reply,'json').mockImplementation(async()=>{controller.abort();return {data:[],nextCursor:null};});
+    const client=new ApiClient(vi.fn<typeof fetch>().mockResolvedValue(reply));
+    await expect(client.read('tasks',{}, {labId:'lab_test',scope:'mine',limit:30},controller.signal)).rejects.toMatchObject({name:'AbortError'});
+  });
   it('retains the identical key and immutable payload after an ambiguous network failure',async()=>{
     const fetcher=vi.fn<typeof fetch>().mockRejectedValueOnce(new TypeError('offline')).mockResolvedValue(failure('VERSION_CONFLICT',409));
     const client=new ApiClient(fetcher);client.csrfToken='csrf_test';

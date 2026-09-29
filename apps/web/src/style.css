@@ -1115,3 +1115,25 @@ dialog form {
   font-size: 15px;
   line-height: 1.4;
 }
+/* F2a reuses the entry, task cards and four-column board. */
+.entry.entry-daily { margin-top: 40px; }
+.entry.entry-daily h1 { font-size: 40px; }
+.entry.entry-daily .composer { margin-top: 24px; }
+.entry.entry-daily .recent { margin-top: 24px; }
+.daily { max-width: 1004px; text-align: left; }
+.daily details, .people { margin: 24px 0; padding: 20px 0; border-top: 1px solid var(--border); }
+.daily summary, .people summary { cursor: pointer; font-size: 20px; font-weight: 600; color: var(--green); }
+.daily summary { margin-bottom: 16px; }
+.saved-plan { margin: 14px 0; padding: 18px 22px; }
+.saved-plan h3 { margin: 0 0 10px; overflow-wrap: anywhere; }
+.read-stamp { margin: 16px 0; overflow-wrap: anywhere; }
+.task-filter { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+.task-filter select { max-width: 100%; border: 1px solid var(--border); background: white; border-radius: 8px; padding: 10px; }
+.board .task-card h2 { font-size: 18px; line-height: 1.5; margin: 12px 0; }
+.daily .section-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+@media(max-width:600px) {
+  .entry.entry-daily { margin-top: 24px; }
+  .entry.entry-daily h1 { font-size: 28px; }
+  .daily .section-heading { flex-wrap: wrap; }
+  .saved-plan { padding: 16px; }
+}

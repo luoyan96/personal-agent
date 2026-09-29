@@ -41,6 +41,9 @@ export class ApiClient {
     }
     let json: unknown;
     try { json = await response.json(); } catch { throw new ApiError('INVALID_RESPONSE', '服务响应无法读取，请刷新或重试原请求。'); }
+    // A read can finish parsing after navigation or an offline event cancelled it.
+    // Never let that late response repopulate a cleared view.
+    if (signal?.aborted) throw new DOMException('Read cancelled', 'AbortError');
     if (!response.ok) {
       const error = ErrorResponse.safeParse(json);
       if (error.success) throw new ApiError(error.data.error.code, error.data.error.message, error.data.error.requestId);

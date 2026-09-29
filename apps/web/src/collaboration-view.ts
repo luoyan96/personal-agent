@@ -1,4 +1,5 @@
-import type { PlanModel, ResponseFor } from '@research-agent-platform/contracts';
+import { taskColumns } from '@research-agent-platform/contracts';
+import type { MemberModel, PlanModel, ResponseFor } from '@research-agent-platform/contracts';
 import { labels } from './contract-projection';
 import { escapeHtml as e } from './view-model';
 
@@ -10,9 +11,22 @@ const actionLabels: Record<string, string> = {
 
 export function taskCard(task: VisibleTask, memberName: (id: string) => string): string {
   const summary = 'projection' in task;
-  const status = summary ? '承接前摘要' : labels[task.status];
+  const status = summary ? (task.visibleStatus ? labels[task.visibleStatus] + ' · 承接前摘要' : '承接前摘要') : labels[task.status];
   const actions = task.allowedActions.map(action => actionLabels[action] ?? action).join('、');
   return `<article class="task-card"><span class="tag">${e(status)}</span><h2><a href="#/tasks/${e(task.id)}">${e(task.title)}</a></h2><p>版本 ${task.version} · 发起 ${e(memberName(task.initiatorId))} · 验收 ${e(memberName(task.reviewerId))}</p><p>${e(summary ? task.summary : task.goal)}</p>${summary && task.pendingInvitation ? '<p class="fine">待回应邀请 · 尚未承诺</p>' : ''}<div class="card-note green">${actions ? '可处理：' + e(actions) : '查看详情与当前安排'}</div></article>`;
+}
+
+export function taskColumn(task: VisibleTask) {
+  const status = 'projection' in task ? task.visibleStatus : task.status;
+  return status ? taskColumns[status] : undefined;
+}
+
+export function availabilityText(member: MemberModel): string {
+  const value = member.availability;
+  if (!value) return '未知 · 尚未自报可用时间';
+  const status = member.availabilityStatus;
+  const freshness = status === 'expired' ? '待更新 · 当前可用情况未知' : status === 'upcoming' ? '未来区间 · 当前可用情况未知' : status === 'current' ? ({available:'可承接',limited:'有限可用',unavailable:'暂不可用'})[value.level] : '当前可用情况未知';
+  return `${freshness}；自报区间 ${value.from} 至 ${value.to}（${value.timezone}）；区间内自报 ${value.hours === null ? '时数未知' : value.hours + ' 小时'}；更新 ${value.updatedAt}`;
 }
 
 export function planCard(plan: Pick<PlanModel, 'id' | 'goal' | 'version' | 'createdAt'>): string {
