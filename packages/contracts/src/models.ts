@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const contractVersion = '0.3.0' as const
+export const contractVersion = '0.4.0' as const
 export const Id = z.string().regex(/^[A-Za-z0-9_-]{1,96}$/)
 export const Text = z.string().min(1).max(8000)
 export const Title = z.string().min(1).max(200)
@@ -27,8 +27,8 @@ export const PlanInput = z.strictObject({ labId: Id, goal: Text, proposedItems: 
 export const Plan = PlanInput.extend({ id: Id, ownerId: Id, version: Version, status: z.enum(['draft', 'confirmed', 'superseded']), createdAt: Instant })
 export const TaskStatus = z.enum(['unassigned', 'awaiting_acceptance', 'ready', 'in_progress', 'blocked', 'in_review', 'changes_requested', 'completed', 'cancelled'])
 export const taskColumns = { unassigned: 'unassigned', awaiting_acceptance: 'unassigned', ready: 'unassigned', in_progress: 'active', blocked: 'active', changes_requested: 'active', in_review: 'review', completed: 'completed', cancelled: null } as const satisfies Record<z.infer<typeof TaskStatus>, string | null>
-export const Action = z.enum(['confirm', 'invite', 'decide', 'claim', 'start', 'block', 'resume', 'submit', 'review', 'propose_change', 'withdraw', 'cancel', 'run', 'publish', 'disable'])
-export const Blocker = z.strictObject({ reason: Text, requestedMemberId: Id.nullable(), requestedAction: Text, resumeStatus: z.enum(['ready', 'in_progress', 'changes_requested']) })
+export const Action = z.enum(['confirm', 'invite', 'decide', 'claim', 'start', 'block', 'resume', 'submit', 'review', 'propose_change', 'withdraw', 'cancel', 'run', 'publish', 'disable', 'revoke_access', 'upload', 'acknowledge_impacts'])
+export const Blocker = z.strictObject({ reason: Text, requestedMemberId: Id.nullable(), requestedAction: Text, resumeStatus: z.enum(['ready', 'in_progress', 'changes_requested', 'in_review']) })
 export const Access = z.strictObject({ visibility: z.enum(['participants', 'lab_summary']), summary: Text.nullable() })
 export const Task = z.strictObject({ id: Id, labId: Id, parentTaskId: Id.nullable(), planId: Id, planVersion: Version, title: Title, taskType: z.enum(['paper', 'grant', 'ip', 'experiment', 'training', 'report', 'other']), goal: Text, acceptanceCriteria: Text, initiatorId: Id, leadId: Id.nullable(), reviewerId: Id, participantIds: z.array(Id).max(100), status: TaskStatus, blocker: Blocker.nullable(), dependencies: z.array(Dependency).max(100), schedule: Schedule, access: Access, version: Version, createdAt: Instant, updatedAt: Instant, allowedActions: z.array(Action).max(20) }).superRefine((v, ctx) => { if ((v.status === 'blocked') !== (v.blocker !== null)) ctx.addIssue({ code: 'custom', message: 'blocked requires blocker; other states forbid it' }) })
 export const TaskSummary = z.strictObject({ projection: z.literal('claim_summary'), visibleStatus: TaskStatus.optional(), id: Id, labId: Id, title: Title, summary: Text, deliverable: Text, acceptanceCriteria: Text, schedule: Schedule, initiatorId: Id, reviewerId: Id, version: Version, allowedActions: z.array(z.enum(['claim', 'decide'])).max(2), pendingInvitation: z.strictObject({ id: Id, version: Version, scope: Text, schedule: Schedule }).nullable() })
@@ -42,9 +42,9 @@ export const Deliverable = z.strictObject({ id: Id, taskId: Id, revision: Versio
 export const Capability = z.strictObject({ id: Id, labId: Id, ownerId: Id, maintainerIds: z.array(Id).max(20), visibility: z.enum(['private', 'lab_public']), version: Version, name: Title, inputContract: Text, outputContract: Text, status: z.enum(['draft', 'unavailable', 'available', 'disabled']), validationResultIds: z.array(Id).max(100) })
 export const ExecutionStatus = z.enum(['queued', 'running', 'waiting_input', 'failed', 'interrupted', 'cancelled', 'succeeded'])
 export const Execution = z.strictObject({ id: Id, taskId: Id, capability: PublicCapabilityRef, status: ExecutionStatus, attempt: z.number().int().min(0).max(10), usage: z.strictObject({ inputTokens: z.number().int().min(0), outputTokens: z.number().int().min(0), elapsedMs: z.number().min(0) }).nullable(), failure: Text.nullable(), resultRefs: z.array(Id).max(100), createdAt: Instant, startedAt: Instant.nullable(), endedAt: Instant.nullable(), version: Version })
-export const TaskEvent = z.strictObject({ id: Id, taskId: Id, actor: z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('member'), memberId: Id }), z.strictObject({ kind: z.literal('system') })]), kind: z.enum(['confirmed', 'invited', 'accepted', 'declined', 'claimed', 'started', 'blocked', 'resumed', 'submitted', 'reviewed', 'change_proposed', 'change_decided', 'withdrawn', 'cancelled', 'execution_updated', 'access_revoked']), resourceVersion: Version, timestamp: Instant, summary: Text })
-export const ChangeProposal = z.strictObject({ id: Id, taskId: Id, expectedTaskVersion: Version, goal: Text, acceptanceCriteria: Text, schedule: Schedule, proposedLeadId: Id.nullable(), reason: Text, requiredMemberIds: z.array(Id).min(1).max(100), decisions: z.array(z.strictObject({ memberId: Id, decision: z.enum(['accepted', 'declined']), at: Instant })).max(100), status: z.enum(['pending', 'accepted', 'declined', 'superseded']), version: Version })
-export const Artifact = z.strictObject({ id: Id, taskId: Id, filename: Title, mediaType: z.enum(['text/plain', 'application/pdf', 'image/png']), size: z.number().int().min(1).max(10485760), sha256: z.string().regex(/^[a-f0-9]{64}$/), version: Version, createdAt: Instant })
+export const TaskEvent = z.strictObject({ id: Id, taskId: Id, actor: z.discriminatedUnion('kind', [z.strictObject({ kind: z.literal('member'), memberId: Id }), z.strictObject({ kind: z.literal('system') })]), kind: z.enum(['confirmed', 'invited', 'accepted', 'declined', 'claimed', 'started', 'blocked', 'resumed', 'submitted', 'reviewed', 'change_proposed', 'change_decided', 'withdrawn', 'cancelled', 'execution_updated', 'access_revoked', 'dependency_impacted', 'impacts_acknowledged', 'artifact_uploaded', 'artifact_revoked']), resourceVersion: Version, timestamp: Instant, summary: Text })
+export const ChangeProposal = z.strictObject({ id: Id, taskId: Id, expectedTaskVersion: Version, scope: Text, dependencies: z.array(Dependency).max(100), createdBy: Id, createdAt: Instant, goal: Text, acceptanceCriteria: Text, schedule: Schedule, proposedLeadId: Id.nullable(), reason: Text, requiredMemberIds: z.array(Id).min(1).max(100), decisions: z.array(z.strictObject({ memberId: Id, decision: z.enum(['accepted', 'declined']), at: Instant })).max(100), status: z.enum(['pending', 'accepted', 'declined', 'superseded']), version: Version })
+export const Artifact = z.strictObject({ accessStatus: z.enum(['available', 'revoked']).optional(), id: Id, taskId: Id, filename: Title, mediaType: z.enum(['text/plain', 'application/pdf', 'image/png']), size: z.number().int().min(1).max(10485760), sha256: z.string().regex(/^[a-f0-9]{64}$/), version: Version, createdAt: Instant })
 export const PlanningRequest = z.strictObject({ id: Id, status: z.enum(['queued', 'running', 'draft', 'failed', 'cancelled']), planId: Id.nullable(), failure: Text.nullable(), version: Version })
 export const Knowledge = z.strictObject({ id: Id, taskId: Id, conclusion: Text, sources: z.array(Source).max(100), confirmedBy: Id, version: Version })
 export const Sharing = z.strictObject({ id: Id, taskId: Id, deliverableId: Id, revision: Version, decision: z.enum(['share_selected', 'decline', 'revoke']), selectedText: Text.nullable(), purpose: z.literal('public_capability_improvement'), version: Version })
@@ -68,5 +68,11 @@ export const Snapshot = z.strictObject({ token: z.string().min(1).max(2048), at:
 export const PlanSummary = Plan.pick({ id: true, ownerId: true, labId: true, goal: true, version: true, status: true, createdAt: true })
 export const ActionItem = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('invitation_response'), task: TaskSummary }),
+  z.strictObject({ kind: z.literal('change_response'), task: Task, proposal: ChangeProposal }),
   z.strictObject({ kind: z.literal('deliverable_review'), task: Task, deliverableId: Id, revision: Version, deliverableVersion: Version }),
 ])
+
+export const DependencyImpact = z.strictObject({ id: Id, taskId: Id, upstreamTaskId: Id, upstreamVersion: Version, kind: z.enum(['blocked', 'changed', 'cancelled', 'withdrawn', 'review_returned', 'artifact_revoked', 'access_revoked']), affectedRevisions: z.array(Version).max(100), createdAt: Instant, acknowledgedBy: Id.nullable(), acknowledgedAt: Instant.nullable(), comment: Text.nullable() })
+export type ChangeProposalModel = z.infer<typeof ChangeProposal>
+export type ArtifactModel = z.infer<typeof Artifact>
+export type DependencyImpactModel = z.infer<typeof DependencyImpact>

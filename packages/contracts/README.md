@@ -1,4 +1,6 @@
-# Shared contract 0.3.0
+# Shared contract 0.4.0
+
+B2b 0.4.0 契约先行：变更、依赖影响、退出/撤权和附件；兼容与迁移说明见 [B2b 联调包](../../docs/development/b2b-handoff.md)。服务状态以最终阶段报告为准。
 
 B2a 升级 0.3.0，已实现本人草案分页、真实 overview/actionItems、授权承诺与 availability；新增共享快照语义及兼容字段。完整接口/错误/兼容影响见 [B2a 联调包](../../docs/development/b2a-handoff.md)。尚未实现的 B2b/B3/B4 路由继续 501（规划返回 MODEL_UNAVAILABLE）。下段为 B1 历史变更。
 
