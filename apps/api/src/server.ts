@@ -6,8 +6,8 @@ import { openDatabase, checkDatabase, transaction } from './database.js'
 import { checkStorage } from './storage.js'
 import type { Config } from './config.js'
 import { authenticate, cookieToken, csrfToken, hash, login, requireCsrf, signingKey } from './auth.js'
-import { Collaboration, b1Commands } from './collaboration.js'
-import type { B1Command } from './collaboration.js'
+import { Collaboration, collaborationCommands } from './collaboration.js'
+import type { CollaborationCommand } from './collaboration.js'
 import type { RequestFor } from '@research-agent-platform/contracts'
 import { ApiError, fail } from './errors.js'
 
@@ -27,7 +27,7 @@ export function createServer(config: Config) {
   app.addHook('onClose', async () => { db?.close() })
   app.addHook('onSend', async (_request, reply) => { reply.header('Cache-Control', 'no-store'); reply.header('X-Contract-Version', contractVersion); reply.header('X-Content-Type-Options', 'nosniff') })
   function error(code: keyof typeof errorStatus, requestId: string) {
-    return ErrorResponse.parse({ error: { code, message: code === 'NOT_IMPLEMENTED' ? 'Endpoint is not implemented in B1.' : 'Request could not be completed.', requestId } })
+    return ErrorResponse.parse({ error: { code, message: code === 'NOT_IMPLEMENTED' ? 'Endpoint is not implemented in B2a.' : 'Request could not be completed.', requestId } })
   }
   app.get('/api/v1/health/live', async () => data(Health).parse({ data: { status: 'ok', contractVersion, checks: { database: 'not_checked', storage: 'not_checked', authentication: 'not_checked', harness: 'not_verified' } } }))
   app.get('/api/v1/health/ready', async (_request, reply) => {
@@ -75,8 +75,8 @@ export function createServer(config: Config) {
           reply.header('Set-Cookie', cookie('', 0)); return { data: { loggedOut: true } }
         }
         if (name === 'planRequest') fail('MODEL_UNAVAILABLE')
-        if (!(b1Commands as readonly string[]).includes(name)) fail('NOT_IMPLEMENTED')
-        return new Collaboration(connection, actor).run(name as B1Command, parsed.data as RequestFor<B1Command>)
+        if (!(collaborationCommands as readonly string[]).includes(name)) fail('NOT_IMPLEMENTED')
+        return new Collaboration(connection, actor).run(name as CollaborationCommand, parsed.data as RequestFor<CollaborationCommand>)
       })
     } })
   }

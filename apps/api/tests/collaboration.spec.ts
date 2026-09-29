@@ -195,7 +195,7 @@ describe('B1 A1–A5: two real HTTP processes, file SQLite, real passwords', () 
     // Refresh from another process, restart both, and replay original committed commands.
     const before = await request('task', { client: clients.B, params: { id: taskId }, target: secondAddress })
     await stopServers(); address = (await startServer()).url; secondAddress = (await startServer()).url
-    expect((await request('task', { client: clients.B, params: { id: taskId } })).value).toEqual(before.value)
+    expect((await request('task', { client: clients.B, params: { id: taskId }, query: { snapshot: before.value.snapshot!.token } })).value).toEqual(before.value)
     expect((await request('review', finalInput)).value).toEqual(accepted.value)
     expect((await request('submit', input)).value).toEqual(first.value)
   })
