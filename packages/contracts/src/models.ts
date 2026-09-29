@@ -72,7 +72,7 @@ export const ActionItem = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('deliverable_review'), task: Task, deliverableId: Id, revision: Version, deliverableVersion: Version }),
 ])
 
-export const DependencyImpact = z.strictObject({ id: Id, taskId: Id, upstreamTaskId: Id, upstreamVersion: Version, kind: z.enum(['blocked', 'changed', 'cancelled', 'withdrawn', 'review_returned', 'artifact_revoked', 'access_revoked']), affectedRevisions: z.array(Version).max(100), createdAt: Instant, acknowledgedBy: Id.nullable(), acknowledgedAt: Instant.nullable(), comment: Text.nullable() })
+export const DependencyImpact = z.strictObject({ id: Id, taskId: Id, upstreamTaskId: Id.nullable(), upstreamVersion: Version.nullable(), kind: z.enum(['blocked', 'changed', 'cancelled', 'withdrawn', 'review_returned', 'artifact_revoked', 'access_revoked']), affectedRevisions: z.array(Version).max(100), createdAt: Instant, acknowledgedBy: Id.nullable(), acknowledgedAt: Instant.nullable(), comment: Text.nullable() })
 export type ChangeProposalModel = z.infer<typeof ChangeProposal>
 export type ArtifactModel = z.infer<typeof Artifact>
 export type DependencyImpactModel = z.infer<typeof DependencyImpact>

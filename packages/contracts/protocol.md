@@ -1,6 +1,6 @@
-# HTTP 协议 0.3.0
+# HTTP 协议 0.4.0
 
-完整精确接口见 [OpenAPI](openapi.json)，所有接口的合成请求响应见 [examples](examples.json)。已实现 routes 中 stage=B0/B1/B2a 的端点；其余端点仍 501，只有 POST /planning-requests 在认证/CSRF 校验后明确返回 503 MODEL_UNAVAILABLE。模型和 Harness 不可用，不返回 fixture 成功。
+完整精确接口见 [OpenAPI](openapi.json)，所有接口的合成请求响应见 [examples](examples.json)。已实现 routes 中 stage=B0/B1/B2a/B2b 的端点；其余端点仍 501，只有 POST /planning-requests 在认证/CSRF 校验后明确返回 503 MODEL_UNAVAILABLE。模型和 Harness 不可用，不返回 fixture 成功。
 
 ## 身份、认证与跨域
 
@@ -60,3 +60,8 @@ B1 只接受 inputArtifactIds=[]、交付 artifactRefs=[]、sources.kind=note/ur
 ## B2a 0.3.0 查询快照
 
 以 [B2a 联调包](../../docs/development/b2a-handoff.md#同一快照与错误处理) 为本批精确定义。GET plans/overview/actionItems/tasks/task/getPlan/members/me 支持 snapshot；真实服务总返回该元数据。游标签名携带原快照，任何业务/ACL 变动或 15 分钟到期均返回 CURSOR_EXPIRED。确认后方案移出默认 draft 列表，历史查询显式 status=confirmed/all。命令授权、幂等和状态前置条件保持 B1 规则。
+
+
+## B2b 0.4.0
+
+当前变化、依赖、转交、取消/撤权、附件和 events 以 [B2b 联调包](../../docs/development/b2b-handoff.md) 为准，覆盖上面的 B1/B2a 历史限制。旧成功缓存也检查当前访问；退出/撤权优先于重放。附件在同任务交付中按不可变 ID 与提交时版本引用，事件为 full 权限分页历史。源材料跨任务复用、真实 worker 与 B3/B4 未开放。
