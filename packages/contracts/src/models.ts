@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const contractVersion = '0.2.0' as const
+export const contractVersion = '0.3.0' as const
 export const Id = z.string().regex(/^[A-Za-z0-9_-]{1,96}$/)
 export const Text = z.string().min(1).max(8000)
 export const Title = z.string().min(1).max(200)
@@ -31,11 +31,11 @@ export const Action = z.enum(['confirm', 'invite', 'decide', 'claim', 'start', '
 export const Blocker = z.strictObject({ reason: Text, requestedMemberId: Id.nullable(), requestedAction: Text, resumeStatus: z.enum(['ready', 'in_progress', 'changes_requested']) })
 export const Access = z.strictObject({ visibility: z.enum(['participants', 'lab_summary']), summary: Text.nullable() })
 export const Task = z.strictObject({ id: Id, labId: Id, parentTaskId: Id.nullable(), planId: Id, planVersion: Version, title: Title, taskType: z.enum(['paper', 'grant', 'ip', 'experiment', 'training', 'report', 'other']), goal: Text, acceptanceCriteria: Text, initiatorId: Id, leadId: Id.nullable(), reviewerId: Id, participantIds: z.array(Id).max(100), status: TaskStatus, blocker: Blocker.nullable(), dependencies: z.array(Dependency).max(100), schedule: Schedule, access: Access, version: Version, createdAt: Instant, updatedAt: Instant, allowedActions: z.array(Action).max(20) }).superRefine((v, ctx) => { if ((v.status === 'blocked') !== (v.blocker !== null)) ctx.addIssue({ code: 'custom', message: 'blocked requires blocker; other states forbid it' }) })
-export const TaskSummary = z.strictObject({ projection: z.literal('claim_summary'), id: Id, labId: Id, title: Title, summary: Text, deliverable: Text, acceptanceCriteria: Text, schedule: Schedule, initiatorId: Id, reviewerId: Id, version: Version, allowedActions: z.array(z.enum(['claim', 'decide'])).max(2), pendingInvitation: z.strictObject({ id: Id, version: Version, scope: Text, schedule: Schedule }).nullable() })
+export const TaskSummary = z.strictObject({ projection: z.literal('claim_summary'), visibleStatus: TaskStatus.optional(), id: Id, labId: Id, title: Title, summary: Text, deliverable: Text, acceptanceCriteria: Text, schedule: Schedule, initiatorId: Id, reviewerId: Id, version: Version, allowedActions: z.array(z.enum(['claim', 'decide'])).max(2), pendingInvitation: z.strictObject({ id: Id, version: Version, scope: Text, schedule: Schedule }).nullable() })
 export const Commitment = z.strictObject({ scope: Text, schedule: Schedule, acceptedAt: Instant })
 export const Assignment = z.strictObject({ id: Id, taskId: Id, kind: z.enum(['self', 'invitation', 'claim', 'public_agent']), memberId: Id.nullable(), capability: PublicCapabilityRef.nullable(), status: z.enum(['pending', 'accepted', 'declined', 'withdrawn', 'transfer_pending', 'transferred', 'cancelled']), commitment: Commitment.nullable(), transferToMemberId: Id.nullable(), version: Version }).superRefine((v, c) => { if (v.status === 'accepted' && !v.commitment) c.addIssue({ code: 'custom', message: 'accepted commitment required' }); if (['pending', 'declined'].includes(v.status) && v.commitment) c.addIssue({ code: 'custom', message: 'unaccepted invitation is not commitment' }) })
 export const Availability = z.strictObject({ from: z.iso.date(), to: z.iso.date(), timezone: Timezone, level: z.enum(['available', 'limited', 'unavailable']), hours: z.number().min(0).max(168).nullable(), updatedAt: Instant }).refine(v => v.from <= v.to, 'invalid interval')
-export const Member = z.strictObject({ id: Id, labId: Id, displayName: Title, publicExpertise: z.array(Title).max(20), availability: Availability.nullable(), visibleCommitments: z.array(z.strictObject({ taskId: Id, scope: Text, schedule: Schedule })).max(100), version: Version })
+export const Member = z.strictObject({ id: Id, labId: Id, displayName: Title, publicExpertise: z.array(Title).max(20), availability: Availability.nullable(), availabilityStatus: z.enum(['unknown', 'upcoming', 'current', 'expired']).optional(), visibleCommitmentsTruncated: z.boolean().optional(), visibleCommitments: z.array(z.strictObject({ taskId: Id, scope: Text, schedule: Schedule })).max(100), version: Version })
 export const Source = z.strictObject({ kind: z.enum(['artifact', 'url', 'note']), locator: z.string().min(1).max(2000), label: Title })
 export const Review = z.strictObject({ decision: z.enum(['accepted', 'changes_requested']), reviewerId: Id, revision: Version, comment: Text, at: Instant })
 export const Deliverable = z.strictObject({ id: Id, taskId: Id, revision: Version, submittedBy: Id, artifactRefs: z.array(Id).max(100), summary: Text, sources: z.array(Source).max(100), submittedAt: Instant, review: Review.nullable(), version: Version })
@@ -63,3 +63,10 @@ export type ExecutionModel = z.infer<typeof Execution>
 export type DeliverableModel = z.infer<typeof Deliverable>
 export type ScheduleModel = z.infer<typeof Schedule>
 export type TaskSummaryModel = z.infer<typeof TaskSummary>
+
+export const Snapshot = z.strictObject({ token: z.string().min(1).max(2048), at: Instant, expiresAt: Instant })
+export const PlanSummary = Plan.pick({ id: true, ownerId: true, labId: true, goal: true, version: true, status: true, createdAt: true })
+export const ActionItem = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('invitation_response'), task: TaskSummary }),
+  z.strictObject({ kind: z.literal('deliverable_review'), task: Task, deliverableId: Id, revision: Version, deliverableVersion: Version }),
+])

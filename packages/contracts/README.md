@@ -1,4 +1,6 @@
-# Shared contract 0.2.0
+# Shared contract 0.3.0
+
+B2a 升级 0.3.0，已实现本人草案分页、真实 overview/actionItems、授权承诺与 availability；新增共享快照语义及兼容字段。完整接口/错误/兼容影响见 [B2a 联调包](../../docs/development/b2a-handoff.md)。尚未实现的 B2b/B3/B4 路由继续 501（规划返回 MODEL_UNAVAILABLE）。下段为 B1 历史变更。
 
 B1 从 0.1.0 升级为 0.2.0。`TaskSummary.pendingInvitation` 是必填可空字段（仅当前受邀者得到 id/version/scope/schedule）；摘要 allowedActions 增加 decide。`Health.checks.authentication` 改为 ok/unavailable/not_checked；增加 409 INVALID_STATE。B1 路由已实现；B2–B4 仍不可用，规划请求只返回 MODEL_UNAVAILABLE。Task、Plan、Assignment、Deliverable 与看板状态形状保持不变。严格使用旧 0.1.0 Schema 的客户端需整体升级包并重新生成样例，不能只复制新字段。
 

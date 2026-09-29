@@ -1,6 +1,6 @@
-# HTTP 协议 0.2.0
+# HTTP 协议 0.3.0
 
-完整精确接口见 [OpenAPI](openapi.json)，所有接口的合成请求响应见 [examples](examples.json)。B1 已实现 routes 中 stage=B0/B1 的端点；其余端点仍 501，只有 POST /planning-requests 在认证/CSRF 校验后明确返回 503 MODEL_UNAVAILABLE。模型和 Harness 不可用，不返回 fixture 成功。
+完整精确接口见 [OpenAPI](openapi.json)，所有接口的合成请求响应见 [examples](examples.json)。已实现 routes 中 stage=B0/B1/B2a 的端点；其余端点仍 501，只有 POST /planning-requests 在认证/CSRF 校验后明确返回 503 MODEL_UNAVAILABLE。模型和 Harness 不可用，不返回 fixture 成功。
 
 ## 身份、认证与跨域
 
@@ -44,14 +44,19 @@ JSON 严格拒绝未知字段；不透明 ID 为 1–96 位 ASCII 字母数字�
 
 0.2.0 TaskSummary 新增 pendingInvitation（可空）；仅当前受邀者可取得该邀请 id/version/scope/schedule，并有 decide 动作。认领摘要该字段为 null。摘要只含发起人明确提供的 title、deliverable、acceptanceCriteria、schedule 和认领 summary；goal、planId、依赖和完整任务内容在接受前不返回。scope=mine 的未接受邀请是“待处理邀请”，不是承诺。B1 无参与者新增接口，不擅自添加 participantIds。
 
-分页默认 30，1–100。资源列表固定 createdAt DESC + id DESC；members 按 id ASC；capabilities 按 id ASC；任务事件按持久 sequence ASC。游标由服务端签名，绑定主体、lab、过滤器、排序、ACL revision、首屏 snapshot 上界和最后键，15 分钟过期；客户端不得解析。后续页沿同一快照排序，新增数据下次刷新出现；修改/撤权改变 ACL revision 使旧 cursor 410，始终重新授权。没有搜索 q 参数，不能暗示已实现搜索。服务端时间和读取版本定义快照，不能依赖浏览器时间。overview 限制返回 100 个阻塞项和成员，完整列表通过分页接口读取，计数仍基于完整可见集合。
+分页默认 30，1–100。资源列表固定 createdAt DESC + id DESC；members 按 id ASC；capabilities 按 id ASC；任务事件按持久 sequence ASC。游标由服务端签名，绑定主体、lab、过滤器、排序、ACL revision、首屏 snapshot 上界和最后键，15 分钟过期；客户端不得解析。后续页沿同一快照排序，新增数据下次刷新出现；修改/撤权改变 ACL revision 使旧 cursor 410，始终重新授权。没有搜索 q 参数，不能暗示已实现搜索。服务端时间和读取版本定义快照，不能依赖浏览器时间。overview 返回最多 100 个完整授权阻塞项并带截断标记，成员使用独立分页接口；计数基于完整可见集合。
 
-B1 实际分页采用更保守的全局数据 revision：任一成功业务写入使旧游标 410，避免返回漂移快照；静止数据集使用签名最后键进行 keyset 分页，始终在 SQL 中先限定 ACL。签名密钥持久化，重启不丢失；直接运维修改 ACL 也必须增加 runtime_meta.revision，正常应用事务会同步更新。事件查询/overview 留待 B2，目前 501。成员可见承诺最多返回100条，B1 单任务最多100个历史分配及100版文本交付；超过返回 VALIDATION_ERROR，不静默截断任务历史。
+B1 实际分页采用更保守的全局数据 revision：任一成功业务写入使旧游标 410，避免返回漂移快照；静止数据集使用签名最后键进行 keyset 分页，始终在 SQL 中先限定 ACL。签名密钥持久化，重启不丢失；B2a 004 迁移以触发器同步业务表变化（包括运维修改 ACL），使旧快照失效。overview 已实现，事件查询仍 501。成员可见承诺最多返回100条并以 visibleCommitmentsTruncated 明示截断，B1 单任务最多100个历史分配及100版文本交付；超过返回 VALIDATION_ERROR，不静默截断任务历史。
 
 B1 只接受 inputArtifactIds=[]、交付 artifactRefs=[]、sources.kind=note/url；附件引用返回 NOT_IMPLEMENTED。草案可记录公共智能体缺口，但任何 public_agent 项确认返回 CAPABILITY_UNAVAILABLE，整个确认事务不产生任务。依赖支持草案内 accepted_deliverable 边，拒绝自环/环，开始前要求前置任务已验收；B2 才扩展依赖变更和失效传播。taskType 当前由人工草案生成 other；原契约未提供编辑 taskType 入口，不根据文本猜科研类别。
 
-事件当前采用 GET /tasks/{id}/events 轮询，前台 5 秒、错误指数退避至 60 秒；返回 nextCursor 用于恢复，无新事件返回空数组并维持 cursor。首次无 cursor 返回当前可见保留事件起点，事件保留至少 30 天；历史或 ACL 变化使游标失效返回 410。断线/410 后重新读取任务快照与事件，不以遗漏事件推测任务已完成。B3 流式输出仅传建议，失败保留 failed/draft，不用断流当成功。
+尚未实现的事件接口计划采用 GET /tasks/{id}/events 轮询，前台 5 秒、错误指数退避至 60 秒；返回 nextCursor 用于恢复，无新事件返回空数组并维持 cursor。首次无 cursor 返回当前可见保留事件起点，事件保留至少 30 天；历史或 ACL 变化使游标失效返回 410。断线/410 后重新读取任务快照与事件，不以遗漏事件推测任务已完成。B3 流式输出仅传建议，失败保留 failed/draft，不用断流当成功。
 
 多人变更：冻结受影响的已接受成员、发起人、验收人及拟新牵头者集合；全部接受才原子应用，任一拒绝整项拒绝。等待期间旧承诺继续；任务版本有其他变化则提案 superseded，必须重提。退出和转交保存原 assignment；新牵头者另收邀请，不直接继承承诺。共享反馈独立于验收；B4 只允许明确选择文本，撤回阻止未来复用，不保证抹去已有副本。
 
 版本变化必须同步 Schema、JSON、样例、测试、客户端和阶段报告。0.x 破坏性变更提升 minor；兼容新增提升 patch，并在集成关登记采用提交；`/api/v1` 不替代契约版本。
+
+
+## B2a 0.3.0 查询快照
+
+以 [B2a 联调包](../../docs/development/b2a-handoff.md#同一快照与错误处理) 为本批精确定义。GET plans/overview/actionItems/tasks/task/getPlan/members/me 支持 snapshot；真实服务总返回该元数据。游标签名携带原快照，任何业务/ACL 变动或 15 分钟到期均返回 CURSOR_EXPIRED。确认后方案移出默认 draft 列表，历史查询显式 status=confirmed/all。命令授权、幂等和状态前置条件保持 B1 规则。

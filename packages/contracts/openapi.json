@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "paths": {
     "/api/v1/health/live": {
@@ -34,7 +34,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.2.0"
+                          "const": "0.3.0"
                         },
                         "checks": {
                           "type": "object",
@@ -93,7 +93,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.2.0",
+                    "contractVersion": "0.3.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -247,7 +247,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.2.0"
+                          "const": "0.3.0"
                         },
                         "checks": {
                           "type": "object",
@@ -306,7 +306,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.2.0",
+                    "contractVersion": "0.3.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -438,7 +438,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.2.0"
+                          "const": "0.3.0"
                         },
                         "checks": {
                           "type": "object",
@@ -497,7 +497,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.2.0",
+                    "contractVersion": "0.3.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -645,6 +645,18 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "availabilityStatus": {
+                          "type": "string",
+                          "enum": [
+                            "unknown",
+                            "upcoming",
+                            "current",
+                            "expired"
+                          ]
+                        },
+                        "visibleCommitmentsTruncated": {
+                          "type": "boolean"
                         },
                         "visibleCommitments": {
                           "maxItems": 100,
@@ -1243,6 +1255,18 @@
                                   "type": "null"
                                 }
                               ]
+                            },
+                            "availabilityStatus": {
+                              "type": "string",
+                              "enum": [
+                                "unknown",
+                                "upcoming",
+                                "current",
+                                "expired"
+                              ]
+                            },
+                            "visibleCommitmentsTruncated": {
+                              "type": "boolean"
                             },
                             "visibleCommitments": {
                               "maxItems": 100,
@@ -1949,7 +1973,18 @@
             "sessionCookie": []
           }
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "snapshot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "B1 contract; implemented",
@@ -2044,6 +2079,18 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "availabilityStatus": {
+                          "type": "string",
+                          "enum": [
+                            "unknown",
+                            "upcoming",
+                            "current",
+                            "expired"
+                          ]
+                        },
+                        "visibleCommitmentsTruncated": {
+                          "type": "boolean"
                         },
                         "visibleCommitments": {
                           "maxItems": 100,
@@ -2399,6 +2446,32 @@
                         "version"
                       ],
                       "additionalProperties": false
+                    },
+                    "snapshot": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2048
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "token",
+                        "at",
+                        "expiresAt"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -2555,6 +2628,16 @@
             }
           },
           {
+            "name": "snapshot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "required": false,
@@ -2673,6 +2756,18 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "availabilityStatus": {
+                            "type": "string",
+                            "enum": [
+                              "unknown",
+                              "upcoming",
+                              "current",
+                              "expired"
+                            ]
+                          },
+                          "visibleCommitmentsTruncated": {
+                            "type": "boolean"
                           },
                           "visibleCommitments": {
                             "maxItems": 100,
@@ -3040,6 +3135,32 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "snapshot": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2048
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "token",
+                        "at",
+                        "expiresAt"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -3172,8 +3293,8 @@
       "patch": {
         "operationId": "availability",
         "description": "Self; transaction checks member version, server replaces updatedAt.",
-        "x-stage": "B2",
-        "x-implemented": false,
+        "x-stage": "B2a",
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -3289,7 +3410,7 @@
         },
         "responses": {
           "200": {
-            "description": "B2 contract; not implemented in B1 (501)",
+            "description": "B2a contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -3381,6 +3502,18 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "availabilityStatus": {
+                          "type": "string",
+                          "enum": [
+                            "unknown",
+                            "upcoming",
+                            "current",
+                            "expired"
+                          ]
+                        },
+                        "visibleCommitmentsTruncated": {
+                          "type": "boolean"
                         },
                         "visibleCommitments": {
                           "maxItems": 100,
@@ -3871,6 +4004,296 @@
       }
     },
     "/api/v1/plans": {
+      "get": {
+        "operationId": "plans",
+        "description": "Owner and lab only before sorting/page; newest createdAt then id descending. Default draft; confirmed moves out, status=confirmed/all explicitly retrieves history. No tasks created by reading.",
+        "x-stage": "B2a",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "snapshot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "default": 30,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "default": "draft",
+              "type": "string",
+              "enum": [
+                "draft",
+                "confirmed",
+                "superseded",
+                "all"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "B2a contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                          },
+                          "ownerId": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                          },
+                          "labId": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                          },
+                          "goal": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 8000
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "confirmed",
+                              "superseded"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "ownerId",
+                          "labId",
+                          "goal",
+                          "version",
+                          "status",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 2048
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "snapshot": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2048
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "token",
+                        "at",
+                        "expiresAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "nextCursor",
+                    "snapshot"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": [],
+                  "nextCursor": null,
+                  "snapshot": {
+                    "token": "synthetic",
+                    "at": "2026-09-21T08:00:00+08:00",
+                    "expiresAt": "2026-09-21T08:00:00+08:00"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "operationId": "createPlan",
         "description": "Lab member; create draft only, no assignments or dispatch.",
@@ -5200,6 +5623,1651 @@
         }
       }
     },
+    "/api/v1/labs/{id}/action-items": {
+      "get": {
+        "operationId": "actionItems",
+        "description": "Current actor only; actionable pending invitation or latest submitted revision requiring review. ACL first; newest task createdAt/id. Recheck versions on commands.",
+        "x-stage": "B2a",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "snapshot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "default": 30,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "default": "all",
+              "type": "string",
+              "enum": [
+                "all",
+                "invitation_response",
+                "deliverable_review"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "B2a contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "invitation_response"
+                              },
+                              "task": {
+                                "type": "object",
+                                "properties": {
+                                  "projection": {
+                                    "type": "string",
+                                    "const": "claim_summary"
+                                  },
+                                  "visibleStatus": {
+                                    "type": "string",
+                                    "enum": [
+                                      "unassigned",
+                                      "awaiting_acceptance",
+                                      "ready",
+                                      "in_progress",
+                                      "blocked",
+                                      "in_review",
+                                      "changes_requested",
+                                      "completed",
+                                      "cancelled"
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "labId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "title": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "summary": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 8000
+                                  },
+                                  "deliverable": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 8000
+                                  },
+                                  "acceptanceCriteria": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 8000
+                                  },
+                                  "schedule": {
+                                    "type": "object",
+                                    "properties": {
+                                      "suggested": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "value": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "const": "date"
+                                                      },
+                                                      "date": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                      },
+                                                      "timezone": {
+                                                        "type": "string",
+                                                        "minLength": 1,
+                                                        "maxLength": 100
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "date",
+                                                      "timezone"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "const": "instant"
+                                                      },
+                                                      "at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "at"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  }
+                                                ]
+                                              },
+                                              "source": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "user",
+                                                  "authorized_material",
+                                                  "suggestion",
+                                                  "member"
+                                                ]
+                                              },
+                                              "confirmed": {
+                                                "type": "boolean"
+                                              }
+                                            },
+                                            "required": [
+                                              "value",
+                                              "source",
+                                              "confirmed"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "hardDeadline": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "value": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "const": "date"
+                                                      },
+                                                      "date": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                      },
+                                                      "timezone": {
+                                                        "type": "string",
+                                                        "minLength": 1,
+                                                        "maxLength": 100
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "date",
+                                                      "timezone"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "const": "instant"
+                                                      },
+                                                      "at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "at"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  }
+                                                ]
+                                              },
+                                              "source": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "user",
+                                                  "authorized_material",
+                                                  "suggestion",
+                                                  "member"
+                                                ]
+                                              },
+                                              "confirmed": {
+                                                "type": "boolean"
+                                              }
+                                            },
+                                            "required": [
+                                              "value",
+                                              "source",
+                                              "confirmed"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "committed": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "value": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "const": "date"
+                                                      },
+                                                      "date": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                      },
+                                                      "timezone": {
+                                                        "type": "string",
+                                                        "minLength": 1,
+                                                        "maxLength": 100
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "date",
+                                                      "timezone"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "const": "instant"
+                                                      },
+                                                      "at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "at"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  }
+                                                ]
+                                              },
+                                              "source": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "user",
+                                                  "authorized_material",
+                                                  "suggestion",
+                                                  "member"
+                                                ]
+                                              },
+                                              "confirmed": {
+                                                "type": "boolean"
+                                              }
+                                            },
+                                            "required": [
+                                              "value",
+                                              "source",
+                                              "confirmed"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "estimatedHumanHours": {
+                                        "anyOf": [
+                                          {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 10000
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "checkpoint": {
+                                        "anyOf": [
+                                          {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "kind": {
+                                                    "type": "string",
+                                                    "const": "date"
+                                                  },
+                                                  "date": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                  },
+                                                  "timezone": {
+                                                    "type": "string",
+                                                    "minLength": 1,
+                                                    "maxLength": 100
+                                                  }
+                                                },
+                                                "required": [
+                                                  "kind",
+                                                  "date",
+                                                  "timezone"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "kind": {
+                                                    "type": "string",
+                                                    "const": "instant"
+                                                  },
+                                                  "at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "kind",
+                                                  "at"
+                                                ],
+                                                "additionalProperties": false
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "suggested",
+                                      "hardDeadline",
+                                      "committed",
+                                      "estimatedHumanHours",
+                                      "checkpoint"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "initiatorId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "reviewerId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "allowedActions": {
+                                    "maxItems": 2,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "enum": [
+                                        "claim",
+                                        "decide"
+                                      ]
+                                    }
+                                  },
+                                  "pendingInvitation": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                          },
+                                          "version": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "scope": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 8000
+                                          },
+                                          "schedule": {
+                                            "type": "object",
+                                            "properties": {
+                                              "suggested": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "value": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "kind": {
+                                                                "type": "string",
+                                                                "const": "date"
+                                                              },
+                                                              "date": {
+                                                                "type": "string",
+                                                                "format": "date",
+                                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                              },
+                                                              "timezone": {
+                                                                "type": "string",
+                                                                "minLength": 1,
+                                                                "maxLength": 100
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "kind",
+                                                              "date",
+                                                              "timezone"
+                                                            ],
+                                                            "additionalProperties": false
+                                                          },
+                                                          {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "kind": {
+                                                                "type": "string",
+                                                                "const": "instant"
+                                                              },
+                                                              "at": {
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "kind",
+                                                              "at"
+                                                            ],
+                                                            "additionalProperties": false
+                                                          }
+                                                        ]
+                                                      },
+                                                      "source": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "user",
+                                                          "authorized_material",
+                                                          "suggestion",
+                                                          "member"
+                                                        ]
+                                                      },
+                                                      "confirmed": {
+                                                        "type": "boolean"
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "value",
+                                                      "source",
+                                                      "confirmed"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "hardDeadline": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "value": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "kind": {
+                                                                "type": "string",
+                                                                "const": "date"
+                                                              },
+                                                              "date": {
+                                                                "type": "string",
+                                                                "format": "date",
+                                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                              },
+                                                              "timezone": {
+                                                                "type": "string",
+                                                                "minLength": 1,
+                                                                "maxLength": 100
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "kind",
+                                                              "date",
+                                                              "timezone"
+                                                            ],
+                                                            "additionalProperties": false
+                                                          },
+                                                          {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "kind": {
+                                                                "type": "string",
+                                                                "const": "instant"
+                                                              },
+                                                              "at": {
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "kind",
+                                                              "at"
+                                                            ],
+                                                            "additionalProperties": false
+                                                          }
+                                                        ]
+                                                      },
+                                                      "source": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "user",
+                                                          "authorized_material",
+                                                          "suggestion",
+                                                          "member"
+                                                        ]
+                                                      },
+                                                      "confirmed": {
+                                                        "type": "boolean"
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "value",
+                                                      "source",
+                                                      "confirmed"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "committed": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "value": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "kind": {
+                                                                "type": "string",
+                                                                "const": "date"
+                                                              },
+                                                              "date": {
+                                                                "type": "string",
+                                                                "format": "date",
+                                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                              },
+                                                              "timezone": {
+                                                                "type": "string",
+                                                                "minLength": 1,
+                                                                "maxLength": 100
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "kind",
+                                                              "date",
+                                                              "timezone"
+                                                            ],
+                                                            "additionalProperties": false
+                                                          },
+                                                          {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "kind": {
+                                                                "type": "string",
+                                                                "const": "instant"
+                                                              },
+                                                              "at": {
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "kind",
+                                                              "at"
+                                                            ],
+                                                            "additionalProperties": false
+                                                          }
+                                                        ]
+                                                      },
+                                                      "source": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "user",
+                                                          "authorized_material",
+                                                          "suggestion",
+                                                          "member"
+                                                        ]
+                                                      },
+                                                      "confirmed": {
+                                                        "type": "boolean"
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "value",
+                                                      "source",
+                                                      "confirmed"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "estimatedHumanHours": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "number",
+                                                    "minimum": 0,
+                                                    "maximum": 10000
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "checkpoint": {
+                                                "anyOf": [
+                                                  {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "kind": {
+                                                            "type": "string",
+                                                            "const": "date"
+                                                          },
+                                                          "date": {
+                                                            "type": "string",
+                                                            "format": "date",
+                                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                          },
+                                                          "timezone": {
+                                                            "type": "string",
+                                                            "minLength": 1,
+                                                            "maxLength": 100
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "kind",
+                                                          "date",
+                                                          "timezone"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      },
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "kind": {
+                                                            "type": "string",
+                                                            "const": "instant"
+                                                          },
+                                                          "at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "kind",
+                                                          "at"
+                                                        ],
+                                                        "additionalProperties": false
+                                                      }
+                                                    ]
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "suggested",
+                                              "hardDeadline",
+                                              "committed",
+                                              "estimatedHumanHours",
+                                              "checkpoint"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "version",
+                                          "scope",
+                                          "schedule"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "projection",
+                                  "id",
+                                  "labId",
+                                  "title",
+                                  "summary",
+                                  "deliverable",
+                                  "acceptanceCriteria",
+                                  "schedule",
+                                  "initiatorId",
+                                  "reviewerId",
+                                  "version",
+                                  "allowedActions",
+                                  "pendingInvitation"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "task"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "deliverable_review"
+                              },
+                              "task": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "labId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "parentTaskId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "planId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "planVersion": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "title": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "taskType": {
+                                    "type": "string",
+                                    "enum": [
+                                      "paper",
+                                      "grant",
+                                      "ip",
+                                      "experiment",
+                                      "training",
+                                      "report",
+                                      "other"
+                                    ]
+                                  },
+                                  "goal": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 8000
+                                  },
+                                  "acceptanceCriteria": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 8000
+                                  },
+                                  "initiatorId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "leadId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "reviewerId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "participantIds": {
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    }
+                                  },
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "unassigned",
+                                      "awaiting_acceptance",
+                                      "ready",
+                                      "in_progress",
+                                      "blocked",
+                                      "in_review",
+                                      "changes_requested",
+                                      "completed",
+                                      "cancelled"
+                                    ]
+                                  },
+                                  "blocker": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "reason": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 8000
+                                          },
+                                          "requestedMemberId": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "requestedAction": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 8000
+                                          },
+                                          "resumeStatus": {
+                                            "type": "string",
+                                            "enum": [
+                                              "ready",
+                                              "in_progress",
+                                              "changes_requested"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "reason",
+                                          "requestedMemberId",
+                                          "requestedAction",
+                                          "resumeStatus"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "dependencies": {
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "taskId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "accepted_deliverable",
+                                            "confirmed_decision"
+                                          ]
+                                        },
+                                        "requiredRevision": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 1,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "taskId",
+                                        "kind",
+                                        "requiredRevision"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "schedule": {
+                                    "type": "object",
+                                    "properties": {
+                                      "suggested": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "value": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "const": "date"
+                                                      },
+                                                      "date": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                      },
+                                                      "timezone": {
+                                                        "type": "string",
+                                                        "minLength": 1,
+                                                        "maxLength": 100
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "date",
+                                                      "timezone"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "const": "instant"
+                                                      },
+                                                      "at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "at"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  }
+                                                ]
+                                              },
+                                              "source": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "user",
+                                                  "authorized_material",
+                                                  "suggestion",
+                                                  "member"
+                                                ]
+                                              },
+                                              "confirmed": {
+                                                "type": "boolean"
+                                              }
+                                            },
+                                            "required": [
+                                              "value",
+                                              "source",
+                                              "confirmed"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "hardDeadline": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "value": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "const": "date"
+                                                      },
+                                                      "date": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                      },
+                                                      "timezone": {
+                                                        "type": "string",
+                                                        "minLength": 1,
+                                                        "maxLength": 100
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "date",
+                                                      "timezone"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "const": "instant"
+                                                      },
+                                                      "at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "at"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  }
+                                                ]
+                                              },
+                                              "source": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "user",
+                                                  "authorized_material",
+                                                  "suggestion",
+                                                  "member"
+                                                ]
+                                              },
+                                              "confirmed": {
+                                                "type": "boolean"
+                                              }
+                                            },
+                                            "required": [
+                                              "value",
+                                              "source",
+                                              "confirmed"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "committed": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "value": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "const": "date"
+                                                      },
+                                                      "date": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                      },
+                                                      "timezone": {
+                                                        "type": "string",
+                                                        "minLength": 1,
+                                                        "maxLength": 100
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "date",
+                                                      "timezone"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "const": "instant"
+                                                      },
+                                                      "at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "at"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  }
+                                                ]
+                                              },
+                                              "source": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "user",
+                                                  "authorized_material",
+                                                  "suggestion",
+                                                  "member"
+                                                ]
+                                              },
+                                              "confirmed": {
+                                                "type": "boolean"
+                                              }
+                                            },
+                                            "required": [
+                                              "value",
+                                              "source",
+                                              "confirmed"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "estimatedHumanHours": {
+                                        "anyOf": [
+                                          {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 10000
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "checkpoint": {
+                                        "anyOf": [
+                                          {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "kind": {
+                                                    "type": "string",
+                                                    "const": "date"
+                                                  },
+                                                  "date": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                                  },
+                                                  "timezone": {
+                                                    "type": "string",
+                                                    "minLength": 1,
+                                                    "maxLength": 100
+                                                  }
+                                                },
+                                                "required": [
+                                                  "kind",
+                                                  "date",
+                                                  "timezone"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "kind": {
+                                                    "type": "string",
+                                                    "const": "instant"
+                                                  },
+                                                  "at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "kind",
+                                                  "at"
+                                                ],
+                                                "additionalProperties": false
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "suggested",
+                                      "hardDeadline",
+                                      "committed",
+                                      "estimatedHumanHours",
+                                      "checkpoint"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "access": {
+                                    "type": "object",
+                                    "properties": {
+                                      "visibility": {
+                                        "type": "string",
+                                        "enum": [
+                                          "participants",
+                                          "lab_summary"
+                                        ]
+                                      },
+                                      "summary": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 8000
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "visibility",
+                                      "summary"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "createdAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  "updatedAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  "allowedActions": {
+                                    "maxItems": 20,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "enum": [
+                                        "confirm",
+                                        "invite",
+                                        "decide",
+                                        "claim",
+                                        "start",
+                                        "block",
+                                        "resume",
+                                        "submit",
+                                        "review",
+                                        "propose_change",
+                                        "withdraw",
+                                        "cancel",
+                                        "run",
+                                        "publish",
+                                        "disable"
+                                      ]
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "labId",
+                                  "parentTaskId",
+                                  "planId",
+                                  "planVersion",
+                                  "title",
+                                  "taskType",
+                                  "goal",
+                                  "acceptanceCriteria",
+                                  "initiatorId",
+                                  "leadId",
+                                  "reviewerId",
+                                  "participantIds",
+                                  "status",
+                                  "blocker",
+                                  "dependencies",
+                                  "schedule",
+                                  "access",
+                                  "version",
+                                  "createdAt",
+                                  "updatedAt",
+                                  "allowedActions"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "deliverableId": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "revision": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              },
+                              "deliverableVersion": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "task",
+                              "deliverableId",
+                              "revision",
+                              "deliverableVersion"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 2048
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "snapshot": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2048
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "token",
+                        "at",
+                        "expiresAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "nextCursor",
+                    "snapshot"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": [],
+                  "nextCursor": null,
+                  "snapshot": {
+                    "token": "synthetic",
+                    "at": "2026-09-21T08:00:00+08:00",
+                    "expiresAt": "2026-09-21T08:00:00+08:00"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/plans/{id}": {
       "get": {
         "operationId": "getPlan",
@@ -5219,6 +7287,16 @@
             "schema": {
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "snapshot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
             }
           }
         ],
@@ -5814,6 +7892,32 @@
                         "version",
                         "status",
                         "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "snapshot": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2048
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "token",
+                        "at",
+                        "expiresAt"
                       ],
                       "additionalProperties": false
                     }
@@ -8125,6 +10229,16 @@
         ],
         "parameters": [
           {
+            "name": "snapshot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "required": false,
@@ -8800,6 +10914,20 @@
                               "projection": {
                                 "type": "string",
                                 "const": "claim_summary"
+                              },
+                              "visibleStatus": {
+                                "type": "string",
+                                "enum": [
+                                  "unassigned",
+                                  "awaiting_acceptance",
+                                  "ready",
+                                  "in_progress",
+                                  "blocked",
+                                  "in_review",
+                                  "changes_requested",
+                                  "completed",
+                                  "cancelled"
+                                ]
                               },
                               "id": {
                                 "type": "string",
@@ -9545,6 +11673,32 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "snapshot": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2048
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "token",
+                        "at",
+                        "expiresAt"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -9692,6 +11846,16 @@
             "schema": {
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "snapshot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
             }
           }
         ],
@@ -11069,6 +13233,20 @@
                               "type": "string",
                               "const": "claim_summary"
                             },
+                            "visibleStatus": {
+                              "type": "string",
+                              "enum": [
+                                "unassigned",
+                                "awaiting_acceptance",
+                                "ready",
+                                "in_progress",
+                                "blocked",
+                                "in_review",
+                                "changes_requested",
+                                "completed",
+                                "cancelled"
+                              ]
+                            },
                             "id": {
                               "type": "string",
                               "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -11801,6 +13979,32 @@
                           "additionalProperties": false
                         }
                       ]
+                    },
+                    "snapshot": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2048
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "token",
+                        "at",
+                        "expiresAt"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -15213,7 +17417,7 @@
         },
         "responses": {
           "200": {
-            "description": "B2 contract; not implemented in B1 (501)",
+            "description": "B2 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -16038,7 +18242,7 @@
         },
         "responses": {
           "200": {
-            "description": "B2 contract; not implemented in B1 (501)",
+            "description": "B2 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -17995,7 +20199,7 @@
         },
         "responses": {
           "201": {
-            "description": "B2 contract; not implemented in B1 (501)",
+            "description": "B2 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -18651,7 +20855,7 @@
         },
         "responses": {
           "200": {
-            "description": "B2 contract; not implemented in B1 (501)",
+            "description": "B2 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -19325,7 +21529,7 @@
         },
         "responses": {
           "200": {
-            "description": "B2 contract; not implemented in B1 (501)",
+            "description": "B2 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -20157,7 +22361,7 @@
         },
         "responses": {
           "200": {
-            "description": "B2 contract; not implemented in B1 (501)",
+            "description": "B2 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -20918,9 +23122,9 @@
     "/api/v1/labs/{id}/overview": {
       "get": {
         "operationId": "overview",
-        "description": "One read snapshot; ACL before counts; no cancelled in four columns; blocked IDs/member list capped 100; task list separately paginated.",
-        "x-stage": "B2",
-        "x-implemented": false,
+        "description": "One read snapshot; ACL before counts; no cancelled in four columns; blocked IDs capped with truncation flag; members/tasks/action items separately paginated under returned snapshot. Deliverable counts include all revisions on full-access tasks only.",
+        "x-stage": "B2a",
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -20934,6 +23138,16 @@
             "schema": {
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "snapshot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
             }
           },
           {
@@ -20951,7 +23165,7 @@
         ],
         "responses": {
           "200": {
-            "description": "B2 contract; not implemented in B1 (501)",
+            "description": "B2a contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -21011,450 +23225,28 @@
                             "pattern": "^[A-Za-z0-9_-]{1,96}$"
                           }
                         },
-                        "members": {
-                          "maxItems": 100,
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string",
-                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
-                              },
-                              "labId": {
-                                "type": "string",
-                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
-                              },
-                              "displayName": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 200
-                              },
-                              "publicExpertise": {
-                                "maxItems": 20,
-                                "type": "array",
-                                "items": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "maxLength": 200
-                                }
-                              },
-                              "availability": {
-                                "anyOf": [
-                                  {
-                                    "type": "object",
-                                    "properties": {
-                                      "from": {
-                                        "type": "string",
-                                        "format": "date",
-                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                                      },
-                                      "to": {
-                                        "type": "string",
-                                        "format": "date",
-                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                                      },
-                                      "timezone": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "maxLength": 100
-                                      },
-                                      "level": {
-                                        "type": "string",
-                                        "enum": [
-                                          "available",
-                                          "limited",
-                                          "unavailable"
-                                        ]
-                                      },
-                                      "hours": {
-                                        "anyOf": [
-                                          {
-                                            "type": "number",
-                                            "minimum": 0,
-                                            "maximum": 168
-                                          },
-                                          {
-                                            "type": "null"
-                                          }
-                                        ]
-                                      },
-                                      "updatedAt": {
-                                        "type": "string",
-                                        "format": "date-time",
-                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                                      }
-                                    },
-                                    "required": [
-                                      "from",
-                                      "to",
-                                      "timezone",
-                                      "level",
-                                      "hours",
-                                      "updatedAt"
-                                    ],
-                                    "additionalProperties": false
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "visibleCommitments": {
-                                "maxItems": 100,
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "properties": {
-                                    "taskId": {
-                                      "type": "string",
-                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
-                                    },
-                                    "scope": {
-                                      "type": "string",
-                                      "minLength": 1,
-                                      "maxLength": 8000
-                                    },
-                                    "schedule": {
-                                      "type": "object",
-                                      "properties": {
-                                        "suggested": {
-                                          "anyOf": [
-                                            {
-                                              "type": "object",
-                                              "properties": {
-                                                "value": {
-                                                  "anyOf": [
-                                                    {
-                                                      "type": "object",
-                                                      "properties": {
-                                                        "kind": {
-                                                          "type": "string",
-                                                          "const": "date"
-                                                        },
-                                                        "date": {
-                                                          "type": "string",
-                                                          "format": "date",
-                                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                                                        },
-                                                        "timezone": {
-                                                          "type": "string",
-                                                          "minLength": 1,
-                                                          "maxLength": 100
-                                                        }
-                                                      },
-                                                      "required": [
-                                                        "kind",
-                                                        "date",
-                                                        "timezone"
-                                                      ],
-                                                      "additionalProperties": false
-                                                    },
-                                                    {
-                                                      "type": "object",
-                                                      "properties": {
-                                                        "kind": {
-                                                          "type": "string",
-                                                          "const": "instant"
-                                                        },
-                                                        "at": {
-                                                          "type": "string",
-                                                          "format": "date-time",
-                                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                                                        }
-                                                      },
-                                                      "required": [
-                                                        "kind",
-                                                        "at"
-                                                      ],
-                                                      "additionalProperties": false
-                                                    }
-                                                  ]
-                                                },
-                                                "source": {
-                                                  "type": "string",
-                                                  "enum": [
-                                                    "user",
-                                                    "authorized_material",
-                                                    "suggestion",
-                                                    "member"
-                                                  ]
-                                                },
-                                                "confirmed": {
-                                                  "type": "boolean"
-                                                }
-                                              },
-                                              "required": [
-                                                "value",
-                                                "source",
-                                                "confirmed"
-                                              ],
-                                              "additionalProperties": false
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
-                                        },
-                                        "hardDeadline": {
-                                          "anyOf": [
-                                            {
-                                              "type": "object",
-                                              "properties": {
-                                                "value": {
-                                                  "anyOf": [
-                                                    {
-                                                      "type": "object",
-                                                      "properties": {
-                                                        "kind": {
-                                                          "type": "string",
-                                                          "const": "date"
-                                                        },
-                                                        "date": {
-                                                          "type": "string",
-                                                          "format": "date",
-                                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                                                        },
-                                                        "timezone": {
-                                                          "type": "string",
-                                                          "minLength": 1,
-                                                          "maxLength": 100
-                                                        }
-                                                      },
-                                                      "required": [
-                                                        "kind",
-                                                        "date",
-                                                        "timezone"
-                                                      ],
-                                                      "additionalProperties": false
-                                                    },
-                                                    {
-                                                      "type": "object",
-                                                      "properties": {
-                                                        "kind": {
-                                                          "type": "string",
-                                                          "const": "instant"
-                                                        },
-                                                        "at": {
-                                                          "type": "string",
-                                                          "format": "date-time",
-                                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                                                        }
-                                                      },
-                                                      "required": [
-                                                        "kind",
-                                                        "at"
-                                                      ],
-                                                      "additionalProperties": false
-                                                    }
-                                                  ]
-                                                },
-                                                "source": {
-                                                  "type": "string",
-                                                  "enum": [
-                                                    "user",
-                                                    "authorized_material",
-                                                    "suggestion",
-                                                    "member"
-                                                  ]
-                                                },
-                                                "confirmed": {
-                                                  "type": "boolean"
-                                                }
-                                              },
-                                              "required": [
-                                                "value",
-                                                "source",
-                                                "confirmed"
-                                              ],
-                                              "additionalProperties": false
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
-                                        },
-                                        "committed": {
-                                          "anyOf": [
-                                            {
-                                              "type": "object",
-                                              "properties": {
-                                                "value": {
-                                                  "anyOf": [
-                                                    {
-                                                      "type": "object",
-                                                      "properties": {
-                                                        "kind": {
-                                                          "type": "string",
-                                                          "const": "date"
-                                                        },
-                                                        "date": {
-                                                          "type": "string",
-                                                          "format": "date",
-                                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                                                        },
-                                                        "timezone": {
-                                                          "type": "string",
-                                                          "minLength": 1,
-                                                          "maxLength": 100
-                                                        }
-                                                      },
-                                                      "required": [
-                                                        "kind",
-                                                        "date",
-                                                        "timezone"
-                                                      ],
-                                                      "additionalProperties": false
-                                                    },
-                                                    {
-                                                      "type": "object",
-                                                      "properties": {
-                                                        "kind": {
-                                                          "type": "string",
-                                                          "const": "instant"
-                                                        },
-                                                        "at": {
-                                                          "type": "string",
-                                                          "format": "date-time",
-                                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                                                        }
-                                                      },
-                                                      "required": [
-                                                        "kind",
-                                                        "at"
-                                                      ],
-                                                      "additionalProperties": false
-                                                    }
-                                                  ]
-                                                },
-                                                "source": {
-                                                  "type": "string",
-                                                  "enum": [
-                                                    "user",
-                                                    "authorized_material",
-                                                    "suggestion",
-                                                    "member"
-                                                  ]
-                                                },
-                                                "confirmed": {
-                                                  "type": "boolean"
-                                                }
-                                              },
-                                              "required": [
-                                                "value",
-                                                "source",
-                                                "confirmed"
-                                              ],
-                                              "additionalProperties": false
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
-                                        },
-                                        "estimatedHumanHours": {
-                                          "anyOf": [
-                                            {
-                                              "type": "number",
-                                              "minimum": 0,
-                                              "maximum": 10000
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
-                                        },
-                                        "checkpoint": {
-                                          "anyOf": [
-                                            {
-                                              "anyOf": [
-                                                {
-                                                  "type": "object",
-                                                  "properties": {
-                                                    "kind": {
-                                                      "type": "string",
-                                                      "const": "date"
-                                                    },
-                                                    "date": {
-                                                      "type": "string",
-                                                      "format": "date",
-                                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                                                    },
-                                                    "timezone": {
-                                                      "type": "string",
-                                                      "minLength": 1,
-                                                      "maxLength": 100
-                                                    }
-                                                  },
-                                                  "required": [
-                                                    "kind",
-                                                    "date",
-                                                    "timezone"
-                                                  ],
-                                                  "additionalProperties": false
-                                                },
-                                                {
-                                                  "type": "object",
-                                                  "properties": {
-                                                    "kind": {
-                                                      "type": "string",
-                                                      "const": "instant"
-                                                    },
-                                                    "at": {
-                                                      "type": "string",
-                                                      "format": "date-time",
-                                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                                                    }
-                                                  },
-                                                  "required": [
-                                                    "kind",
-                                                    "at"
-                                                  ],
-                                                  "additionalProperties": false
-                                                }
-                                              ]
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
-                                        }
-                                      },
-                                      "required": [
-                                        "suggested",
-                                        "hardDeadline",
-                                        "committed",
-                                        "estimatedHumanHours",
-                                        "checkpoint"
-                                      ],
-                                      "additionalProperties": false
-                                    }
-                                  },
-                                  "required": [
-                                    "taskId",
-                                    "scope",
-                                    "schedule"
-                                  ],
-                                  "additionalProperties": false
-                                }
-                              },
-                              "version": {
-                                "type": "integer",
-                                "minimum": 1,
-                                "maximum": 9007199254740991
-                              }
+                        "blockedTaskIdsTruncated": {
+                          "type": "boolean"
+                        },
+                        "pendingActions": {
+                          "type": "object",
+                          "properties": {
+                            "invitationResponses": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
                             },
-                            "required": [
-                              "id",
-                              "labId",
-                              "displayName",
-                              "publicExpertise",
-                              "availability",
-                              "visibleCommitments",
-                              "version"
-                            ],
-                            "additionalProperties": false
-                          }
+                            "deliverableReviews": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "invitationResponses",
+                            "deliverableReviews"
+                          ],
+                          "additionalProperties": false
                         },
                         "updatedAt": {
                           "type": "string",
@@ -21467,14 +23259,42 @@
                         "acceptedDeliverables",
                         "submittedDeliverables",
                         "blockedTaskIds",
-                        "members",
+                        "blockedTaskIdsTruncated",
+                        "pendingActions",
                         "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "snapshot": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2048
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "token",
+                        "at",
+                        "expiresAt"
                       ],
                       "additionalProperties": false
                     }
                   },
                   "required": [
-                    "data"
+                    "data",
+                    "snapshot"
                   ],
                   "additionalProperties": false
                 },
@@ -21489,8 +23309,17 @@
                     "acceptedDeliverables": 0,
                     "submittedDeliverables": 0,
                     "blockedTaskIds": [],
-                    "members": [],
+                    "blockedTaskIdsTruncated": false,
+                    "pendingActions": {
+                      "invitationResponses": 0,
+                      "deliverableReviews": 0
+                    },
                     "updatedAt": "2026-09-21T08:00:00+08:00"
+                  },
+                  "snapshot": {
+                    "token": "synthetic",
+                    "at": "2026-09-21T08:00:00+08:00",
+                    "expiresAt": "2026-09-21T08:00:00+08:00"
                   }
                 }
               }
@@ -21631,6 +23460,16 @@
             }
           },
           {
+            "name": "snapshot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "required": false,
@@ -21654,7 +23493,7 @@
         ],
         "responses": {
           "200": {
-            "description": "B2 contract; not implemented in B1 (501)",
+            "description": "B2 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -21986,7 +23825,7 @@
         },
         "responses": {
           "201": {
-            "description": "B2 contract; not implemented in B1 (501)",
+            "description": "B2 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -22207,7 +24046,7 @@
         ],
         "responses": {
           "200": {
-            "description": "B2 contract; not implemented in B1 (501)",
+            "description": "B2 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -22428,7 +24267,7 @@
         ],
         "responses": {
           "200": {
-            "description": "B2 contract; not implemented in B1 (501)",
+            "description": "B2 contract; not implemented in B2a (501)",
             "content": {
               "application/octet-stream": {
                 "schema": {
@@ -22650,7 +24489,7 @@
         },
         "responses": {
           "202": {
-            "description": "B3 contract; not implemented in B1 (501)",
+            "description": "B3 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -22867,7 +24706,7 @@
         ],
         "responses": {
           "200": {
-            "description": "B3 contract; not implemented in B1 (501)",
+            "description": "B3 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -23192,7 +25031,7 @@
         },
         "responses": {
           "202": {
-            "description": "B3 contract; not implemented in B1 (501)",
+            "description": "B3 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -23520,7 +25359,7 @@
         ],
         "responses": {
           "200": {
-            "description": "B3 contract; not implemented in B1 (501)",
+            "description": "B3 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -23898,7 +25737,7 @@
         },
         "responses": {
           "200": {
-            "description": "B3 contract; not implemented in B1 (501)",
+            "description": "B3 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -24215,6 +26054,16 @@
         ],
         "parameters": [
           {
+            "name": "snapshot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "required": false,
@@ -24259,7 +26108,7 @@
         ],
         "responses": {
           "200": {
-            "description": "B4 contract; not implemented in B1 (501)",
+            "description": "B4 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -24567,7 +26416,7 @@
         },
         "responses": {
           "201": {
-            "description": "B4 contract; not implemented in B1 (501)",
+            "description": "B4 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -24893,7 +26742,7 @@
         },
         "responses": {
           "202": {
-            "description": "B4 contract; not implemented in B1 (501)",
+            "description": "B4 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -25160,7 +27009,7 @@
         },
         "responses": {
           "200": {
-            "description": "B4 contract; not implemented in B1 (501)",
+            "description": "B4 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -25461,7 +27310,7 @@
         },
         "responses": {
           "200": {
-            "description": "B4 contract; not implemented in B1 (501)",
+            "description": "B4 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -25710,6 +27559,16 @@
             }
           },
           {
+            "name": "snapshot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "required": false,
@@ -25733,7 +27592,7 @@
         ],
         "responses": {
           "200": {
-            "description": "B4 contract; not implemented in B1 (501)",
+            "description": "B4 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
@@ -26061,7 +27920,7 @@
         },
         "responses": {
           "200": {
-            "description": "B4 contract; not implemented in B1 (501)",
+            "description": "B4 contract; not implemented in B2a (501)",
             "content": {
               "application/json": {
                 "schema": {
