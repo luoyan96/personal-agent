@@ -1,6 +1,6 @@
 # 第一版开发交接
 
-日期：2026-09-21。用户已初步接受简洁入口、实验室看板和任务详情的视觉方向，允许按使用反馈再调整。下一阶段是实现；本次交接没有新增应用代码。
+日期：2026-09-29。G1 人类协作已经共同复核；产品第一阶段尚未完成。当前执行范围与下一批以[第一阶段范围与当前状态](phase-one.md)为准，本文保留整体工程依据，不要求重新从 D0 开始。界面采用[对话中展开协作单](design/adaptive-responses.md)，总览与详情按需进入。
 
 前后端分工使用[分阶段开发索引](development/README.md)：分别提供[前端指南](development/frontend.md)、[后端指南](development/backend.md)、[共享契约](development/contracts.md)、[阶段验收](development/acceptance.md)和[可复制启动 prompt](development/prompts.md)。多人开发优先使用这些按批次限定的指令；本文保留整体范围和顺序。
 
@@ -21,9 +21,11 @@
 
 ## 当前代码边界
 
-已有本地 Project / Artifact 存取、Skills 加载与十项方法资源。没有团队账号、平台数据库、任务服务、网页或执行服务。已有文件存储不适合直接成为多人事务数据库。
+已有本地 Project / Artifact 基础包、十项 Skills、共享契约 0.2.0、真实 B1 服务与 F1 网页。集成分支已验证密码会话、SQLite 持久化、手工方案、邀请/认领、文本交付和版本验收。完整聚合、复杂协调、真实模型/Harness、能力记忆仍未交付。现有多人权威数据由 API 的事务数据库保存，不使用本地 ArtifactStore 替代。
 
 Harness 适配仍待干净安装和真实联调；[已记录的依赖问题](../integrations/deepseek-harness/README.md)是当时的检查结果，开发时必须重新验证。不能因根目录 CI 通过就声称 Harness 已接通。不要复制旧探索界面的导航与项目工作流。
+
+以下范围是整体目标；P1 先实现必要部分，G4b 的完整私人能力托管和编辑/发布界面可以后续补充。每项功能开放前仍需通过其权限、版本和真实状态验收。
 
 ## 第一版范围
 
@@ -86,9 +88,9 @@ D0 的技术选型是实现决定，应核实依赖和兼容性后落文档；�
 
 这是便于开发的摘要，不删除 [原有十个验收场景](task-allocation.md)。共享代码或打包 Skills 变更执行 `pnpm run ci`，并增加对应集成与浏览器验证；默认 CI 不覆盖 Harness 和真实模型效果。
 
-## 可直接交给代码 AI 的启动指令
+## 历史启动指令（已有项目不再从此重开）
 
-以下适用于一个 AI 负责整体起步；前后端分开交接时，改用[各自的第一步 prompt](development/prompts.md)。
+以下仅保留首次建仓时的整体起步说明。当前项目使用[当前下一批 B2a/F2a prompt](development/prompts.md#当前下一批-b2a--f2a)，采用已通过 G1 并包含本次规划更新的共同提交。
 
 > 在 research-agent-platform 仓库开始第一版实现。先阅读 AGENTS.md、docs/development-handoff.md、docs/design/README.md 和 docs/task-allocation.md，查看相关 PNG。沿用已确认的简洁界面和实验室任务看板，复用现有基础包，按 D0 → D1 开始，完成一个可审查的小批次并报告结果。
 >
