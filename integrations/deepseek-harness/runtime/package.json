@@ -1,5 +1,5 @@
 {
-  "name": "@research-agent-platform/research-core",
+  "name": "@research-agent-platform/harness-runtime",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,15 +9,13 @@
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist",
-    "README.md"
-  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.check.json"
   },
   "dependencies": {
-    "@research-agent-platform/contracts": "workspace:*"
+    "@deepseek-ai/cordis": "4.0.4",
+    "@deepseek-ai/dsh-llm": "0.2.0-rc.1",
+    "@deepseek-ai/dsh-llm-deepseek-api-key": "0.2.0-rc.1"
   }
 }

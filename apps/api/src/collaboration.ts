@@ -1,3 +1,4 @@
+import { AiService } from './ai.js'
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import { Assignment, Availability, Artifact, ChangeProposal, DependencyImpact, Deliverable, Member, Plan, PlanSummary, Task, TaskEvent, TaskSummary, taskColumns, routes } from '@research-agent-platform/contracts'
@@ -8,6 +9,19 @@ import { Coordination, coordinationCommands } from './coordination.js'
 import type { CoordinationCommand } from './coordination.js'
 import { fail } from './errors.js'
 
+const authorizedPlanSources=`NOT EXISTS (SELECT 1 FROM execution_jobs j,json_each(j.request_json,'$.inputs') ref
+ LEFT JOIN artifacts f ON f.id=json_extract(ref.value,'$.id') LEFT JOIN tasks source ON source.id=f.task_id
+ LEFT JOIN task_access access ON access.task_id=source.id AND access.member_id=plans.owner_id
+ WHERE j.kind='planning' AND json_extract(j.document,'$.planId')=plans.id
+ AND (f.id IS NULL OR f.status!='available' OR f.version!=json_extract(ref.value,'$.version') OR source.status='cancelled' OR COALESCE(access.access,'')!='full'))
+ AND NOT EXISTS (SELECT 1 FROM execution_jobs j,json_each(j.request_json,'$.taskIds') ref
+ LEFT JOIN tasks source ON source.id=ref.value LEFT JOIN task_access access ON access.task_id=source.id AND access.member_id=plans.owner_id
+ WHERE j.kind='planning' AND json_extract(j.document,'$.planId')=plans.id
+ AND (source.id IS NULL OR access.access='revoked' OR NOT (COALESCE(access.access,'')='full' OR source.claimable=1 OR EXISTS(SELECT 1 FROM assignments a WHERE a.task_id=source.id AND a.member_id=plans.owner_id AND a.status='pending')))) AND NOT EXISTS (SELECT 1 FROM execution_jobs j,json_each(j.request_json,'$.contextTasks') ref
+ LEFT JOIN tasks source ON source.id=json_extract(ref.value,'$.id') LEFT JOIN task_access access ON access.task_id=source.id AND access.member_id=plans.owner_id
+ WHERE j.kind='planning' AND json_extract(j.document,'$.planId')=plans.id
+ AND (source.id IS NULL OR access.access='revoked' OR (json_extract(ref.value,'$.access')='full' AND COALESCE(access.access,'')!='full') OR NOT (COALESCE(access.access,'')='full' OR source.claimable=1 OR EXISTS(SELECT 1 FROM assignments a WHERE a.task_id=source.id AND a.member_id=plans.owner_id AND a.status='pending'))))`
+const attentionRun=`r.rowid=(SELECT MAX(latest.rowid) FROM execution_jobs latest WHERE latest.task_id=r.task_id) AND (r.status IN ('failed','interrupted','waiting_input') OR (r.status='succeeded' AND json_extract(r.document,'$.candidateDeliverableId') IS NULL))`
 const now = () => new Date().toISOString()
 const id = () => randomUUID()
 const encode = (value: unknown) => JSON.stringify(value)
@@ -24,13 +38,13 @@ export class Collaboration {
   readSnapshot?: { token: string; at: string; expiresAt: string }
   readonly createdBlobs: string[] = []
   readonly coordination = new Coordination(this)
-  constructor(readonly db: DatabaseSync, readonly actor: Actor, readonly blobRoot?: string) {}
+  constructor(readonly db: DatabaseSync, readonly actor: Actor, readonly blobRoot?: string, readonly execution?: {enabled:boolean;model:string}) {}
   sameLab(labId: string) { if (this.actor.labId !== labId) fail('NOT_FOUND') }
   checkVersion(actual: number, expected: number) { if (actual !== expected) fail('VERSION_CONFLICT') }
   revision() { return createHmac('sha256', signingKey(this.db)).update(String(this.db.prepare("SELECT value FROM runtime_meta WHERE key='revision'").get()!.value)).digest('hex') }
   changed() { this.db.exec("UPDATE runtime_meta SET value=CAST(value AS INTEGER)+1 WHERE key='revision'") }
   plan(planId: string): PlanModel {
-    const row = this.db.prepare('SELECT document FROM plans WHERE id=? AND owner_id=? AND lab_id=?').get(planId, this.actor.id, this.actor.labId)
+    const row = this.db.prepare(`SELECT document FROM plans WHERE id=? AND owner_id=? AND lab_id=? AND ${authorizedPlanSources}`).get(planId, this.actor.id, this.actor.labId)
     if (!row) fail('NOT_FOUND')
     return Plan.parse(JSON.parse(String(row.document)))
   }
@@ -95,6 +109,7 @@ export class Collaboration {
     if (task.leadId === this.actor.id) {
       if (['ready', 'changes_requested'].includes(task.status)) allowedActions.push('start')
       if (['in_progress', 'changes_requested'].includes(task.status)) allowedActions.push('submit')
+      if(this.execution?.enabled && ['ready','in_progress','changes_requested'].includes(task.status) && !this.db.prepare("SELECT 1 FROM execution_jobs WHERE task_id=? AND status IN ('queued','running','waiting_input')").get(task.id)){try{if(new AiService(this,true,this.execution.model).capability()?.status==='available'){this.coordination.runnable(task);allowedActions.push('run')}}catch{/* dependency or impact blocks execution */}}
     }
     if (task.reviewerId === this.actor.id && task.status === 'in_review') allowedActions.push('review')
     if(task.status!=='cancelled') {
@@ -118,7 +133,7 @@ export class Collaboration {
     const task = this.actions(this.task(taskId))
     if (!detail) return task
     return { task, assignments: this.db.prepare('SELECT document FROM assignments WHERE task_id=? ORDER BY id').all(taskId).map(r => Assignment.parse(JSON.parse(String(r.document)))),
-      deliverables: this.db.prepare('SELECT document FROM deliverables WHERE task_id=? ORDER BY revision').all(taskId).map(r => Deliverable.parse(JSON.parse(String(r.document)))), executions: [], changes: this.db.prepare('SELECT document FROM change_proposals WHERE task_id=? ORDER BY rowid').all(taskId).map(r=>ChangeProposal.parse(JSON.parse(String(r.document)))), dependencyImpacts: this.db.prepare('SELECT document FROM dependency_impacts WHERE task_id=? ORDER BY acknowledged,rowid DESC LIMIT 100').all(taskId).map(r=>{const impact=DependencyImpact.parse(JSON.parse(String(r.document)));const v=this.visible();const visible=this.db.prepare(`SELECT t.id ${v.sql} AND t.id=?`).get(...v.values,impact.upstreamTaskId);return visible?impact:{...impact,upstreamTaskId:null,upstreamVersion:null}}), dependencyImpactsTruncated: Number(this.db.prepare('SELECT count(*) n FROM dependency_impacts WHERE task_id=?').get(taskId)!.n)>100, artifacts: this.db.prepare('SELECT document FROM artifacts WHERE task_id=? ORDER BY rowid').all(taskId).map(r=>Artifact.parse(JSON.parse(String(r.document)))) }
+      deliverables: this.db.prepare('SELECT document FROM deliverables WHERE task_id=? ORDER BY revision').all(taskId).map(r => Deliverable.parse(JSON.parse(String(r.document)))), executions: this.db.prepare("SELECT id FROM execution_jobs WHERE task_id=? AND kind='capability' ORDER BY created_at DESC LIMIT 100").all(taskId).map(r=>new AiService(this,this.execution?.enabled??false,this.execution?.model??'deepseek-v4-flash').projectedRun(String(r.id))), changes: this.db.prepare('SELECT document FROM change_proposals WHERE task_id=? ORDER BY rowid').all(taskId).map(r=>ChangeProposal.parse(JSON.parse(String(r.document)))), dependencyImpacts: this.db.prepare('SELECT document FROM dependency_impacts WHERE task_id=? ORDER BY acknowledged,rowid DESC LIMIT 100').all(taskId).map(r=>{const impact=DependencyImpact.parse(JSON.parse(String(r.document)));const v=this.visible();const visible=this.db.prepare(`SELECT t.id ${v.sql} AND t.id=?`).get(...v.values,impact.upstreamTaskId);return visible?impact:{...impact,upstreamTaskId:null,upstreamVersion:null}}), dependencyImpactsTruncated: Number(this.db.prepare('SELECT count(*) n FROM dependency_impacts WHERE task_id=?').get(taskId)!.n)>100, artifacts: this.db.prepare('SELECT document FROM artifacts WHERE task_id=? ORDER BY rowid').all(taskId).map(r=>Artifact.parse(JSON.parse(String(r.document)))) }
   }
   savePlan(plan: PlanModel) {
     Plan.parse(plan)
@@ -291,7 +306,7 @@ export class Collaboration {
       const base = { kind: 'plans', status: query.status ?? 'draft', limit: query.limit ?? 30 }
       const cursor = this.cursor(base, query.cursor)
       const rows = this.db.prepare(`SELECT document,id,json_extract(document,'$.createdAt') created FROM plans
-        WHERE owner_id=? AND lab_id=? AND (?='all' OR json_extract(document,'$.status')=?)
+        WHERE owner_id=? AND lab_id=? AND ${authorizedPlanSources} AND (?='all' OR json_extract(document,'$.status')=?)
         AND (? IS NULL OR json_extract(document,'$.createdAt')<? OR (json_extract(document,'$.createdAt')=? AND id<?))
         ORDER BY created DESC,id DESC LIMIT ?`).all(this.actor.id, this.actor.labId, base.status, base.status, cursor?.last ?? null, cursor?.created ?? '', cursor?.created ?? '', cursor?.last ?? '', base.limit + 1)
       const last = rows[base.limit - 1]
@@ -314,18 +329,21 @@ export class Collaboration {
         SUM(CASE WHEN acl.access='full' AND t.reviewer_id=? AND t.status='in_review' THEN 1 ELSE 0 END) reviews
         ${v.sql}`).get(this.actor.id, this.actor.id, ...v.values)!
       const changeCount=this.db.prepare(`SELECT count(*) n FROM change_proposals p WHERE p.status='pending' AND p.task_id IN (SELECT t.id ${v.sql} AND acl.access='full') AND EXISTS(SELECT 1 FROM json_each(p.document,'$.requiredMemberIds') WHERE value=?) AND NOT EXISTS(SELECT 1 FROM change_decisions d WHERE d.proposal_id=p.id AND d.member_id=?)`).get(...v.values,this.actor.id,this.actor.id)!
-      return { data: { counts, submittedDeliverables: Number(deliveries.submitted), acceptedDeliverables: Number(deliveries.accepted ?? 0), blockedTaskIds: blocked.slice(0, 100).map(r => String(r.id)), blockedTaskIdsTruncated: blocked.length > 100, pendingActions: { changeResponses: Number(changeCount.n), invitationResponses: Number(actions.invitations ?? 0), deliverableReviews: Number(actions.reviews ?? 0) }, updatedAt: this.readSnapshot!.at } }
+      const executionCount=this.db.prepare(`SELECT count(*) n FROM execution_jobs r WHERE ${attentionRun} AND r.task_id IN (SELECT t.id ${v.sql} AND acl.access='full' AND t.status NOT IN ('completed','cancelled') AND (t.lead_id=? OR t.initiator_id=?))`).get(...v.values,this.actor.id,this.actor.id)!
+      return { data: { counts, submittedDeliverables: Number(deliveries.submitted), acceptedDeliverables: Number(deliveries.accepted ?? 0), blockedTaskIds: blocked.slice(0, 100).map(r => String(r.id)), blockedTaskIdsTruncated: blocked.length > 100, pendingActions: { executionAttention:Number(executionCount.n), changeResponses: Number(changeCount.n), invitationResponses: Number(actions.invitations ?? 0), deliverableReviews: Number(actions.reviews ?? 0) }, updatedAt: this.readSnapshot!.at } }
     },
     actionItems: ({ params, query }) => {
       this.sameLab(params.id)
       const base={kind:'actionItems',filter:query.kind??'all',limit:query.limit??30},cursor=this.cursor(base,query.cursor),v=this.visible('mine')
-      const rows=this.db.prepare(`WITH visible AS (SELECT t.id,t.created_at,t.status,t.reviewer_id,acl.access ${v.sql}), items AS (
+      const rows=this.db.prepare(`WITH visible AS (SELECT t.id,t.created_at,t.status,t.reviewer_id,t.lead_id,t.initiator_id,acl.access ${v.sql}), items AS (
         SELECT v.id,v.created_at,'invitation_response' kind,NULL proposal_id FROM visible v WHERE v.status='awaiting_acceptance' AND EXISTS(SELECT 1 FROM assignments a WHERE a.task_id=v.id AND a.member_id=? AND a.status='pending')
         UNION ALL SELECT v.id,v.created_at,'deliverable_review',NULL FROM visible v WHERE v.status='in_review' AND v.reviewer_id=? AND v.access='full'
         UNION ALL SELECT v.id,v.created_at,'change_response',p.id FROM visible v JOIN change_proposals p ON p.task_id=v.id AND p.status='pending' WHERE v.access='full' AND EXISTS(SELECT 1 FROM json_each(p.document,'$.requiredMemberIds') WHERE value=?) AND NOT EXISTS(SELECT 1 FROM change_decisions d WHERE d.proposal_id=p.id AND d.member_id=?)
-      ) SELECT *,id||':'||kind item_key FROM items WHERE (?='all' OR kind=?) AND (? IS NULL OR created_at<? OR (created_at=? AND id||':'||kind<?)) ORDER BY created_at DESC,item_key DESC LIMIT ?`).all(...v.values,this.actor.id,this.actor.id,this.actor.id,this.actor.id,base.filter,base.filter,cursor?.last??null,cursor?.created??'',cursor?.created??'',cursor?.last??'',base.limit+1)
+        UNION ALL SELECT v.id,v.created_at,'execution_attention',r.id FROM visible v JOIN execution_jobs r ON r.task_id=v.id WHERE v.access='full' AND v.status NOT IN ('completed','cancelled') AND (v.lead_id=? OR v.initiator_id=?) AND ${attentionRun}
+      ) SELECT *,id||':'||kind item_key FROM items WHERE (?='all' OR kind=?) AND (? IS NULL OR created_at<? OR (created_at=? AND id||':'||kind<?)) ORDER BY created_at DESC,item_key DESC LIMIT ?`).all(...v.values,this.actor.id,this.actor.id,this.actor.id,this.actor.id,this.actor.id,this.actor.id,base.filter,base.filter,cursor?.last??null,cursor?.created??'',cursor?.created??'',cursor?.last??'',base.limit+1)
       const last=rows[base.limit-1]
       return {data:rows.slice(0,base.limit).map(row=>{
+        if(row.kind==='execution_attention')return {kind:row.kind,task:this.actions(this.task(String(row.id))),run:new AiService(this,this.execution?.enabled??false,this.execution?.model??'deepseek-v4-flash').projectedRun(String(row.proposal_id))}
         if(row.kind==='invitation_response') return {kind:row.kind,task:this.summary(String(row.id))}
         if(row.kind==='change_response') return {kind:row.kind,task:this.actions(this.task(String(row.id))),proposal:this.coordination.proposal(String(row.proposal_id))}
         const d=this.db.prepare('SELECT id,revision,version FROM deliverables WHERE task_id=? ORDER BY revision DESC LIMIT 1').get(row.id!)!
@@ -360,10 +378,10 @@ export class Collaboration {
       if (plan.status !== 'draft') fail('INVALID_STATE')
       this.validatePlan(plan)
       if (!plan.proposedItems.length) fail('VALIDATION_ERROR')
-      if (plan.proposedItems.some(item => item.allocation.kind === 'public_agent')) fail('CAPABILITY_UNAVAILABLE')
+      for(const item of plan.proposedItems) if(item.allocation.kind==='public_agent'){if(item.allocation.humanLeadId!==this.actor.id)fail('FORBIDDEN');if(!item.allocation.capability||!item.budget)fail('CAPABILITY_UNAVAILABLE');new AiService(this,this.execution?.enabled??false,this.execution?.model??'deepseek-v4-flash').available(item.allocation.capability)}
       const mapping = new Map(plan.proposedItems.map(item => [item.id, id()]))
       for (const item of plan.proposedItems) {
-        const own = item.allocation.kind === 'self'
+        const own = item.allocation.kind === 'self' || item.allocation.kind === 'public_agent'
         const task = Task.parse({ id: mapping.get(item.id), labId: plan.labId, parentTaskId: null, planId: plan.id, planVersion: plan.version, title: item.title, taskType: 'other', goal: item.goal, acceptanceCriteria: item.acceptanceCriteria, initiatorId: this.actor.id, leadId: own ? this.actor.id : null, reviewerId: this.actor.id, participantIds: [], status: own ? 'ready' : 'awaiting_acceptance', blocker: null, dependencies: item.dependencies.map(dependency => ({ taskId: mapping.get(dependency), kind: 'accepted_deliverable', requiredRevision: null })), schedule: item.schedule, access: { visibility: item.allocation.kind === 'claim' ? 'lab_summary' : 'participants', summary: item.allocation.kind === 'claim' ? item.allocation.summary : null }, version: 1, createdAt: now(), updatedAt: now(), allowedActions: [] })
         const summary = TaskSummary.parse({ projection: 'claim_summary', id: task.id, labId: task.labId, title: item.title, summary: item.allocation.kind === 'claim' ? item.allocation.summary : item.deliverable, deliverable: item.deliverable, acceptanceCriteria: item.acceptanceCriteria, schedule: item.schedule, initiatorId: task.initiatorId, reviewerId: task.reviewerId, version: 1, allowedActions: [], pendingInvitation: null })
         this.db.prepare('INSERT INTO tasks VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').run(task.id, task.labId, plan.id, item.id, task.initiatorId, task.leadId, task.reviewerId, task.status, item.allocation.kind === 'claim' ? 1 : 0, 1, task.createdAt, encode(task), encode(summary))
@@ -375,6 +393,12 @@ export class Collaboration {
       }
       for(const taskId of mapping.values()) this.coordination.edges(this.task(taskId))
       plan.status = 'confirmed'; plan.version++; this.savePlan(plan)
+      for(const item of plan.proposedItems) if(item.allocation.kind==='public_agent' && item.allocation.capability && item.budget){
+        const taskId=mapping.get(item.id)!
+        const a=this.db.prepare('SELECT document FROM assignments WHERE task_id=?').get(taskId)!
+        const assignment=Assignment.parse(JSON.parse(String(a.document)));assignment.kind='public_agent';assignment.capability=item.allocation.capability;assignment.version++;this.saveAssignment(assignment)
+        new AiService(this,this.execution?.enabled??false,this.execution?.model??'deepseek-v4-flash').handle('run',{params:{id:taskId},query:{},headers:{},body:{expectedVersion:1,capability:item.allocation.capability,budget:item.budget,inputArtifactIds:[]}})
+      }
       return { data: { plan, taskIds: [...mapping.values()] } }
     },
     tasks: ({ query }) => {

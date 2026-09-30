@@ -1,3 +1,6 @@
+import { AiService, aiCommands } from './ai.js'
+import type { AiCommand } from './ai.js'
+import { reconcile } from './execution-worker.js'
 import Fastify from 'fastify'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
@@ -28,7 +31,7 @@ export function createServer(config: Config) {
   app.addHook('onClose', async () => { db?.close() })
   app.addHook('onSend', async (_request, reply) => { reply.header('Cache-Control', 'no-store'); reply.header('X-Contract-Version', contractVersion); reply.header('X-Content-Type-Options', 'nosniff') })
   function error(code: keyof typeof errorStatus, requestId: string) {
-    return ErrorResponse.parse({ error: { code, message: code === 'NOT_IMPLEMENTED' ? 'Endpoint is not implemented in B2b.' : 'Request could not be completed.', requestId } })
+    return ErrorResponse.parse({ error: { code, message: code === 'NOT_IMPLEMENTED' ? 'Endpoint is not implemented in B3.' : 'Request could not be completed.', requestId } })
   }
   app.get('/api/v1/health/live', async () => data(Health).parse({ data: { status: 'ok', contractVersion, checks: { database: 'not_checked', storage: 'not_checked', authentication: 'not_checked', harness: 'not_verified' } } }))
   app.get('/api/v1/health/ready', async (_request, reply) => {
@@ -77,10 +80,12 @@ export function createServer(config: Config) {
           connection.prepare('UPDATE sessions SET revoked_at=? WHERE token_hash=?').run(new Date().toISOString(), hash(token))
           reply.header('Set-Cookie', cookie('', 0)); return { data: { loggedOut: true } }
         }
-        if (name === 'planRequest') fail('MODEL_UNAVAILABLE')
+        collaboration = new Collaboration(connection,actor,config.blobRoot,{enabled:config.aiEnabled,model:config.model})
+        reconcile(connection,config)
+        if((aiCommands as readonly string[]).includes(name))return new AiService(collaboration,config.aiEnabled,config.model).run(name as AiCommand,parsed.data as RequestFor<AiCommand>)
         if (!(collaborationCommands as readonly string[]).includes(name)) fail('NOT_IMPLEMENTED')
-        collaboration = new Collaboration(connection,actor,config.blobRoot)
         const result=collaboration.run(name as CollaborationCommand, parsed.data as RequestFor<CollaborationCommand>)
+        reconcile(connection,config)
         if(name==='content') {const file=collaboration.coordination.artifact((parsed.data.params as {id:string}).id).model;reply.header('Content-Type',file.mediaType);reply.header('Content-Disposition',`attachment; filename="download"; filename*=UTF-8''${encodeURIComponent(file.filename)}`);return Buffer.from(result as Uint8Array)}
         return result
       }) } catch(error) {if(collaboration) cleanBlobs(collaboration.createdBlobs);throw error}

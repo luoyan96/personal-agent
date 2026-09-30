@@ -202,7 +202,7 @@ function planEditor() {
   });
 }
 
-function actionCard(item: ResponseFor<'actionItems'>['data'][number]) { return `<section><p class="fine">${item.kind==='change_response'?'待回应变更 · 提议 v'+item.proposal.version:item.kind==='invitation_response'?'待回应邀请':'待验收交付'}</p>${taskCard(item.task,name)}</section>`; }
+function actionCard(item: ResponseFor<'actionItems'>['data'][number]) { return `<section><p class="fine">${item.kind==='execution_attention'?'AI 运行待处理':item.kind==='change_response'?'待回应变更 · 提议 v'+item.proposal.version:item.kind==='invitation_response'?'待回应邀请':'待验收交付'}</p>${taskCard(item.task,name)}</section>`; }
 async function dailyEntry(signal: AbortSignal) {
   const query=snapshotQuery(), labId=session!.member.labId;
   const [plans,actions,...progress]=await Promise.all([

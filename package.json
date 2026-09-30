@@ -25,7 +25,14 @@
     "seed:coordination": "node scripts/seed-b2b-demo.mjs",
     "check:b2a": "node scripts/export-contracts.mjs --check && vitest run apps/api/tests/discovery.spec.ts apps/api/tests/collaboration.spec.ts apps/api/tests/foundation.spec.ts",
     "seed:discovery": "node scripts/seed-b2a-demo.mjs",
-    "seed:collaboration": "node scripts/seed-b1-demo.mjs"
+    "seed:collaboration": "node scripts/seed-b1-demo.mjs",
+    "worker:start": "node apps/api/dist/worker.js",
+    "check:b3": "node scripts/export-contracts.mjs --check && vitest run apps/api/tests integrations/deepseek-harness/runtime/tests",
+    "capability:configure": "node apps/api/dist/capability-config.js",
+    "seed:execution": "node scripts/seed-b3-demo.mjs",
+    "check:harness-live": "node scripts/check-harness-live.mjs",
+    "check:b3-live": "node scripts/check-b3-live.mjs",
+    "check:b3-resilience-live": "node scripts/check-b3-resilience-live.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.0",
