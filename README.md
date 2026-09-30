@@ -8,9 +8,9 @@
 
 ## 当前状态（2026-09-30）
 
-**G1—G3 和 G4a 已共同通过；下一步是小组试用准备。产品第一阶段尚未完成。** 已能找回草案、查看本人待办及授权总览、记录成员承诺和可用时间，并在任务中处理依赖阻塞、安排变更、退出转交、取消撤权、附件与交付版本。
+**G1—G3、G4a 和 G5a 已共同通过；下一步是实际运行与真实小组试用。产品第一阶段尚未完成。** 已能找回草案、查看本人待办及授权总览、记录成员承诺和可用时间，并在任务中处理依赖阻塞、安排变更、退出转交、取消撤权、附件与交付版本。
 
-G4a 最终受测代码为 `dc227c56b4e6d39df69a615942fd8c68b8925f83`（含普通成员授权找回及撤回修复），契约 **0.6.2**，回复契约 **1.0.0**。根 CI **250 项**；本批真实 HTTP 浏览器 9 组、真实模型 8 组、F3 UI 3 组及历史协作 50 组通过。详见 [G4a 共同复核](docs/development/reports/G4a-overall-2026-09-30.md)。尚未合入 main、部署或通过真实小组试用。
+G5a 完整受测组合为 `1049ad300f4146045c36fd0b74aff63ed79e2aa6`，契约 **0.6.2**，回复契约 **1.0.0**。根 CI **258 项**，正式账号浏览器 7 组、历史浏览器 62 组，以及生产 HTTPS 协作、独立备份恢复均通过。详见 [G5a 共同复核](docs/development/reports/G5a-overall-2026-09-30.md)。本轮无新增模型调用，既有真实 AI 证据见 G3/G4a 报告。尚未合入 main、部署或通过真实小组试用。
 
 | 内容 | 当前能力与边界 |
 | --- | --- |
@@ -23,7 +23,7 @@ G4a 最终受测代码为 `dc227c56b4e6d39df69a615942fd8c68b8925f83`（含普通
 | [Harness 适配](integrations/deepseek-harness/README.md) | 官方固定 0.2.0-rc.1 受限运行组合已安装并真实调用；旧六工具不用于团队 worker |
 | 结论与公共方法 | 结论留存/授权复用、现有公共方法候选试跑与人工启停、本人请求及样例授权找回已共同验证；私人能力托管未开放 |
 
-本分支B5a后端已完成合成账号、生产参考路径和新路径恢复演练，根CI256项通过；F5a及共同G5a待验收，未部署。正式维护、启动与备份恢复见[B5a联调包](docs/development/b5a-handoff.md)及[阶段报告](docs/development/reports/B5a-backend-2026-09-30.md)。原业务权限规则见 [B4a 联调包](docs/development/b4a-handoff.md)；逐项真实证据及用量见 [G4a 报告](docs/development/reports/G4a-overall-2026-09-30.md)。根 CI 已覆盖新的 Harness runtime，真实模型专项仍须显式凭据。
+B5a/F5a 已共同通过账号维护、生产参考路径、恢复演练与首次使用验证，未部署。成员先读[一页使用指引](docs/first-use.md)。正式维护、启动与备份恢复见[B5a联调包](docs/development/b5a-handoff.md)及[阶段报告](docs/development/reports/B5a-backend-2026-09-30.md)。原业务权限规则见 [B4a 联调包](docs/development/b4a-handoff.md)；逐项真实证据及用量见 [G4a 报告](docs/development/reports/G4a-overall-2026-09-30.md)。根 CI 已覆盖新的 Harness runtime，真实模型专项仍须显式凭据。
 
 ## 第一阶段要完成什么
 
@@ -43,13 +43,13 @@ flowchart LR
 
 完整目标见[产品规划 v0.4](docs/product-plan.md)。**当前优先读[第一阶段范围](docs/phase-one.md)**，它区分产品 P1、工程 G1 和暂缓功能。任务语义见[分配规则](docs/task-allocation.md)，实际收益见[试点计划](docs/validation-plan.md)，顺序见[路线图](docs/roadmap.md)。完整私人能力托管、公开市场、跨学校调度和学校行政系统不要求在 P1 一次完成。
 
-契约 0.6.2 新增本人任务样例授权分页查询，数据库迁移仍截至 007；原前后端报告保留当时状态，以共同报告记录后续验收结论。
+契约 0.6.2 新增本人任务样例授权分页查询，数据库迁移截至 008；原前后端报告保留当时状态，以共同报告记录后续验收结论。
 
 ## 下一批怎样开发
 
-下一批 **B5a/F5a：小组试用准备**。补正式账号、可重复启动与恢复、数据库和附件备份恢复、简短使用指引。范围见 [G5a 计划](docs/development/g5a-readiness.md)。准备通过后，再用真实任务观察是否减少协调与返工；继续保留成员自己的方法。
+下一步 **G5b：实际运行与小组试用**。先确定常开主机和浏览器访问方式，完成账号与运行交接，再选择一项当前真实任务开始。步骤见[试用启动说明](docs/pilot-launch.md)。当前受测入口仅供本机访问，多人环境尚未部署。
 
-[开发索引](docs/development/README.md)提供分工；[下一批可复制 prompt](docs/development/prompts.md#当前下一批-b5a--f5a)提供停止点。双方从包含 G4a-01、G4a 报告及本次规划的同一完整交接提交开始；B5a后端本侧准备已完成，F5a/共同G5a待验收，尚未部署。
+[开发索引](docs/development/README.md)提供分工；[当前执行指令](docs/development/prompts.md#当前下一步-g5b)提供交接入口。采用包含 G5a 报告与试用说明的同一完整提交；前后端后续根据真实使用阻碍修复，不预排新的大型功能批次。
 
 ## 本地开始
 
@@ -60,10 +60,12 @@ pnpm install --frozen-lockfile
 pnpm run ci
 ```
 
-真实 API、迁移、测试账号配置见[B4a 联调包](docs/development/b4a-handoff.md)，网页启动和环境变量见[前端说明](apps/web/README.md)。测试账号只用于合成验证；真实成员试用需要独立账号、访问边界、备份与运行支持。
+真实 API、迁移、测试账号配置见[B5a 联调包](docs/development/b5a-handoff.md)，网页启动和环境变量见[前端说明](apps/web/README.md)。测试账号只用于合成验证；正式维护与恢复工具已验证，实际主机/证书/成员账号仍需按试用安排配置。
+
+下方仅为独立合成开发环境的网页调试命令；生产 HTTPS 运行按 B5a 联调包配置，不混用 HTTP 开发入口。
 
 ```sh
-# API 按联调包启动于 3100，APP_ORIGIN 与前端 origin 一致后
+# 开发 API 为 3100，APP_ORIGIN=http://127.0.0.1:4175
 pnpm --filter @research-agent/web dev --port 4175
 ```
 
