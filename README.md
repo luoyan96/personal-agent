@@ -23,7 +23,7 @@ G4a 最终受测代码为 `dc227c56b4e6d39df69a615942fd8c68b8925f83`（含普通
 | [Harness 适配](integrations/deepseek-harness/README.md) | 官方固定 0.2.0-rc.1 受限运行组合已安装并真实调用；旧六工具不用于团队 worker |
 | 结论与公共方法 | 结论留存/授权复用、现有公共方法候选试跑与人工启停、本人请求及样例授权找回已共同验证；私人能力托管未开放 |
 
-当前启动、迁移、权限与恢复规则见 [B4a 联调包](docs/development/b4a-handoff.md)；逐项真实证据及用量见 [G4a 报告](docs/development/reports/G4a-overall-2026-09-30.md)。根 CI 已覆盖新的 Harness runtime，真实模型专项仍须显式凭据。
+本分支B5a后端已完成合成账号、生产参考路径和新路径恢复演练，根CI256项通过；F5a及共同G5a待验收，未部署。正式维护、启动与备份恢复见[B5a联调包](docs/development/b5a-handoff.md)及[阶段报告](docs/development/reports/B5a-backend-2026-09-30.md)。原业务权限规则见 [B4a 联调包](docs/development/b4a-handoff.md)；逐项真实证据及用量见 [G4a 报告](docs/development/reports/G4a-overall-2026-09-30.md)。根 CI 已覆盖新的 Harness runtime，真实模型专项仍须显式凭据。
 
 ## 第一阶段要完成什么
 
@@ -49,7 +49,7 @@ flowchart LR
 
 下一批 **B5a/F5a：小组试用准备**。补正式账号、可重复启动与恢复、数据库和附件备份恢复、简短使用指引。范围见 [G5a 计划](docs/development/g5a-readiness.md)。准备通过后，再用真实任务观察是否减少协调与返工；继续保留成员自己的方法。
 
-[开发索引](docs/development/README.md)提供分工；[下一批可复制 prompt](docs/development/prompts.md#当前下一批-b5a--f5a)提供停止点。双方从包含 G4a-01、G4a 报告及本次规划的同一完整交接提交开始；本轮尚未实施 B5a/F5a 或部署。
+[开发索引](docs/development/README.md)提供分工；[下一批可复制 prompt](docs/development/prompts.md#当前下一批-b5a--f5a)提供停止点。双方从包含 G4a-01、G4a 报告及本次规划的同一完整交接提交开始；B5a后端本侧准备已完成，F5a/共同G5a待验收，尚未部署。
 
 ## 本地开始
 
