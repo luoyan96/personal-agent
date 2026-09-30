@@ -1,8 +1,11 @@
+import { processGuard } from './process-guard.js'
 import { readConfig } from './config.js'
 import { createServer } from './server.js'
 import { contractVersion } from '@research-agent-platform/contracts'
 
 const config = readConfig()
+const releaseProcess = processGuard(config.databasePath)
+process.once('exit', releaseProcess)
 const app = createServer(config)
 try {
   const address = await app.listen({ host: config.host, port: config.port })

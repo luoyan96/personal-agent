@@ -1,7 +1,10 @@
+import { processGuard } from './process-guard.js'
 import { readConfig } from './config.js'
 import { openDatabase,checkDatabase } from './database.js'
 import { ExecutionWorker } from './execution-worker.js'
-const config=readConfig(),db=openDatabase(config.databasePath)
+const config=readConfig()
+const releaseProcess=processGuard(config.databasePath);process.once('exit',releaseProcess)
+const db=openDatabase(config.databasePath)
 checkDatabase(db)
 let stopping=false
 process.once('SIGINT',()=>{stopping=true});process.once('SIGTERM',()=>{stopping=true})

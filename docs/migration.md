@@ -42,3 +42,7 @@
 ## B4a · 007授权结论与方法维护
 
 共同G3基线后只追加007，不改001—006。保留既有capability.version配置代次，导入不可变legacy_b3方法v1，不伪造发布；为旧运行追加methodVersion/configurationGeneration等元数据。结论修订、递归派生依赖、公开片段授权及方法事件另表保存。真实B3旧库重复升级和原表逐行保留已验证。细节、校验和与启动见 [B4a联调包](development/b4a-handoff.md)。不覆盖别人数据库、不重置旧数据。
+
+## 008：小组维护与恢复
+
+新增account_controls及maintenance_audit，不修改001—007或业务承诺；既有账号维护版本初始化为1。API契约保持0.6.2。升级前停写备份；本版备份工具支持已知G4a迁移前缀，恢复仅到新目录并使旧会话/未结束运行失效。命令、审计、密钥保管与恢复验证见[B5a联调包](development/b5a-handoff.md)。

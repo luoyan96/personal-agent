@@ -12,7 +12,7 @@
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "check:content": "node scripts/check-content.mjs",
-    "ci": "pnpm check:content && pnpm build && pnpm typecheck && node scripts/export-contracts.mjs --check && pnpm test && node scripts/check-b0-process.mjs && pnpm --filter @research-agent/web check:production",
+    "ci": "pnpm check:content && pnpm check:operations && pnpm build && pnpm typecheck && node scripts/export-contracts.mjs --check && pnpm test && node scripts/check-b0-process.mjs && pnpm --filter @research-agent/web check:production",
     "demo": "node scripts/demo.mjs",
     "contracts:export": "node scripts/export-contracts.mjs",
     "check:b0": "node scripts/export-contracts.mjs --check && vitest run packages/contracts/tests apps/api/tests && node scripts/check-b0-process.mjs",
@@ -35,7 +35,13 @@
     "check:b3-resilience-live": "node scripts/check-b3-resilience-live.mjs",
     "seed:reuse": "node scripts/seed-b4a-demo.mjs",
     "check:b4a": "node scripts/export-contracts.mjs --check && vitest run apps/api/tests integrations/deepseek-harness/runtime/tests",
-    "check:b4a-live": "node scripts/check-b4a-live.mjs"
+    "check:b4a-live": "node scripts/check-b4a-live.mjs",
+    "pilot:account": "node apps/api/dist/operate.js",
+    "pilot:recover": "node apps/api/dist/recover.js",
+    "pilot:web": "node scripts/serve-pilot.mjs",
+    "check:b5a": "vitest run apps/api/tests integrations/deepseek-harness/runtime/tests",
+    "check:b5a-production": "node scripts/check-b5a-production.mjs",
+    "check:operations": "node --check scripts/serve-pilot.mjs && node --check scripts/check-b5a-production.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.0",
