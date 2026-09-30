@@ -29,6 +29,7 @@ export function availabilityText(member: MemberModel): string {
   return `${freshness}；自报区间 ${value.from} 至 ${value.to}（${value.timezone}）；区间内自报 ${value.hours === null ? '时数未知' : value.hours + ' 小时'}；更新 ${value.updatedAt}`;
 }
 
-export function planCard(plan: Pick<PlanModel, 'id' | 'goal' | 'version' | 'createdAt'>): string {
-  return `<article class="panel saved-plan"><h3><a href="#/plans/${e(plan.id)}">${e(plan.goal)}</a></h3><p class="fine">已保存版本 ${plan.version} · 创建于 <time datetime="${e(plan.createdAt)}">${e(plan.createdAt)}</time></p><p class="fine">继续编辑与确认方案</p></article>`;
+export function planCard(plan: Pick<PlanModel, 'id' | 'goal' | 'version' | 'createdAt' | 'status'>): string {
+  const action = plan.status === 'confirmed' ? '查看已确认方案' : plan.status === 'superseded' ? '查看已替代方案' : '继续编辑与确认方案';
+  return `<article class="panel saved-plan"><h3><a href="#/plans/${e(plan.id)}">${e(plan.goal)}</a></h3><p class="fine">已保存版本 ${plan.version} · 创建于 <time datetime="${e(plan.createdAt)}">${e(plan.createdAt)}</time></p><p class="fine">${action}</p></article>`;
 }
