@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.6.0"
+    "version": "0.6.1"
   },
   "paths": {
     "/api/v1/health/live": {
@@ -34,7 +34,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.6.0"
+                          "const": "0.6.1"
                         },
                         "checks": {
                           "type": "object",
@@ -93,7 +93,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.6.0",
+                    "contractVersion": "0.6.1",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -247,7 +247,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.6.0"
+                          "const": "0.6.1"
                         },
                         "checks": {
                           "type": "object",
@@ -306,7 +306,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.6.0",
+                    "contractVersion": "0.6.1",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -438,7 +438,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.6.0"
+                          "const": "0.6.1"
                         },
                         "checks": {
                           "type": "object",
@@ -497,7 +497,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.6.0",
+                    "contractVersion": "0.6.1",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -5448,6 +5448,37 @@
                             "maxLength": 8000
                           }
                         },
+                        "conclusionRefs": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "current",
+                                  "needs_review"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "version",
+                              "status"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -5716,6 +5747,37 @@
                               "task": {
                                 "type": "object",
                                 "properties": {
+                                  "conclusionRefs": {
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                        },
+                                        "version": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "status": {
+                                          "type": "string",
+                                          "enum": [
+                                            "current",
+                                            "needs_review"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "version",
+                                        "status"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
                                   "id": {
                                     "type": "string",
                                     "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -6280,7 +6342,10 @@
                                         "disable",
                                         "revoke_access",
                                         "upload",
-                                        "acknowledge_impacts"
+                                        "acknowledge_impacts",
+                                        "retain_conclusion",
+                                        "share_feedback",
+                                        "decline_feedback"
                                       ]
                                     }
                                   }
@@ -7623,6 +7688,37 @@
                               "task": {
                                 "type": "object",
                                 "properties": {
+                                  "conclusionRefs": {
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                        },
+                                        "version": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "status": {
+                                          "type": "string",
+                                          "enum": [
+                                            "current",
+                                            "needs_review"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "version",
+                                        "status"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
                                   "id": {
                                     "type": "string",
                                     "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -8187,7 +8283,10 @@
                                         "disable",
                                         "revoke_access",
                                         "upload",
-                                        "acknowledge_impacts"
+                                        "acknowledge_impacts",
+                                        "retain_conclusion",
+                                        "share_feedback",
+                                        "decline_feedback"
                                       ]
                                     }
                                   }
@@ -8719,6 +8818,37 @@
                               "task": {
                                 "type": "object",
                                 "properties": {
+                                  "conclusionRefs": {
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                        },
+                                        "version": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "status": {
+                                          "type": "string",
+                                          "enum": [
+                                            "current",
+                                            "needs_review"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "version",
+                                        "status"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
                                   "id": {
                                     "type": "string",
                                     "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -9283,7 +9413,10 @@
                                         "disable",
                                         "revoke_access",
                                         "upload",
-                                        "acknowledge_impacts"
+                                        "acknowledge_impacts",
+                                        "retain_conclusion",
+                                        "share_feedback",
+                                        "decline_feedback"
                                       ]
                                     }
                                   }
@@ -10096,6 +10229,37 @@
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 8000
+                          }
+                        },
+                        "conclusionRefs": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "current",
+                                  "needs_review"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "version",
+                              "status"
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "id": {
@@ -11468,6 +11632,37 @@
                             "maxLength": 8000
                           }
                         },
+                        "conclusionRefs": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "current",
+                                  "needs_review"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "version",
+                              "status"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -12266,6 +12461,37 @@
                                 "maxLength": 8000
                               }
                             },
+                            "conclusionRefs": {
+                              "maxItems": 100,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "current",
+                                      "needs_review"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "version",
+                                  "status"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
                             "id": {
                               "type": "string",
                               "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -12560,6 +12786,37 @@
                           {
                             "type": "object",
                             "properties": {
+                              "conclusionRefs": {
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    "version": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "status": {
+                                      "type": "string",
+                                      "enum": [
+                                        "current",
+                                        "needs_review"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "status"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
                               "id": {
                                 "type": "string",
                                 "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -13124,7 +13381,10 @@
                                     "disable",
                                     "revoke_access",
                                     "upload",
-                                    "acknowledge_impacts"
+                                    "acknowledge_impacts",
+                                    "retain_conclusion",
+                                    "share_feedback",
+                                    "decline_feedback"
                                   ]
                                 }
                               }
@@ -14123,6 +14383,37 @@
                             "task": {
                               "type": "object",
                               "properties": {
+                                "conclusionRefs": {
+                                  "maxItems": 100,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                      },
+                                      "version": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "status": {
+                                        "type": "string",
+                                        "enum": [
+                                          "current",
+                                          "needs_review"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "version",
+                                      "status"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
                                 "id": {
                                   "type": "string",
                                   "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -14687,7 +14978,10 @@
                                       "disable",
                                       "revoke_access",
                                       "upload",
-                                      "acknowledge_impacts"
+                                      "acknowledge_impacts",
+                                      "retain_conclusion",
+                                      "share_feedback",
+                                      "decline_feedback"
                                     ]
                                   }
                                 }
@@ -20026,6 +20320,37 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "conclusionRefs": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "current",
+                                  "needs_review"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "version",
+                              "status"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -20590,7 +20915,10 @@
                               "disable",
                               "revoke_access",
                               "upload",
-                              "acknowledge_impacts"
+                              "acknowledge_impacts",
+                              "retain_conclusion",
+                              "share_feedback",
+                              "decline_feedback"
                             ]
                           }
                         }
@@ -20882,6 +21210,37 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "conclusionRefs": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "current",
+                                  "needs_review"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "version",
+                              "status"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -21446,7 +21805,10 @@
                               "disable",
                               "revoke_access",
                               "upload",
-                              "acknowledge_impacts"
+                              "acknowledge_impacts",
+                              "retain_conclusion",
+                              "share_feedback",
+                              "decline_feedback"
                             ]
                           }
                         }
@@ -21711,6 +22073,37 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "conclusionRefs": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "current",
+                                  "needs_review"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "version",
+                              "status"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -22275,7 +22668,10 @@
                               "disable",
                               "revoke_access",
                               "upload",
-                              "acknowledge_impacts"
+                              "acknowledge_impacts",
+                              "retain_conclusion",
+                              "share_feedback",
+                              "decline_feedback"
                             ]
                           }
                         }
@@ -25403,6 +25799,37 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "conclusionRefs": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "current",
+                                  "needs_review"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "version",
+                              "status"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -25967,7 +26394,10 @@
                               "disable",
                               "revoke_access",
                               "upload",
-                              "acknowledge_impacts"
+                              "acknowledge_impacts",
+                              "retain_conclusion",
+                              "share_feedback",
+                              "decline_feedback"
                             ]
                           }
                         }
@@ -26574,6 +27004,37 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "conclusionRefs": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "current",
+                                  "needs_review"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "version",
+                              "status"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -27138,7 +27599,10 @@
                               "disable",
                               "revoke_access",
                               "upload",
-                              "acknowledge_impacts"
+                              "acknowledge_impacts",
+                              "retain_conclusion",
+                              "share_feedback",
+                              "decline_feedback"
                             ]
                           }
                         }
@@ -27701,6 +28165,37 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "conclusionRefs": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "current",
+                                  "needs_review"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "version",
+                              "status"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -28265,7 +28760,10 @@
                               "disable",
                               "revoke_access",
                               "upload",
-                              "acknowledge_impacts"
+                              "acknowledge_impacts",
+                              "retain_conclusion",
+                              "share_feedback",
+                              "decline_feedback"
                             ]
                           }
                         }
@@ -30294,6 +30792,37 @@
                                             "maxLength": 8000
                                           }
                                         },
+                                        "conclusionRefs": {
+                                          "maxItems": 100,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                              },
+                                              "version": {
+                                                "type": "integer",
+                                                "minimum": 1,
+                                                "maximum": 9007199254740991
+                                              },
+                                              "status": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "current",
+                                                  "needs_review"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "version",
+                                              "status"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
                                         "id": {
                                           "type": "string",
                                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -30347,6 +30876,37 @@
                                       {
                                         "type": "object",
                                         "properties": {
+                                          "conclusionRefs": {
+                                            "maxItems": 100,
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "id": {
+                                                  "type": "string",
+                                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                                },
+                                                "version": {
+                                                  "type": "integer",
+                                                  "minimum": 1,
+                                                  "maximum": 9007199254740991
+                                                },
+                                                "status": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "current",
+                                                    "needs_review"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "id",
+                                                "version",
+                                                "status"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
                                           "id": {
                                             "type": "string",
                                             "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -30911,7 +31471,10 @@
                                                 "disable",
                                                 "revoke_access",
                                                 "upload",
-                                                "acknowledge_impacts"
+                                                "acknowledge_impacts",
+                                                "retain_conclusion",
+                                                "share_feedback",
+                                                "decline_feedback"
                                               ]
                                             }
                                           }
@@ -31761,7 +32324,10 @@
                                           "disable",
                                           "revoke_access",
                                           "upload",
-                                          "acknowledge_impacts"
+                                          "acknowledge_impacts",
+                                          "retain_conclusion",
+                                          "share_feedback",
+                                          "decline_feedback"
                                         ]
                                       }
                                     },
@@ -32973,6 +33539,37 @@
                                             "maxLength": 8000
                                           }
                                         },
+                                        "conclusionRefs": {
+                                          "maxItems": 100,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                              },
+                                              "version": {
+                                                "type": "integer",
+                                                "minimum": 1,
+                                                "maximum": 9007199254740991
+                                              },
+                                              "status": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "current",
+                                                  "needs_review"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "version",
+                                              "status"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
                                         "id": {
                                           "type": "string",
                                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -33026,6 +33623,37 @@
                                       {
                                         "type": "object",
                                         "properties": {
+                                          "conclusionRefs": {
+                                            "maxItems": 100,
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "id": {
+                                                  "type": "string",
+                                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                                },
+                                                "version": {
+                                                  "type": "integer",
+                                                  "minimum": 1,
+                                                  "maximum": 9007199254740991
+                                                },
+                                                "status": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "current",
+                                                    "needs_review"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "id",
+                                                "version",
+                                                "status"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
                                           "id": {
                                             "type": "string",
                                             "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -33590,7 +34218,10 @@
                                                 "disable",
                                                 "revoke_access",
                                                 "upload",
-                                                "acknowledge_impacts"
+                                                "acknowledge_impacts",
+                                                "retain_conclusion",
+                                                "share_feedback",
+                                                "decline_feedback"
                                               ]
                                             }
                                           }
@@ -34440,7 +35071,10 @@
                                           "disable",
                                           "revoke_access",
                                           "upload",
-                                          "acknowledge_impacts"
+                                          "acknowledge_impacts",
+                                          "retain_conclusion",
+                                          "share_feedback",
+                                          "decline_feedback"
                                         ]
                                       }
                                     },
@@ -37080,6 +37714,14 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "allowedActions": {
+                            "maxItems": 1,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "const": "manage_methods"
+                            }
+                          },
                           "id": {
                             "type": "string",
                             "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -39142,6 +39784,37 @@
                                             "maxLength": 8000
                                           }
                                         },
+                                        "conclusionRefs": {
+                                          "maxItems": 100,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                              },
+                                              "version": {
+                                                "type": "integer",
+                                                "minimum": 1,
+                                                "maximum": 9007199254740991
+                                              },
+                                              "status": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "current",
+                                                  "needs_review"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "version",
+                                              "status"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
                                         "id": {
                                           "type": "string",
                                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -39195,6 +39868,37 @@
                                       {
                                         "type": "object",
                                         "properties": {
+                                          "conclusionRefs": {
+                                            "maxItems": 100,
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "id": {
+                                                  "type": "string",
+                                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                                },
+                                                "version": {
+                                                  "type": "integer",
+                                                  "minimum": 1,
+                                                  "maximum": 9007199254740991
+                                                },
+                                                "status": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "current",
+                                                    "needs_review"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "id",
+                                                "version",
+                                                "status"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
                                           "id": {
                                             "type": "string",
                                             "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -39759,7 +40463,10 @@
                                                 "disable",
                                                 "revoke_access",
                                                 "upload",
-                                                "acknowledge_impacts"
+                                                "acknowledge_impacts",
+                                                "retain_conclusion",
+                                                "share_feedback",
+                                                "decline_feedback"
                                               ]
                                             }
                                           }
@@ -40609,7 +41316,10 @@
                                           "disable",
                                           "revoke_access",
                                           "upload",
-                                          "acknowledge_impacts"
+                                          "acknowledge_impacts",
+                                          "retain_conclusion",
+                                          "share_feedback",
+                                          "decline_feedback"
                                         ]
                                       }
                                     },
@@ -41001,6 +41711,18 @@
                               "source_readers"
                             ]
                           },
+                          "allowedActions": {
+                            "default": [],
+                            "maxItems": 2,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "revise",
+                                "revoke"
+                              ]
+                            }
+                          },
                           "id": {
                             "type": "string",
                             "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -41043,6 +41765,7 @@
                           "conclusion",
                           "applicability",
                           "scope",
+                          "allowedActions",
                           "id",
                           "taskId",
                           "sourceTaskVersion",
@@ -41443,6 +42166,18 @@
                             "source_readers"
                           ]
                         },
+                        "allowedActions": {
+                          "default": [],
+                          "maxItems": 2,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "revise",
+                              "revoke"
+                            ]
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -41485,6 +42220,7 @@
                         "conclusion",
                         "applicability",
                         "scope",
+                        "allowedActions",
                         "id",
                         "taskId",
                         "sourceTaskVersion",
@@ -41511,6 +42247,7 @@
                     "conclusion": "synthetic",
                     "applicability": "synthetic",
                     "scope": "owner_only",
+                    "allowedActions": [],
                     "id": "synthetic",
                     "taskId": "synthetic",
                     "sourceTaskVersion": 1,
@@ -41734,6 +42471,18 @@
                             "source_readers"
                           ]
                         },
+                        "allowedActions": {
+                          "default": [],
+                          "maxItems": 2,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "revise",
+                              "revoke"
+                            ]
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -41776,6 +42525,7 @@
                         "conclusion",
                         "applicability",
                         "scope",
+                        "allowedActions",
                         "id",
                         "taskId",
                         "sourceTaskVersion",
@@ -41802,6 +42552,7 @@
                     "conclusion": "synthetic",
                     "applicability": "synthetic",
                     "scope": "owner_only",
+                    "allowedActions": [],
                     "id": "synthetic",
                     "taskId": "synthetic",
                     "sourceTaskVersion": 1,
@@ -42028,6 +42779,18 @@
                               "source_readers"
                             ]
                           },
+                          "allowedActions": {
+                            "default": [],
+                            "maxItems": 2,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "revise",
+                                "revoke"
+                              ]
+                            }
+                          },
                           "id": {
                             "type": "string",
                             "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -42070,6 +42833,7 @@
                           "conclusion",
                           "applicability",
                           "scope",
+                          "allowedActions",
                           "id",
                           "taskId",
                           "sourceTaskVersion",
@@ -42431,6 +43195,18 @@
                             "source_readers"
                           ]
                         },
+                        "allowedActions": {
+                          "default": [],
+                          "maxItems": 2,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "revise",
+                              "revoke"
+                            ]
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -42473,6 +43249,7 @@
                         "conclusion",
                         "applicability",
                         "scope",
+                        "allowedActions",
                         "id",
                         "taskId",
                         "sourceTaskVersion",
@@ -42499,6 +43276,7 @@
                     "conclusion": "synthetic",
                     "applicability": "synthetic",
                     "scope": "owner_only",
+                    "allowedActions": [],
                     "id": "synthetic",
                     "taskId": "synthetic",
                     "sourceTaskVersion": 1,
@@ -42987,6 +43765,15 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "allowedActions": {
+                          "default": [],
+                          "maxItems": 1,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "const": "revoke"
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -43064,6 +43851,7 @@
                         }
                       },
                       "required": [
+                        "allowedActions",
                         "id",
                         "taskId",
                         "deliverable",
@@ -43085,6 +43873,7 @@
                 },
                 "example": {
                   "data": {
+                    "allowedActions": [],
                     "id": "synthetic",
                     "taskId": "synthetic",
                     "deliverable": {
@@ -43275,6 +44064,15 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "allowedActions": {
+                            "default": [],
+                            "maxItems": 1,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "const": "revoke"
+                            }
+                          },
                           "id": {
                             "type": "string",
                             "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -43352,6 +44150,7 @@
                           }
                         },
                         "required": [
+                          "allowedActions",
                           "id",
                           "taskId",
                           "deliverable",
@@ -43795,6 +44594,18 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "allowedActions": {
+                          "default": [],
+                          "maxItems": 2,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "create_method",
+                              "disable"
+                            ]
+                          }
+                        },
                         "capabilityId": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -43822,6 +44633,27 @@
                           "items": {
                             "type": "object",
                             "properties": {
+                              "allowedActions": {
+                                "default": [],
+                                "maxItems": 2,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "trial",
+                                    "activate"
+                                  ]
+                                }
+                              },
+                              "validationRunIds": {
+                                "default": [],
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                }
+                              },
                               "version": {
                                 "type": "integer",
                                 "minimum": 1,
@@ -43900,6 +44732,8 @@
                               }
                             },
                             "required": [
+                              "allowedActions",
+                              "validationRunIds",
                               "version",
                               "capabilityId",
                               "labId",
@@ -43915,6 +44749,7 @@
                         }
                       },
                       "required": [
+                        "allowedActions",
                         "capabilityId",
                         "generation",
                         "activeMethodVersion",
@@ -43932,6 +44767,7 @@
                 },
                 "example": {
                   "data": {
+                    "allowedActions": [],
                     "capabilityId": "synthetic",
                     "generation": 1,
                     "activeMethodVersion": 1,
@@ -44172,6 +45008,27 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "allowedActions": {
+                          "default": [],
+                          "maxItems": 2,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "trial",
+                              "activate"
+                            ]
+                          }
+                        },
+                        "validationRunIds": {
+                          "default": [],
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                          }
+                        },
                         "version": {
                           "type": "integer",
                           "minimum": 1,
@@ -44250,6 +45107,8 @@
                         }
                       },
                       "required": [
+                        "allowedActions",
+                        "validationRunIds",
                         "version",
                         "capabilityId",
                         "labId",
@@ -44270,6 +45129,8 @@
                 },
                 "example": {
                   "data": {
+                    "allowedActions": [],
+                    "validationRunIds": [],
                     "version": 1,
                     "capabilityId": "synthetic",
                     "labId": "synthetic",
@@ -45290,6 +46151,18 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "allowedActions": {
+                          "default": [],
+                          "maxItems": 2,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "create_method",
+                              "disable"
+                            ]
+                          }
+                        },
                         "capabilityId": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -45317,6 +46190,27 @@
                           "items": {
                             "type": "object",
                             "properties": {
+                              "allowedActions": {
+                                "default": [],
+                                "maxItems": 2,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "trial",
+                                    "activate"
+                                  ]
+                                }
+                              },
+                              "validationRunIds": {
+                                "default": [],
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                }
+                              },
                               "version": {
                                 "type": "integer",
                                 "minimum": 1,
@@ -45395,6 +46289,8 @@
                               }
                             },
                             "required": [
+                              "allowedActions",
+                              "validationRunIds",
                               "version",
                               "capabilityId",
                               "labId",
@@ -45410,6 +46306,7 @@
                         }
                       },
                       "required": [
+                        "allowedActions",
                         "capabilityId",
                         "generation",
                         "activeMethodVersion",
@@ -45427,6 +46324,7 @@
                 },
                 "example": {
                   "data": {
+                    "allowedActions": [],
                     "capabilityId": "synthetic",
                     "generation": 1,
                     "activeMethodVersion": 1,
@@ -45626,6 +46524,18 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "allowedActions": {
+                          "default": [],
+                          "maxItems": 2,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "create_method",
+                              "disable"
+                            ]
+                          }
+                        },
                         "capabilityId": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -45653,6 +46563,27 @@
                           "items": {
                             "type": "object",
                             "properties": {
+                              "allowedActions": {
+                                "default": [],
+                                "maxItems": 2,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "trial",
+                                    "activate"
+                                  ]
+                                }
+                              },
+                              "validationRunIds": {
+                                "default": [],
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                }
+                              },
                               "version": {
                                 "type": "integer",
                                 "minimum": 1,
@@ -45731,6 +46662,8 @@
                               }
                             },
                             "required": [
+                              "allowedActions",
+                              "validationRunIds",
                               "version",
                               "capabilityId",
                               "labId",
@@ -45746,6 +46679,7 @@
                         }
                       },
                       "required": [
+                        "allowedActions",
                         "capabilityId",
                         "generation",
                         "activeMethodVersion",
@@ -45763,6 +46697,7 @@
                 },
                 "example": {
                   "data": {
+                    "allowedActions": [],
                     "capabilityId": "synthetic",
                     "generation": 1,
                     "activeMethodVersion": 1,
@@ -46256,6 +47191,14 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "allowedActions": {
+                            "maxItems": 1,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "const": "manage_methods"
+                            }
+                          },
                           "id": {
                             "type": "string",
                             "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -46561,6 +47504,14 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "allowedActions": {
+                          "maxItems": 1,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "const": "manage_methods"
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -47154,6 +48105,14 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "allowedActions": {
+                          "maxItems": 1,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "const": "manage_methods"
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
@@ -47455,6 +48414,14 @@
                     "data": {
                       "type": "object",
                       "properties": {
+                        "allowedActions": {
+                          "maxItems": 1,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "const": "manage_methods"
+                          }
+                        },
                         "id": {
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"

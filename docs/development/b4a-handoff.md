@@ -1,4 +1,4 @@
-# B4a 契约、权限与迁移交接 · 0.6.0
+# B4a 契约、权限与迁移交接 · 0.6.1
 
 共同基线61eec851ac1f00e18b12e729f5fa6cdcc320f730。本文件先随契约/迁移提交；服务完成与实际验证以阶段报告为准。B4b和G5未开放。
 
@@ -39,3 +39,7 @@ API仍由cookie/CSRF/Origin认证，不能传actorId。版本冲突409；不可�
 先备份本任务DB/WAL和附件，停止相关服务；不重置旧库。新增conclusions/conclusion_versions、reuse_edges/source权限视图、public_samples/sample_edges、public_methods/public_method_state/method_events。001—006不改。迁移runner仍在事务内按checksum只执行一次；再次运行检查相同历史。
 
 `pnpm install --frozen-lockfile`、`pnpm build`后，使用同一私有配置两次运行 `node --env-file=.env apps/api/dist/manage.js migrate`。迁移代码与服务将在下一提交接入。升级旧库、实际启动、测试与完整SHA随后补入本文件。
+
+## 0.6.1 前端权限与来源投影补充
+
+Task.allowedActions新增retain_conclusion/share_feedback/decline_feedback；RetainedConclusion.allowedActions为revise/revoke；FeedbackSample为revoke；Capability为manage_methods；MethodState为create_method/disable；PublicMethod为trial/activate并返回授权validationRunIds。客户端只按服务动作呈现，提交仍重新鉴权。Plan/Task返回conclusionRefs(id,version,status)，getPlanRequest.reply.plan沿用同一Plan；来源撤权优先404/移除整项，不以空文本伪装可复用。此为0.6.0先行契约的显式兼容升级，请整体升级0.6.1，不自行比较角色或建第二套状态机。
