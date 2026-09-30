@@ -74,6 +74,7 @@ export type TaskSummaryModel = z.infer<typeof TaskSummary>
 export const Snapshot = z.strictObject({ token: z.string().min(1).max(2048), at: Instant, expiresAt: Instant })
 export const PlanSummary = Plan.pick({ id: true, ownerId: true, labId: true, goal: true, version: true, status: true, createdAt: true })
 export const ActionItem = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('execution_attention'), task: Task, run: RunRecord }),
   z.strictObject({ kind: z.literal('invitation_response'), task: TaskSummary }),
   z.strictObject({ kind: z.literal('change_response'), task: Task, proposal: ChangeProposal }),
   z.strictObject({ kind: z.literal('deliverable_review'), task: Task, deliverableId: Id, revision: Version, deliverableVersion: Version }),

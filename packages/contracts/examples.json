@@ -2,6 +2,99 @@
   "contractVersion": "0.5.0",
   "synthetic": true,
   "scenarios": {
+    "serviceProgressReply": {
+      "data": {
+        "replyVersion": "1.0.0",
+        "intent": "progress",
+        "readAt": "2026-09-21T08:00:00+08:00",
+        "origin": "service_facts",
+        "plan": null,
+        "tasks": [
+          {
+            "id": "task_synthetic",
+            "labId": "lab_synthetic",
+            "parentTaskId": null,
+            "planId": "plan_synthetic",
+            "planVersion": 1,
+            "title": "核对合成材料",
+            "taskType": "grant",
+            "goal": "列出缺项",
+            "acceptanceCriteria": "缺项明确",
+            "initiatorId": "member_A",
+            "leadId": "member_B",
+            "reviewerId": "member_A",
+            "participantIds": [],
+            "status": "blocked",
+            "blocker": {
+              "reason": "合成材料缺失",
+              "requestedMemberId": "member_A",
+              "requestedAction": "提供获准材料",
+              "resumeStatus": "in_progress"
+            },
+            "dependencies": [],
+            "schedule": {
+              "suggested": null,
+              "hardDeadline": null,
+              "committed": null,
+              "estimatedHumanHours": null,
+              "checkpoint": null
+            },
+            "access": {
+              "visibility": "participants",
+              "summary": null
+            },
+            "version": 3,
+            "createdAt": "2026-09-21T08:00:00+08:00",
+            "updatedAt": "2026-09-21T08:00:00+08:00",
+            "allowedActions": [
+              "resume",
+              "cancel"
+            ]
+          }
+        ],
+        "truncated": false,
+        "gaps": [
+          "Availability is unknown; task counts are not workload."
+        ],
+        "actions": []
+      }
+    },
+    "groundedChecklist": {
+      "data": {
+        "title": "Synthetic evidence checklist",
+        "items": [
+          {
+            "requirement": "Record the supplied metric",
+            "assessment": "supported_by_input",
+            "citations": [
+              {
+                "artifactId": "synthetic_text",
+                "quote": "Metric A: 12 samples."
+              }
+            ],
+            "gap": null
+          },
+          {
+            "requirement": "Check the missing measurement",
+            "assessment": "gap",
+            "citations": [],
+            "gap": "No measurement supplied."
+          }
+        ],
+        "limitations": [
+          "Only the authorized supplied text was checked; no external verification."
+        ]
+      }
+    },
+    "unknownModelUsage": {
+      "data": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "elapsedMs": 100,
+        "cost": null,
+        "currency": null
+      }
+    },
     "pendingScopeChange": {
       "data": {
         "id": "change_synthetic",

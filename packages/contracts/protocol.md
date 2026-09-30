@@ -1,6 +1,6 @@
-# HTTP 协议 0.4.0
+# HTTP 协议 0.5.0
 
-完整精确接口见 [OpenAPI](openapi.json)，所有接口的合成请求响应见 [examples](examples.json)。已实现 routes 中 stage=B0/B1/B2a/B2b 的端点；其余端点仍 501，只有 POST /planning-requests 在认证/CSRF 校验后明确返回 503 MODEL_UNAVAILABLE。模型和 Harness 不可用，不返回 fixture 成功。
+完整精确接口见 [OpenAPI](openapi.json)，所有接口的合成请求响应见 [examples](examples.json)。已实现 routes 中 stage=B0/B1/B2a/B2b/B3 的端点；B4 仍为501。B3 模型功能需显式服务端配置，关闭时 draft/auto 返回503 MODEL_UNAVAILABLE；授权 progress/find_work 使用服务事实。固定 Harness 与真实验证见 B3 联调包，不返回 fixture 成功。
 
 ## 身份、认证与跨域
 
@@ -65,3 +65,8 @@ B1 只接受 inputArtifactIds=[]、交付 artifactRefs=[]、sources.kind=note/ur
 ## B2b 0.4.0
 
 当前变化、依赖、转交、取消/撤权、附件和 events 以 [B2b 联调包](../../docs/development/b2b-handoff.md) 为准，覆盖上面的 B1/B2a 历史限制。旧成功缓存也检查当前访问；退出/撤权优先于重放。附件在同任务交付中按不可变 ID 与提交时版本引用，事件为 full 权限分页历史。源材料跨任务复用、真实 worker 与 B3/B4 未开放。
+
+
+## B3 · 0.5.0
+
+Versioned adaptive replies, planning intents, durable public execution and evidence candidates use the same exported Schema/route definitions. See [B3 handoff](../../docs/development/b3-handoff.md). Run success is not task completion. Unknown usage is null. New `execution_attention` action items require exhaustive client handling; regenerate clients from openapi.json. G4 routes remain explicitly unavailable.

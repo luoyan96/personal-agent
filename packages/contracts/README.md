@@ -1,4 +1,4 @@
-# Shared contract 0.4.0
+# Shared contract 0.5.0
 
 B2b 0.4.0 契约先行：变更、依赖影响、退出/撤权和附件；兼容与迁移说明见 [B2b 联调包](../../docs/development/b2b-handoff.md)。服务状态以最终阶段报告为准。
 
@@ -29,3 +29,8 @@ routes.claim.request.parse(request)
 语义 refine 在 Zod 中执行；JSON Schema/OpenAPI 无法表达所有跨对象约束（授权、环、版本、日期来源等），服务仍需事务规则验证。生成结构样例仅演示形状，核心行为场景是 examples.json.scenarios；两者均通过同一 Schema。二进制下载的结构样例是字节 120（文本 x），线上使用 binary body，不是 JSON 包装。
 
 受邀者从 tasks(scope=mine) 或 task 获取 invitationSummary：用 pendingInvitation.id 作 decision 路径参数；pendingInvitation.version 作 expectedVersion；摘要 version 作 expectedTaskVersion。接受后重新读 task 得到完整详情；拒绝后该摘要不再可见。操作者始终来自会话，不能在正文添加 actorId。
+
+
+## B3 · 0.5.0
+
+Versioned adaptive replies, planning intents, durable public execution and evidence candidates use the same exported Schema/route definitions. See [B3 handoff](../../docs/development/b3-handoff.md). Run success is not task completion. Unknown usage is null. New `execution_attention` action items require exhaustive client handling; regenerate clients from openapi.json. G4 routes remain explicitly unavailable.
