@@ -299,8 +299,12 @@ describe('B4a A14a–f: actual HTTP processes, durable DB and explicit determini
   const path=join(directory,'legacy-b3.sqlite'),legacy=openDatabase(path,true)
   try{
    const names=readdirSync(new URL('../migrations/',import.meta.url)).filter(n=>/^00[1-6]-/.test(n)).sort()
-   legacy.exec('CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY, checksum TEXT NOT NULL, applied_at TEXT NOT NULL) STRICT')
-   for(const [index,name] of names.entries()){const sql=readFileSync(new URL(`../migrations/${name}`,import.meta.url),'utf8');legacy.exec(sql);legacy.prepare('INSERT INTO schema_migrations VALUES(?,?,?)').run(index+1,createHash('sha256').update(sql).digest('hex'),'2026-09-30T00:00:00Z')}
+   // Build the historical fixture atomically; avoid a full disk sync for each DDL
+   // statement on Windows CI. The real repeated migration below is unchanged.
+   transaction(legacy,()=>{
+    legacy.exec('CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY, checksum TEXT NOT NULL, applied_at TEXT NOT NULL) STRICT')
+    for(const [index,name] of names.entries()){const sql=readFileSync(new URL(`../migrations/${name}`,import.meta.url),'utf8');legacy.exec(sql);legacy.prepare('INSERT INTO schema_migrations VALUES(?,?,?)').run(index+1,createHash('sha256').update(sql).digest('hex'),'2026-09-30T00:00:00Z')}
+   })
    const tables=legacy.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN ('schema_migrations','sqlite_sequence') ORDER BY rowid").all().map(r=>String(r.name))
    transaction(legacy,()=>{for(const table of tables)for(const row of db.prepare(`SELECT * FROM ${table}`).all()){const columns=Object.keys(row);legacy.prepare(`INSERT OR REPLACE INTO ${table} (${columns.join(',')}) VALUES (${columns.map(()=>'?').join(',')})`).run(...Object.values(row))}})
    legacy.prepare("UPDATE execution_jobs SET document=json_remove(document,'$.methodVersion','$.configurationGeneration','$.methodTrial','$.conclusionRefs') WHERE kind='capability'").run()
