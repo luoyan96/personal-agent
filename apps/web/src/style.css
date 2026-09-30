@@ -1149,3 +1149,6 @@ input[type=checkbox] { width:auto; }
 @media(max-width:600px) { .comparison { grid-template-columns:1fr; } .time-field {padding:8px;} }
 .plan-items .schedule-editor { grid-column:1 / -1; }
 .run p,.run blockquote { overflow-wrap:anywhere; } .candidate blockquote { margin:12px 0; border-left:3px solid #26756b; padding:12px; background:#f5f8f5; } .composer-actions { flex-wrap:wrap; }
+
+.technical-details { margin-block: 14px; }
+.technical-details summary { cursor: pointer; color: var(--green, #26756b); }
