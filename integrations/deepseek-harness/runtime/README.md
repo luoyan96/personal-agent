@@ -17,4 +17,4 @@ node --env-file=.env scripts/check-harness-live.mjs
 
 环境：DEEPSEEK_API_KEY；可选 DEEPSEEK_MODEL（默认 deepseek-v4-flash）、DEEPSEEK_BASE_URL（留空应删除此项，不传空 URL）。官方 provider 使用其支持的 Messages 协议，普通兼容 Chat Completions URL 不保证适用，不静默切换其他适配器。对其他端点必须单独验证；本批没有对未知代理发送数据。
 
-本批最小真实调用通过：42 输入 / 29 输出 tokens，费用未报告。服务侧真实规划、公共文本候选、失败、取消/撤权和进程恢复已有专项证据；F3 与共同 G3 未验收。安装、命令、失败与版本取舍见 [B3 核查](../B3-verification.md)。
+本批最小真实调用通过：42 输入 / 29 输出 tokens，费用未报告。服务侧真实规划、公共文本候选、失败、取消/撤权和进程恢复已有专项证据；F3 与共同 G3 已通过独立复核，见 [G3 报告](../../../docs/development/reports/G3-overall-2026-09-30.md)。安装、命令、失败与版本取舍见 [B3 核查](../B3-verification.md)。
