@@ -32,7 +32,10 @@
     "seed:execution": "node scripts/seed-b3-demo.mjs",
     "check:harness-live": "node scripts/check-harness-live.mjs",
     "check:b3-live": "node scripts/check-b3-live.mjs",
-    "check:b3-resilience-live": "node scripts/check-b3-resilience-live.mjs"
+    "check:b3-resilience-live": "node scripts/check-b3-resilience-live.mjs",
+    "seed:reuse": "node scripts/seed-b4a-demo.mjs",
+    "check:b4a": "node scripts/export-contracts.mjs --check && vitest run apps/api/tests integrations/deepseek-harness/runtime/tests",
+    "check:b4a-live": "node scripts/check-b4a-live.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.0",

@@ -1,3 +1,4 @@
+import { ReuseService } from './reuse.js'
 import { renderChecklist } from '@research-agent-platform/research-core'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
@@ -28,7 +29,7 @@ export class AiService {
   capability(){
     const row=this.db.prepare('SELECT version,enabled,owner_id FROM public_capabilities WHERE lab_id=? AND id=?').get(this.c.actor.labId,capabilityId)
     if(!row)return null
-    return Capability.parse({id:capabilityId,labId:this.c.actor.labId,ownerId:String(row.owner_id),maintainerIds:[],visibility:'lab_public',version:row?.version??1,name:'Text evidence checklist',inputContract:'Authorized same-task UTF-8 text, at most 20000 bytes; no OCR or web.',outputContract:'Checklist with exact source quotations and explicit gaps; human review required.',status:this.enabled && row?.enabled===1?'available':'unavailable',validationResultIds:[]})
+    return Capability.parse({allowedActions:row.owner_id===this.c.actor.id?['manage_methods']:[],id:capabilityId,labId:this.c.actor.labId,ownerId:String(row.owner_id),maintainerIds:[],visibility:'lab_public',version:row?.version??1,name:'Text evidence checklist',inputContract:'Authorized same-task UTF-8 text, at most 20000 bytes; no OCR or web.',outputContract:'Checklist with exact source quotations and explicit gaps; human review required.',status:this.enabled && row?.enabled===1?'available':'unavailable',validationResultIds:[]})
   }
   available(ref:{id:string;version:number}){const cap=this.capability();if(!cap||cap.status!=='available'||ref.id!==cap.id||ref.version!==cap.version)fail('CAPABILITY_UNAVAILABLE')}
   row(id:string){const row=this.db.prepare('SELECT * FROM execution_jobs WHERE id=? AND lab_id=?').get(id,this.c.actor.labId);if(!row)fail('NOT_FOUND');return row}
@@ -41,6 +42,7 @@ export class AiService {
   readTexts(refs:Run['inputs']){this.checkInputs(refs);return refs.map(ref=>({artifactId:ref.id,text:Buffer.from(this.c.coordination.handlers.content({params:{id:ref.id},query:{},headers:{},body:null}) as Uint8Array).toString('utf8')}))}
   planningAccess(row:ReturnType<AiService['row']>){
     if(row.owner_id!==this.c.actor.id||row.kind!=='planning')fail('NOT_FOUND')
+    new ReuseService(this.c).allowed('job',String(row.id))
     const req=JSON.parse(String(row.request_json)) as PlanningInput
     if(req.plan)this.c.plan(req.plan.id)
     for(const id of req.taskIds)this.c.taskRow(id)
@@ -78,16 +80,17 @@ export class AiService {
     return p
   }
   projectedRun(id:string){const {r,t}=this.runAccess(id);r.allowedActions=[]
+    new ReuseService(this.c).allowed('job',id)
     try{this.checkInputs(r.inputs)}catch{r.candidate=null;r.resultRefs=[]}
     if(t.leadId===this.c.actor.id||t.initiatorId===this.c.actor.id){if(['queued','running','waiting_input'].includes(r.status))r.allowedActions.push('cancel');if(t.leadId===this.c.actor.id&&['failed','interrupted','waiting_input'].includes(r.status)&&r.attempt<r.maxAttempts&&t.status!=='cancelled'&&(r.attempt===0||(r.usageDetail?.inputTokens!=null&&r.usageDetail.outputTokens!=null)))r.allowedActions.push('retry')}
-    if(r.status==='succeeded'&&r.candidate&&t.leadId===this.c.actor.id&&t.version===r.taskVersion&&this.permission(t.id)===r.permissionVersion&&!r.candidateDeliverableId){try{this.available(r.capability);this.c.coordination.runnable(t);r.allowedActions.push('submit_candidate')}catch{/* no permitted candidate submission */}}
+    if(!r.methodTrial&&r.status==='succeeded'&&r.candidate&&t.leadId===this.c.actor.id&&t.version===r.taskVersion&&this.permission(t.id)===r.permissionVersion&&!r.candidateDeliverableId){try{this.available(r.capability);this.c.coordination.runnable(t);r.allowedActions.push('submit_candidate')}catch{/* no permitted candidate submission */}}
     return r
   }
   dispatchValid(r:Run){
     const t=this.c.task(r.taskId)
     if(t.leadId!==r.requestedBy||!['ready','in_progress','changes_requested'].includes(t.status))fail('INVALID_STATE')
     this.c.checkVersion(t.version,r.taskVersion);this.c.checkVersion(this.permission(t.id),r.permissionVersion)
-    this.available(r.capability);this.checkInputs(r.inputs);this.c.coordination.runnable(t,true)
+    this.available(r.capability);const reuse=new ReuseService(this.c);reuse.methodForRun(r);reuse.allowed('job',r.id);reuse.selected(r.conclusionRefs??[],{kind:'task',id:t.id});this.checkInputs(r.inputs);this.c.coordination.runnable(t,true)
     const account=this.db.prepare('SELECT disabled FROM auth_accounts WHERE member_id=?').get(r.requestedBy)
     if(!account||account.disabled!==0)fail('FORBIDDEN')
     return t
@@ -115,10 +118,12 @@ export class AiService {
     if(name==='planRequest'){
       const b=req.body as RequestFor<'planRequest'>['body']
       if(b.plan){const p=this.c.plan(b.plan.id);this.c.checkVersion(p.version,b.plan.version);if(p.status!=='draft')fail('INVALID_STATE')}
+      const reuse=new ReuseService(this.c);reuse.selected(b.conclusionRefs??[],b.plan?{kind:'plan',id:b.plan.id}:undefined);
+      for(const taskId of b.taskIds??[])reuse.explicit('task',taskId,b.conclusionRefs??[]);
       const intent=b.intent??'auto';if(['auto','draft'].includes(intent)&&!this.enabled)fail('MODEL_UNAVAILABLE')
       const p:Planning={id:randomUUID(),status:['progress','find_work'].includes(intent)?'ready':'queued',planId:b.plan?.id??null,failure:null,version:1,reply:intent==='progress'||intent==='find_work'?this.facts(intent,b.taskIds??[]):null,usage:null,createdAt:instant(),updatedAt:instant()}
       const input:PlanningInput={...b,intent,plan:b.plan??null,taskIds:b.taskIds??[],inputs:this.inputRefs(b.inputArtifactIds)}
-      this.insert('planning',p,input);return {data:p}
+      this.insert('planning',p,input);reuse.bind('job',p.id,b.conclusionRefs??[]);return {data:p}
     }
     if(name==='cancelPlanning'){
       const p=this.getPlanning(id),b=req.body as RequestFor<'cancelPlanning'>['body'];this.c.checkVersion(p.version,b.expectedVersion)
@@ -130,9 +135,10 @@ export class AiService {
       if(!['ready','in_progress','changes_requested'].includes(t.status))fail('INVALID_STATE')
       if(this.db.prepare("SELECT 1 FROM execution_jobs WHERE task_id=? AND status IN ('queued','running','waiting_input')").get(id))fail('INVALID_STATE')
       if(Number(this.db.prepare('SELECT count(*) n FROM execution_jobs WHERE task_id=?').get(id)!.n)>=100)fail('INVALID_STATE')
-      if(b.inputArtifactIds.length)this.c.coordination.runnable(t,true)
-      const r:Run={id:randomUUID(),taskId:id,capability:b.capability,status:b.inputArtifactIds.length?'queued':'waiting_input',attempt:0,usage:null,failure:b.inputArtifactIds.length?null:'Authorized text input required.',resultRefs:[],createdAt:instant(),startedAt:null,endedAt:null,version:1,requestedBy:this.c.actor.id,taskVersion:t.version,plan:{id:t.planId,version:t.planVersion},permissionVersion:this.permission(t.id),inputs:this.inputRefs(b.inputArtifactIds,id),budget:b.budget,maxAttempts:3,nextAttemptAt:null,candidate:null,candidateDeliverableId:null,allowedActions:[],provider:'deepseek-official',model:this.model,harnessVersion:'0.2.0-rc.1',updatedAt:instant(),usageDetail:null}
-      this.insert('capability',r,b);this.c.event(t,'execution_updated','Public capability execution authorized.');return {data:this.projectedRun(r.id)}
+      const reuse=new ReuseService(this.c);reuse.selected(b.conclusionRefs??[],{kind:'task',id});
+      if(b.inputArtifactIds.length||(b.conclusionRefs??[]).length)this.c.coordination.runnable(t,true)
+      const r:Run={methodVersion:Number(this.db.prepare('SELECT active_version FROM public_method_state WHERE lab_id=?').get(this.c.actor.labId)!.active_version),configurationGeneration:b.capability.version,methodTrial:false,conclusionRefs:b.conclusionRefs??[],id:randomUUID(),taskId:id,capability:b.capability,status:b.inputArtifactIds.length||(b.conclusionRefs??[]).length?'queued':'waiting_input',attempt:0,usage:null,failure:b.inputArtifactIds.length||(b.conclusionRefs??[]).length?null:'Authorized text input required.',resultRefs:[],createdAt:instant(),startedAt:null,endedAt:null,version:1,requestedBy:this.c.actor.id,taskVersion:t.version,plan:{id:t.planId,version:t.planVersion},permissionVersion:this.permission(t.id),inputs:this.inputRefs(b.inputArtifactIds,id),budget:b.budget,maxAttempts:3,nextAttemptAt:null,candidate:null,candidateDeliverableId:null,allowedActions:[],provider:'deepseek-official',model:this.model,harnessVersion:'0.2.0-rc.1',updatedAt:instant(),usageDetail:null}
+      this.insert('capability',r,b);reuse.bind('job',r.id,r.conclusionRefs??[]);reuse.bind('task',id,r.conclusionRefs??[]);this.c.event(t,'execution_updated','Public capability execution authorized.');return {data:this.projectedRun(r.id)}
     }
     const {r,t}=this.runAccess(id,true),b=req.body as RequestFor<'retryRun'>['body'];this.c.checkVersion(r.version,b.expectedVersion)
     if(name==='cancelRun'){
@@ -146,13 +152,14 @@ export class AiService {
       // Unknown billed usage reserves the whole remaining budget; a new explicit run is required.
       if(r.attempt>0&&(!r.usageDetail||r.usageDetail.inputTokens===null||r.usageDetail.outputTokens===null))fail('INVALID_STATE')
       r.inputs=this.inputRefs(b.inputArtifactIds,t.id);r.taskVersion=t.version;r.permissionVersion=this.permission(t.id);this.dispatchValid(r)
-      r.status=r.inputs.length?'queued':'waiting_input';r.failure=r.inputs.length?null:'Authorized text input required.';r.endedAt=null;this.fence(id);this.save(id,r);this.db.prepare('UPDATE execution_jobs SET available_at=? WHERE id=?').run(Date.now(),id);return {data:this.projectedRun(id)}
+      r.status=r.inputs.length||(r.conclusionRefs??[]).length||r.methodTrial?'queued':'waiting_input';r.failure=r.inputs.length||(r.conclusionRefs??[]).length||r.methodTrial?null:'Authorized text input required.';r.endedAt=null;this.fence(id);this.save(id,r);this.db.prepare('UPDATE execution_jobs SET available_at=? WHERE id=?').run(Date.now(),id);return {data:this.projectedRun(id)}
     }
     if(name==='submitCandidate'){
-      if(r.status!=='succeeded'||!r.candidate||r.candidateDeliverableId)fail('INVALID_STATE')
+      if(r.methodTrial||r.status!=='succeeded'||!r.candidate||r.candidateDeliverableId)fail('INVALID_STATE')
       this.dispatchValid(r)
       const summary=renderChecklist(r.candidate)
-      const sources=r.inputs.map(ref=>({kind:'artifact' as const,locator:ref.id,label:'Authorized text evidence'}))
+      const sources:z.infer<typeof import('@research-agent-platform/contracts').Source>[]=r.inputs.map(ref=>({kind:'artifact' as const,locator:ref.id,label:'Authorized text evidence'}))
+      sources.push(...(r.conclusionRefs??[]).map(ref=>({kind:'note' as const,locator:`conclusion:${ref.id}:${ref.version}`,label:'Explicit retained conclusion'})))
       const result=this.c.handlers.submit({params:{id:t.id},query:{},headers:{},body:{expectedVersion:t.version,summary,artifactRefs:r.inputs.map(ref=>ref.id),sources}}) as {data:{id:string}}
       r.candidateDeliverableId=result.data.id;r.resultRefs=[result.data.id];this.save(id,r);return result
     }

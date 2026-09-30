@@ -1,3 +1,5 @@
+import { ReuseService, reuseCommands } from './reuse.js'
+import type { ReuseCommand } from './reuse.js'
 import { AiService, aiCommands } from './ai.js'
 import type { AiCommand } from './ai.js'
 import { reconcile } from './execution-worker.js'
@@ -82,6 +84,7 @@ export function createServer(config: Config) {
         }
         collaboration = new Collaboration(connection,actor,config.blobRoot,{enabled:config.aiEnabled,model:config.model})
         reconcile(connection,config)
+        if((reuseCommands as readonly string[]).includes(name)){const result=new ReuseService(collaboration).run(name as ReuseCommand,parsed.data as RequestFor<ReuseCommand>);reconcile(connection,config);return result}
         if((aiCommands as readonly string[]).includes(name))return new AiService(collaboration,config.aiEnabled,config.model).run(name as AiCommand,parsed.data as RequestFor<AiCommand>)
         if (!(collaborationCommands as readonly string[]).includes(name)) fail('NOT_IMPLEMENTED')
         const result=collaboration.run(name as CollaborationCommand, parsed.data as RequestFor<CollaborationCommand>)

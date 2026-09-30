@@ -1,3 +1,4 @@
+import { ReuseService } from './reuse.js'
 import { AiService } from './ai.js'
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
@@ -9,7 +10,7 @@ import { Coordination, coordinationCommands } from './coordination.js'
 import type { CoordinationCommand } from './coordination.js'
 import { fail } from './errors.js'
 
-const authorizedPlanSources=`NOT EXISTS (SELECT 1 FROM execution_jobs j,json_each(j.request_json,'$.inputs') ref
+export const authorizedPlanSources=`NOT EXISTS(SELECT 1 FROM reuse_denials rd WHERE rd.target_kind='plan' AND rd.target_id=plans.id AND rd.member_id=plans.owner_id) AND NOT EXISTS (SELECT 1 FROM execution_jobs j,json_each(j.request_json,'$.inputs') ref
  LEFT JOIN artifacts f ON f.id=json_extract(ref.value,'$.id') LEFT JOIN tasks source ON source.id=f.task_id
  LEFT JOIN task_access access ON access.task_id=source.id AND access.member_id=plans.owner_id
  WHERE j.kind='planning' AND json_extract(j.document,'$.planId')=plans.id
@@ -46,15 +47,15 @@ export class Collaboration {
   plan(planId: string): PlanModel {
     const row = this.db.prepare(`SELECT document FROM plans WHERE id=? AND owner_id=? AND lab_id=? AND ${authorizedPlanSources}`).get(planId, this.actor.id, this.actor.labId)
     if (!row) fail('NOT_FOUND')
-    return Plan.parse(JSON.parse(String(row.document)))
+    return Plan.parse({...JSON.parse(String(row.document)),conclusionRefs:new ReuseService(this).bindings('plan',planId)})
   }
   // One relational visibility predicate for detail, lists, counts and action items.
   visible(scope: 'lab' | 'mine' = 'lab') {
     return { sql: `FROM tasks t LEFT JOIN task_access acl ON acl.task_id=t.id AND acl.member_id=?
-      WHERE t.lab_id=? AND COALESCE(acl.access,'')!='revoked'
+      WHERE t.lab_id=? AND COALESCE(acl.access,'')!='revoked' AND NOT EXISTS(SELECT 1 FROM reuse_denials rd WHERE rd.target_kind='task' AND rd.target_id=t.id AND rd.member_id=?)
       AND (acl.access='full' OR t.claimable=1 OR EXISTS(SELECT 1 FROM assignments a WHERE a.task_id=t.id AND a.member_id=? AND a.status='pending'))
       AND (?='lab' OR t.initiator_id=? OR t.lead_id=? OR t.reviewer_id=? OR (acl.access='full' AND EXISTS(SELECT 1 FROM json_each(t.document,'$.participantIds') p WHERE p.value=?)) OR EXISTS(SELECT 1 FROM assignments a WHERE a.task_id=t.id AND a.member_id=? AND a.status='pending'))`,
-      values: [this.actor.id, this.actor.labId, this.actor.id, scope, this.actor.id, this.actor.id, this.actor.id, this.actor.id, this.actor.id] }
+      values: [this.actor.id, this.actor.labId, this.actor.id, this.actor.id, scope, this.actor.id, this.actor.id, this.actor.id, this.actor.id, this.actor.id] }
   }
   taskRow(taskId: string) {
     const v = this.visible()
@@ -70,13 +71,13 @@ export class Collaboration {
   }
   task(taskId: string): TaskModel {
     if (this.access(taskId) !== 'full') fail('FORBIDDEN')
-    return Task.parse(JSON.parse(String(this.db.prepare('SELECT document FROM tasks WHERE id=?').get(taskId)!.document)))
+    return Task.parse({...JSON.parse(String(this.db.prepare('SELECT document FROM tasks WHERE id=?').get(taskId)!.document)),conclusionRefs:new ReuseService(this).bindings('task',taskId)})
   }
   assignment(assignmentId: string) {
     const metadata = this.db.prepare('SELECT task_id,member_id FROM assignments WHERE id=?').get(assignmentId)
     if (!metadata) fail('NOT_FOUND')
     // Own decision history remains replayable after declining, but explicit revocation wins.
-    const allowed = this.db.prepare("SELECT t.id FROM tasks t LEFT JOIN task_access acl ON acl.task_id=t.id AND acl.member_id=? WHERE t.id=? AND t.lab_id=? AND COALESCE(acl.access,'')!='revoked'").get(this.actor.id, metadata.task_id!, this.actor.labId)
+    const allowed = this.db.prepare("SELECT t.id FROM tasks t LEFT JOIN task_access acl ON acl.task_id=t.id AND acl.member_id=? WHERE t.id=? AND t.lab_id=? AND COALESCE(acl.access,'')!='revoked' AND NOT EXISTS(SELECT 1 FROM reuse_denials rd WHERE rd.target_kind='task' AND rd.target_id=t.id AND rd.member_id=acl.member_id)").get(this.actor.id, metadata.task_id!, this.actor.labId)
     if (!allowed) fail('NOT_FOUND')
     if (metadata.member_id !== this.actor.id && this.access(String(metadata.task_id)) !== 'full') fail('NOT_FOUND')
     const row = this.db.prepare('SELECT document,offer_scope,offer_schedule FROM assignments WHERE id=?').get(assignmentId)!
@@ -94,7 +95,7 @@ export class Collaboration {
     if (!row) fail('NOT_FOUND')
     const commitments = this.db.prepare(`SELECT a.document FROM assignments a JOIN tasks t ON t.id=a.task_id
       JOIN task_access acl ON acl.task_id=t.id AND acl.member_id=? AND acl.access='full'
-      WHERE a.member_id=? AND a.status='accepted' AND t.lab_id=? AND t.status NOT IN ('completed','cancelled') ORDER BY t.id LIMIT 101`).all(this.actor.id, memberId, this.actor.labId)
+      WHERE NOT EXISTS(SELECT 1 FROM reuse_denials rd WHERE rd.target_kind='task' AND rd.target_id=t.id AND rd.member_id=acl.member_id) AND a.member_id=? AND a.status='accepted' AND t.lab_id=? AND t.status NOT IN ('completed','cancelled') ORDER BY t.id LIMIT 101`).all(this.actor.id, memberId, this.actor.labId)
       .map(r => Assignment.parse(JSON.parse(String(r.document)))).map(a => ({ taskId: a.taskId, scope: a.commitment!.scope, schedule: a.commitment!.schedule }))
     const saved = this.db.prepare('SELECT document FROM member_availability WHERE member_id=?').get(memberId)
     const availability = saved ? Availability.parse(JSON.parse(String(saved.document))) : null
@@ -119,6 +120,8 @@ export class Collaboration {
       if(task.leadId===this.actor.id && task.status!=='completed') {allowedActions.push('withdraw');if(task.status==='blocked') allowedActions.push('resume');else if(['ready','in_progress','changes_requested'].includes(task.status)) allowedActions.push('block')}
       if([task.leadId,task.reviewerId].includes(this.actor.id) && this.db.prepare('SELECT 1 FROM dependency_impacts WHERE task_id=? AND acknowledged=0').get(task.id)) allowedActions.push('acknowledge_impacts')
     }
+    const accepted=this.db.prepare("SELECT document FROM deliverables WHERE task_id=? AND json_extract(document,'$.review.decision')='accepted' ORDER BY revision DESC LIMIT 1").get(task.id)
+    if(accepted){allowedActions.push('decline_feedback');if(task.status==='completed'&&task.reviewerId===this.actor.id)allowedActions.push('retain_conclusion');const delivery=Deliverable.parse(JSON.parse(String(accepted.document)));if(task.status==='completed'&&task.reviewerId===this.actor.id&&delivery.submittedBy===this.actor.id&&!this.db.prepare("SELECT 1 FROM reuse_edges WHERE target_kind='task' AND target_id=?").get(task.id))allowedActions.push('share_feedback')}
     return { ...task, allowedActions }
   }
   summary(taskId: string) {
@@ -221,6 +224,7 @@ export class Collaboration {
     const resource = params.id ?? this.actor.labId
     // Must run inside caller's transaction, after authenticating the current session.
     this.authorize(name, resource, request.body)
+    if(['invite','withdraw'].includes(name)){const b=request.body as {memberId?:string;transferToMemberId?:string};const member=b.memberId??b.transferToMemberId;if(member){const refs=this.db.prepare("SELECT conclusion_id,revision FROM reuse_closure WHERE target_kind='task' AND target_id=?").all(resource).map(r=>new ReuseService(this).conclusion(String(r.conclusion_id),Number(r.revision)));new ReuseService(this).range(refs,[member])}}
     const key = (request.headers as { 'Idempotency-Key'?: string })['Idempotency-Key']
     const requestHash = hash(canonical(request))
     if (route.idempotent) {
@@ -368,6 +372,7 @@ export class Collaboration {
       const plan = this.plan(params.id); this.checkVersion(plan.version, body.expectedVersion)
       if (plan.status !== 'draft') fail('INVALID_STATE')
       this.validatePlan(body)
+      new ReuseService(this).validatePlanRange(params.id,body)
       if (body.labId !== plan.labId) fail('VALIDATION_ERROR')
       const { expectedVersion: _, ...input } = body
       const updated = { ...plan, ...input, version: plan.version + 1 }
@@ -377,6 +382,7 @@ export class Collaboration {
       const plan = this.plan(params.id); this.checkVersion(plan.version, body.expectedVersion)
       if (plan.status !== 'draft') fail('INVALID_STATE')
       this.validatePlan(plan)
+      new ReuseService(this).validatePlanRange(params.id,plan)
       if (!plan.proposedItems.length) fail('VALIDATION_ERROR')
       for(const item of plan.proposedItems) if(item.allocation.kind==='public_agent'){if(item.allocation.humanLeadId!==this.actor.id)fail('FORBIDDEN');if(!item.allocation.capability||!item.budget)fail('CAPABILITY_UNAVAILABLE');new AiService(this,this.execution?.enabled??false,this.execution?.model??'deepseek-v4-flash').available(item.allocation.capability)}
       const mapping = new Map(plan.proposedItems.map(item => [item.id, id()]))
@@ -387,6 +393,7 @@ export class Collaboration {
         this.db.prepare('INSERT INTO tasks VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)').run(task.id, task.labId, plan.id, item.id, task.initiatorId, task.leadId, task.reviewerId, task.status, item.allocation.kind === 'claim' ? 1 : 0, 1, task.createdAt, encode(task), encode(summary))
         this.db.prepare('INSERT INTO task_versions VALUES (?,?,?)').run(task.id,task.version,encode(task))
         this.grant(task.id, this.actor.id, 'full')
+        new ReuseService(this).copy('plan',task.planId,'task',task.id)
         if (own) this.createAssignment(task, 'self', this.actor.id, item.deliverable, item.schedule)
         if (item.allocation.kind === 'invitation') { this.createAssignment(task, 'invitation', item.allocation.memberId, item.deliverable, item.schedule); this.outbox(task, 'invitation_created') }
         this.event(task, 'confirmed')
@@ -397,7 +404,7 @@ export class Collaboration {
         const taskId=mapping.get(item.id)!
         const a=this.db.prepare('SELECT document FROM assignments WHERE task_id=?').get(taskId)!
         const assignment=Assignment.parse(JSON.parse(String(a.document)));assignment.kind='public_agent';assignment.capability=item.allocation.capability;assignment.version++;this.saveAssignment(assignment)
-        new AiService(this,this.execution?.enabled??false,this.execution?.model??'deepseek-v4-flash').handle('run',{params:{id:taskId},query:{},headers:{},body:{expectedVersion:1,capability:item.allocation.capability,budget:item.budget,inputArtifactIds:[]}})
+        new AiService(this,this.execution?.enabled??false,this.execution?.model??'deepseek-v4-flash').handle('run',{params:{id:taskId},query:{},headers:{},body:{expectedVersion:1,capability:item.allocation.capability,budget:item.budget,inputArtifactIds:[],conclusionRefs:new ReuseService(this).bindings('plan',plan.id).map(({id,version})=>({id,version}))}})
       }
       return { data: { plan, taskIds: [...mapping.values()] } }
     },
@@ -440,6 +447,7 @@ export class Collaboration {
         const schedule={...offer.schedule,committed:body.committed??offer.schedule.committed};this.validateSchedule(schedule,true)
         assignment.commitment = { scope: offer.scope, schedule, acceptedAt: now() }
         task.leadId = this.actor.id; task.status = 'ready'; task.schedule = assignment.commitment.schedule; this.grant(task.id, this.actor.id, 'full')
+        new ReuseService(this).copy('plan',task.planId,'task',task.id)
         for(const row of this.db.prepare("SELECT document FROM assignments WHERE task_id=? AND status='withdrawn' AND json_extract(document,'$.transferToMemberId')=?").all(task.id,this.actor.id)) {const old=Assignment.parse(JSON.parse(String(row.document)));old.status='transferred';old.version++;this.saveAssignment(old)}
       } else { if(body.committed) fail('VALIDATION_ERROR');task.status = 'unassigned'; this.db.prepare("DELETE FROM task_access WHERE task_id=? AND member_id=? AND access='summary'").run(task.id, this.actor.id) }
       this.saveAssignment(assignment); task.version++; task.updatedAt = now(); this.saveTask(task); this.event(task, body.decision)
