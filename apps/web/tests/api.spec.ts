@@ -7,6 +7,22 @@ const failure = (code: string, status: number) => response({error:{code,message:
 const intent = () => new Intent('confirmPlan',{expectedVersion:2},{id:'plan_test'});
 
 describe('F1 service boundary and retry intents',()=>{
+  it('treats a proxy HTML 502 as unavailable and retains the original request for retry',async()=>{
+    const fetcher=vi.fn<typeof fetch>().mockResolvedValueOnce(new Response('<h1>Bad gateway</h1>',{status:502})).mockResolvedValueOnce(failure('VERSION_CONFLICT',409));
+    const client=new ApiClient(fetcher);const slot=new CommandSlot();const original=intent();
+    await expect(slot.run(client,original)).rejects.toMatchObject({code:'SERVICE_UNAVAILABLE'});
+    expect(slot.intent).toBe(original);
+    await expect(slot.run(client,original)).rejects.toMatchObject({code:'VERSION_CONFLICT'});
+    expect(fetcher.mock.calls[1]?.[1]).toEqual(fetcher.mock.calls[0]?.[1]);
+  });
+  it('never accepts unreadable successful responses or revives an aborted proxy response',async()=>{
+    const controller=new AbortController();const reply=new Response('',{status:503});
+    vi.spyOn(reply,'json').mockImplementation(async()=>{controller.abort();throw new SyntaxError();});
+    const fetcher=vi.fn<typeof fetch>().mockResolvedValueOnce(new Response('not JSON')).mockResolvedValueOnce(reply);
+    const client=new ApiClient(fetcher);
+    await expect(client.read('session')).rejects.toMatchObject({code:'INVALID_RESPONSE'});
+    await expect(client.read('session',{}, {},controller.signal)).rejects.toMatchObject({name:'AbortError'});
+  });
   it('downloads authorized binary with no-store and never treats permission failure as file content',async()=>{
     const fetcher=vi.fn<typeof fetch>().mockResolvedValueOnce(new Response(new Uint8Array([65,66]),{headers:{'X-Contract-Version':contractVersion}})).mockResolvedValueOnce(failure('NOT_FOUND',404));
     const client=new ApiClient(fetcher);
