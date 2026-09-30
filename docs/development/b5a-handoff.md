@@ -1,6 +1,6 @@
 # B5a 小组试用准备：维护与前端联调包
 
-本批基线 `b8b7f4c1bfffda351dabd4223b932a7fa04126ae`，包含 G4a 最终受测代码 `dc227c56b4e6d39df69a615942fd8c68b8925f83`、共同报告和 G5a 规划。独立分支 `backend/b5a-pilot-readiness`。仅补运行支持；不以准备演练称 G5/P1 通过。
+本批基线 `b8b7f4c1bfffda351dabd4223b932a7fa04126ae`，包含 G4a 最终受测代码 `dc227c56b4e6d39df69a615942fd8c68b8925f83`、共同报告和 G5a 规划。独立分支 `backend/b5a-pilot-readiness`。仅补运行支持；不以准备演练称 G5/P1 通过。服务完整SHA为 `8f609153b4e74d49816af18819dcc07b8a895316`；逐项结果见[B5a阶段报告](reports/B5a-backend-2026-09-30.md)。
 
 ## 契约和前端交接
 
