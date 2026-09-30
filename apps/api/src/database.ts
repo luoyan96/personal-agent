@@ -3,7 +3,7 @@ import { readFileSync, mkdirSync, existsSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { createHash, randomBytes } from 'node:crypto'
 
-const migrations = ['001-foundation.sql', '002-collaboration.sql', '003-invitation-decisions.sql', '004-discovery.sql', '005-coordination.sql', '006-execution.sql', '007-authorized-reuse.sql'].map((name, index) => {
+const migrations = ['001-foundation.sql', '002-collaboration.sql', '003-invitation-decisions.sql', '004-discovery.sql', '005-coordination.sql', '006-execution.sql', '007-authorized-reuse.sql', '008-pilot-operations.sql'].map((name, index) => {
   const sql = readFileSync(new URL(`../migrations/${name}`, import.meta.url), 'utf8')
   return { version: index + 1, sql, checksum: createHash('sha256').update(sql).digest('hex') }
 })
@@ -33,9 +33,13 @@ export function migrate(db: DatabaseSync) {
     db.prepare("INSERT INTO runtime_meta VALUES ('signing_key',?) ON CONFLICT(key) DO NOTHING").run(randomBytes(32).toString('hex'))
   })
 }
-export function checkDatabase(db: DatabaseSync) {
+export function checkMigrationHistory(db: DatabaseSync, current = true) {
   const rows = db.prepare('SELECT version, checksum FROM schema_migrations ORDER BY version').all()
-  if (rows.length !== migrations.length || rows.some((row, index) => row.version !== migrations[index]?.version || row.checksum !== migrations[index]?.checksum)) throw new Error('Migration required')
+  if (!rows.length || (current && rows.length !== migrations.length) || rows.some((row, index) => row.version !== migrations[index]?.version || row.checksum !== migrations[index]?.checksum)) throw new Error('Migration required')
+  return rows
+}
+export function checkDatabase(db: DatabaseSync) {
+  checkMigrationHistory(db)
   if (db.prepare('PRAGMA journal_mode').get()?.journal_mode !== 'wal') throw new Error('WAL required')
   transaction(db, () => {
     db.prepare('INSERT INTO health_probe VALUES (?, ?)').run('readiness', new Date().toISOString())

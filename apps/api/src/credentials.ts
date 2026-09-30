@@ -1,3 +1,4 @@
+import { processGuard } from './process-guard.js'
 import { randomBytes } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
@@ -6,6 +7,8 @@ import { openDatabase } from './database.js'
 import { readConfig } from './config.js'
 
 const config = readConfig()
+const releaseProcess = processGuard(config.databasePath)
+process.once('exit', releaseProcess)
 if (!['development', 'test'].includes(config.mode)) throw new Error('Test credentials forbidden in production')
 const path = resolve(process.env.TEST_CREDENTIALS_FILE ?? '.runtime/test-credentials.json')
 if (!existsSync(path)) {
