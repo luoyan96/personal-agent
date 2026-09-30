@@ -8,7 +8,7 @@ import { AiService, canonical, instant } from './ai.js'
 import { hash } from './auth.js'
 import { fail } from './errors.js'
 
-export const reuseCommands=['planningRequests','conclusions','retainConclusion','conclusion','conclusionHistory','reviseConclusion','revokeConclusion','createSample','samples','revokeSample','publicMethods','createMethod','trialMethod','activateMethod','disableMethod','methodEvents'] as const
+export const reuseCommands=['planningRequests','conclusions','retainConclusion','conclusion','conclusionHistory','reviseConclusion','revokeConclusion','createSample','samples','taskSamples','revokeSample','publicMethods','createMethod','trialMethod','activateMethod','disableMethod','methodEvents'] as const
 export type ReuseCommand=typeof reuseCommands[number]
 type Ref={id:string;version:number}
 type Conclusion=z.infer<typeof RetainedConclusion>
@@ -43,6 +43,13 @@ export class ReuseService {
  texts(refs:Ref[]){return this.selected(refs).map(k=>({artifactId:`conclusion_${k.id}_v${k.version}`,text:`Confirmed conclusion: ${k.conclusion}\nApplicability: ${k.applicability}`}))}
  validatePlanRange(id:string,p:Pick<PlanModel,'proposedItems'>){const refs=this.db.prepare('SELECT DISTINCT conclusion_id id,revision version FROM reuse_edges WHERE target_kind=\'plan\' AND target_id=?').all(id).map(r=>this.conclusion(String(r.id),Number(r.version)));if(refs.length)this.range(refs,this.planReaders(p))}
  owner(){const cap=this.db.prepare('SELECT * FROM public_capabilities WHERE lab_id=?').get(this.c.actor.labId);if(!cap||cap.owner_id!==this.c.actor.id)fail('FORBIDDEN');return cap}
+ ownSample(row:Record<string,unknown>){
+  const sample=FeedbackSample.parse(JSON.parse(String(row.document)))
+  const active=row.status==='available',invalid=!!this.db.prepare('SELECT 1 FROM invalid_samples WHERE id=?').get(sample.id)
+  sample.allowedActions=active?['revoke']:[]
+  if(invalid){sample.selectedText=null;if(active)sample.status='needs_review'}
+  return sample
+ }
  sample(id:string,ownerOnly=false){const row=this.db.prepare('SELECT * FROM public_samples WHERE id=? AND lab_id=?').get(id,this.c.actor.labId);if(!row)fail('NOT_FOUND');if(ownerOnly){if(row.owner_id!==this.c.actor.id)fail('FORBIDDEN');this.c.task(String(row.task_id))}else this.owner();if(this.db.prepare('SELECT 1 FROM invalid_samples WHERE id=?').get(id))fail('NOT_FOUND');const sample=FeedbackSample.parse(JSON.parse(String(row.document)));sample.allowedActions=row.owner_id===this.c.actor.id?['revoke']:[];return sample}
  method(version:number){const row=this.db.prepare('SELECT document FROM public_methods WHERE lab_id=? AND version=?').get(this.c.actor.labId,version);if(!row)fail('CAPABILITY_UNAVAILABLE');const m=PublicMethod.parse(JSON.parse(String(row.document)));m.usable=!m.sampleIds.some(id=>!!this.db.prepare('SELECT 1 FROM invalid_samples WHERE id=?').get(id));m.validationRunIds=this.db.prepare("SELECT j.id FROM execution_jobs j WHERE j.lab_id=? AND j.owner_id=? AND j.status='succeeded' AND json_extract(j.document,'$.methodTrial')=1 AND json_extract(j.document,'$.methodVersion')=? AND NOT EXISTS(SELECT 1 FROM reuse_denials d WHERE d.target_kind='job' AND d.target_id=j.id AND d.member_id=?) AND EXISTS(SELECT 1 FROM execution_attempts a WHERE a.job_id=j.id AND json_extract(a.result_json,'$.provenance')='official_harness' AND json_extract(a.result_json,'$.failure') IS NULL) LIMIT 100").all(this.c.actor.labId,this.c.actor.id,version,this.c.actor.id).map(r=>String(r.id));m.allowedActions=[];const cap=this.db.prepare('SELECT owner_id,enabled FROM public_capabilities WHERE lab_id=?').get(this.c.actor.labId);if(cap?.owner_id===this.c.actor.id&&m.usable&&m.origin==='candidate'){if(cap.enabled===1&&this.c.execution?.enabled)m.allowedActions.push('trial');if(m.validationRunIds.length)m.allowedActions.push('activate')}return m}
  state(){const cap=this.owner(),state=this.db.prepare('SELECT active_version FROM public_method_state WHERE lab_id=?').get(this.c.actor.labId)!;return MethodState.parse({allowedActions:cap.enabled===1?['create_method','disable']:['create_method'],capabilityId:cap.id,generation:cap.version,activeMethodVersion:state.active_version,enabled:cap.enabled===1,ownerId:cap.owner_id,methods:this.db.prepare('SELECT version FROM public_methods WHERE lab_id=? ORDER BY version').all(this.c.actor.labId).map(r=>this.method(Number(r.version)))})}
@@ -58,7 +65,7 @@ export class ReuseService {
  run(name:ReuseCommand,req:RequestFor<ReuseCommand>):unknown{
   const id=(req.params as {id?:string}).id??this.c.actor.labId,route=routes[name]
   if(['publicMethods','createMethod','trialMethod','activateMethod','disableMethod','methodEvents','samples'].includes(name))this.owner()
-  if(['retainConclusion','createSample'].includes(name))this.c.task(id)
+  if(['retainConclusion','createSample','taskSamples'].includes(name))this.c.task(id)
   if(['conclusion','conclusionHistory','reviseConclusion'].includes(name))this.conclusion(id)
   if(name==='revokeConclusion'){const h=this.head(id),t=this.c.task(String(h.task_id));if(h.owner_id!==this.c.actor.id&&t.reviewerId!==this.c.actor.id)fail('FORBIDDEN')}
   if(name==='revokeSample'){const h=this.db.prepare('SELECT owner_id,task_id FROM public_samples WHERE id=?').get(id);if(!h)fail('NOT_FOUND');if(h.owner_id!==this.c.actor.id)fail('FORBIDDEN');this.c.task(String(h.task_id))}
@@ -115,11 +122,12 @@ export class ReuseService {
   return this.list(name,req)
  }
  list(name:ReuseCommand,req:RequestFor<ReuseCommand>){
-  const q=req.query as {limit?:number;cursor?:string;taskId?:string},limit=q.limit??30,base={kind:name,taskId:q.taskId??null,limit},cursor=this.c.cursor(base,q.cursor)
+  const q=req.query as {limit?:number;cursor?:string;taskId?:string},limit=q.limit??30,taskId=name==='taskSamples'?(req.params as {id:string}).id:q.taskId,base={kind:name,taskId:taskId??null,limit},cursor=this.c.cursor(base,q.cursor)
   let from:string,values:(string|number)[],select:string,sort:string,project:(row:Record<string,unknown>)=>unknown
   if(name==='conclusions'){
    from=`FROM conclusions c JOIN conclusion_versions v ON v.conclusion_id=c.id AND v.version=c.head_version JOIN tasks t ON t.id=c.task_id WHERE t.lab_id=? AND NOT EXISTS(SELECT 1 FROM conclusion_denials d WHERE d.conclusion_id=c.id AND d.revision=v.version AND d.member_id=?) AND NOT EXISTS(SELECT 1 FROM reuse_denials d WHERE d.target_kind='task' AND d.target_id=c.task_id AND d.member_id=?)${q.taskId?' AND c.task_id=?':''}`;values=[this.c.actor.labId,this.c.actor.id,this.c.actor.id,...(q.taskId?[q.taskId]:[])];select='c.id,c.created_at';sort='c.id';project=r=>this.conclusion(String(r.id))
   }else if(name==='samples'){from='FROM public_samples s WHERE lab_id=? AND status=\'available\' AND NOT EXISTS(SELECT 1 FROM invalid_samples i WHERE i.id=s.id)';values=[this.c.actor.labId];select='s.id,s.created_at';sort='s.id';project=r=>this.sample(String(r.id))
+  }else if(name==='taskSamples'){from='FROM public_samples s WHERE s.lab_id=? AND s.task_id=? AND s.owner_id=?';values=[this.c.actor.labId,taskId!,this.c.actor.id];select='s.*';sort='s.id';project=r=>this.ownSample(r)
   }else if(name==='methodEvents'){from='FROM method_events e WHERE lab_id=?';values=[this.c.actor.labId];select='e.*';sort='e.sequence';project=r=>({sequence:r.sequence,methodVersion:r.method_version,generation:r.generation,action:r.action,actorId:r.actor_id,at:r.at,runId:r.run_id})
   }else{
    from=`FROM execution_jobs j WHERE j.kind='planning' AND j.owner_id=? AND j.lab_id=? AND NOT EXISTS(SELECT 1 FROM reuse_denials d WHERE d.target_kind='job' AND d.target_id=j.id AND d.member_id=?)

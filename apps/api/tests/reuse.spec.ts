@@ -138,8 +138,43 @@ async function planning(refs:{id:string;version:number}[],client=clients.A){retu
 async function generation(){return (await request('publicCapabilities',{client:clients.A})).value.data[0]!.version}
 
 describe('B4a A14a–f: actual HTTP processes, durable DB and explicit deterministic model boundaries',()=>{
+ it('G4a-01 non-maintainer grantor can recover only own task grants, page and withdraw after restart',async()=>{
+  const source=await acceptedSource(),params={id:source.id},body={expectedVersion:(await detail(source.id)).task.version,deliverable:{id:source.delivery.id,version:source.delivery.version},decision:'share_selected',selectedText:'Synthetic retained metric: twelve verified samples.',authorizeLabUse:true}
+  db.prepare("UPDATE public_capabilities SET owner_id='member_B' WHERE lab_id='lab_synthetic'").run()
+  try{
+   const original={client:clients.A,params,body,key:key()},grant=await request('createSample',original);expect(grant.status).toBe(201)
+   expect((await request('createSample',{client:clients.A,params,body})).status).toBe(201)
+   expect((await request('createSample',{client:clients.A,params,body:{...body,decision:'decline',selectedText:null,authorizeLabUse:false}})).status).toBe(201)
+   expect((await request('samples',{client:clients.A})).status).toBe(403)
+   expect((await request('taskSamples',{client:clients.C,params})).status).toBe(404)
+   expect((await request('taskSamples',{client:clients.B,params})).status).toBe(404)
+   // A reader can see the task, but never another grantor's private decision history.
+   db.prepare("INSERT INTO task_access VALUES(?,?,'full')").run(source.id,'member_B')
+   const other=await request('taskSamples',{client:clients.B,params});expect(other.value).toMatchObject({total:0,data:[]})
+   const first=await request('taskSamples',{client:clients.A,params,query:{limit:1}});expect(first.status).toBe(200);expect(first.value.total).toBe(3);expect(first.value.nextCursor).toBeTruthy()
+   const seen=[first.value.data[0]!.id];let cursor=first.value.nextCursor
+   while(cursor){const page=await request('taskSamples',{client:clients.A,params,query:{limit:1,cursor,snapshot:first.value.snapshot!.token}});expect(page.status).toBe(200);seen.push(...page.value.data.map(x=>x.id));cursor=page.value.nextCursor}
+   expect(new Set(seen).size).toBe(3)
+   const different=await acceptedSource();expect((await request('taskSamples',{client:clients.A,params:{id:different.id},query:{limit:1,cursor:first.value.nextCursor}})).status).toBe(410)
+   await stopServers();address=(await startServer()).url;secondAddress=(await startServer()).url
+   const found=(await request('taskSamples',{client:clients.A,params,target:secondAddress})).value.data.find(s=>s.id===grant.value.data.id)!;expect(found.allowedActions).toEqual(['revoke'])
+   const revoke={client:clients.A,params:{id:found.id},body:{expectedVersion:found.version,reason:'Withdraw after refresh and process restart'},key:key()}
+   expect((await request('revokeSample',revoke)).status).toBe(200);expect((await request('revokeSample',revoke)).status).toBe(200)
+   const withdrawn=(await request('taskSamples',{client:clients.A,params})).value.data.find(s=>s.id===found.id)!;expect(withdrawn).toMatchObject({version:2,status:'revoked',selectedText:null,allowedActions:[]})
+   expect((await request('createSample',original)).status).toBe(404)
+   expect((await request('taskSamples',{client:clients.A,params,query:{limit:1,cursor:first.value.nextCursor}})).status).toBe(410)
+  }finally{db.prepare("UPDATE public_capabilities SET owner_id='member_A' WHERE lab_id='lab_synthetic'").run()}
+ })
+ it('G4a-01 source invalidation redacts grant excerpts but permits withdrawal, while lost task access hides history',async()=>{
+  const source=await acceptedSource(),params={id:source.id},grant=await request('createSample',{client:clients.A,params,body:{expectedVersion:(await detail(source.id)).task.version,deliverable:{id:source.delivery.id,version:source.delivery.version},decision:'share_selected',selectedText:'Synthetic retained metric: twelve verified samples.',authorizeLabUse:true}});expect(grant.status).toBe(201)
+  expect((await request('revokeArtifact',{client:clients.A,params:{id:source.artifact.id},body:{expectedVersion:source.artifact.version,reason:'Source withdrawn'}})).status).toBe(200)
+  const page=await request('taskSamples',{client:clients.A,params});expect(page.value.data).toHaveLength(1);expect(page.value.data[0]).toMatchObject({status:'needs_review',selectedText:null,allowedActions:['revoke']})
+  expect((await request('revokeSample',{client:clients.A,params:{id:grant.value.data.id},body:{expectedVersion:1,reason:'Also withdraw grant'}})).status).toBe(200)
+  db.prepare("UPDATE task_access SET access='revoked' WHERE task_id=? AND member_id='member_A'").run(source.id)
+  expect((await request('taskSamples',{client:clients.A,params})).status).toBe(404)
+ })
  it('A14a accepts without sharing, retains explicit source versions, authorizes actions and preserves idempotence',async()=>{
-  const s=await acceptedSource('invitation');expect(db.prepare('SELECT count(*) n FROM public_samples').get()!.n).toBe(0)
+  const s=await acceptedSource('invitation');expect(db.prepare('SELECT count(*) n FROM public_samples WHERE task_id=?').get(s.id)!.n).toBe(0)
   const {k,options}=await retain(s);expect(k.confirmedBy).toBe('member_A');expect(k.allowedActions).toContain('revoke');expect((await request('retainConclusion',options)).value.data.id).toBe(k.id)
   expect((await request('conclusion',{client:clients.B,params:{id:k.id}})).value.data.allowedActions).toEqual([])
   expect((await request('conclusion',{client:clients.C,params:{id:k.id}})).status).toBe(404)
@@ -222,7 +257,7 @@ describe('B4a A14a–f: actual HTTP processes, durable DB and explicit determini
   const revoke=await request('revokeSample',{client:clients.A,params:{id:grant.value.data.id},body:{expectedVersion:1,reason:'Withdraw sample'}});expect(revoke.status).toBe(200)
   expect((await request('getRun',{client:clients.A,params:{id:finished.id}})).status).toBe(404)
   expect((await request('publicMethods',{client:clients.A})).value.data.methods[1]!.usable).toBe(false)
-  expect((await request('samples',{client:clients.A})).value.data).toEqual([])
+  expect((await request('samples',{client:clients.A})).value.data.some(s=>s.id===grant.value.data.id)).toBe(false)
  })
  it('A14c recursive conclusion dependencies block descendant attachments, history and aggregate counts after source permission withdrawal',async()=>{
   const source=await acceptedSource('invitation'),{k}=await retain(source),ref={id:k.id,version:k.version}

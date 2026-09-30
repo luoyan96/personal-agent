@@ -37,13 +37,14 @@ let planCursor: string | undefined;
 let actionCursor: string | undefined;
 let requestCursor: string | undefined;
 let conclusionCursor: string | undefined;
+let sampleCursor: string | undefined;
 let taskFilter = '';
 let availabilityBase: MemberModel | undefined;
 let availabilityDirty = false;
 let viewReadAt = 0;
 let checkingSnapshot = false;
 const snapshotQuery = () => activeSnapshot ? {snapshot:activeSnapshot.token} : {};
-function resetPages() { pageCursor=undefined; planCursor=undefined; actionCursor=undefined; requestCursor=undefined; conclusionCursor=undefined; nextReadSnapshot=undefined; }
+function resetPages() { pageCursor=undefined; planCursor=undefined; actionCursor=undefined; requestCursor=undefined; conclusionCursor=undefined; sampleCursor=undefined; nextReadSnapshot=undefined; }
 function refresh() { resetPages(); return load(); }
 function readStamp() {
   return activeSnapshot ? `<p class="fine read-stamp">服务读取时刻 <time datetime="${e(activeSnapshot.at)}">${e(activeSnapshot.at)}</time> · 页面为此时快照，点击刷新同步变化；列表定期检查失效。</p>` : '';
@@ -328,7 +329,7 @@ async function taskDetail(id: string, signal: AbortSignal) {
     action('refresh',refresh);return;
   }
   if(signal.aborted)return;
-  const [caps,availableConclusions,taskConclusions]=await Promise.all([api.read('publicCapabilities',{}, {},signal),selectableConclusions(signal),api.read('conclusions',{}, {...snapshotQuery(),taskId:id,limit:100},signal)]);if(signal.aborted)return;
+  const [caps,availableConclusions,taskConclusions,taskSamples]=await Promise.all([api.read('publicCapabilities',{}, {},signal),selectableConclusions(signal),api.read('conclusions',{}, {...snapshotQuery(),taskId:id,limit:100},signal),api.read('taskSamples',{id},{...snapshotQuery(),limit:10,...(sampleCursor?{cursor:sampleCursor}:{})},signal)]);if(signal.aborted)return;
   const task=value.task;
   const assignments=value.assignments;
   const latest=[...value.deliverables].sort((a,b)=>b.revision-a.revision)[0];
@@ -341,8 +342,10 @@ async function taskDetail(id: string, signal: AbortSignal) {
   document.querySelector('.detail')!.insertAdjacentHTML('beforeend',coordination.render(value,hooks));
   coordination.bind(value,hooks);
   document.querySelector('.detail')!.insertAdjacentHTML('beforeend',conclusionBindings(task.conclusionRefs));
-  document.querySelector('.detail')!.insertAdjacentHTML('beforeend',reuse.taskHtml(value,taskConclusions.data));
-  reuse.bindTask(value,reuseHooks(signal));
+  document.querySelector('.detail')!.insertAdjacentHTML('beforeend',reuse.taskHtml(value,taskConclusions.data)+reuse.sampleHistoryHtml(taskSamples,!!sampleCursor));
+  const sampleHooks={...reuseHooks(signal),reload:async()=>{sampleCursor=undefined;await load();}};
+  reuse.bindTask(value,sampleHooks);reuse.bindSamples(taskSamples.data,sampleHooks);
+  action('samples-first',()=>{sampleCursor=undefined;nextReadSnapshot=activeSnapshot?.token;return load();});action('samples-next',()=>{sampleCursor=taskSamples.nextCursor??undefined;nextReadSnapshot=activeSnapshot?.token;return load();});
   document.querySelector('.detail')!.insertAdjacentHTML('beforeend',`<section id="runs"><h2>公共能力运行</h2><p class="fine">后台服务独立于浏览器。排队或运行不表示完成；候选需明确提交和验收。只使用本任务授权文本，不读取私人方法。</p>${caps.data.some(cap=>cap.allowedActions?.includes('manage_methods'))?link('/methods','维护公共文本方法','button'):''}${value.executions.map(r=>runView(r,task)).join('')||'<p>尚无运行记录。</p>'}<details class="panel"><summary>能力、材料与新运行授权</summary>${caps.data.map(cap=>`<p>${e(cap.name)} · ${e(cap.id)} v${cap.version} · ${cap.status==='available'?'已配置（不保证本次可运行）':'当前不可用'}</p>`).join('')||'<p>服务尚未配置公共能力；可以继续手工交付。</p>'}<form data-form="new-run"><label>公共能力<select name="run-capability">${caps.data.filter(cap=>cap.status==='available').map(cap=>`<option value="${e(cap.id)}">${e(cap.name)} v${cap.version}</option>`).join('')}</select></label><fieldset><legend>明确授权本任务文本附件（不选则等待材料）</legend>${(value.artifacts??[]).filter(file=>file.accessStatus==='available'&&file.mediaType==='text/plain').map(file=>`<label><input type="checkbox" class="run-input" name="run-input-${e(file.id)}" value="${e(file.id)}">${e(file.filename)} · v${file.version}</label>`).join('')||'<p>尚无可用文本；请先在附件区上传。</p>'}</fieldset>${conclusionChoices(availableConclusions.data,'run-reuse')}<div class="form-grid"><label>累计 token 上限<input type="number" name="run-tokens" min="1" max="1000000" value="100000" required></label><label>时间上限（秒）<input type="number" name="run-seconds" min="1" max="120" value="120" required></label></div><p>每次新授权可能调用真实模型并产生用量；费用未报告则未知。失败重试沿用原请求，重新授权会新建运行。</p>${task.allowedActions.includes('run')?'<button>授权并启动新运行</button>':'<p>当前服务未开放新运行，请处理等待项、阻塞或权限限制。</p>'}</form></details></section>`);
   const inputIds=()=>[...document.querySelectorAll<HTMLInputElement>('.run-input:checked')].map(el=>el.value);
   form('new-run',async data=>{const cap=caps.data.find(c=>c.id===data.get('run-capability'));if(!cap)throw new ApiError('CAPABILITY_UNAVAILABLE','没有可用公共能力，仍可手工交付。');await mutate(new Intent('run',{expectedVersion:task.version,capability:{id:cap.id,version:cap.version,visibility:'lab_public'},budget:{maxTokens:Number(data.get('run-tokens')),maxSeconds:Number(data.get('run-seconds'))},inputArtifactIds:inputIds(),conclusionRefs:selectedConclusions(document.querySelector('[data-form=new-run]')!)},{id}),async()=>load());});
@@ -435,7 +438,7 @@ async function load() {
     else {members=[];activeSnapshot=undefined;content('<section class="state-panel"><h1>暂时无法读取</h1><p>旧的受限内容已清除，没有使用演示数据替代服务响应。尚未提交的输入仍保留。</p></section>','读取失败');feedback(error);}
   }
 }
-window.addEventListener('hashchange',()=>{pageCursor=undefined;planCursor=undefined;actionCursor=undefined;void load();});
+window.addEventListener('hashchange',()=>{sampleCursor=undefined;pageCursor=undefined;planCursor=undefined;actionCursor=undefined;void load();});
 window.addEventListener('offline',()=>{
   if(!session)return;
   controller?.abort();members=[];activeSnapshot=undefined;resetPages();

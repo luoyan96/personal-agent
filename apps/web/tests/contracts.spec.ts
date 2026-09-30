@@ -20,9 +20,9 @@ import {
 } from "../src/fixture-adapter";
 import { projectTask } from "../src/contract-projection";
 
-describe("Frontend consumes shared contract 0.6.1", () => {
+describe("Frontend consumes shared contract 0.6.2", () => {
   it("validates every shared semantic and endpoint example", () => {
-    expect(contractVersion).toBe("0.6.1");
+    expect(contractVersion).toBe("0.6.2");
     for (const example of Object.values(fixtures))
       example.schema.parse(example.value);
     for (const [name, example] of Object.entries(endpointExamples)) {

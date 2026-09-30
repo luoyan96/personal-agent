@@ -13,6 +13,16 @@ function harness(){
 function input(){const data=new FormData();for(const [key,value] of Object.entries({'retain-delivery':'delivery_one','retain-text':'Retained synthetic result','retain-applicability':'Only this dataset','retain-scope':'owner_only'}))data.set(key,value);return data;}
 afterEach(()=>vi.unstubAllGlobals());
 describe('F4a editing context and explicit consent',()=>{
+ it('uses the recovered grant version and service action for withdrawal, with failure preserving the original command',async()=>{
+  const c=new ReuseContext(),h=harness(),sample={id:'own_sample',version:7,allowedActions:['revoke']} as ResponseFor<'taskSamples'>['data'][number];
+  c.bindSamples([sample,{...sample,id:'unavailable',allowedActions:[]}],h.hooks);expect(h.forms.has('revoke-sample-unavailable')).toBe(false);
+  const data=new FormData();data.set('sample-revoke-own_sample','Stop future use');await expect(h.forms.get('revoke-sample-own_sample')!(data,null)).rejects.toThrow('offline');
+  expect(h.sent[0]).toMatchObject({body:{expectedVersion:7,reason:'Stop future use'},params:{id:'own_sample'}});
+ });
+ it('hides withdrawn or stale grant text and shows true status with paged navigation',()=>{
+  const c=new ReuseContext(),base={id:'sample',version:2,createdAt:'2026-09-30T00:00:00Z',selectedText:'SECRET_EXCERPT',allowedActions:[]};
+  for(const status of ['needs_review','revoked','declined'] as const){const html=c.sampleHistoryHtml({data:[{...base,status}],total:12,nextCursor:'next'} as ResponseFor<'taskSamples'>,true);expect(html).not.toContain('SECRET_EXCERPT');expect(html).not.toContain('<form');expect(html).toContain('下一批授权记录');expect(html).toContain('回到首批授权记录');}
+ });
  it('keeps the original source version after a failed command until explicit comparison and rebase',async()=>{
   const c=new ReuseContext(),h=harness();c.bindTask(detail(),h.hooks);
   await expect(h.forms.get('retain-conclusion')!(input(),null)).rejects.toThrow('offline');
