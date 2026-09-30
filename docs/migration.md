@@ -33,3 +33,7 @@
 ## 2026-09-21 F0 前端
 
 在独立 worktree 中从共享文档提交 ed36ac6 新建 apps/web，不迁入旧探索前端或 Harness 源码。按现有 01/08/09 设计图实现 TypeScript + Vite 三页预览；品牌小图裁自 01-entry.png，图标通过官方 Phosphor 依赖消费。未采用包含发布配置的通用演示模板，遵守本仓库 pnpm workspace 和只做 F0 的范围。展示投影与最终服务契约分离，生产不能启动 fixture 模式。
+
+## B3 持久执行（2026-09-30）
+
+共同基线 98bef3bbab897b7d27b1507cb0c557299dab56b6，新增 006-execution.sql，不修改 001—005。规划/运行/尝试队列与通知 outbox 分离；官方 Harness 0.2.0-rc.1 的受限 LlmRuntime 组合纳入默认 workspace，旧六工具插件不接团队权限。安装成功，真实模型目前因凭据缺失未验证。升级与配置见 [B3 联调包](development/b3-handoff.md)。

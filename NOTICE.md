@@ -8,3 +8,5 @@
 - F0 前端品牌小图裁自本仓库 `docs/design/v1.1/01-entry.png`（既有 Image Gen 设计素材）；不引入外部品牌。Phosphor Web 2.1.2 图标来自官方 npm 包，适用其 MIT 许可，随依赖安装保留许可。
 
 当前包均为 private，不随提交自动发布 npm 包。若后续对外发布软件包，需要明确本项目整体许可并核对依赖要求。公开可见的 GitHub 仓库与明确的软件再分发许可是不同事项。
+
+B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `dsh-llm-deepseek-api-key` 0.2.0-rc.1 和 Cordis 4.0.4（MIT）；经公开接口使用，不复制上游实现。具体依赖与校验值见 pnpm-lock.yaml。
