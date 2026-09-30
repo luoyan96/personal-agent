@@ -230,12 +230,26 @@ describe('B1 A1–A5: two real HTTP processes, file SQLite, real passwords', () 
     db.prepare("UPDATE auth_accounts SET disabled=0 WHERE member_id='member_C'").run()
   })
   it('permission-filtered paging and member commitments never disclose restricted tasks; cursors are scoped', async () => {
-    const { taskIds } = await createConfirmed(); const privateId = taskIds[0]!
+    // C may legitimately own a claim from an earlier concurrent test.
+    const owned = await createConfirmed([item('claim', 'owned_by_c')])
+    expect((await request('claim', { client: clients.C, params: { id: owned.taskIds[0]! }, body: { expectedVersion: 1 } })).status).toBe(200)
+    const privateGoal = 'PAGING_PRIVATE_INPUT_SENTINEL', unclaimedGoal = 'PAGING_UNCLAIMED_INPUT_SENTINEL'
+    const { taskIds } = await createConfirmed([
+      { ...item('invitation', 'private'), goal: privateGoal },
+      { ...item('claim', 'unclaimed'), goal: unclaimedGoal },
+    ])
+    const privateId = taskIds[0]!, unclaimedId = taskIds[1]!
     const result = await request('tasks', { client: clients.C, query: { labId: 'lab_synthetic', scope: 'lab', limit: 100 } })
     expect(result.status).toBe(200); expect(JSON.stringify(result.value)).not.toContain(privateId)
-    expect(JSON.stringify(result.value)).not.toContain('RESTRICTED_INPUT_SENTINEL')
+    expect(JSON.stringify(result.value)).not.toContain(privateGoal)
+    expect(JSON.stringify(result.value)).not.toContain(unclaimedGoal)
+    expect(result.value.data.find(task => task.id === owned.taskIds[0])).toMatchObject({ leadId: 'member_C', goal: 'RESTRICTED_INPUT_SENTINEL' })
+    expect(result.value.data.find(task => task.id === unclaimedId)).toMatchObject({ projection: 'claim_summary', summary: 'Safe claim summary' })
+    expect((await request('task', { client: clients.C, params: { id: privateId } })).status).toBe(404)
     const members = await request('members', { client: clients.C, params: { id: 'lab_synthetic' } })
     expect(JSON.stringify(members.value)).not.toContain(privateId)
+    expect(JSON.stringify(members.value)).not.toContain(privateGoal)
+    expect(JSON.stringify(members.value)).not.toContain(unclaimedGoal)
     const first = await request('tasks', { client: clients.A, query: { labId: 'lab_synthetic', scope: 'mine', limit: 1 } })
     expect(first.value.nextCursor).toBeTruthy()
     const next = await request('tasks', { client: clients.A, query: { labId: 'lab_synthetic', scope: 'mine', limit: 1, cursor: first.value.nextCursor! } })

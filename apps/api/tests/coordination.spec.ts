@@ -313,11 +313,14 @@ describe('B2b A6–A9: transaction database and two actual HTTP processes',()=>{
     const expected=await detail(id,clients.B)
     const legacyPath=join(directory,'b2a-upgrade.sqlite'),legacy=openDatabase(legacyPath,true)
     try {
-      legacy.exec('CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY,checksum TEXT NOT NULL,applied_at TEXT NOT NULL) STRICT')
-      for(const [index,name] of ['001-foundation.sql','002-collaboration.sql','003-invitation-decisions.sql','004-discovery.sql'].entries()) {
-        const sql=readFileSync(new URL(`../migrations/${name}`,import.meta.url),'utf8');legacy.exec(sql)
-        legacy.prepare('INSERT INTO schema_migrations VALUES (?,?,?)').run(index+1,createHash('sha256').update(sql).digest('hex'),'2026-09-29T00:00:00Z')
-      }
+      // Batch only legacy fixture DDL, not the real repeated migration under test.
+      transaction(legacy,()=>{
+        legacy.exec('CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY,checksum TEXT NOT NULL,applied_at TEXT NOT NULL) STRICT')
+        for(const [index,name] of ['001-foundation.sql','002-collaboration.sql','003-invitation-decisions.sql','004-discovery.sql'].entries()) {
+          const sql=readFileSync(new URL(`../migrations/${name}`,import.meta.url),'utf8');legacy.exec(sql)
+          legacy.prepare('INSERT INTO schema_migrations VALUES (?,?,?)').run(index+1,createHash('sha256').update(sql).digest('hex'),'2026-09-29T00:00:00Z')
+        }
+      })
       const selectors:Record<string,string>={labs:'1',members:'1',auth_accounts:'1',sessions:'1',plans:`id='${plan.id}'`,plan_versions:`plan_id='${plan.id}'`,tasks:`id='${id}'`,task_access:`task_id='${id}'`,assignments:`task_id='${id}'`,deliverables:`task_id='${id}'`,reviews:`deliverable_id IN (SELECT id FROM deliverables WHERE task_id='${id}')`,invitation_decisions:`assignment_id IN (SELECT id FROM assignments WHERE task_id='${id}')`,outbox:`aggregate_id='${id}'`,task_events:`task_id='${id}'`,idempotency_results:`resource_id='${id}'`,runtime_meta:'1'}
       transaction(legacy,()=>{
         for(const [table,where] of Object.entries(selectors)) for(const row of db.prepare(`SELECT * FROM ${table} WHERE ${where}`).all()) {

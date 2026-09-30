@@ -308,11 +308,15 @@ describe('B2a A9a: real HTTP and persistent SQLite discovery', () => {
   it('upgrades an actual populated B1 database twice without changing historical rows or migration checksums', () => {
     const legacy = openDatabase(join(directory, 'legacy.sqlite'), true)
     try {
-      legacy.exec('CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY,checksum TEXT NOT NULL,applied_at TEXT NOT NULL) STRICT')
-      for (const [i, name] of ['001-foundation.sql', '002-collaboration.sql', '003-invitation-decisions.sql'].entries()) {
-        const sql = readFileSync(new URL(`../migrations/${name}`, import.meta.url), 'utf8'); legacy.exec(sql)
-        legacy.prepare('INSERT INTO schema_migrations VALUES (?,?,?)').run(i + 1, createHash('sha256').update(sql).digest('hex'), '2026-09-21T00:00:00Z')
-      }
+      // Commit legacy schema setup together; every DDL otherwise triggers FULL fsync.
+      // The actual repeated upgrade below remains outside this fixture transaction.
+      transaction(legacy, () => {
+        legacy.exec('CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY,checksum TEXT NOT NULL,applied_at TEXT NOT NULL) STRICT')
+        for (const [i, name] of ['001-foundation.sql', '002-collaboration.sql', '003-invitation-decisions.sql'].entries()) {
+          const sql = readFileSync(new URL(`../migrations/${name}`, import.meta.url), 'utf8'); legacy.exec(sql)
+          legacy.prepare('INSERT INTO schema_migrations VALUES (?,?,?)').run(i + 1, createHash('sha256').update(sql).digest('hex'), '2026-09-21T00:00:00Z')
+        }
+      })
       // Copy only synthetic rows in FK order into the pre-upgrade schema.
       const tables = ['labs','members','auth_accounts','sessions','plans','plan_versions','tasks','task_access','assignments','deliverables','reviews','invitation_decisions','idempotency_results','outbox','task_events','runtime_meta']
       // Commit fixture setup once; per-row FULL fsync exceeds CI timeouts on Windows.
