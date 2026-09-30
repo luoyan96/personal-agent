@@ -6,9 +6,12 @@ import { labels } from './contract-projection';
 import { taskCard, planCard, taskColumn, availabilityText } from './collaboration-view';
 
 import { planningView, runView } from './ai-view';
+import {requestCard,conclusionCard,conclusionChoices,conclusionBindings,type Conclusion} from './reuse-view';
 import { CoordinationContext } from './coordination-view';
+import { ReuseContext } from './reuse-controller';
 import { scheduleFields, readSchedule, datedFields, readDated } from './schedule-editor';
 const coordination = new CoordinationContext();
+const reuse = new ReuseContext();
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const api = new ApiClient();
 const command = new CommandSlot();
@@ -18,6 +21,7 @@ let scope = 'mine';
 let pageCursor: string | undefined;
 let controller: AbortController | undefined;
 let currentPlan: PlanModel | undefined;
+let planConclusions:Conclusion[]=[];
 let refreshedPlan: PlanModel | undefined;
 let revisionPending = false;
 let draftOwner: string | undefined;
@@ -31,13 +35,15 @@ let activeSnapshot: ResponseFor<'overview'>['snapshot'] | undefined;
 let nextReadSnapshot: string | undefined;
 let planCursor: string | undefined;
 let actionCursor: string | undefined;
+let requestCursor: string | undefined;
+let conclusionCursor: string | undefined;
 let taskFilter = '';
 let availabilityBase: MemberModel | undefined;
 let availabilityDirty = false;
 let viewReadAt = 0;
 let checkingSnapshot = false;
 const snapshotQuery = () => activeSnapshot ? {snapshot:activeSnapshot.token} : {};
-function resetPages() { pageCursor=undefined; planCursor=undefined; actionCursor=undefined; nextReadSnapshot=undefined; }
+function resetPages() { pageCursor=undefined; planCursor=undefined; actionCursor=undefined; requestCursor=undefined; conclusionCursor=undefined; nextReadSnapshot=undefined; }
 function refresh() { resetPages(); return load(); }
 function readStamp() {
   return activeSnapshot ? `<p class="fine read-stamp">服务读取时刻 <time datetime="${e(activeSnapshot.at)}">${e(activeSnapshot.at)}</time> · 页面为此时快照，点击刷新同步变化；列表定期检查失效。</p>` : '';
@@ -52,7 +58,9 @@ function resetEditor() {
 }
 function clearOwnedContext() {
   resetEditor();
+  planConclusions=[];
   coordination.clear();
+  reuse.clear();
   drafts.clear();
   command.discard();
   retryCommand = undefined;
@@ -93,7 +101,7 @@ function content(html: string, title: string) {
 function feedback(error: unknown) {
   const err = error instanceof ApiError ? error : new ApiError('ERROR', '操作未完成，请重试。');
   if(err.code==='UNAUTHENTICATED'){controller?.abort();session=undefined;api.csrfToken='';members=[];activeSnapshot=undefined;resetPages();shell();login();}
-  if(['FORBIDDEN','NOT_FOUND'].includes(err.code)) {controller?.abort();if(route().startsWith('/tasks/')){coordination.reset(route().slice(7));for(const key of drafts.keys())if(key.startsWith(route()+':'))drafts.delete(key);command.discard();retryCommand=undefined;}members=[];activeSnapshot=undefined;resetPages();content('<section class="state-panel"><h1>无法访问此内容</h1><p>资源不存在或当前账号无权访问。旧内容已清除。</p></section>','无法访问');}
+  if(['FORBIDDEN','NOT_FOUND'].includes(err.code)) {controller?.abort();reuse.clear();if(route().startsWith('/tasks/'))coordination.reset(route().slice(7));if(route().startsWith('/plans/'))resetEditor();for(const key of drafts.keys())if(key.startsWith(route()+':'))drafts.delete(key);command.discard();retryCommand=undefined;members=[];activeSnapshot=undefined;resetPages();content('<section class="state-panel"><h1>无法访问此内容</h1><p>资源不存在或当前账号无权访问。旧内容已清除。</p></section>','无法访问');}
   const target = document.querySelector('#feedback') ?? document.querySelector('main')!;
   const conflict = ['VERSION_CONFLICT','IDEMPOTENCY_CONFLICT','ALREADY_CLAIMED','INVALID_STATE'].includes(err.code);
   if(err.code==='CURSOR_EXPIRED') {resetPages();activeSnapshot=undefined;}
@@ -153,10 +161,17 @@ function login() {
     } finally {busy = false;}
   }, false);
 }
-function entry(extra = '') {
-  content(`<section class="entry entry-daily"><p class="eyebrow">从一件要完成的事开始</p><h1>今天，想把什么事情推进一步？</h1><p class="intro">说出目标，由你确认需要的人与分工。</p><form data-form="entry" class="composer"><label class="sr-only" for="goal">描述你的需求</label><textarea id="goal" name="goal" required maxlength="8000" placeholder="我有一份科研项目申请书要写……"></textarea><div class="composer-actions"><span class="fine">可以描述要安排、查询或承接的工作；建议由服务生成。单次生成上限 100000 tokens / 120 秒，可能产生真实用量。</span><button class="primary" type="submit" value="ai">发送</button><button type="submit" value="manual">手工创建方案</button></div></form><div class="suggestions">${['科研论文','科研项目','知识产权','实验与数据','学生培养','汇报事务'].map(t => `<button data-prompt="${t}">${t}</button>`).join('')}</div><div class="recent">${myTasksLink('查看我参与的真实任务 ' + icon('arrow-right'))}</div><p class="fine">已保存草案与本人待处理事项见下方；模型不可用时仍可手工安排。</p></section>${extra}`, '需求入口');
+function selectedConclusions(root:ParentNode=document):NonNullable<RequestFor<'planRequest'>['body']['conclusionRefs']>{return [...root.querySelectorAll<HTMLInputElement>('[data-conclusion-ref]:checked:not(:disabled)')].map(el=>({id:el.dataset.conclusionRef!,version:Number(el.dataset.version)}));}
+async function selectableConclusions(signal:AbortSignal){
+  const data:Conclusion[]=[];let cursor:string|undefined;
+  do {const page=await api.read('conclusions',{}, {...snapshotQuery(),limit:100,...(cursor?{cursor}:{})},signal);if(signal.aborted)throw new DOMException('Aborted','AbortError');data.push(...page.data);cursor=page.nextCursor??undefined;}while(cursor);
+  return {data};
+}
+function entry(extra = '',conclusions:Conclusion[]=[]) {
+  content(`<section class="entry entry-daily"><p class="eyebrow">从一件要完成的事开始</p><h1>今天，想把什么事情推进一步？</h1><p class="intro">说出目标，由你确认需要的人与分工。</p><form data-form="entry" class="composer"><label class="sr-only" for="goal">描述你的需求</label><textarea id="goal" name="goal" required maxlength="8000" placeholder="我有一份科研项目申请书要写……"></textarea>${conclusionChoices(conclusions,'entry-reuse')}<div class="composer-actions"><span class="fine">可以描述要安排、查询或承接的工作；建议由服务生成。单次生成上限 100000 tokens / 120 秒，可能产生真实用量。</span><button class="primary" type="submit" value="ai">发送</button><button type="submit" value="manual">手工创建方案</button></div></form><div class="suggestions">${['科研论文','科研项目','知识产权','实验与数据','学生培养','汇报事务'].map(t => `<button data-prompt="${t}">${t}</button>`).join('')}</div><div class="recent">${myTasksLink('查看我参与的真实任务 ' + icon('arrow-right'))}</div><p class="fine">已保存草案与本人待处理事项见下方；模型不可用时仍可手工安排。</p></section>${extra}`, '需求入口');
   form('entry', async (data,submitter) => {
-    if((submitter as HTMLButtonElement)?.value!=='manual'){await requestPlanning(String(data.get('goal')));return;}
+    if((submitter as HTMLButtonElement)?.value!=='manual'){await requestPlanning(String(data.get('goal')),null,selectedConclusions(document.querySelector('[data-form=entry]')!));return;}
+    if(selectedConclusions(document.querySelector('[data-form=entry]')!).length)throw new ApiError('REUSE_SELECTION','已选结论将用于生成请求。若改用手工方案，请先取消这里的勾选；之后仍可在任务运行中主动选用。');
     resetEditor();
     editor = {labId:session!.member.labId,goal:String(data.get('goal')),proposedItems:[],unresolvedQuestions:[]};
     editorRoute = '/plans/new'; currentPlan = undefined; dirty = true; addItem(); location.hash = '/plans/new';
@@ -169,7 +184,8 @@ function addItem() {
 function planEditor() {
   const editable = !currentPlan || currentPlan.status === 'draft';
   content(`<section class="flow">${link('/','← 返回需求入口','back')}<p class="eyebrow">协作方案</p><h1>把目标变成可确认的安排</h1><p class="intro">先看分工，确认后再安排执行。</p><p class="banner">请核对并编辑以下安排；模型建议不等于已确认，邀请需对方接受才成为承诺。</p><p class="fine">${currentPlan ? `方案 ${e(currentPlan.id)} · 版本 ${currentPlan.version} · ${currentPlan.status === 'draft' ? '草案' : '已确认'}。可收藏当前链接以继续。` : '未保存草案 · 尚未创建任务'}</p><form data-form="plan"><fieldset ${editable ? '' : 'disabled'}>${field('整体目标','goal',editor!.goal,true)}<div class="plan-items">${editor!.proposedItems.map((item,i)=>`<section class="panel" data-item="${i}"><div class="section-heading"><h2>分工 ${i+1}</h2>${button('remove-'+i,'移除')}</div><div class="form-grid">${field('任务标题',`title-${i}`,item.title,false,200)}${field('这一项的目标',`goal-${i}`,item.goal)}${field('交付什么',`deliverable-${i}`,item.deliverable,true)}${field('怎样算完成',`criteria-${i}`,item.acceptanceCriteria,true)}<label>承接方式<select name="allocation-${i}">${item.allocation.kind==='public_agent'?'<option value="public_agent" selected>公共 AI（保留服务建议的能力与版本）</option>':''}<option value="self" ${item.allocation.kind==='self'?'selected':''}>由我承担</option><option value="invitation" ${item.allocation.kind==='invitation'?'selected':''}>邀请成员</option><option value="claim" ${item.allocation.kind==='claim'?'selected':''}>开放认领</option></select></label><label>拟邀请成员<select name="member-${i}"><option value="">请选择成员</option>${members.filter(m=>m.id!==session!.member.id).map(m=>`<option value="${e(m.id)}" ${item.allocation.kind==='invitation'&&item.allocation.memberId===m.id?'selected':''}>${e(m.displayName)}</option>`).join('')}</select></label><label>公开认领摘要（仅开放认领使用）<textarea name="public-summary-${i}" rows="2" maxlength="8000">${item.allocation.kind==='claim'?e(item.allocation.summary):''}</textarea></label>${scheduleFields(`plan-${i}`,item.schedule,false)}<label>前置分工（多选）<select multiple name="dependencies-${i}">${editor!.proposedItems.filter(other=>other.id!==item.id).map(other=>`<option value="${e(other.id)}" ${item.dependencies.includes(other.id)?'selected':''}>${e(other.title||other.id)}</option>`).join('')}</select></label></div>${schedule(item.schedule)}<p class="fine">开放认领的摘要、交付和验收要求会向实验室成员公开；完整目标保留在授权详情。时间按 ${e(Intl.DateTimeFormat().resolvedOptions().timeZone)} 记录；建议日期不代表成员已承诺。依赖在确认时由服务检查；变更在相关任务中协商。</p></section>`).join('')}</div>${button('add-item','＋ 增加分工')}<label>待澄清的问题（可留空，每行一条）<textarea name="questions" rows="2" maxlength="8000">${e(editor!.unresolvedQuestions.join('\n'))}</textarea></label><div class="actions"><button class="primary" type="submit">保存方案</button>${currentPlan ? button('confirm-plan','确认此版本并安排',true) : ''}</div></fieldset></form>${!editable ? link('/lab','查看已确认任务','button primary') : '<p class="fine">确认使用最近一次已保存版本；有未保存改动时请先保存。</p>'}</section>`, '协作方案');
-  if(editable && currentPlan){document.querySelector('.flow')!.insertAdjacentHTML('beforeend',`<details class="panel"><summary>让 AI 修改这份已保存草案</summary><form data-form="revise-ai">${field('想怎样修改','revision-prompt','',true)}<p>修改仍写入同一草案；未保存的手工编辑须先保存，已确认承诺不能由 AI 覆盖。单次上限 100000 tokens / 120 秒，可能产生真实用量。</p><button>生成此草案的修改建议</button></form></details>`);form('revise-ai',async data=>{if(dirty)throw new ApiError('UNSAVED_CHANGES','请先保存手工编辑，再生成修改建议。');await requestPlanning(String(data.get('revision-prompt')),{id:currentPlan!.id,version:currentPlan!.version});});}
+  if(currentPlan)document.querySelector('.flow')!.insertAdjacentHTML('beforeend',conclusionBindings((refreshedPlan??currentPlan).conclusionRefs));
+  if(editable && currentPlan){document.querySelector('.flow')!.insertAdjacentHTML('beforeend',`<details class="panel"><summary>让 AI 修改这份已保存草案</summary><form data-form="revise-ai">${field('想怎样修改','revision-prompt','',true)}${conclusionChoices(planConclusions,'plan-reuse')}<p>修改仍写入同一草案；未保存的手工编辑须先保存，已确认承诺不能由 AI 覆盖。单次上限 100000 tokens / 120 秒，可能产生真实用量。</p><button>生成此草案的修改建议</button></form></details>`);form('revise-ai',async data=>{if(dirty)throw new ApiError('UNSAVED_CHANGES','请先保存手工编辑，再生成修改建议。');await requestPlanning(String(data.get('revision-prompt')),{id:currentPlan!.id,version:currentPlan!.version},selectedConclusions(document.querySelector('[data-form=revise-ai]')!));});}
   const planForm=document.querySelector<HTMLFormElement>('[data-form=plan]')!;
   if(refreshedPlan && currentPlan && refreshedPlan.version!==currentPlan.version){
     const compare=document.createElement('section');compare.className='panel';compare.innerHTML=`<h2>服务端已有版本 ${refreshedPlan.version}</h2><p>你的编辑仍基于版本 ${currentPlan.version}。请先比较最新内容，再明确选择；不会自动覆盖。</p><p class="prose">${e(refreshedPlan.goal)}</p>${refreshedPlan.proposedItems.map(item=>`<p class="prose">${e(item.title)}：${e(item.goal)} · 交付 ${e(item.deliverable)} · 验收 ${e(item.acceptanceCriteria)}</p>`).join('')}<div class="actions">${button('adopt-server','采用服务端内容')}${refreshedPlan.status==='draft'?button('rebase-editor','保留我的编辑，重新确认新版本'):''}</div>`;
@@ -208,10 +224,10 @@ function planEditor() {
 }
 
 function actionCard(item: ResponseFor<'actionItems'>['data'][number]) { return `<section><p class="fine">${item.kind==='execution_attention'?'AI 运行待处理':item.kind==='change_response'?'待回应变更 · 提议 v'+item.proposal.version:item.kind==='invitation_response'?'待回应邀请':'待验收交付'}</p>${taskCard(item.task,name)}</section>`; }
-async function requestPlanning(prompt:string,plan:RequestFor<'planRequest'>['body']['plan']=null) {
+async function requestPlanning(prompt:string,plan:RequestFor<'planRequest'>['body']['plan']=null,conclusionRefs:RequestFor<'planRequest'>['body']['conclusionRefs']=[]) {
   if(plan)revisionPending=true;
   const sourceRoute=route();
-  await mutate(new Intent('planRequest',{labId:session!.member.labId,prompt,intent:plan?'draft':'auto',plan,taskIds:[],inputArtifactIds:[],budget:{maxTokens:100000,maxSeconds:120}},{}),async response=>{drafts.delete(sourceRoute+':goal');drafts.delete(sourceRoute+':revision-prompt');if(plan)resetEditor();nextReadSnapshot=undefined;location.hash='/planning/'+response.data.id;await load();});
+  await mutate(new Intent('planRequest',{labId:session!.member.labId,prompt,conclusionRefs,intent:plan?'draft':'auto',plan,taskIds:[],inputArtifactIds:[],budget:{maxTokens:100000,maxSeconds:120}},{}),async response=>{drafts.delete(sourceRoute+':goal');drafts.delete(sourceRoute+':revision-prompt');if(plan)resetEditor();nextReadSnapshot=undefined;location.hash='/planning/'+response.data.id;await load();});
 }
 async function planningPage(id:string,signal:AbortSignal,shownVersion?:number) {
   const response=await api.read('getPlanRequest',{id},{},signal);if(signal.aborted)return;
@@ -229,15 +245,42 @@ async function planningPage(id:string,signal:AbortSignal,shownVersion?:number) {
 }
 async function dailyEntry(signal: AbortSignal) {
   const query=snapshotQuery(), labId=session!.member.labId;
-  const [plans,actions,...progress]=await Promise.all([
+  const [plans,actions,requests,conclusions,...progress]=await Promise.all([
     api.read('plans',{}, {...query,status:'draft',limit:5},signal),
     api.read('actionItems',{id:labId},{...query,kind:'all',limit:6},signal),
+    api.read('planningRequests',{}, {...query,limit:5},signal),
+    selectableConclusions(signal),
     ...(['ready','in_progress','changes_requested'] as const).map(status=>api.read('tasks',{}, {...query,labId,scope:'mine',status,limit:6},signal)),
   ]);
   if(signal.aborted)return;
   const advance=progress.flatMap(p=>p.data).filter(t=>t.allowedActions.some(a=>a==='start'||a==='submit'));
-  entry(`<section class="daily flow" aria-label="我的日常任务">${readStamp()}<div class="section-heading"><h2>先处理与你有关的事</h2>${button('refresh','刷新')}</div><h3>需要回应或验收</h3><div class="task-list">${actions.data.map(actionCard).join('')||'<p class="fine">当前没有需要你回应的邀请或验收。</p>'}</div>${actions.nextCursor?link('/actions','查看全部待处理事项','button'):''}<details><summary>继续推进 · 展开近期可操作事项</summary><p class="fine">按待开始、进行中、需修改分别读取最近 6 项授权记录，只展示服务允许你开始或提交的事项；不是全量待办统计。</p><div class="task-list">${advance.map(t=>taskCard(t,name)).join('')||'<p class="fine">本页没有可直接推进的事项，可到“我参与的”查看全部记录。</p>'}</div>${myTasksLink('查看我参与的任务','button')}</details><details open><summary>我的已保存草案</summary><p class="fine">仅本人未确认方案；确认后移出此列表。未保存输入不属于服务端草案。</p>${plans.data.map(planCard).join('')||'<p class="fine">尚无已保存的未确认草案。</p>'}${link('/plans',plans.nextCursor?'查看全部草案':'草案与已确认方案历史','button')}</details><p class="fine">建议、已接受承诺和运行产物分开显示；服务失败不会回退演示。</p></section>`);
+  entry(`<section class="daily flow" aria-label="我的日常任务">${readStamp()}<div class="section-heading"><h2>先处理与你有关的事</h2>${button('refresh','刷新')}</div><h3>需要回应或验收</h3><div class="task-list">${actions.data.map(actionCard).join('')||'<p class="fine">当前没有需要你回应的邀请或验收。</p>'}</div>${actions.nextCursor?link('/actions','查看全部待处理事项','button'):''}<details><summary>继续推进 · 展开近期可操作事项</summary><p class="fine">按待开始、进行中、需修改分别读取最近 6 项授权记录，只展示服务允许你开始或提交的事项；不是全量待办统计。</p><div class="task-list">${advance.map(t=>taskCard(t,name)).join('')||'<p class="fine">本页没有可直接推进的事项，可到“我参与的”查看全部记录。</p>'}</div>${myTasksLink('查看我参与的任务','button')}</details><details open><summary>我的已保存草案</summary><p class="fine">仅本人未确认方案；确认后移出此列表。未保存输入不属于服务端草案。</p>${plans.data.map(planCard).join('')||'<p class="fine">尚无已保存的未确认草案。</p>'}${link('/plans',plans.nextCursor?'查看全部草案':'草案与已确认方案历史','button')}</details><details><summary>我的生成请求 · 找回未完成与失败请求</summary>${requests.data.map(requestCard).join('')||'<p>尚无可见生成请求。</p>'}${link('/requests','查看本人全部生成请求','button')}</details><p class="fine">建议、已接受承诺和运行产物分开显示；服务失败不会回退演示。</p></section>`,conclusions.data);
   action('refresh',refresh);
+}
+async function conclusionList(signal:AbortSignal){
+  const value=await api.read('conclusions',{}, {...snapshotQuery(),limit:20,...(conclusionCursor?{cursor:conclusionCursor}:{})},signal);if(signal.aborted)return;
+  content(`<section class="flow">${link('/','← 返回入口','back')}<h1>获准使用的结论</h1>${readStamp()}<p>当前授权可见 ${value.total} 项；阅读不等于自动复用。请回到需求或任务中主动选用。</p>${value.data.map(conclusionCard).join('')||'<p>当前没有可读取的结论。</p>'}<div class="actions">${button('refresh','刷新')}${conclusionCursor?button('conclusions-first','回到第一页'):''}${value.nextCursor?button('conclusions-next','下一页结论'):''}</div></section>`,'获准结论');
+  action('refresh',refresh);action('conclusions-first',()=>{conclusionCursor=undefined;nextReadSnapshot=activeSnapshot?.token;return load();});action('conclusions-next',()=>{conclusionCursor=value.nextCursor??undefined;nextReadSnapshot=activeSnapshot?.token;return load();});
+}
+async function conclusionDetail(id:string,signal:AbortSignal){
+  const [value,history]=await Promise.all([api.read('conclusion',{id},{},signal),api.read('conclusionHistory',{id},{},signal)]);if(signal.aborted)return;
+  const source=await api.read('task',{id:value.data.taskId},snapshotQuery(),signal);if(signal.aborted)return;
+  if(!('task' in source.data))throw new ApiError('FORBIDDEN','来源当前不可完整读取。');
+  content(`<section class="flow">${link('/conclusions','← 获准结论','back')}<h1>结论与来源</h1>${readStamp()}${conclusionCard(value.data)}${reuse.conclusionHtml(value.data,source.data)}<details class="panel"><summary>服务返回的修订记录 · 不自动替换已选来源</summary>${history.data.map(conclusionCard).join('')}</details>${button('refresh','读取最新状态')}</section>`,'结论与来源');
+  reuse.bindConclusion(value.data,source.data,reuseHooks(signal));action('refresh',refresh);
+}
+function reuseHooks(signal:AbortSignal){return {api,signal,form,action,mutate,reload:load,
+  clear:(prefix='')=>{for(const key of drafts.keys())if(key.startsWith(route()+':'+prefix))drafts.delete(key);},
+  discard:()=>{command.discard();retryCommand=undefined;}};}
+async function methodsPage(signal:AbortSignal){
+  const [state,samples,tasks,events]=await Promise.all([api.read('publicMethods',{}, {},signal),api.read('samples',{}, {...snapshotQuery(),limit:100},signal),api.read('tasks',{}, {...snapshotQuery(),labId:session!.member.labId,scope:'mine',limit:100},signal),api.read('methodEvents',{}, {...snapshotQuery(),limit:100},signal)]);if(signal.aborted)return;
+  content(`<section class="flow">${link('/','← 返回入口','back')}<h1>公共文本方法维护</h1>${readStamp()}<p>当前方法 v${state.data.activeMethodVersion} · 启用配置第 ${state.data.generation} 代 · ${state.data.enabled?'已启用':'已停用'}</p><p>仅服务授权的维护者可见。创建候选、真实试跑与启用是独立操作。</p>${button('refresh','读取最新状态')}${reuse.methodsHtml(state.data,samples.data,tasks.data)}<details><summary>配置与验证记录</summary>${events.data.map(event=>`<p>${e(event.at)} · ${e(event.action)} · 方法 v${event.methodVersion} · 配置第 ${event.generation} 代</p>`).join('')}</details>${samples.nextCursor||tasks.nextCursor||events.nextCursor?'<p class="fine">此维护页仅显示各类首 100 项；未显示的记录不能据此判断为不存在。</p>':''}</section>`,'公共文本方法');
+  reuse.bindMethods(state.data,samples.data,reuseHooks(signal));action('refresh',refresh);
+}
+async function requestList(signal:AbortSignal){
+  const value=await api.read('planningRequests',{}, {...snapshotQuery(),limit:10,...(requestCursor?{cursor:requestCursor}:{})},signal);if(signal.aborted)return;
+  content(`<section class="flow">${link('/','← 返回入口','back')}<h1>我的生成请求</h1>${readStamp()}<p>当前授权可见 ${value.total} 项。排队、运行、失败和取消都会保留；没有原始对话摘要，打开后重新检查来源权限。</p>${value.data.map(requestCard).join('')||'<p class="panel">暂无可见请求。无权来源的旧请求不会继续展示。</p>'}<div class="actions">${button('refresh','刷新')}${requestCursor?button('requests-first','回到第一页'):''}${value.nextCursor?button('requests-next','下一页请求'):''}</div></section>`,'我的生成请求');
+  action('refresh',refresh);action('requests-first',()=>{requestCursor=undefined;nextReadSnapshot=activeSnapshot?.token;return load();});action('requests-next',()=>{requestCursor=value.nextCursor??undefined;nextReadSnapshot=activeSnapshot?.token;return load();});
 }
 async function planList(signal: AbortSignal) {
   const status=new URLSearchParams(location.hash.split('?')[1]??'').get('status')==='confirmed'?'confirmed':'draft';
@@ -285,21 +328,24 @@ async function taskDetail(id: string, signal: AbortSignal) {
     action('refresh',refresh);return;
   }
   if(signal.aborted)return;
-  const caps=await api.read('publicCapabilities',{}, {},signal);if(signal.aborted)return;
+  const [caps,availableConclusions,taskConclusions]=await Promise.all([api.read('publicCapabilities',{}, {},signal),selectableConclusions(signal),api.read('conclusions',{}, {...snapshotQuery(),taskId:id,limit:100},signal)]);if(signal.aborted)return;
   const task=value.task;
   const assignments=value.assignments;
   const latest=[...value.deliverables].sort((a,b)=>b.revision-a.revision)[0];
   const assignmentLabels:Record<string,string>={pending:'待回应（尚未承诺）',accepted:'已接受',declined:'已拒绝',withdrawn:'已退出',transfer_pending:'待转交',transferred:'已转交',cancelled:'已取消'};
-  content(`<section class="page detail">${link('/lab','← 实验室任务','back')}<span class="tag">${labels[task.status]}</span><h1>${e(task.title)}</h1><p class="intro">负责人 ${e(name(task.leadId))} · 发起 ${e(name(task.initiatorId))} · 验收 ${e(name(task.reviewerId))}</p>${readStamp()}<p class="fine">任务版本 ${task.version} · 方案版本 ${task.planVersion} · 更新 ${e(task.updatedAt)}</p><section class="panel"><h2>目标与验收</h2><p class="prose">${e(task.goal)}</p><p class="prose">${e(task.acceptanceCriteria)}</p>${schedule(task.schedule)}</section><div class="alert"><div><strong>当前需要处理</strong><p>${task.status==='completed'?'任务已验收，可查看各版交付与验收记录。':task.status==='cancelled'?'任务已取消。':task.allowedActions.includes('review')?'请检查最新交付，再接受或提出修改。':task.allowedActions.includes('submit')?'完成约定成果后提交文本版本。':task.allowedActions.includes('start')?'承诺已记录，可以开始推进。':task.allowedActions.includes('invite')?'当前可邀请成员承接。':'等待相关成员处理，或刷新查看最新状态。'}</p></div><div class="actions">${task.allowedActions.includes('start')?button('start','开始任务',true):''}${button('refresh','刷新状态')}</div></div><h2>邀请与承诺</h2><div class="table-wrap" role="region" aria-label="邀请与承诺，可横向滚动" tabindex="0"><table><thead><tr><th>成员</th><th>邀请 / 承接状态</th><th>已接受范围与时间</th><th>记录版本</th></tr></thead><tbody>${assignments.map(a=>`<tr><th>${e(name(a.memberId))}</th><td>${assignmentLabels[a.status]??e(a.status)}</td><td>${a.commitment?e(a.commitment.scope)+'<br>'+e(date(a.commitment.schedule.committed)):'尚无承诺'}</td><td>${a.version}</td></tr>`).join('')||'<tr><td colspan="4">暂无承接记录</td></tr>'}</tbody></table></div>${task.allowedActions.includes('invite')?`<form data-form="invite" class="panel"><h2>邀请成员</h2><label>受邀成员<select name="memberId" required><option value="">请选择</option>${members.filter(m=>m.id!==session!.member.id).map(m=>`<option value="${e(m.id)}">${e(m.displayName)}</option>`).join('')}</select></label>${field('邀请承担的范围','scope',task.goal,true)}<p class="fine">沿用上方任务时间；对方接受后才记为承诺。</p><button class="primary">发送邀请</button></form>`:''}<h2>交付与验收</h2><p class="fine">只需约定成果和必要依据，无需披露个人工具、私有能力或过程日志。反馈共享尚未接通，不随验收授权。</p>${value.deliverables.map(d=>`<article class="panel"><span class="tag">交付 v${d.revision} · 记录版本 ${d.version}</span><p class="fine">${e(name(d.submittedBy))} · ${e(d.submittedAt)}</p><p class="prose">${e(d.summary)}</p><p>附件引用：${d.artifactRefs.map(ref=>e(value.artifacts?.find(a=>a.id===ref)?.filename??ref)+'（'+e(ref)+'）').join('、')||'无'}</p>${d.sources.length?`<ul>${d.sources.map(s=>`<li>${e(s.label)}：${e(s.locator)}</li>`).join('')}</ul>`:''}<p class="review-result">${d.review?`${d.review.decision==='accepted'?'已验收':'需修改'} · 绑定交付 v${d.review.revision} · ${e(name(d.review.reviewerId))}<br>${e(d.review.comment)}`:'待验收'}</p></article>`).join('')||'<p class="fine">尚无已提交成果。</p>'}${task.allowedActions.includes('submit')?`<form data-form="submit" class="panel"><h2>${task.status==='changes_requested'?'修改后重新提交':'提交文本成果'}</h2>${field('成果正文','summary','',true)}<label>必要来源说明（可留空）<textarea name="source" maxlength="2000" rows="2"></textarea></label><fieldset><legend>引用已上传附件</legend>${(value.artifacts??[]).filter(a=>a.accessStatus==='available').map(a=>`<label><input type="checkbox" name="artifact-${e(a.id)}" value="${e(a.id)}">${e(a.filename)} · 附件 v${a.version}</label>`).join('')||'暂无可引用附件'}</fieldset><button class="primary">提交新版本</button></form>`:''}${task.allowedActions.includes('review')&&latest?`<form data-form="review" class="panel"><h2>验收交付 v${latest.revision}</h2>${field('验收意见或修改要求','comment','',true)}<div class="actions"><button class="primary" name="decision" value="accepted">接受这版交付</button><button name="decision" value="changes_requested">提出修改</button></div></form>`:''}<p class="fine">运行成功仍需提交和验收；所有操作以服务响应为准。</p></section>`, '任务详情');
+  content(`<section class="page detail">${link('/lab','← 实验室任务','back')}<span class="tag">${labels[task.status]}</span><h1>${e(task.title)}</h1><p class="intro">负责人 ${e(name(task.leadId))} · 发起 ${e(name(task.initiatorId))} · 验收 ${e(name(task.reviewerId))}</p>${readStamp()}<p class="fine">任务版本 ${task.version} · 方案版本 ${task.planVersion} · 更新 ${e(task.updatedAt)}</p><section class="panel"><h2>目标与验收</h2><p class="prose">${e(task.goal)}</p><p class="prose">${e(task.acceptanceCriteria)}</p>${schedule(task.schedule)}</section><div class="alert"><div><strong>当前需要处理</strong><p>${task.status==='completed'?'任务已验收，可查看各版交付与验收记录。':task.status==='cancelled'?'任务已取消。':task.allowedActions.includes('review')?'请检查最新交付，再接受或提出修改。':task.allowedActions.includes('submit')?'完成约定成果后提交文本版本。':task.allowedActions.includes('start')?'承诺已记录，可以开始推进。':task.allowedActions.includes('invite')?'当前可邀请成员承接。':'等待相关成员处理，或刷新查看最新状态。'}</p></div><div class="actions">${task.allowedActions.includes('start')?button('start','开始任务',true):''}${button('refresh','刷新状态')}</div></div><h2>邀请与承诺</h2><div class="table-wrap" role="region" aria-label="邀请与承诺，可横向滚动" tabindex="0"><table><thead><tr><th>成员</th><th>邀请 / 承接状态</th><th>已接受范围与时间</th><th>记录版本</th></tr></thead><tbody>${assignments.map(a=>`<tr><th>${e(name(a.memberId))}</th><td>${assignmentLabels[a.status]??e(a.status)}</td><td>${a.commitment?e(a.commitment.scope)+'<br>'+e(date(a.commitment.schedule.committed)):'尚无承诺'}</td><td>${a.version}</td></tr>`).join('')||'<tr><td colspan="4">暂无承接记录</td></tr>'}</tbody></table></div>${task.allowedActions.includes('invite')?`<form data-form="invite" class="panel"><h2>邀请成员</h2><label>受邀成员<select name="memberId" required><option value="">请选择</option>${members.filter(m=>m.id!==session!.member.id).map(m=>`<option value="${e(m.id)}">${e(m.displayName)}</option>`).join('')}</select></label>${field('邀请承担的范围','scope',task.goal,true)}<p class="fine">沿用上方任务时间；对方接受后才记为承诺。</p><button class="primary">发送邀请</button></form>`:''}<h2>交付与验收</h2><p class="fine">只需约定成果和必要依据，无需披露个人工具、私有能力或过程日志。是否共享由你另行明确确认，不随验收授权。</p>${value.deliverables.map(d=>`<article class="panel"><span class="tag">交付 v${d.revision} · 记录版本 ${d.version}</span><p class="fine">${e(name(d.submittedBy))} · ${e(d.submittedAt)}</p><p class="prose">${e(d.summary)}</p><p>附件引用：${d.artifactRefs.map(ref=>e(value.artifacts?.find(a=>a.id===ref)?.filename??ref)+'（'+e(ref)+'）').join('、')||'无'}</p>${d.sources.length?`<ul>${d.sources.map(s=>`<li>${e(s.label)}：${e(s.locator)}</li>`).join('')}</ul>`:''}<p class="review-result">${d.review?`${d.review.decision==='accepted'?'已验收':'需修改'} · 绑定交付 v${d.review.revision} · ${e(name(d.review.reviewerId))}<br>${e(d.review.comment)}`:'待验收'}</p></article>`).join('')||'<p class="fine">尚无已提交成果。</p>'}${task.allowedActions.includes('submit')?`<form data-form="submit" class="panel"><h2>${task.status==='changes_requested'?'修改后重新提交':'提交文本成果'}</h2>${field('成果正文','summary','',true)}<label>必要来源说明（可留空）<textarea name="source" maxlength="2000" rows="2"></textarea></label><fieldset><legend>引用已上传附件</legend>${(value.artifacts??[]).filter(a=>a.accessStatus==='available').map(a=>`<label><input type="checkbox" name="artifact-${e(a.id)}" value="${e(a.id)}">${e(a.filename)} · 附件 v${a.version}</label>`).join('')||'暂无可引用附件'}</fieldset><button class="primary">提交新版本</button></form>`:''}${task.allowedActions.includes('review')&&latest?`<form data-form="review" class="panel"><h2>验收交付 v${latest.revision}</h2>${field('验收意见或修改要求','comment','',true)}<div class="actions"><button class="primary" name="decision" value="accepted">接受这版交付</button><button name="decision" value="changes_requested">提出修改</button></div></form>`:''}<p class="fine">运行成功仍需提交和验收；所有操作以服务响应为准。</p></section>`, '任务详情');
   const hooks = {api,signal,memberId:session!.member.id,members,name,schedule,form,action,mutate,reload:load,
     clear:(prefix?:string)=>{for(const key of drafts.keys())if(key.startsWith(route()+':'+(prefix??'')) && prefix!=='')drafts.delete(key);return [...drafts.keys()].some(key=>key.startsWith(route()+':')&&/:(change-|block-|impact-|withdraw-|cancel-|revoke-)/.test(key));},
     withdrawn:()=>{controller?.abort();content(`<section class="state-panel"><h1>已退出当前承诺</h1><p>历史交付保留，候选人需另行接受；旧资料已清除。</p>${link('/lab','返回实验室任务','button')}</section>`,'退出完成');activeSnapshot=undefined;},
     discard:()=>{command.discard();retryCommand=undefined;}};
   document.querySelector('.detail')!.insertAdjacentHTML('beforeend',coordination.render(value,hooks));
   coordination.bind(value,hooks);
-  document.querySelector('.detail')!.insertAdjacentHTML('beforeend',`<section id="runs"><h2>公共能力运行</h2><p class="fine">后台服务独立于浏览器。排队或运行不表示完成；候选需明确提交和验收。只使用本任务授权文本，不读取私人方法。</p>${value.executions.map(r=>runView(r,task)).join('')||'<p>尚无运行记录。</p>'}<details class="panel"><summary>能力、材料与新运行授权</summary>${caps.data.map(cap=>`<p>${e(cap.name)} · ${e(cap.id)} v${cap.version} · ${cap.status==='available'?'已配置（不保证本次可运行）':'当前不可用'}</p>`).join('')||'<p>服务尚未配置公共能力；可以继续手工交付。</p>'}<form data-form="new-run"><label>公共能力<select name="run-capability">${caps.data.filter(cap=>cap.status==='available').map(cap=>`<option value="${e(cap.id)}">${e(cap.name)} v${cap.version}</option>`).join('')}</select></label><fieldset><legend>明确授权本任务文本附件（不选则等待材料）</legend>${(value.artifacts??[]).filter(file=>file.accessStatus==='available'&&file.mediaType==='text/plain').map(file=>`<label><input type="checkbox" class="run-input" name="run-input-${e(file.id)}" value="${e(file.id)}">${e(file.filename)} · v${file.version}</label>`).join('')||'<p>尚无可用文本；请先在附件区上传。</p>'}</fieldset><div class="form-grid"><label>累计 token 上限<input type="number" name="run-tokens" min="1" max="1000000" value="100000" required></label><label>时间上限（秒）<input type="number" name="run-seconds" min="1" max="120" value="120" required></label></div><p>每次新授权可能调用真实模型并产生用量；费用未报告则未知。失败重试沿用原请求，重新授权会新建运行。</p>${task.allowedActions.includes('run')?'<button>授权并启动新运行</button>':'<p>当前服务未开放新运行，请处理等待项、阻塞或权限限制。</p>'}</form></details></section>`);
+  document.querySelector('.detail')!.insertAdjacentHTML('beforeend',conclusionBindings(task.conclusionRefs));
+  document.querySelector('.detail')!.insertAdjacentHTML('beforeend',reuse.taskHtml(value,taskConclusions.data));
+  reuse.bindTask(value,reuseHooks(signal));
+  document.querySelector('.detail')!.insertAdjacentHTML('beforeend',`<section id="runs"><h2>公共能力运行</h2><p class="fine">后台服务独立于浏览器。排队或运行不表示完成；候选需明确提交和验收。只使用本任务授权文本，不读取私人方法。</p>${caps.data.some(cap=>cap.allowedActions?.includes('manage_methods'))?link('/methods','维护公共文本方法','button'):''}${value.executions.map(r=>runView(r,task)).join('')||'<p>尚无运行记录。</p>'}<details class="panel"><summary>能力、材料与新运行授权</summary>${caps.data.map(cap=>`<p>${e(cap.name)} · ${e(cap.id)} v${cap.version} · ${cap.status==='available'?'已配置（不保证本次可运行）':'当前不可用'}</p>`).join('')||'<p>服务尚未配置公共能力；可以继续手工交付。</p>'}<form data-form="new-run"><label>公共能力<select name="run-capability">${caps.data.filter(cap=>cap.status==='available').map(cap=>`<option value="${e(cap.id)}">${e(cap.name)} v${cap.version}</option>`).join('')}</select></label><fieldset><legend>明确授权本任务文本附件（不选则等待材料）</legend>${(value.artifacts??[]).filter(file=>file.accessStatus==='available'&&file.mediaType==='text/plain').map(file=>`<label><input type="checkbox" class="run-input" name="run-input-${e(file.id)}" value="${e(file.id)}">${e(file.filename)} · v${file.version}</label>`).join('')||'<p>尚无可用文本；请先在附件区上传。</p>'}</fieldset>${conclusionChoices(availableConclusions.data,'run-reuse')}<div class="form-grid"><label>累计 token 上限<input type="number" name="run-tokens" min="1" max="1000000" value="100000" required></label><label>时间上限（秒）<input type="number" name="run-seconds" min="1" max="120" value="120" required></label></div><p>每次新授权可能调用真实模型并产生用量；费用未报告则未知。失败重试沿用原请求，重新授权会新建运行。</p>${task.allowedActions.includes('run')?'<button>授权并启动新运行</button>':'<p>当前服务未开放新运行，请处理等待项、阻塞或权限限制。</p>'}</form></details></section>`);
   const inputIds=()=>[...document.querySelectorAll<HTMLInputElement>('.run-input:checked')].map(el=>el.value);
-  form('new-run',async data=>{const cap=caps.data.find(c=>c.id===data.get('run-capability'));if(!cap)throw new ApiError('CAPABILITY_UNAVAILABLE','没有可用公共能力，仍可手工交付。');await mutate(new Intent('run',{expectedVersion:task.version,capability:{id:cap.id,version:cap.version,visibility:'lab_public'},budget:{maxTokens:Number(data.get('run-tokens')),maxSeconds:Number(data.get('run-seconds'))},inputArtifactIds:inputIds()},{id}),async()=>load());});
+  form('new-run',async data=>{const cap=caps.data.find(c=>c.id===data.get('run-capability'));if(!cap)throw new ApiError('CAPABILITY_UNAVAILABLE','没有可用公共能力，仍可手工交付。');await mutate(new Intent('run',{expectedVersion:task.version,capability:{id:cap.id,version:cap.version,visibility:'lab_public'},budget:{maxTokens:Number(data.get('run-tokens')),maxSeconds:Number(data.get('run-seconds'))},inputArtifactIds:inputIds(),conclusionRefs:selectedConclusions(document.querySelector('[data-form=new-run]')!)},{id}),async()=>load());});
   for(const run of value.executions){
     form('cancel-run-'+run.id,async data=>mutate(new Intent('cancelRun',{expectedVersion:run.version,reason:String(data.get('run-cancel-'+run.id))},{id:run.id}),async()=>load()));
     action('retry-run-'+run.id,()=>mutate(new Intent('retryRun',{expectedVersion:run.version,expectedTaskVersion:task.version,inputArtifactIds:inputIds()},{id:run.id}),async()=>load()));
@@ -365,10 +411,15 @@ async function load() {
     else if(path==='/lab')await taskList(signal);
     else if(path==='/plans'||path.startsWith('/plans?'))await planList(signal);
     else if(path==='/actions')await actionList(signal);
+    else if(path==='/methods')await methodsPage(signal);
+    else if(path==='/requests')await requestList(signal);
+    else if(path==='/conclusions')await conclusionList(signal);
+    else if(path.startsWith('/conclusions/'))await conclusionDetail(path.slice(13),signal);
     else if(path==='/availability')availabilityEditor();
     else if(path.startsWith('/planning/'))await planningPage(path.slice(10),signal);
     else if(path.startsWith('/tasks/'))await taskDetail(path.slice(7),signal);
     else if(path.startsWith('/plans/')){
+      const sources=await selectableConclusions(signal);if(signal.aborted)return;planConclusions=sources.data;
       if(path==='/plans/new'){
         if(!editor || editorRoute!==path){resetEditor();editor={labId:session.member.labId,goal:'',proposedItems:[],unresolvedQuestions:[]};editorRoute=path;addItem();}
       }else{
@@ -398,10 +449,19 @@ setInterval(()=>{
     feedback(new ApiError('CURSOR_EXPIRED','读取快照已过期。'));
   }
 },10000);
+// Draft input survives same-account expiry; source permission loss must instead clear derived content.
+setInterval(async()=>{
+  const path=route(),readController=controller;
+  if(!session||!readController||busy||document.hidden||!path.startsWith('/plans/')||path==='/plans/new')return;
+  try{await api.read('getPlan',{id:path.slice(7)},{},readController.signal);if(activeSnapshot)await api.read('me',{},snapshotQuery(),readController.signal);}
+  catch(error){if(readController.signal.aborted||busy)return;readController.abort();members=[];activeSnapshot=undefined;
+    content('<section class="state-panel"><h1>方案需要重新同步</h1><p>来源访问或连接已变化，旧内容已隐藏。请读取当前授权状态。</p></section>','需要同步');feedback(error);
+  }
+},15000);
 // Validate read-only views without interrupting plan/availability editing or replaying commands.
 setInterval(async()=>{
   const path=route(), snapshot=activeSnapshot, readController=controller;
-  if(!snapshot||!readController||busy||checkingSnapshot||document.hidden||Date.now()-viewReadAt<15000||!(['/','/lab','/plans','/plans?status=confirmed','/actions'].includes(path)||path.startsWith('/tasks/')))return;
+  if(!snapshot||!readController||busy||checkingSnapshot||document.hidden||Date.now()-viewReadAt<15000||!(['/','/lab','/plans','/plans?status=confirmed','/actions','/requests','/conclusions','/methods'].includes(path)||path.startsWith('/tasks/')||path.startsWith('/conclusions/')))return;
   checkingSnapshot=true;
   try {await api.read('me',{}, {snapshot:snapshot.token},readController.signal);}
   catch(error){
