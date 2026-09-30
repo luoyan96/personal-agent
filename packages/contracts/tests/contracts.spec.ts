@@ -8,7 +8,7 @@ describe('B0 executable contract', () => {
     const example = endpointExamples[name]!
     expect(route.request.safeParse(example.request).success).toBe(true)
     expect(route.response.safeParse(example.response).success).toBe(true)
-    expect(route.implemented).toBe(route.stage === 'B0' || route.stage === 'B1' || route.stage === 'B2a' || route.stage === 'B2b')
+    expect(route.implemented).toBe(route.stage === 'B0' || route.stage === 'B1' || route.stage === 'B2a' || route.stage === 'B2b' || route.stage === 'B3')
     if (route.method !== 'GET' && !['login', 'logout'].includes(name)) expect(route.idempotent).toBe(true)
   })
   it('rejects actor spoofing and arbitrary status update', () => {
