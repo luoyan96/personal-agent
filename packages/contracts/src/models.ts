@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const contractVersion = '0.5.0' as const
+export const contractVersion = '0.6.0' as const
 export const Id = z.string().regex(/^[A-Za-z0-9_-]{1,96}$/)
 export const Text = z.string().min(1).max(8000)
 export const Title = z.string().min(1).max(200)
@@ -51,7 +51,7 @@ export const InputRef = ObjectRef.extend({ sha256: z.string().regex(/^[a-f0-9]{6
 export const EntryIntent = z.enum(['draft', 'progress', 'find_work'])
 export const AdaptiveReply = z.strictObject({ replyVersion: z.literal('1.0.0'), intent: EntryIntent, readAt: Instant, origin: z.enum(['model_suggestion', 'service_facts']), plan: Plan.nullable(), tasks: z.array(z.union([Task, TaskSummary])).max(20), truncated: z.boolean(), gaps: z.array(Text).max(30), actions: z.array(z.strictObject({ object: z.enum(['plan','task']), ref: ObjectRef, action: Action })).max(100) })
 export const EvidenceChecklist = z.strictObject({ title: Title, items: z.array(z.strictObject({ requirement: Text, assessment: z.enum(['supported_by_input','gap']), citations: z.array(z.strictObject({ artifactId: Id, quote: Text })).max(20), gap: Text.nullable() })).min(1).max(50), limitations: z.array(Text).max(20) })
-export const RunRecord = Execution.extend({ requestedBy: Id, taskVersion: Version, plan: ObjectRef, permissionVersion: Version, inputs: z.array(InputRef).max(10), budget: Budget, maxAttempts: z.number().int().min(1).max(3), nextAttemptAt: Instant.nullable(), candidate: EvidenceChecklist.nullable(), candidateDeliverableId: Id.nullable(), allowedActions: z.array(z.enum(['cancel','retry','submit_candidate'])).max(3), provider: Title, model: Title, harnessVersion: Title, updatedAt: Instant, usageDetail: ModelUsage.nullable() })
+export const RunRecord = Execution.extend({ methodVersion: Version.optional(), configurationGeneration: Version.optional(), methodTrial: z.boolean().optional(), conclusionRefs: z.array(ObjectRef).max(10).optional(), requestedBy: Id, taskVersion: Version, plan: ObjectRef, permissionVersion: Version, inputs: z.array(InputRef).max(10), budget: Budget, maxAttempts: z.number().int().min(1).max(3), nextAttemptAt: Instant.nullable(), candidate: EvidenceChecklist.nullable(), candidateDeliverableId: Id.nullable(), allowedActions: z.array(z.enum(['cancel','retry','submit_candidate'])).max(3), provider: Title, model: Title, harnessVersion: Title, updatedAt: Instant, usageDetail: ModelUsage.nullable() })
 export const PlanningRequest = z.strictObject({ id: Id, status: z.enum(['queued', 'running', 'draft', 'ready', 'waiting_input', 'interrupted', 'failed', 'cancelled']), planId: Id.nullable(), failure: Text.nullable(), version: Version, reply: AdaptiveReply.nullable(), usage: ModelUsage.nullable(), createdAt: Instant, updatedAt: Instant })
 export const Knowledge = z.strictObject({ id: Id, taskId: Id, conclusion: Text, sources: z.array(Source).max(100), confirmedBy: Id, version: Version })
 export const Sharing = z.strictObject({ id: Id, taskId: Id, deliverableId: Id, revision: Version, decision: z.enum(['share_selected', 'decline', 'revoke']), selectedText: Text.nullable(), purpose: z.literal('public_capability_improvement'), version: Version })
@@ -84,3 +84,14 @@ export const DependencyImpact = z.strictObject({ id: Id, taskId: Id, upstreamTas
 export type ChangeProposalModel = z.infer<typeof ChangeProposal>
 export type ArtifactModel = z.infer<typeof Artifact>
 export type DependencyImpactModel = z.infer<typeof DependencyImpact>
+
+// B4a uses explicit, immutable selections. Configuration generations are not method releases.
+export const ConclusionInput = z.strictObject({ deliverable: ObjectRef, artifactRefs: z.array(InputRef).max(10), conclusion: Text, applicability: Text, scope: z.enum(['owner_only','source_readers']) })
+export const RetainedConclusion = ConclusionInput.extend({ id: Id, taskId: Id, sourceTaskVersion: Version, confirmedBy: Id, version: Version, status: z.enum(['current','needs_review','revoked']), createdAt: Instant })
+export const ConclusionHistory = z.strictObject({ data: z.array(RetainedConclusion).max(100) })
+export const FeedbackSample = z.strictObject({ id: Id, taskId: Id, deliverable: ObjectRef, sourceTaskVersion: Version, grantedBy: Id, selectedText: Text.nullable(), decision: z.enum(['share_selected','decline','revoke']), status: z.enum(['available','needs_review','revoked','declined']), version: Version, createdAt: Instant })
+export const MethodConfig = z.strictObject({ emphasis: z.enum(['metrics','evidence_gaps']), detail: z.enum(['concise','detailed']), citations: z.literal('exact_quote') })
+export const PublicMethod = z.strictObject({ version: Version, capabilityId: Id, labId: Id, config: MethodConfig, sampleIds: z.array(Id).max(10), createdBy: Id.nullable(), createdAt: Instant, origin: z.enum(['legacy_b3','candidate']), usable: z.boolean() })
+export const MethodState = z.strictObject({ capabilityId: Id, generation: Version, activeMethodVersion: Version, enabled: z.boolean(), ownerId: Id, methods: z.array(PublicMethod).max(100) })
+export const MethodEvent = z.strictObject({ sequence: Version, methodVersion: Version, generation: Version, action: z.enum(['legacy_import','created','trial','activated','disabled','sample_revoked']), actorId: Id.nullable(), at: Instant, runId: Id.nullable() })
+export const PlanningSummary = PlanningRequest.pick({id:true,status:true,planId:true,failure:true,version:true,createdAt:true,updatedAt:true})

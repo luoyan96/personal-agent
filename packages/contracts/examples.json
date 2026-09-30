@@ -1,5 +1,5 @@
 {
-  "contractVersion": "0.5.0",
+  "contractVersion": "0.6.0",
   "synthetic": true,
   "scenarios": {
     "serviceProgressReply": {
@@ -579,7 +579,7 @@
   },
   "endpoints": {
     "live": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/health/live",
@@ -594,7 +594,7 @@
       "response": {
         "data": {
           "status": "ok",
-          "contractVersion": "0.5.0",
+          "contractVersion": "0.6.0",
           "checks": {
             "database": "ok",
             "storage": "ok",
@@ -605,7 +605,7 @@
       }
     },
     "ready": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/health/ready",
@@ -620,7 +620,7 @@
       "response": {
         "data": {
           "status": "ok",
-          "contractVersion": "0.5.0",
+          "contractVersion": "0.6.0",
           "checks": {
             "database": "ok",
             "storage": "ok",
@@ -631,7 +631,7 @@
       }
     },
     "login": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/auth/login",
@@ -659,7 +659,7 @@
       }
     },
     "session": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/auth/session",
@@ -688,7 +688,7 @@
       }
     },
     "logout": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/auth/logout",
@@ -707,7 +707,7 @@
       }
     },
     "me": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/me",
@@ -732,7 +732,7 @@
       }
     },
     "members": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/labs/{id}/members",
@@ -754,7 +754,7 @@
       }
     },
     "availability": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "PATCH",
       "path": "/api/v1/me/availability",
@@ -784,7 +784,7 @@
       }
     },
     "plans": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/plans",
@@ -810,7 +810,7 @@
       }
     },
     "actionItems": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/labs/{id}/action-items",
@@ -838,7 +838,7 @@
       }
     },
     "createPlan": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/plans",
@@ -872,7 +872,7 @@
       }
     },
     "getPlan": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/plans/{id}",
@@ -901,7 +901,7 @@
       }
     },
     "editPlan": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "PATCH",
       "path": "/api/v1/plans/{id}",
@@ -938,7 +938,7 @@
       }
     },
     "confirmPlan": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/plans/{id}/confirm",
@@ -974,7 +974,7 @@
       }
     },
     "tasks": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/tasks",
@@ -996,7 +996,7 @@
       }
     },
     "task": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/tasks/{id}",
@@ -1052,7 +1052,7 @@
       }
     },
     "invite": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/invitations",
@@ -1094,7 +1094,7 @@
       }
     },
     "invitationDecision": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/invitations/{id}/decision",
@@ -1130,7 +1130,7 @@
       }
     },
     "claim": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/claim",
@@ -1163,7 +1163,7 @@
       }
     },
     "start": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/start",
@@ -1218,7 +1218,7 @@
       }
     },
     "block": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/block",
@@ -1276,7 +1276,7 @@
       }
     },
     "resume": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/resume",
@@ -1331,7 +1331,7 @@
       }
     },
     "submit": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/deliverables",
@@ -1368,7 +1368,7 @@
       }
     },
     "review": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/deliverables/{id}/review",
@@ -1406,7 +1406,7 @@
       }
     },
     "proposeChange": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/change-proposals",
@@ -1467,7 +1467,7 @@
       }
     },
     "decideChange": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/change-proposals/{id}/decision",
@@ -1516,7 +1516,7 @@
       }
     },
     "withdraw": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/withdraw",
@@ -1546,7 +1546,7 @@
       }
     },
     "cancelTask": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/cancel",
@@ -1602,7 +1602,7 @@
       }
     },
     "overview": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/labs/{id}/overview",
@@ -1644,7 +1644,7 @@
       }
     },
     "revokeAccess": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/revoke-access",
@@ -1701,7 +1701,7 @@
       }
     },
     "revokeArtifact": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/artifacts/{id}/revoke",
@@ -1734,7 +1734,7 @@
       }
     },
     "acknowledgeImpacts": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/dependency-impacts/acknowledge",
@@ -1793,7 +1793,7 @@
       }
     },
     "events": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/tasks/{id}/events",
@@ -1815,7 +1815,7 @@
       }
     },
     "upload": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/artifacts",
@@ -1849,7 +1849,7 @@
       }
     },
     "artifact": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/artifacts/{id}",
@@ -1877,7 +1877,7 @@
       }
     },
     "content": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/artifacts/{id}/content",
@@ -1896,7 +1896,7 @@
       }
     },
     "planRequest": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/planning-requests",
@@ -1911,6 +1911,7 @@
         "body": {
           "labId": "synthetic",
           "prompt": "synthetic",
+          "conclusionRefs": [],
           "intent": "auto",
           "plan": null,
           "taskIds": [],
@@ -1936,7 +1937,7 @@
       }
     },
     "getPlanRequest": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/planning-requests/{id}",
@@ -1965,7 +1966,7 @@
       }
     },
     "run": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/runs",
@@ -1990,7 +1991,8 @@
             "maxTokens": 1,
             "maxSeconds": 1
           },
-          "inputArtifactIds": []
+          "inputArtifactIds": [],
+          "conclusionRefs": []
         }
       },
       "response": {
@@ -2037,7 +2039,7 @@
       }
     },
     "getRun": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/runs/{id}",
@@ -2095,7 +2097,7 @@
       }
     },
     "cancelRun": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/runs/{id}/cancel",
@@ -2158,7 +2160,7 @@
       }
     },
     "publicCapabilities": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/public-capabilities",
@@ -2176,7 +2178,7 @@
       }
     },
     "retryRun": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/runs/{id}/retry",
@@ -2240,7 +2242,7 @@
       }
     },
     "submitCandidate": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/runs/{id}/submit",
@@ -2275,7 +2277,7 @@
       }
     },
     "cancelPlanning": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/planning-requests/{id}/cancel",
@@ -2308,8 +2310,534 @@
         }
       }
     },
+    "planningRequests": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "GET",
+      "path": "/api/v1/planning-requests",
+      "stage": "B4a",
+      "status": 200,
+      "request": {
+        "params": {},
+        "query": {
+          "limit": 30
+        },
+        "headers": {},
+        "body": null
+      },
+      "response": {
+        "data": [],
+        "nextCursor": null,
+        "total": 0
+      }
+    },
+    "conclusions": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "GET",
+      "path": "/api/v1/conclusions",
+      "stage": "B4a",
+      "status": 200,
+      "request": {
+        "params": {},
+        "query": {
+          "limit": 30
+        },
+        "headers": {},
+        "body": null
+      },
+      "response": {
+        "data": [],
+        "nextCursor": null,
+        "total": 0
+      }
+    },
+    "retainConclusion": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "POST",
+      "path": "/api/v1/tasks/{id}/conclusions",
+      "stage": "B4a",
+      "status": 201,
+      "request": {
+        "params": {
+          "id": "synthetic"
+        },
+        "query": {},
+        "headers": {
+          "Idempotency-Key": "synthetic_command_0001"
+        },
+        "body": {
+          "expectedVersion": 1,
+          "deliverable": {
+            "id": "synthetic",
+            "version": 1
+          },
+          "artifactRefs": [],
+          "conclusion": "synthetic",
+          "applicability": "synthetic",
+          "scope": "owner_only"
+        }
+      },
+      "response": {
+        "data": {
+          "deliverable": {
+            "id": "synthetic",
+            "version": 1
+          },
+          "artifactRefs": [],
+          "conclusion": "synthetic",
+          "applicability": "synthetic",
+          "scope": "owner_only",
+          "id": "synthetic",
+          "taskId": "synthetic",
+          "sourceTaskVersion": 1,
+          "confirmedBy": "synthetic",
+          "version": 1,
+          "status": "current",
+          "createdAt": "2026-09-21T08:00:00+08:00"
+        }
+      }
+    },
+    "conclusion": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "GET",
+      "path": "/api/v1/conclusions/{id}",
+      "stage": "B4a",
+      "status": 200,
+      "request": {
+        "params": {
+          "id": "synthetic"
+        },
+        "query": {},
+        "headers": {},
+        "body": null
+      },
+      "response": {
+        "data": {
+          "deliverable": {
+            "id": "synthetic",
+            "version": 1
+          },
+          "artifactRefs": [],
+          "conclusion": "synthetic",
+          "applicability": "synthetic",
+          "scope": "owner_only",
+          "id": "synthetic",
+          "taskId": "synthetic",
+          "sourceTaskVersion": 1,
+          "confirmedBy": "synthetic",
+          "version": 1,
+          "status": "current",
+          "createdAt": "2026-09-21T08:00:00+08:00"
+        }
+      }
+    },
+    "conclusionHistory": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "GET",
+      "path": "/api/v1/conclusions/{id}/history",
+      "stage": "B4a",
+      "status": 200,
+      "request": {
+        "params": {
+          "id": "synthetic"
+        },
+        "query": {},
+        "headers": {},
+        "body": null
+      },
+      "response": {
+        "data": []
+      }
+    },
+    "reviseConclusion": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "POST",
+      "path": "/api/v1/conclusions/{id}/revisions",
+      "stage": "B4a",
+      "status": 201,
+      "request": {
+        "params": {
+          "id": "synthetic"
+        },
+        "query": {},
+        "headers": {
+          "Idempotency-Key": "synthetic_command_0001"
+        },
+        "body": {
+          "expectedVersion": 1,
+          "expectedTaskVersion": 1,
+          "deliverable": {
+            "id": "synthetic",
+            "version": 1
+          },
+          "artifactRefs": [],
+          "conclusion": "synthetic",
+          "applicability": "synthetic",
+          "scope": "owner_only"
+        }
+      },
+      "response": {
+        "data": {
+          "deliverable": {
+            "id": "synthetic",
+            "version": 1
+          },
+          "artifactRefs": [],
+          "conclusion": "synthetic",
+          "applicability": "synthetic",
+          "scope": "owner_only",
+          "id": "synthetic",
+          "taskId": "synthetic",
+          "sourceTaskVersion": 1,
+          "confirmedBy": "synthetic",
+          "version": 1,
+          "status": "current",
+          "createdAt": "2026-09-21T08:00:00+08:00"
+        }
+      }
+    },
+    "revokeConclusion": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "POST",
+      "path": "/api/v1/conclusions/{id}/revoke",
+      "stage": "B4a",
+      "status": 200,
+      "request": {
+        "params": {
+          "id": "synthetic"
+        },
+        "query": {},
+        "headers": {
+          "Idempotency-Key": "synthetic_command_0001"
+        },
+        "body": {
+          "expectedVersion": 1,
+          "reason": "synthetic"
+        }
+      },
+      "response": {
+        "data": {
+          "id": "synthetic",
+          "version": 1,
+          "status": "revoked"
+        }
+      }
+    },
+    "createSample": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "POST",
+      "path": "/api/v1/tasks/{id}/public-method-feedback",
+      "stage": "B4a",
+      "status": 201,
+      "request": {
+        "params": {
+          "id": "synthetic"
+        },
+        "query": {},
+        "headers": {
+          "Idempotency-Key": "synthetic_command_0001"
+        },
+        "body": {
+          "expectedVersion": 1,
+          "deliverable": {
+            "id": "synthetic",
+            "version": 1
+          },
+          "decision": "share_selected",
+          "selectedText": null,
+          "authorizeLabUse": false
+        }
+      },
+      "response": {
+        "data": {
+          "id": "synthetic",
+          "taskId": "synthetic",
+          "deliverable": {
+            "id": "synthetic",
+            "version": 1
+          },
+          "sourceTaskVersion": 1,
+          "grantedBy": "synthetic",
+          "selectedText": null,
+          "decision": "share_selected",
+          "status": "available",
+          "version": 1,
+          "createdAt": "2026-09-21T08:00:00+08:00"
+        }
+      }
+    },
+    "samples": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "GET",
+      "path": "/api/v1/public-text-method/samples",
+      "stage": "B4a",
+      "status": 200,
+      "request": {
+        "params": {},
+        "query": {
+          "limit": 30
+        },
+        "headers": {},
+        "body": null
+      },
+      "response": {
+        "data": [],
+        "nextCursor": null,
+        "total": 0
+      }
+    },
+    "revokeSample": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "POST",
+      "path": "/api/v1/public-text-method/samples/{id}/revoke",
+      "stage": "B4a",
+      "status": 200,
+      "request": {
+        "params": {
+          "id": "synthetic"
+        },
+        "query": {},
+        "headers": {
+          "Idempotency-Key": "synthetic_command_0001"
+        },
+        "body": {
+          "expectedVersion": 1,
+          "reason": "synthetic"
+        }
+      },
+      "response": {
+        "data": {
+          "id": "synthetic",
+          "version": 1,
+          "status": "revoked"
+        }
+      }
+    },
+    "publicMethods": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "GET",
+      "path": "/api/v1/public-text-method",
+      "stage": "B4a",
+      "status": 200,
+      "request": {
+        "params": {},
+        "query": {},
+        "headers": {},
+        "body": null
+      },
+      "response": {
+        "data": {
+          "capabilityId": "synthetic",
+          "generation": 1,
+          "activeMethodVersion": 1,
+          "enabled": false,
+          "ownerId": "synthetic",
+          "methods": []
+        }
+      }
+    },
+    "createMethod": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "POST",
+      "path": "/api/v1/public-text-method/versions",
+      "stage": "B4a",
+      "status": 201,
+      "request": {
+        "params": {},
+        "query": {},
+        "headers": {
+          "Idempotency-Key": "synthetic_command_0001"
+        },
+        "body": {
+          "expectedVersion": 1,
+          "config": {
+            "emphasis": "metrics",
+            "detail": "concise",
+            "citations": "exact_quote"
+          },
+          "sampleIds": [
+            "synthetic"
+          ]
+        }
+      },
+      "response": {
+        "data": {
+          "version": 1,
+          "capabilityId": "synthetic",
+          "labId": "synthetic",
+          "config": {
+            "emphasis": "metrics",
+            "detail": "concise",
+            "citations": "exact_quote"
+          },
+          "sampleIds": [],
+          "createdBy": null,
+          "createdAt": "2026-09-21T08:00:00+08:00",
+          "origin": "legacy_b3",
+          "usable": false
+        }
+      }
+    },
+    "trialMethod": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "POST",
+      "path": "/api/v1/public-text-method/trials",
+      "stage": "B4a",
+      "status": 202,
+      "request": {
+        "params": {},
+        "query": {},
+        "headers": {
+          "Idempotency-Key": "synthetic_command_0001"
+        },
+        "body": {
+          "expectedVersion": 1,
+          "methodVersion": 1,
+          "taskId": "synthetic",
+          "expectedTaskVersion": 1,
+          "budget": {
+            "maxTokens": 1,
+            "maxSeconds": 1
+          }
+        }
+      },
+      "response": {
+        "data": {
+          "id": "synthetic",
+          "taskId": "synthetic",
+          "capability": {
+            "id": "synthetic",
+            "version": 1,
+            "visibility": "lab_public"
+          },
+          "status": "queued",
+          "attempt": 0,
+          "usage": null,
+          "failure": null,
+          "resultRefs": [],
+          "createdAt": "2026-09-21T08:00:00+08:00",
+          "startedAt": null,
+          "endedAt": null,
+          "version": 1,
+          "requestedBy": "synthetic",
+          "taskVersion": 1,
+          "plan": {
+            "id": "synthetic",
+            "version": 1
+          },
+          "permissionVersion": 1,
+          "inputs": [],
+          "budget": {
+            "maxTokens": 1,
+            "maxSeconds": 1
+          },
+          "maxAttempts": 1,
+          "nextAttemptAt": null,
+          "candidate": null,
+          "candidateDeliverableId": null,
+          "allowedActions": [],
+          "provider": "synthetic",
+          "model": "synthetic",
+          "harnessVersion": "synthetic",
+          "updatedAt": "2026-09-21T08:00:00+08:00",
+          "usageDetail": null
+        }
+      }
+    },
+    "activateMethod": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "POST",
+      "path": "/api/v1/public-text-method/activate",
+      "stage": "B4a",
+      "status": 200,
+      "request": {
+        "params": {},
+        "query": {},
+        "headers": {
+          "Idempotency-Key": "synthetic_command_0001"
+        },
+        "body": {
+          "expectedVersion": 1,
+          "methodVersion": 1,
+          "runId": "synthetic",
+          "confirm": true
+        }
+      },
+      "response": {
+        "data": {
+          "capabilityId": "synthetic",
+          "generation": 1,
+          "activeMethodVersion": 1,
+          "enabled": false,
+          "ownerId": "synthetic",
+          "methods": []
+        }
+      }
+    },
+    "disableMethod": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "POST",
+      "path": "/api/v1/public-text-method/disable",
+      "stage": "B4a",
+      "status": 200,
+      "request": {
+        "params": {},
+        "query": {},
+        "headers": {
+          "Idempotency-Key": "synthetic_command_0001"
+        },
+        "body": {
+          "expectedVersion": 1,
+          "reason": "synthetic"
+        }
+      },
+      "response": {
+        "data": {
+          "capabilityId": "synthetic",
+          "generation": 1,
+          "activeMethodVersion": 1,
+          "enabled": false,
+          "ownerId": "synthetic",
+          "methods": []
+        }
+      }
+    },
+    "methodEvents": {
+      "contractVersion": "0.6.0",
+      "synthetic": true,
+      "method": "GET",
+      "path": "/api/v1/public-text-method/events",
+      "stage": "B4a",
+      "status": 200,
+      "request": {
+        "params": {},
+        "query": {
+          "limit": 30
+        },
+        "headers": {},
+        "body": null
+      },
+      "response": {
+        "data": [],
+        "nextCursor": null
+      }
+    },
     "capabilities": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/capabilities",
@@ -2331,7 +2859,7 @@
       }
     },
     "createCapability": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/capabilities",
@@ -2367,7 +2895,7 @@
       }
     },
     "testCapability": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/capabilities/{id}/test-runs",
@@ -2401,7 +2929,7 @@
       }
     },
     "publish": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/capabilities/{id}/publish",
@@ -2438,7 +2966,7 @@
       }
     },
     "disable": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/capabilities/{id}/disable",
@@ -2474,7 +3002,7 @@
       }
     },
     "knowledge": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/tasks/{id}/knowledge",
@@ -2496,7 +3024,7 @@
       }
     },
     "feedback": {
-      "contractVersion": "0.5.0",
+      "contractVersion": "0.6.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/feedback-sharing",
