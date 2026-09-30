@@ -1,6 +1,6 @@
 # 前端开发指南
 
-日期：2026-09-29。状态：B2a/F2a 已共同复核，当前从 B2b/F2b 继续；见[第一阶段范围](../phase-one.md)与[G2a 报告](reports/G2a-overall-2026-09-29.md)。以下保留各阶段职责，未实施部分不可宣称完成。先读 [AGENTS.md](../../AGENTS.md)、[设计索引与 PNG](../design/README.md)、[共同契约](contracts.md)、[总交接](../development-handoff.md)。当前使用 [B2b/F2b prompt](prompts.md#当前下一批-b2b--f2b)，不要重新从初始批次启动。
+日期：2026-09-30。状态：B2b/F2b 已通过共同 G2，当前从 B3/F3 继续；见[第一阶段范围](../phase-one.md)与[G2 报告](reports/G2-overall-2026-09-30.md)。以下保留各阶段职责，未实施部分不可宣称完成。先读 [AGENTS.md](../../AGENTS.md)、[设计索引与 PNG](../design/README.md)、[共同契约](contracts.md)、[总交接](../development-handoff.md)。当前使用 [B3/F3 prompt](prompts.md#当前下一批-b3--f3)，不要重新从初始批次启动。
 
 ## 责任范围与界面原则
 

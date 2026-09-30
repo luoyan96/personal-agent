@@ -32,7 +32,7 @@ node apps/web/scripts/check-f1-browser.mjs --manage-api
 
 F2a 专项在真实 B2a 已启动时运行 `node apps/web/scripts/check-f2a-browser.mjs`，沿用 `PLAYWRIGHT_MODULE`、`F1_BROWSER_CHANNEL`、`F1_BASE_URL`、`F1_CREDENTIALS_FILE`，并用 `F2A_EVIDENCE_DIR` 指定截图目录。默认凭据 `.runtime/f2a/credentials.json`、URL 4177；请显式设置以匹配实际服务。脚本会新增合成资料。频繁重跑多个登录场景会触发真实 15 分钟限流，应等窗口结束或使用新的独立合成数据库，不能修改生产限流来通过测试。
 
-F2a-01 已在共同集成代码中修复：首页两个“我参与的”入口会清除旧实验室范围与状态筛选，恢复本人全部任务；新增真实浏览器回归。F2b 本批结果见 [阶段报告](../../docs/development/reports/F2b-2026-09-29.md)。此前共同证据见 [G2a 共同报告](../../docs/development/reports/G2a-overall-2026-09-29.md)。原交付证据见 [F2a 报告](../../docs/development/reports/F2a-2026-09-29.md)，原主线见 [F1 报告](../../docs/development/reports/G1-F-2026-09-21.md)。以下保留 F0 的开发演示说明，不能用它代替真实验收。
+F2a-01 已在共同集成代码中修复：首页两个“我参与的”入口会清除旧实验室范围与状态筛选，恢复本人全部任务；新增真实浏览器回归。F2b 本批结果见 [阶段报告](../../docs/development/reports/F2b-2026-09-29.md)。本批已通过 [G2 共同报告](../../docs/development/reports/G2-overall-2026-09-30.md) 的独立复核；此前证据见 [G2a 共同报告](../../docs/development/reports/G2a-overall-2026-09-29.md)。原交付证据见 [F2a 报告](../../docs/development/reports/F2a-2026-09-29.md)，原主线见 [F1 报告](../../docs/development/reports/G1-F-2026-09-21.md)。以下保留 F0 的开发演示说明，不能用它代替真实验收。
 
 ## F0 开发演示（隔离保留）
 

@@ -1,6 +1,6 @@
 # 第一版开发交接
 
-日期：2026-09-29。G1 人类协作与 B2a/F2a 日常任务已经共同复核；产品第一阶段尚未完成。当前执行范围与下一批以[第一阶段范围与当前状态](phase-one.md)为准，本文保留整体工程依据，不要求重新从 D0 开始。界面采用[对话中展开协作单](design/adaptive-responses.md)，总览与详情按需进入。
+日期：2026-09-30。G1/G2 人类协作、日常任务与变化协调已经共同复核；产品第一阶段尚未完成。当前执行范围与下一批以[第一阶段范围与当前状态](phase-one.md)为准，本文保留整体工程依据，不要求重新从 D0 开始。界面采用[对话中展开协作单](design/adaptive-responses.md)，总览与详情按需进入。
 
 前后端分工使用[分阶段开发索引](development/README.md)：分别提供[前端指南](development/frontend.md)、[后端指南](development/backend.md)、[共享契约](development/contracts.md)、[阶段验收](development/acceptance.md)和[可复制启动 prompt](development/prompts.md)。多人开发优先使用这些按批次限定的指令；本文保留整体范围和顺序。
 
@@ -21,7 +21,7 @@
 
 ## 当前代码边界
 
-已有本地 Project / Artifact 基础包、十项 Skills、共享契约 0.3.0、真实 B2a 服务与 F2a 网页。集成分支已验证密码会话、SQLite 持久化、手工方案、邀请/认领、文本交付和版本验收。草案历史、授权聚合/待办及本人可用时间已接通；复杂协调、真实模型/Harness、能力记忆仍未交付。现有多人权威数据由 API 的事务数据库保存，不使用本地 ArtifactStore 替代。
+已有本地 Project / Artifact 基础包、十项 Skills、共享契约 0.4.0、真实 B2b 服务与 F2b 网页。集成分支已验证密码会话、SQLite 持久化、手工方案、邀请/认领、文本交付和版本验收。草案历史、授权聚合/待办、本人可用时间、变化协调及授权附件已接通；真实模型/Harness 与能力记忆仍未交付。现有多人权威数据由 API 的事务数据库保存，不使用本地 ArtifactStore 替代。
 
 Harness 适配仍待干净安装和真实联调；[已记录的依赖问题](../integrations/deepseek-harness/README.md)是当时的检查结果，开发时必须重新验证。不能因根目录 CI 通过就声称 Harness 已接通。不要复制旧探索界面的导航与项目工作流。
 
@@ -90,7 +90,7 @@ D0 的技术选型是实现决定，应核实依赖和兼容性后落文档；�
 
 ## 历史启动指令（已有项目不再从此重开）
 
-以下仅保留首次建仓时的整体起步说明。当前项目使用[当前下一批 B2b/F2b prompt](development/prompts.md#当前下一批-b2b--f2b)，采用已通过 G2a 并包含 F2a-01 修复与本次文档更新的共同提交。
+以下仅保留首次建仓时的整体起步说明。当前项目使用[当前下一批 B3/F3 prompt](development/prompts.md#当前下一批-b3--f3)，采用已通过 G2 并包含本次共同报告与文档更新的交接提交。
 
 > 在 research-agent-platform 仓库开始第一版实现。先阅读 AGENTS.md、docs/development-handoff.md、docs/design/README.md 和 docs/task-allocation.md，查看相关 PNG。沿用已确认的简洁界面和实验室任务看板，复用现有基础包，按 D0 → D1 开始，完成一个可审查的小批次并报告结果。
 >
