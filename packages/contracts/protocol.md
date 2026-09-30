@@ -1,6 +1,6 @@
-# HTTP 协议 0.5.0
+# HTTP 协议 0.6.1
 
-完整精确接口见 [OpenAPI](openapi.json)，所有接口的合成请求响应见 [examples](examples.json)。已实现 routes 中 stage=B0/B1/B2a/B2b/B3 的端点；B4 仍为501。B3 模型功能需显式服务端配置，关闭时 draft/auto 返回503 MODEL_UNAVAILABLE；授权 progress/find_work 使用服务事实。固定 Harness 与真实验证见 B3 联调包，不返回 fixture 成功。
+完整精确接口见 [OpenAPI](openapi.json)，所有接口的合成请求响应见 [examples](examples.json)。已实现 routes 中 stage=B0/B1/B2a/B2b/B3/B4a 的端点；B4 仍为501。B3 模型功能需显式服务端配置，关闭时 draft/auto 返回503 MODEL_UNAVAILABLE；授权 progress/find_work 使用服务事实。固定 Harness 与真实验证见 B3 联调包，不返回 fixture 成功。
 
 ## 身份、认证与跨域
 
@@ -70,3 +70,6 @@ B1 只接受 inputArtifactIds=[]、交付 artifactRefs=[]、sources.kind=note/ur
 ## B3 · 0.5.0
 
 Versioned adaptive replies, planning intents, durable public execution and evidence candidates use the same exported Schema/route definitions. See [B3 handoff](../../docs/development/b3-handoff.md). Run success is not task completion. Unknown usage is null. New `execution_attention` action items require exhaustive client handling; regenerate clients from openapi.json. G4 routes remain explicitly unavailable.
+
+
+B4a精确来源撤回、历史修订、样例授权、配置代次及原key重放见 [B4a权限与联调](../../docs/development/b4a-handoff.md)。规划上下文改为显式taskIds/conclusionRefs；不自动装入历史结论。

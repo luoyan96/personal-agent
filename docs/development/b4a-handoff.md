@@ -1,6 +1,6 @@
 # B4a 契约、权限与迁移交接 · 0.6.1
 
-共同基线61eec851ac1f00e18b12e729f5fa6cdcc320f730。本文件先随契约/迁移提交；服务完成与实际验证以阶段报告为准。B4b和G5未开放。
+共同基线61eec851ac1f00e18b12e729f5fa6cdcc320f730。本文件先随契约/迁移提交，现已补齐服务与真实验证，详见阶段报告。B4b和G5未开放。
 
 ## 精确授权矩阵
 
@@ -38,8 +38,86 @@ API仍由cookie/CSRF/Origin认证，不能传actorId。版本冲突409；不可�
 
 先备份本任务DB/WAL和附件，停止相关服务；不重置旧库。新增conclusions/conclusion_versions、reuse_edges/source权限视图、public_samples/sample_edges、public_methods/public_method_state/method_events。001—006不改。迁移runner仍在事务内按checksum只执行一次；再次运行检查相同历史。
 
-`pnpm install --frozen-lockfile`、`pnpm build`后，使用同一私有配置两次运行 `node --env-file=.env apps/api/dist/manage.js migrate`。迁移代码与服务将在下一提交接入。升级旧库、实际启动、测试与完整SHA随后补入本文件。
+`pnpm install --frozen-lockfile`、`pnpm build`后，使用同一私有配置两次运行 `node --env-file=.env apps/api/dist/manage.js migrate`。迁移runner已接入，旧B3库重复升级及原字段保留已经专项验证。007规范文件SHA-256为576980ba93aa60aa2773cb54d8364db409aacd4b075ad630ae30274514f91526；使用Git检出的LF文件，不手改已应用迁移或重写旧库校验和。
 
 ## 0.6.1 前端权限与来源投影补充
 
 Task.allowedActions新增retain_conclusion/share_feedback/decline_feedback；RetainedConclusion.allowedActions为revise/revoke；FeedbackSample为revoke；Capability为manage_methods；MethodState为create_method/disable；PublicMethod为trial/activate并返回授权validationRunIds。客户端只按服务动作呈现，提交仍重新鉴权。Plan/Task返回conclusionRefs(id,version,status)，getPlanRequest.reply.plan沿用同一Plan；来源撤权优先404/移除整项，不以空文本伪装可复用。此为0.6.0先行契约的显式兼容升级，请整体升级0.6.1，不自行比较角色或建第二套状态机。
+
+
+## 完整提交与复现
+
+| 内容 | 完整SHA |
+| --- | --- |
+| 共同G3及G4a规划基线 | 61eec851ac1f00e18b12e729f5fa6cdcc320f730 |
+| 先行0.6.0契约、权限矩阵与007 | 16b2fee6244545a5dc248ddd760bbc0f2c6ee846 |
+| 最终可执行0.6.1契约及允许动作/来源投影 | 0dfb54c006e990b3502e6e87d4fbbb561197f656 |
+| B4a服务及专项 | daa59a8ad6ef194455a9853e6faf2669a9476daa |
+
+分支backend/b4a-authorized-reuse，工作目录D:/deepseek-agent/research-agent-platform-b4a。后续仅补文档；集成时包含本分支父提交及最后文档，不只摘取服务而漏掉Schema和007。实际结果见 [B4a阶段报告](reports/B4a-backend-2026-09-30.md)。只改前端契约版本测试，不修改F4a页面。
+
+## 启动与合成联调
+
+使用Node24.19、pnpm11.21，沿用固定Harness0.2.0-rc.1；无新增第三方依赖。所有命令在checkout根目录。API/worker使用相同私有.env（被Git忽略），只给服务端读取；配置名同B3：NODE_ENV、HOST、PORT、APP_ORIGIN、DATABASE_PATH、BLOB_ROOT、TEST_CREDENTIALS_FILE、B3_AI_ENABLED、DEEPSEEK_API_KEY、可选DEEPSEEK_MODEL/DEEPSEEK_BASE_URL。API_URL只供合成脚本定位本地服务。不要把Key送入Vite或浏览器。
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm build
+node --env-file=.env apps/api/dist/manage.js migrate
+node --env-file=.env apps/api/dist/manage.js migrate
+node --env-file=.env apps/api/dist/manage.js seed
+node --env-file=.env apps/api/dist/credentials.js
+# 首次配置已存在的那一种能力，明确真实owner，不新建能力市场。
+node --env-file=.env apps/api/dist/capability-config.js enable lab_synthetic member_A
+node --env-file=.env apps/api/dist/main.js
+# 另一个服务端终端：
+node --env-file=.env apps/api/dist/worker.js
+```
+
+APP_ORIGIN须与网页精确Origin一致；默认API3100，可用前端代理/api。配置与证据目录必须为本任务独立路径，勿指向别人正在运行的库。db:credentials生成随机A/B/C密码，保存在TEST_CREDENTIALS_FILE、不打印。认证仍为密码登录→HttpOnly cookie→session.csrfToken；写操作携带Origin、X-CSRF-Token、Idempotency-Key，不传actorId。重试同一操作保留原key和原body；若用户选择了新版本，就是新操作、新key。
+
+```powershell
+# 设置API_URL、APP_ORIGIN和TEST_CREDENTIALS_FILE后；不需要运行worker。
+node --env-file=.env scripts/seed-b4a-demo.mjs
+node --env-file=.env scripts/seed-b4a-demo.mjs
+# 显式付费专项会启动并管理自己的worker，请先停该合成库其他worker。
+node --env-file=.env scripts/check-b4a-live.mjs
+pnpm check:b4a
+pnpm run ci
+```
+
+seed稳定创建一项已验收合成来源、显式保留结论和一项后续任务；两次返回同一身份，不生成模型调用、不分享样例。真实专项主动授予一个片段、创建方法候选、真实试跑、人工确认启用，再检查停用/撤回；会消耗真实模型配额，并保留试验状态。再次跑完整专项宜使用新的独立合成库；它不是无副作用seed。B4A_REUSE_ONLY=1仅验证真实结论复用，用于定向检查，不能据此称方法试跑完成。
+
+## 请求与响应要点
+
+精确定义与每路由可验证样例：[Schema](../../packages/contracts/src/models.ts)、[routes](../../packages/contracts/src/routes.ts)、[OpenAPI](../../packages/contracts/openapi.json)、[examples](../../packages/contracts/examples.json)。全部路径带/api/v1。不要把deliverable.revision（人类交付序号）误当deliverable.version（资源版本）；来源对象使用后者。当前版本从服务读取。
+
+```json
+{"expectedVersion":4,"deliverable":{"id":"synthetic_delivery","version":2},"artifactRefs":[],"conclusion":"Synthetic cohort A measured twelve samples.","applicability":"Only synthetic cohort A; cohort B remains unknown.","scope":"source_readers"}
+```
+
+POST /tasks/:id/conclusions只留存结论；字段包含sourceTaskVersion、confirmedBy、createdAt、status、allowedActions。首版支持最多10附件的交付；artifactRefs必须明确列全该交付附件的id/version/sha256，不允许通过省略一个来源绕过撤回。
+
+```json
+{"labId":"lab_synthetic","intent":"draft","prompt":"基于选定结论安排后续核对","plan":null,"taskIds":[],"inputArtifactIds":[],"conclusionRefs":[{"id":"synthetic_conclusion","version":1}],"budget":{"maxTokens":100000,"maxSeconds":120}}
+```
+
+POST /planning-requests的conclusionRefs是用户主动选择；GET请求返回reply.plan.conclusionRefs。新任务执行POST /tasks/:id/runs同样附conclusionRefs，并附最新任务expectedVersion、公共能力capability和budget；可以只有选定结论、不附新文件。引用原样进入材料数组，引用ID为conclusion_<id>_v<version>。模型成功仅生成候选，submitCandidate仍需明确提交，再走原指定交付版本验收。
+
+GET /planning-requests与GET /conclusions支持limit/cursor/snapshot，返回data、nextCursor、**total全授权计数**和snapshot。游标按当前身份、查询及数据库revision签名；变化/换账号后的旧游标410，重新读取。规划列表按稳定不透明id升序分页，不能假定为时间倒序；返回createdAt/updatedAt供展示，且不返回原始prompt。仅列表可见不等于仍可执行，写操作重验所有来源和版本。
+
+POST /conclusions/:id/revisions须expectedVersion（结论头版本）、expectedTaskVersion及完整新ConclusionInput；旧revision保持不变。GET history可以核对当时文本和来源。新草案/运行只接受current版本；复核后要主动重新选择新版本。派生对象保存全部历史依赖以保护旧交付/事件，conclusionRefs投影显示每个结论最近采用的版本。若旧来源已撤回导致对象404，应新建有权访问的目标，不通过删掉引用恢复旧文本。
+
+公共方法端点是/public-text-method，而不是未实现的B4b /capabilities。查看state后使用allowedActions：POST /versions创建受控候选；POST /trials指定methodVersion、本人承接的taskId、expectedTaskVersion和budget；试跑返回RunRecord.methodTrial=true，不能submitCandidate。PublicMethod.validationRunIds只列服务记录的真实Harness成功试跑；POST /activate明确confirm=true并绑定其中runId；POST /disable使旧代次排队/执行中运行失效。读方法/事件仅现有能力owner。
+
+**维护冲突策略**：创建候选、启用、停用都会递增configuration generation；创建候选虽然不切换activeMethodVersion，也会使旧代次排队/进行中的运行取消。这是首版保守隔离策略，维护前端必须提示该影响，不能显示“完全不影响现有运行”。所有旧运行保留methodVersion和configurationGeneration，绝不原地换方法。legacy_b3/v1没有伪造试跑或发布事件；保留原B3提示规则。方法样例失效后依赖版本usable=false，活动版本自动停用，审计记录sample_revoked（也覆盖样例因来源更新失效的情况）。
+
+反馈需用户另行确认：POST /tasks/:id/public-method-feedback可decline，selectedText=null、authorizeLabUse=false；share_selected必须显式authorizeLabUse=true且只选择已验收摘要原文片段。为避免未经同意扩大披露，首版只允许本人同时为提交人与验收人的完成任务，且该任务没有复用依赖。维护者仅能读这个明确片段，不因此获得源任务或原附件权限。来源更新后失效样例须另行提交新的显式授权，不在原样例里换文字。
+
+典型失败：404 NOT_FOUND（包括来源撤回或派生对象被隐藏）、403 FORBIDDEN（目标扩大范围/无维护权限）、409 VERSION_CONFLICT（旧资源版本）、409 IDEMPOTENCY_CONFLICT（同key改body）、409 INVALID_STATE（旧结论需复核/试跑未满足真实验证）、410 CURSOR_EXPIRED、503 MODEL_UNAVAILABLE或CAPABILITY_UNAVAILABLE。前端按共享ErrorResponse显示；不能把失败退回演示数据。
+
+## 已知限制与停止点
+
+只做同实验室内的严格来源授权，默认不共享；没有全库搜索、向量库、跨域共享、任意提示词/代码/工具配置或私人能力托管。来源物理存储/系统管理员仍由受信运行环境管理；不声称OS级隔离或追回已下载副本。public method samples不训练模型，“撤回”是停止未来使用和隐藏派生访问，不是模型遗忘。
+
+只有维护者owner一种角色，不新增通用授权管理界面。规划/公共候选继续沿用B3持久worker、预算、未知用量规则、取消/租约/原key重试。root CI234项、服务专项71项通过；实际模型证据另列。F4a浏览器、共同G4a及G5均未由本后端验收替代；完成后停在B4a。

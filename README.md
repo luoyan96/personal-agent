@@ -8,7 +8,7 @@
 
 ## 当前状态（2026-09-30）
 
-**G3 已共同通过，产品第一阶段尚未完成。** 已能找回草案、查看本人待办及授权总览、记录成员承诺和可用时间，并在任务中处理依赖阻塞、安排变更、退出转交、取消撤权、附件与交付版本。
+**G3 已共同通过；本分支B4a后端已完成，等待F4a及共同G4a。产品第一阶段尚未完成。** 已能找回草案、查看本人待办及授权总览、记录成员承诺和可用时间，并在任务中处理依赖阻塞、安排变更、退出转交、取消撤权、附件与交付版本。
 
 G3 最终受测代码为 `65c6a70c43feca8a04c83b15c7823c8fb4e25839`（含 F3-01 修复），契约 **0.5.0**，回复契约 **1.0.0**。根 CI **206 项**；真实模型浏览器 7 组、失败与恢复 8 组、确定性 UI 3 组及历史协作 50 组通过。详见 [G3 共同复核](docs/development/reports/G3-overall-2026-09-30.md)。尚未合入 main、部署或通过真实小组试用。
 
@@ -21,7 +21,7 @@ G3 最终受测代码为 `65c6a70c43feca8a04c83b15c7823c8fb4e25839`（含 F3-01 
 | [科研核心](packages/research-core/README.md) | 本地 Project/Artifact 与来源存取；不是多人平台的权威数据库 |
 | [十项 Skills](agents/README.md)及[加载包](packages/research-skills/README.md) | 方法资源可构建和加载，不代表十项能力都能实际执行 |
 | [Harness 适配](integrations/deepseek-harness/README.md) | 官方固定 0.2.0-rc.1 受限运行组合已安装并真实调用；旧六工具不用于团队 worker |
-| 记忆与能力进化 | 任务历史不等于完整长期记忆；权限内结论复用、能力维护仍需交付和验证 |
+| 结论与公共方法 | B4a服务提供显式授权结论复用、方法维护与本人请求找回；共同G4a及私人能力托管未验收 |
 
 B3 的启动、迁移、合成账号、接口与恢复规则见 [前端联调包](docs/development/b3-handoff.md)；逐项真实证据及用量见 [B3 阶段报告](docs/development/reports/B3-backend-2026-09-30.md)。根 CI 已覆盖新的 Harness runtime，真实模型专项仍须显式凭据。
 
@@ -42,6 +42,8 @@ flowchart LR
 ```
 
 完整目标见[产品规划 v0.4](docs/product-plan.md)。**当前优先读[第一阶段范围](docs/phase-one.md)**，它区分产品 P1、工程 G1 和暂缓功能。任务语义见[分配规则](docs/task-allocation.md)，实际收益见[试点计划](docs/validation-plan.md)，顺序见[路线图](docs/roadmap.md)。完整私人能力托管、公开市场、跨学校调度和学校行政系统不要求在 P1 一次完成。
+
+B4a契约0.6.1、迁移、合成数据和前端集成见 [B4a联调包](docs/development/b4a-handoff.md)，实际服务/模型证据见 [B4a报告](docs/development/reports/B4a-backend-2026-09-30.md)。
 
 ## 下一批怎样开发
 

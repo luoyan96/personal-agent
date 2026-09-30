@@ -37,3 +37,8 @@
 ## B3 持久执行（2026-09-30）
 
 共同基线 98bef3bbab897b7d27b1507cb0c557299dab56b6，新增 006-execution.sql，不修改 001—005。规划/运行/尝试队列与通知 outbox 分离；官方 Harness 0.2.0-rc.1 的受限 LlmRuntime 组合纳入默认 workspace，旧六工具插件不接团队权限。安装成功，真实模型目前因凭据缺失未验证。升级与配置见 [B3 联调包](development/b3-handoff.md)。
+
+
+## B4a · 007授权结论与方法维护
+
+共同G3基线后只追加007，不改001—006。保留既有capability.version配置代次，导入不可变legacy_b3方法v1，不伪造发布；为旧运行追加methodVersion/configurationGeneration等元数据。结论修订、递归派生依赖、公开片段授权及方法事件另表保存。真实B3旧库重复升级和原表逐行保留已验证。细节、校验和与启动见 [B4a联调包](development/b4a-handoff.md)。不覆盖别人数据库、不重置旧数据。
