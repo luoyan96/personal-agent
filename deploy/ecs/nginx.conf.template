@@ -3,7 +3,12 @@
 server {
     listen 80;
     server_name __DOMAIN__;
-    return 308 https://__DOMAIN__$request_uri;
+    # Keep HTTP-01 renewal reachable after HTTPS goes live.
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/research-agent-acme;
+        default_type text/plain;
+    }
+    location / { return 308 https://__DOMAIN__$request_uri; }
 }
 
 server {

@@ -1,18 +1,26 @@
 # 将科研平台部署到已有 ECS
 
-日期：2026-10-01。代码基线为集成分支 G5a 及 Windows CI 修复 `cbd7596e2bdf682d71e59014d932ea326b70e428`，契约 0.6.2、迁移 008、Harness 0.2.0-rc.1。**目前只准备部署材料和核查环境；尚未上线，G5b/P1 未通过。** 后续交接使用包含本文及模板的完整提交，不单独拉取 main。
+日期：2026-10-01。ECS 当前应用发布为完整提交 `69e52053d5850a195db38db9cde6832b13c91576`，包含 G5a 和 Windows CI 修复；契约 0.6.2、迁移 008、Harness 0.2.0-rc.1。**网页与任务服务已上线并通过部署合成验证；AI 尚未启用，本人账号交付与真实成员试用待完成，G5b/P1 未通过。** 本次文档和 ACME 模板补充不表示服务器应用已切换到新的提交。
 
 用户选择沿用已有 Ubuntu 22.04 ECS、Nginx、systemd 和 Workbench 上传方式。科研平台网页、API、worker、数据库及附件都在 ECS 上运行；成员只需浏览器。服务端使用现有受限 Harness 调用 DeepSeek API，无需 GPU 或成员安装 Harness。当前网页更新仍为快照检查和手动刷新，不从简历系统借用“每五秒同步”的功能承诺。
 
-## 本轮已做的实例核查
+## 已完成的实例部署与核查
+
+已在用户授权的独立子域名新增 DNS、签发可信 HTTPS 证书，并配置自动续期与 Nginx reload hook。Linux 使用独立 Node 24.20.0、pnpm 11.21.0；通过 GitHub HTTPS 下载上述固定提交，393 个文件的路径与内容摘要均与本地 `git archive` 一致。依赖冻结安装和串行 workspace 构建通过。构建受 systemd CPU/内存上限约束，没有运行全量 CI。
+
+API/worker 使用独立系统账号、目录和 systemd 服务，已设开机启动；API 只监听 loopback 4327。迁移重复执行两次成功。Nginx 配置和两个科研 unit 校验通过；unit verify 同时报告了系统已有 snapd/cloudmonitor 的警告，本次未修改这些服务。
+
+真实 HTTPS 验证采用独立合成实验室及三个正式维护接口创建的测试账号：登录/安全 Cookie、邀请接受、开始、10 MiB 附件上传、成果交付与人工验收、第三人无权访问均通过。API/worker 停写后完成数据库与附件一致备份、新路径隔离恢复；服务重启后任务状态及附件哈希保持一致，权限检查通过。恢复库完整性、已完成任务、附件哈希与旧会话撤销已核对。恢复副本未替代线上数据。浏览器登录页、使用指引交互、正常控制台及实际 390×844 无横向溢出通过；本人尚未设置账号并操作真实任务。
+
+这次未传输模型密钥、未新增模型调用，`B3_AI_ENABLED=0`；使用者可在账号开通后先做手工任务安排。备份位于同一台 ECS，已验证恢复不等于具备异机容灾或自动定期备份。实际网址、配置和证据保存在本地受控交接记录，不写入公开仓库。
 
 通过用户已登录的 Workbench，以普通 Shell 做只读查询：Ubuntu 22.04.4、x86_64、2 个逻辑 CPU；内存 1673 MiB、当时 available 759 MiB，swap 已使用 314 MiB；磁盘余量约 16 GiB。Nginx 1.18.0 与既有招聘服务正常运行。候选端口 4327 当时空闲；拟用代码/数据/配置目录及科研 API/worker 服务不存在。
 
-这是单次观测，不能证明长期容量充足。模板 API/worker 的内存上限分别为 256/384 MiB、CPU 各 50%（合计至多一个核），是待实际试运行校准的初值。先验证账号协作、最大允许附件与一次获准合成 AI 请求的峰值；不在这台机器上直接跑全量 CI 或不受限构建。若余量不足，选择独立 Linux 构建环境或调整承载方案，不能为腾空间/内存停止其他业务。
+这些是单次观测，不能证明长期容量充足。API/worker 的内存上限分别为 256/384 MiB、CPU 各 50%（合计至多一个核）。实际启用后 available 约 718 MiB，10 MiB 附件验证后约 623 MiB；两个科研服务无意外重启。AI 调用峰值尚未测量。用户已另行允许在确有内存需要时暂停招聘服务；本轮未暂停，招聘站点保持 200。其他站点的响应与改动前一致，其中主域名改动前已返回 502，本次未处理该既有问题。
 
-实例 IP、连接标识、实际域名配置和运行证据留在本地受控记录，不进入公开部署包。此次没有读取招聘系统数据库、环境文件或密钥，没有安装或重启服务。
+实例 IP、连接标识、实际域名配置和运行证据留在本地受控记录，不进入公开部署包。没有读取招聘数据库、环境文件或密钥；仅复制其已安装的 Node 分发文件到科研平台自己的运行时目录，没有改变招聘运行时。只安装/重启科研服务；共享 Nginx 仅做通过配置检查后的 reload。
 
-准备包校验：本机 `pnpm run ci` 20 个文件、258 项通过；Shell 脚本语法检查、既有业务端口/非法端口拒绝和非 Linux 平台拒绝通过。没有新增模型调用。尚未执行目标机的 unit/Nginx 配置验证、Linux 发布构建或域名浏览器验收；这些不能用本机 CI 替代。
+准备包本机基线：`pnpm run ci` 20 个文件、258 项通过；Shell 语法检查、既有业务端口/非法端口拒绝和非 Linux 平台拒绝通过。本次部署证据来自目标 Linux 和公开 HTTPS，未以本机 CI 替代。后续模型连通性、本人账号和真实成员试用仍需完成。
 
 ## 目录、服务与入口
 
@@ -60,7 +68,7 @@ sudo -u research-agent /opt/research-agent-platform/runtime/bin/node --env-file=
 - worker 最长模型调用为 120 秒，模板用 KillMode=mixed 和 150 秒停止超时让父进程先正常收尾；超时强制终止后按现有中断规则审查，不自动重放费用未知的请求。
 - API/worker 共用数据库进程维护锁，启停顺序仍需核对。服务限制没有替代代码权限，也不能把同一 OS 账号宣称为完整隔离沙箱。
 
-依据：[Nginx 代理](https://nginx.org/en/docs/http/ngx_http_proxy_module.html)、[请求体大小](https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size)、[Ubuntu 22.04 systemd.service](https://manpages.ubuntu.com/manpages/jammy/man5/systemd.service.5.html)。目标机 `nginx -t` / unit verify 尚未执行。
+依据：[Nginx 代理](https://nginx.org/en/docs/http/ngx_http_proxy_module.html)、[请求体大小](https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size)、[Ubuntu 22.04 systemd.service](https://manpages.ubuntu.com/manpages/jammy/man5/systemd.service.5.html)。本实例已通过 `nginx -t` / unit verify；其他实例须重新校验。
 
 ## 备份、更新与回退
 
