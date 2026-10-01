@@ -49,6 +49,8 @@ flowchart LR
 
 下一步 **G5b：实际运行与小组试用**。先确定常开主机和浏览器访问方式，完成账号与运行交接，再选择一项当前真实任务开始。步骤见[试用启动说明](docs/pilot-launch.md)。当前受测入口仅供本机访问，多人环境尚未部署。
 
+2026-10-01 用户选定优先复用现有 ECS，已只读核查实例。下一步按[ECS 部署说明](docs/deployment/ecs.md)完成独立服务和 HTTPS 入口；[部署准备包](deploy/ecs/README.md)仍为待现场验证的配置，不代表已经上线。
+
 [开发索引](docs/development/README.md)提供分工；[当前执行指令](docs/development/prompts.md#当前下一步-g5b)提供交接入口。采用包含 G5a 报告与试用说明的同一完整提交；前后端后续根据真实使用阻碍修复，不预排新的大型功能批次。
 
 ## 本地开始
