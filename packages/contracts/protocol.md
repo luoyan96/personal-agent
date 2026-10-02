@@ -1,14 +1,18 @@
-# HTTP 协议 0.6.1
+# HTTP 协议 0.7.0
 
 完整精确接口见 [OpenAPI](openapi.json)，所有接口的合成请求响应见 [examples](examples.json)。已实现 routes 中 stage=B0/B1/B2a/B2b/B3/B4a 的端点；B4 仍为501。B3 模型功能需显式服务端配置，关闭时 draft/auto 返回503 MODEL_UNAVAILABLE；授权 progress/find_work 使用服务事实。固定 Harness 与真实验证见 B3 联调包，不返回 fixture 成功。
 
 ## 身份、认证与跨域
 
-预置账号，POST /api/v1/auth/login 使用 username/password，服务端 Node scrypt（每个密码独立随机 salt；N=32768,r=8,p=1、maxmem≥64MiB；限速后执行）与 timingSafeEqual 验证；禁止公开注册和默认生产密码。成员与实验室由数据库认证上下文决定，正文不允许 actorId。登录失败统一 401，不区分账号是否存在；每账号与来源地址限速，审计不记明文密码。
+账号由受限维护入口开通，或通过 POST /api/v1/auth/register 使用实验室邀请码自助注册。POST /api/v1/auth/login 使用 username/password，服务端 Node scrypt（每个密码独立随机 salt；N=32768,r=8,p=1、maxmem≥64MiB；限速后执行）与 timingSafeEqual 验证；没有无邀请码开户或默认生产密码。成员与实验室由数据库认证上下文决定，正文不允许 actorId。登录失败统一 401，不区分账号是否存在；每账号与来源地址限速，审计不记明文密码。
+
+注册请求（B5b）必须有同源 Origin 与 Idempotency-Key，只接收 inviteCode、username、displayName、password。密码 16–256 字符；邀请码先验证再检查重名，不公开实验室列表。无效/过期/撤销/满额统一 INVITE_UNAVAILABLE，有效邀请下重名为 USERNAME_TAKEN。数据库只存邀请码 SHA-256、scrypt 密码及签名密钥 HMAC 的重试摘要；账号、成员、名额和成功回执在一次事务提交。密码派生后再次检查邀请码，避免撤销或并发最后名额绕过。成功不签发会话，用户随后正常登录；重复请求不会重置密码或启用已停用账号。
+
+注册按实际连接 IP 持久计数，每 15 分钟至多 20 次；反向代理场景按代理 IP 合并，不信任客户端转发头。最多两个跨进程密码派生工作位，工作位 60 秒失效以便崩溃后恢复。注册正文上限 8192 字节。恢复备份时撤销全部邀请码并清空工作位，防止旧备份重新开放入口。详见[邀请码维护](../../docs/deployment/registration.md)。
 
 成功签发随机 32 字节不透明 session token，DB 仅存 SHA-256 hash，Cookie 名 rap_session；HttpOnly、Secure（生产强制 HTTPS）、SameSite=Lax、Path=/、无 Domain；绝对 12 小时到期，无无限滑动延期，登录撤销当前 cookie 的旧会话并轮换，登出数据库撤销并 Max-Age=0。会话失效和禁用账号返回 UNAUTHENTICATED。GET /auth/session 返回 member、expiresAt、CSRF token（用持久随机签名密钥 HMAC 派生，数据库只存其 hash）；客户端不能用 Member 或 labId 作为身份断言。每账号 10 次/15分钟、每来源 IP 40 次/15分钟的登录尝试在 SQLite 中累计，跨进程和重启仍生效，失败与成功都计数；429 带 Retry-After:900。
 
-同源部署；本地前端代理 /api 到 127.0.0.1:3100。不配置通配 CORS、不信任未经限定的反向代理头。所有有副作用请求校验精确 Origin；除登录外要求 X-CSRF-Token 与会话 hash 匹配；登录也检查 Origin 和 JSON Content-Type。认证/CSRF 是公共传输约束：routes.request.headers 定义业务头 Idempotency-Key，Cookie 和 X-CSRF-Token 在 HTTP 层处理，OpenAPI 安全/参数另有定义。跨域需求必须新增明确允许源列表，不能为方便联调关闭校验。
+同源部署；本地前端代理 /api 到 127.0.0.1:3100。不配置通配 CORS、不信任未经限定的反向代理头。所有有副作用请求校验精确 Origin；除登录和邀请码注册外要求 X-CSRF-Token 与会话 hash 匹配；这两个公开认证入口也检查 Origin 和 JSON Content-Type。认证/CSRF 是公共传输约束：routes.request.headers 定义业务头 Idempotency-Key，Cookie 和 X-CSRF-Token 在 HTTP 层处理，OpenAPI 安全/参数另有定义。跨域需求必须新增明确允许源列表，不能为方便联调关闭校验。
 
 APP_ORIGIN 必须是浏览器所见的精确 origin（本地例如 http://127.0.0.1:4173）；生产显式 HTTPS origin，部署 TLS 终止需由实际入口完成，B1 不部署。登录错误和未知账号不区分；日志不含请求正文、cookie 或密码。测试账号凭据由单独本地命令生成，不存在固定默认密码。
 

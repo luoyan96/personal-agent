@@ -16,6 +16,7 @@ import type { CollaborationCommand } from './collaboration.js'
 import type { RequestFor } from '@research-agent-platform/contracts'
 import { cleanBlobs } from './coordination.js'
 import { ApiError, fail } from './errors.js'
+import { register } from './registration.js'
 
 export function createServer(config: Config) {
   const app = Fastify({ logger: false, bodyLimit: 1048576, genReqId: () => randomUUID(), requestTimeout: 10000 })
@@ -51,7 +52,7 @@ export function createServer(config: Config) {
   })
   for (const [name, route] of Object.entries(routes)) {
     if (route.stage === 'B0') continue
-    app.route({ method: route.method, url: route.path.replace(/\{id\}/g, ':id'), ...(name==='upload'?{bodyLimit:14000000}:{}), handler: async (request, reply) => {
+    app.route({ method: route.method, url: route.path.replace(/\{id\}/g, ':id'), ...(name==='upload'?{bodyLimit:14000000}:name==='register'?{bodyLimit:8192}:{}), handler: async (request, reply) => {
       if (!route.implemented && name !== 'planRequest') fail('NOT_IMPLEMENTED')
       if (route.method !== 'GET' && request.headers.origin !== config.origin) fail('FORBIDDEN')
       const connection = database()
@@ -63,6 +64,7 @@ export function createServer(config: Config) {
       const parsed = route.request.safeParse({ params: request.params, query, headers: route.idempotent ? { 'Idempotency-Key': request.headers['idempotency-key'] } : {}, body: route.method === 'GET' ? null : request.body })
       if (!parsed.success) fail('VALIDATION_ERROR')
       reply.code(route.status)
+      if (name === 'register') return routes.register.response.parse(await register(connection,parsed.data as RequestFor<'register'>,request.ip))
       const cookie = (value: string, maxAge: number) => `rap_session=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${config.mode === 'production' ? '; Secure' : ''}`
       if (name === 'login') {
         const input = parsed.data as RequestFor<'login'>

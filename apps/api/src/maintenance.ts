@@ -10,6 +10,9 @@ const id = z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/)
 const base = { requestId: id, labId: id }
 export const MaintenanceCommand = z.discriminatedUnion('action', [
  z.object({ ...base, action: z.literal('create-lab'), name: z.string().min(1).max(200) }).strict(),
+ z.object({ ...base, action: z.literal('create-registration-invite'), inviteId:id, codeHash:z.string().regex(/^[a-f0-9]{64}$/), expiresAt:z.iso.datetime({offset:true}), maxUses:z.number().int().min(1).max(50) }).strict(),
+ z.object({ ...base, action: z.literal('revoke-registration-invite'), inviteId:id }).strict(),
+ z.object({ ...base, action: z.literal('inspect-registration-invite'), inviteId:id }).strict(),
  z.object({ ...base, action: z.literal('create-account'), memberId: id, username: id, displayName: z.string().min(1).max(200), password: z.string().min(16).max(256) }).strict(),
  z.object({ ...base, action: z.literal('reset-password'), memberId: id, expectedVersion: z.number().int().positive(), password: z.string().min(16).max(256) }).strict(),
  z.object({ ...base, action: z.literal('disable-account'), memberId: id, expectedVersion: z.number().int().positive() }).strict(),
@@ -22,6 +25,11 @@ export async function maintain(db: DatabaseSync, config: Config, operator: strin
  const digest = createHmac('sha256', signingKey(db)).update(JSON.stringify(command)).digest('hex')
  const encoded = 'password' in command ? await passwordHash(command.password) : null
  return transaction(db, () => {
+  if (command.action === 'inspect-registration-invite') {
+   const row=db.prepare('SELECT id,lab_id,expires_at,max_uses,used_count,created_at,revoked_at FROM registration_invites WHERE id=? AND lab_id=?').get(command.inviteId,command.labId)
+   if(!row)throw new Error('INVITE_NOT_FOUND')
+   return row
+  }
   if (command.action === 'inspect-account') {
    const row = db.prepare('SELECT a.member_id,a.username,a.disabled,c.version FROM auth_accounts a JOIN members m ON m.id=a.member_id JOIN account_controls c ON c.member_id=m.id WHERE m.lab_id=? AND m.id=?').get(command.labId,command.memberId)
    if (!row) throw new Error('ACCOUNT_NOT_FOUND')
@@ -34,7 +42,15 @@ export async function maintain(db: DatabaseSync, config: Config, operator: strin
    db.prepare('INSERT INTO labs VALUES(?,?)').run(command.labId,command.name)
   } else {
    if (!db.prepare('SELECT 1 FROM labs WHERE id=?').get(command.labId)) throw new Error('LAB_NOT_FOUND')
-   if (command.action === 'create-account') {
+   if (command.action === 'create-registration-invite') {
+    const expiry=Date.parse(command.expiresAt)
+    if(expiry<=Date.now() || expiry>Date.now()+30*86400000)throw new Error('INVITE_EXPIRY_INVALID')
+    if(db.prepare('SELECT 1 FROM registration_invites WHERE id=? OR code_hash=?').get(command.inviteId,command.codeHash))throw new Error('INVITE_EXISTS')
+    db.prepare('INSERT INTO registration_invites(id,lab_id,code_hash,expires_at,max_uses,created_at) VALUES (?,?,?,?,?,?)').run(command.inviteId,command.labId,command.codeHash,new Date(expiry).toISOString(),command.maxUses,new Date().toISOString())
+   } else if(command.action === 'revoke-registration-invite') {
+    if(!db.prepare('SELECT 1 FROM registration_invites WHERE id=? AND lab_id=?').get(command.inviteId,command.labId))throw new Error('INVITE_NOT_FOUND')
+    db.prepare('UPDATE registration_invites SET revoked_at=COALESCE(revoked_at,?) WHERE id=? AND lab_id=?').run(new Date().toISOString(),command.inviteId,command.labId)
+   } else if (command.action === 'create-account') {
     if (db.prepare('SELECT 1 FROM members WHERE id=?').get(command.memberId) || db.prepare('SELECT 1 FROM auth_accounts WHERE username=?').get(command.username)) throw new Error('ACCOUNT_EXISTS')
     db.prepare('INSERT INTO members(id,lab_id,display_name,is_synthetic) VALUES(?,?,?,0)').run(command.memberId,command.labId,command.displayName)
     db.prepare('INSERT INTO auth_accounts VALUES(?,?,?,0)').run(command.memberId,command.username,encoded!)

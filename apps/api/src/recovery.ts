@@ -66,6 +66,9 @@ export function restore(source:string,destination:string,operator:string){
    transaction(db,()=>{
     const now=new Date().toISOString()
     db.prepare('UPDATE sessions SET revoked_at=? WHERE revoked_at IS NULL').run(now)
+    // A restored copy must not reopen a previously revoked or consumed invitation.
+    db.prepare('UPDATE registration_invites SET revoked_at=? WHERE revoked_at IS NULL').run(now)
+    db.exec('DELETE FROM registration_work')
     db.prepare("UPDATE runtime_meta SET value=? WHERE key='signing_key'").run(randomBytes(32).toString('hex'))
     for(const row of db.prepare("SELECT id,document FROM execution_jobs WHERE status IN ('queued','running','waiting_input')").all()){
      const doc=JSON.parse(String(row.document)) as Record<string,unknown>

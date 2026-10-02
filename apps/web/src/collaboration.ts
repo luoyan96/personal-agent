@@ -11,6 +11,7 @@ import {requestCard,conclusionCard,conclusionChoices,conclusionBindings,type Con
 import { CoordinationContext } from './coordination-view';
 import { ReuseContext } from './reuse-controller';
 import { scheduleFields, readSchedule, datedFields, readDated } from './schedule-editor';
+import { registrationPage, bindRegistration } from './registration';
 const coordination = new CoordinationContext();
 const reuse = new ReuseContext();
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -153,7 +154,7 @@ function form(key: string, fn: (data: FormData, submitter: HTMLElement | null) =
 const field = (label: string, key: string, value = '', area = false, max = 8000) => `<label>${label}${area ? `<textarea name="${key}" required maxlength="${max}" rows="3">${e(value)}</textarea>` : `<input name="${key}" required maxlength="${max}" value="${e(value)}">`}</label>`;
 
 function login() {
-  content(`<section class="flow login"><p class="eyebrow">进入你的协作空间</p><h1>登录</h1><p class="intro">使用管理员为你开通的账号。</p><form data-form="login" class="panel">${field('账号','username','',false,100)}<label>密码<input name="password" type="password" required minlength="12" maxlength="256" autocomplete="current-password"></label><button class="primary" type="submit">登录</button><p class="fine">忘记密码或账号停用时请联系管理员；密码重置后使用新密码。</p></form><p>${link('/help','首次使用与恢复指引')}</p></section>`, '登录');
+  content(`<section class="flow login"><p class="eyebrow">进入你的协作空间</p><h1>登录</h1><p class="intro">使用你的账号继续协作。</p><form data-form="login" class="panel">${field('账号','username','',false,100)}<label>密码<input name="password" type="password" required minlength="12" maxlength="256" autocomplete="current-password"></label><button class="primary" type="submit">登录</button><p class="fine">忘记密码或账号停用时请联系管理员；密码重置后使用新密码。</p></form><p>还没有账号？${link('/register','使用邀请码注册')}</p><p>${link('/help','首次使用与恢复指引')}</p></section>`, '登录');
   document.querySelector<HTMLInputElement>('[name=username]')!.autocomplete = 'username';
   form('login', async data => {
     busy = true;
@@ -398,6 +399,7 @@ async function load() {
   controller?.abort();controller=new AbortController();const signal=controller.signal;const path=route();activeSnapshot=undefined;shell();
   try {
     if(path==='/login'){login();return;}
+    if(path==='/register'){content(registrationPage,'注册账号');bindRegistration(app,api,signal);return;}
     if(path==='/help'){content(firstUseGuide(),'首次使用与恢复指引');return;}
     const auth=await api.read('session',{}, {},signal);session=auth.data;api.csrfToken=session.csrfToken;
     // A 401 hides private content but keeps the whole context for same-owner retry.
@@ -436,7 +438,7 @@ async function load() {
     } else content(`<section class="state-panel"><h1>页面不存在</h1>${link('/','回到入口')}</section>`,'页面不存在');
   }catch(error){
     if(signal.aborted)return;
-    if(error instanceof ApiError&&error.code==='UNAUTHENTICATED'){session=undefined;api.csrfToken='';members=[];shell();login();feedback(error);}
+    if(error instanceof ApiError&&error.code==='UNAUTHENTICATED'){session=undefined;api.csrfToken='';members=[];shell();login();if(path!=='/'||draftOwner)feedback(error);}
     else {members=[];activeSnapshot=undefined;content('<section class="state-panel"><h1>暂时无法读取</h1><p>旧的受限内容已清除，没有使用演示数据替代服务响应。尚未提交的输入仍保留。</p></section>','读取失败');feedback(error);}
   }
 }

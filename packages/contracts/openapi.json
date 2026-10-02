@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.6.2"
+    "version": "0.7.0"
   },
   "paths": {
     "/api/v1/health/live": {
@@ -34,7 +34,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.6.2"
+                          "const": "0.7.0"
                         },
                         "checks": {
                           "type": "object",
@@ -93,7 +93,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.6.2",
+                    "contractVersion": "0.7.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -247,7 +247,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.6.2"
+                          "const": "0.7.0"
                         },
                         "checks": {
                           "type": "object",
@@ -306,7 +306,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.6.2",
+                    "contractVersion": "0.7.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -438,7 +438,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.6.2"
+                          "const": "0.7.0"
                         },
                         "checks": {
                           "type": "object",
@@ -497,7 +497,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.6.2",
+                    "contractVersion": "0.7.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -515,7 +515,7 @@
     "/api/v1/auth/login": {
       "post": {
         "operationId": "login",
-        "description": "Verify provisioned password hash; rotate session; issue HttpOnly cookie. No self registration.",
+        "description": "Verify provisioned password hash; rotate session; issue HttpOnly cookie. Invitation registration is a separate endpoint.",
         "x-stage": "B1",
         "x-implemented": true,
         "security": [],
@@ -1028,6 +1028,227 @@
                     "availability": null,
                     "visibleCommitments": [],
                     "version": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "register",
+        "description": "Same-origin invitation-only account creation. No client lab/role/member ID; valid non-revoked invitation required. Account, membership, use count and retry receipt are atomic. No session issued; sign in afterwards. Never persists raw code or password.",
+        "x-stage": "B5b",
+        "x-implemented": true,
+        "security": [],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "inviteCode": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  },
+                  "username": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  },
+                  "displayName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 16,
+                    "maxLength": 256
+                  }
+                },
+                "required": [
+                  "inviteCode",
+                  "username",
+                  "displayName",
+                  "password"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "inviteCode": "syntheticxxxxxxxxxxx",
+                "username": "synthetic",
+                "displayName": "synthetic",
+                "password": "syntheticxxxxxxx"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "B5b contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "registered": {
+                          "type": "boolean",
+                          "const": true
+                        },
+                        "username": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        }
+                      },
+                      "required": [
+                        "registered",
+                        "username"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "registered": true,
+                    "username": "synthetic"
                   }
                 }
               }
@@ -49592,7 +49813,9 @@
                   "PAYLOAD_TOO_LARGE",
                   "RATE_LIMITED",
                   "INVALID_STATE",
-                  "INTERNAL_ERROR"
+                  "INTERNAL_ERROR",
+                  "INVITE_UNAVAILABLE",
+                  "USERNAME_TAKEN"
                 ]
               },
               "message": {
