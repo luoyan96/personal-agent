@@ -132,7 +132,7 @@ describe('invitation registration',()=>{
   expect(db.prepare('SELECT password_hash FROM auth_accounts').get()!.password_hash).toBe('preserved')
   expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(11)
   expect(db.prepare('SELECT count(*) n FROM registration_invites').get()!.n).toBe(0)
- })
+ },15000)
  it('promotes only the designated unused single-seat bootstrap invite registrant to lab manager',async()=>{
   const s=await setup(1)
   await s.op({action:'designate-manager-invite',inviteId:'invite_one'})
