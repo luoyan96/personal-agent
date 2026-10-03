@@ -47,7 +47,7 @@ function route<P extends z.ZodType, Q extends z.ZodType, B extends z.ZodType, R 
   return { method, path: `/api/v1${path}`, stage: 'CHAT1' as const, implemented: true, access: 'session', status, rule, idempotent: method !== 'GET', request: z.strictObject({ params, query, body, headers: method === 'GET' ? empty : headers }), response, errors: ErrorResponse, errorStatuses: errorStatus }
 }
 export const chatRoutes = {
-  chatContacts: route('GET', '/chat/contacts', empty, pagination.extend({ search: z.string().max(200).optional() }), z.null(), page(Contact), 200, 'Current lab public humans, own personal agent and configured public capabilities only; ACL before search/page.'),
+  chatContacts: route('GET', '/chat/contacts', empty, pagination.extend({ search: z.string().max(200).optional() }), z.null(), page(Contact), 200, 'Current lab public humans, member personal agent identity and ownership metadata, and configured public capabilities; private history remains owner-only, other agents require group-specific owner approval; ACL before search/page.'),
   personalConversation: route('POST', '/chat/personal-conversation', empty, empty, empty, data(z.strictObject({ conversation: Conversation, agent: Contact })), 200, 'Ensure unique personal agent and conversation for current member; never exposes another owner history.'),
   chatConversations: route('GET', '/chat/conversations', empty, pagination, z.null(), page(Conversation), 200, 'Joined member only; pinned personal first then updatedAt/id descending.'),
   chatConversation: route('GET', '/chat/conversations/{id}', id, empty, z.null(), data(Conversation), 200, 'Joined member only; invitation is not group read authority.'),

@@ -8,7 +8,7 @@
     "/api/v1/chat/contacts": {
       "get": {
         "operationId": "chatContacts",
-        "description": "Current lab public humans, own personal agent and configured public capabilities only; ACL before search/page.",
+        "description": "Current lab public humans, member personal agent identity and ownership metadata, and configured public capabilities; private history remains owner-only, other agents require group-specific owner approval; ACL before search/page.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
