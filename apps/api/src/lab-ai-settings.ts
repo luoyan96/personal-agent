@@ -20,7 +20,7 @@ function masterKey(config: Config) {
   if (!config.credentialKeyFile) fail('SERVICE_UNAVAILABLE')
   try {
     const stat = lstatSync(config.credentialKeyFile)
-    if (!stat.isFile() || (process.platform !== 'win32' && (stat.mode & 0o007) !== 0)) fail('SERVICE_UNAVAILABLE')
+    if (!stat.isFile() || stat.size < 64 || stat.size > 128 || (process.platform !== 'win32' && (stat.mode & 0o007) !== 0)) fail('SERVICE_UNAVAILABLE')
     const raw = readFileSync(config.credentialKeyFile, 'utf8').trim()
     if (!/^[a-f0-9]{64}$/i.test(raw)) fail('SERVICE_UNAVAILABLE')
     return Buffer.from(raw, 'hex')
