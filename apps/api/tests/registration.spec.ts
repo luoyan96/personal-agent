@@ -146,7 +146,7 @@ describe('invitation registration',()=>{
   db.exec("INSERT INTO labs VALUES('old','Old team'); INSERT INTO members(id,lab_id,display_name) VALUES('old_member','old','Existing'); INSERT INTO auth_accounts VALUES('old_member','old_account','preserved',0)")
   migrate(db);migrate(db);checkDatabase(db)
   expect(db.prepare('SELECT password_hash FROM auth_accounts').get()!.password_hash).toBe('preserved')
-  expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(11)
+  expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(12)
   expect(db.prepare('SELECT count(*) n FROM registration_invites').get()!.n).toBe(0)
  },15000)
  it('promotes only the designated unused single-seat bootstrap invite registrant to lab manager',async()=>{

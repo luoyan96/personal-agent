@@ -19,6 +19,9 @@ import { ApiError, fail } from './errors.js'
 import { register } from './registration.js'
 import { isLabManager, managerInvites, createManagerInvite, revokeManagerInvite } from './invite-management.js'
 import { labAiRuntime, labAiSettings, updateLabAiSettings } from './lab-ai-settings.js'
+import { ChatService } from './chat.js'
+import type { ChatCommand } from './chat.js'
+import { reconcileChat } from './chat-worker.js'
 
 export function createServer(config: Config) {
   const app = Fastify({ logger: false, bodyLimit: 1048576, genReqId: () => randomUUID(), requestTimeout: 10000 })
@@ -62,6 +65,7 @@ export function createServer(config: Config) {
       // Reject malformed query numbers instead of accepting 1x, arrays, or coercing null.
       const query = { ...request.query as Record<string, unknown> }
       if ('limit' in query && typeof query.limit === 'string' && /^\d+$/.test(query.limit)) query.limit = Number(query.limit)
+      if ('afterSequence' in query && typeof query.afterSequence === 'string' && /^\d+$/.test(query.afterSequence)) query.afterSequence = Number(query.afterSequence)
       if(name==='upload' && typeof (request.body as {contentBase64?:unknown})?.contentBase64==='string' && (request.body as {contentBase64:string}).contentBase64.length>13981016) fail('PAYLOAD_TOO_LARGE')
       const parsed = route.request.safeParse({ params: request.params, query, headers: route.idempotent ? { 'Idempotency-Key': request.headers['idempotency-key'] } : {}, body: route.method === 'GET' ? null : request.body })
       if (!parsed.success) fail('VALIDATION_ERROR')
@@ -94,11 +98,14 @@ export function createServer(config: Config) {
         const labAi = labAiRuntime(connection,actor.labId,config)
         collaboration = new Collaboration(connection,actor,config.blobRoot,labAi)
         reconcile(connection,config)
+        reconcileChat(connection,config)
+        if(route.stage==='CHAT1'){const result=new ChatService(collaboration,config).run(name as ChatCommand,parsed.data as RequestFor<ChatCommand>);reconcileChat(connection,config);return result}
         if((reuseCommands as readonly string[]).includes(name)){const result=new ReuseService(collaboration).run(name as ReuseCommand,parsed.data as RequestFor<ReuseCommand>);reconcile(connection,config);return result}
         if((aiCommands as readonly string[]).includes(name))return new AiService(collaboration,labAi.enabled,labAi.model).run(name as AiCommand,parsed.data as RequestFor<AiCommand>)
         if (!(collaborationCommands as readonly string[]).includes(name)) fail('NOT_IMPLEMENTED')
         const result=collaboration.run(name as CollaborationCommand, parsed.data as RequestFor<CollaborationCommand>)
         reconcile(connection,config)
+        reconcileChat(connection,config)
         if(name==='content') {const file=collaboration.coordination.artifact((parsed.data.params as {id:string}).id).model;reply.header('Content-Type',file.mediaType);reply.header('Content-Disposition',`attachment; filename="download"; filename*=UTF-8''${encodeURIComponent(file.filename)}`);return Buffer.from(result as Uint8Array)}
         return result
       }) } catch(error) {if(collaboration) cleanBlobs(collaboration.createdBlobs);throw error}

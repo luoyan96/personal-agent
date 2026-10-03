@@ -19,7 +19,7 @@ type Sent = ResponseFor<'sendChatMessage'>
 // Schema 同名类型可用于身份、会话、消息、动作和后台模型状态。
 ```
 
-Contact 的 `identity.kind` 是 human / personal_agent / public_agent；分别包含 memberId / ownerMemberId / ownerMemberId+PublicCapabilityRef。`id` 是稳定联系人 ID，不是名字。真人 availability 表示服务连接可用性，不表示空闲或已经承诺；成员可用时间仍读既有 Member。Agent availability 使用 available/unavailable/disabled 与明确原因，available 只是配置，不证明模型调用成功。只列同实验室可见真人、本人个人 agent 和已配置公共能力；其他用户个人 agent 暂不进入通讯录、不提供可执行入口。预留邀请 owner 授权语义不能解释为已有私人能力托管。
+Contact 的 `identity.kind` 是 human / personal_agent / public_agent；分别包含 memberId / ownerMemberId / ownerMemberId+PublicCapabilityRef。`id` 是稳定联系人 ID，不是名字。真人 availability 表示服务连接可用性，不表示空闲或已经承诺；成员可用时间仍读既有 Member。Agent availability 使用 available/unavailable/disabled 与明确原因，available 只是配置，不证明模型调用成功。目录呈现同实验室真人、注册成员个人 agent 和已配置公共能力。其他个人 agent 仅公开身份与归属，必须由 owner 接受指定群邀请后才能在该群问答；不开放私人能力托管。
 
 Conversation 包含 personal/direct/group、ownerMemberId、version、成员、关联 taskIds、lastSequence、时间和当前 allowedActions。成员是 invited/joined/declined/revoked；pending 不授予群消息权限。通讯录归属不授予私人历史权限。私人助理只允许本人读取，实验室管理者没有越权入口。Direct 仅同实验室真人双方，个人 agent 入口归一到本人固定私聊，公共 agent 本批在群内工作。
 
@@ -72,7 +72,7 @@ AgentTurn 状态 queued → running → succeeded/waiting_input/failed/interrupt
 ChatAction.payload 的四种严格联合如下，完整 Zod 见 chat.ts：
 
 - create_group：title、plan:ObjectRef、contactIds、sharedContext:{selectedText:null或Text,artifactRefs:ObjectRef[]}。确认建群只拷贝人工确认片段，不复制私人会话历史。只能分享本人具有分享权限的任务文件；不能把其他 owner 材料转授权。artifact 继续使用既有对象，群不生成私有文件复制。无授权文件时必须空数组。
-- invite_contact：contactId。群 owner 邀请同实验室真人；其他个人 agent 需 owner 授权且本批不启用其执行。个人 agent 原始记忆不进入群。公共 agent 可按可用能力加入，join 也不执行。
+- invite_contact：contactId。群 owner 邀请同实验室真人或个人 agent；其他个人 agent 需 owner 独立授权后才在指定群参与受限问答。个人 agent 原始记忆不进入群。公共 agent 可按可用能力加入，join 也不执行。
 - invite_task：contactId、task:ObjectRef、scope、Schedule。复用既有 invite 命令；目标必须群内 joined 真人。任命范围和日期在确认卡中明确；Assignment.pending 不冒充 accepted。邀请用户进群与任务承接是两个独立同意，接受群邀请不能接受任务。既有 invitationDecision 完成任务接受。
 - run_task：contactId、task:ObjectRef、capability:PublicCapabilityRef、budget、inputArtifactRefs。必须群内 joined 公共 agent，匹配能力版本且确认者是当前 task lead；复用 run 的权限、依赖、输入和预算规则。输入为空沿用 waiting_input；不能依据模型“已执行”生成成功回执。
 
@@ -86,7 +86,7 @@ ChatAction.payload 的四种严格联合如下，完整 Zod 见 chat.ts：
 
 读取会话和消息只允许 joined 成员且实验室成员资格有效，管理身份不能越权。群读取消息仍复查附件、交付及 task 权限；私聊来源的群建议本身只有本人可读，群只看到确认后选定范围。权限失效取消排队和运行工作，撤销成员后不能查询群页、旧 cursor 或幂等私密回执。所有注册、模型设置、密码和现有任务边界沿用基线。
 
-## 复用调查与下一步实现
+## 接口阶段复用调查（实施结果见后端报告）
 
 已核查 [ai.ts](../../apps/api/src/ai.ts)、[execution-worker.ts](../../apps/api/src/execution-worker.ts)、[lab-ai-settings.ts](../../apps/api/src/lab-ai-settings.ts)、[collaboration.ts](../../apps/api/src/collaboration.ts)、[server.ts](../../apps/api/src/server.ts)。现有 AiService 提供能力 text-evidence-checklist、授权输入检查、真实 RunRecord、幂等交易；ExecutionWorker 支持 execution_jobs/attempts、租约、fence、reconcile、实验室加密配置、callHarness 受限子进程。规划分支仅解析 draft/progress/find_work，不支持普通问答。
 
@@ -94,7 +94,7 @@ ChatAction.payload 的四种严格联合如下，完整 Zod 见 chat.ts：
 
 待实现验证：账号隔离、真实 DB 持久消息、多会话、并发确保和去重、无配置消息保留、合成 ModelCall 普通问答与建群草案、事务建群/邀请/派发、真人接受前等待、授权公共能力候选与交付验收、成员撤权、取消/重启/迟到输出、幂等回执重查权限和 cursor。合成 ModelCall 只证明服务链路；真实 DeepSeek 闭环仍待显式受控专项，不能在此任务读取真实 Key 或调用收费模型。
 
-## 本里程碑检查与交接阻碍
+## 第一接口里程碑历史检查（服务实现结果见后端报告）
 
 - `pnpm install --frozen-lockfile`：通过。最初受限网络 EACCES，随后获准安装 pinned 依赖；未新增依赖或更改 lockfile。
 - `pnpm --filter @research-agent-platform/contracts build` 与 `pnpm contracts:export`：通过；已提交更新 OpenAPI 和 examples。

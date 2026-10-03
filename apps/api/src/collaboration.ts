@@ -45,14 +45,32 @@ export class Collaboration {
   revision() { return createHmac('sha256', signingKey(this.db)).update(String(this.db.prepare("SELECT value FROM runtime_meta WHERE key='revision'").get()!.value)).digest('hex') }
   changed() { this.db.exec("UPDATE runtime_meta SET value=CAST(value AS INTEGER)+1 WHERE key='revision'") }
   plan(planId: string): PlanModel {
-    const row = this.db.prepare(`SELECT document FROM plans WHERE id=? AND owner_id=? AND lab_id=? AND ${authorizedPlanSources}`).get(planId, this.actor.id, this.actor.labId)
+    const row = this.db.prepare(`SELECT document FROM plans WHERE id=? AND owner_id=? AND lab_id=? AND ${authorizedPlanSources} AND NOT EXISTS(SELECT 1 FROM chat_invalid_plans invalid WHERE invalid.plan_id=plans.id)`).get(planId, this.actor.id, this.actor.labId)
     if (!row) fail('NOT_FOUND')
+    // Chat-generated private drafts retain live source authority independently of chat visibility.
+    const chatSource=this.db.prepare('SELECT t.request_json FROM chat_plan_sources s JOIN chat_turns t ON t.id=s.turn_id WHERE s.plan_id=? AND t.owner_id=?').get(planId,this.actor.id)
+    if(chatSource){
+      const input=JSON.parse(String(chatSource.request_json)) as {context:{kind:string;ref:{id:string;version:number}}[]}
+      for(const source of input.context){
+        try{
+          let version:number
+          if(source.kind==='task')version=this.task(source.ref.id).version
+          else if(source.kind==='artifact')version=this.coordination.artifact(source.ref.id).model.version
+          else if(source.kind==='assignment')version=this.assignment(source.ref.id).model.version
+          else if(source.kind==='deliverable')version=this.deliverable(source.ref.id).version
+          else if(source.kind==='run')version=new AiService(this,this.execution?.enabled??false,this.execution?.model??'deepseek-flash').projectedRun(source.ref.id).version
+          else version=this.plan(source.ref.id).version
+          if(version!==source.ref.version)fail('NOT_FOUND')
+        }catch{fail('NOT_FOUND')}
+      }
+    }
     return Plan.parse({...JSON.parse(String(row.document)),conclusionRefs:new ReuseService(this).bindings('plan',planId)})
   }
   // One relational visibility predicate for detail, lists, counts and action items.
   visible(scope: 'lab' | 'mine' = 'lab') {
     return { sql: `FROM tasks t LEFT JOIN task_access acl ON acl.task_id=t.id AND acl.member_id=?
       WHERE t.lab_id=? AND COALESCE(acl.access,'')!='revoked' AND NOT EXISTS(SELECT 1 FROM reuse_denials rd WHERE rd.target_kind='task' AND rd.target_id=t.id AND rd.member_id=?)
+      AND NOT EXISTS(SELECT 1 FROM chat_invalid_plans invalid WHERE invalid.plan_id=t.plan_id)
       AND (acl.access='full' OR t.claimable=1 OR EXISTS(SELECT 1 FROM assignments a WHERE a.task_id=t.id AND a.member_id=? AND a.status='pending'))
       AND (?='lab' OR t.initiator_id=? OR t.lead_id=? OR t.reviewer_id=? OR (acl.access='full' AND EXISTS(SELECT 1 FROM json_each(t.document,'$.participantIds') p WHERE p.value=?)) OR EXISTS(SELECT 1 FROM assignments a WHERE a.task_id=t.id AND a.member_id=? AND a.status='pending'))`,
       values: [this.actor.id, this.actor.labId, this.actor.id, this.actor.id, scope, this.actor.id, this.actor.id, this.actor.id, this.actor.id, this.actor.id] }
@@ -310,7 +328,7 @@ export class Collaboration {
       const base = { kind: 'plans', status: query.status ?? 'draft', limit: query.limit ?? 30 }
       const cursor = this.cursor(base, query.cursor)
       const rows = this.db.prepare(`SELECT document,id,json_extract(document,'$.createdAt') created FROM plans
-        WHERE owner_id=? AND lab_id=? AND ${authorizedPlanSources} AND (?='all' OR json_extract(document,'$.status')=?)
+        WHERE owner_id=? AND lab_id=? AND ${authorizedPlanSources} AND NOT EXISTS(SELECT 1 FROM chat_invalid_plans invalid WHERE invalid.plan_id=plans.id) AND (?='all' OR json_extract(document,'$.status')=?)
         AND (? IS NULL OR json_extract(document,'$.createdAt')<? OR (json_extract(document,'$.createdAt')=? AND id<?))
         ORDER BY created DESC,id DESC LIMIT ?`).all(this.actor.id, this.actor.labId, base.status, base.status, cursor?.last ?? null, cursor?.created ?? '', cursor?.created ?? '', cursor?.last ?? '', base.limit + 1)
       const last = rows[base.limit - 1]
