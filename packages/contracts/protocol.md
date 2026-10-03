@@ -1,4 +1,6 @@
-# HTTP 协议 0.8.0
+# HTTP 协议 0.10.0
+
+CHAT1 新增聊天接口暂未实现，返回 501；精确类型、分页、版本、动作确认及异步状态见[聊天接口里程碑](../../docs/development/research-chat-contract.md)。下方既有协议继续适用。
 
 完整精确接口见 [OpenAPI](openapi.json)，所有接口的合成请求响应见 [examples](examples.json)。已实现 routes 中 stage=B0/B1/B2a/B2b/B3/B4a 的端点；B4 仍为501。B3 模型功能需显式服务端配置，关闭时 draft/auto 返回503 MODEL_UNAVAILABLE；授权 progress/find_work 使用服务事实。固定 Harness 与真实验证见 B3 联调包，不返回 fixture 成功。
 

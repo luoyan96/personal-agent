@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import * as m from './models.js'
+import { chatRoutes } from './chat.js'
 
 const empty = z.strictObject({})
 const id = z.strictObject({ id: m.Id })
@@ -20,6 +21,7 @@ function route<P extends z.ZodType, Q extends z.ZodType, B extends z.ZodType, R 
     errors: m.ErrorResponse, errorStatuses: m.errorStatus, idempotent: keyed }
 }
 export const routes = {
+  ...chatRoutes,
   live: route('GET', '/health/live', 'B0', empty, empty, z.null(), m.data(m.Health), 200, 'Process liveness only.', 'public'),
   ready: route('GET', '/health/ready', 'B0', empty, empty, z.null(), m.data(m.Health), 200, '503 with same health schema if database migration/write probe or blob read/write probe fails.', 'public'),
   login: route('POST', '/auth/login', 'B1', empty, empty, z.strictObject({ username: z.string().min(1).max(100), password: z.string().min(9).max(256) }), m.data(m.Member), 200, 'Verify provisioned password hash; rotate session; issue HttpOnly cookie. Invitation registration is a separate endpoint.', 'public', false),
