@@ -9,6 +9,6 @@ export default defineConfig(({ command, mode }) => {
     define: {
       __DEMO__: JSON.stringify(command === "serve" && mode === "demo"),
     },
-    server: { strictPort: true, proxy: { '/api': { target: 'http://127.0.0.1:3100' } } },
+    server: { strictPort: true, proxy: { '/api': { target: process.env.RESEARCH_CHAT_API_TARGET ?? 'http://127.0.0.1:3100' } } },
   };
 });

@@ -67,8 +67,8 @@ export class ApiClient {
   read<K extends RouteName>(name: K, params = {}, query = {}, signal?: AbortSignal) {
     return this.call(name, {params, query, headers: {}, body: null} as RequestFor<K>, signal);
   }
-  send<K extends RouteName>(intent: Intent<K>) {
-    return this.call(intent.route, {params: intent.params, query: {}, headers: routes[intent.route].idempotent ? {'Idempotency-Key': intent.key} : {}, body: intent.body} as RequestFor<K>);
+  send<K extends RouteName>(intent: Intent<K>, signal?: AbortSignal) {
+    return this.call(intent.route, {params: intent.params, query: {}, headers: routes[intent.route].idempotent ? {'Idempotency-Key': intent.key} : {}, body: intent.body} as RequestFor<K>, signal);
   }
 }
 
@@ -76,11 +76,11 @@ export class ApiClient {
 export class CommandSlot {
   intent?: Intent<RouteName>;
   private active?: Promise<unknown>;
-  async run<K extends RouteName>(client: ApiClient, intent: Intent<K>): Promise<ResponseFor<K>> {
+  async run<K extends RouteName>(client: ApiClient, intent: Intent<K>, signal?: AbortSignal): Promise<ResponseFor<K>> {
     if (this.active) return this.active as Promise<ResponseFor<K>>;
     if (this.intent && this.intent !== intent) throw new ApiError('PENDING_INTENT', '请先重试原请求，或明确放弃后重新确认。');
     this.intent = intent;
-    this.active = client.send(intent);
+    this.active = client.send(intent, signal);
     try { const result = await this.active; this.intent = undefined; return result as ResponseFor<K>; }
     finally { this.active = undefined; }
   }

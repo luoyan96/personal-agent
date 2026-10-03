@@ -14,7 +14,7 @@ import { scheduleFields, readSchedule, datedFields, readDated } from './schedule
 import { registrationPage, bindRegistration } from './registration';
 import { ChatView } from './chat-view';
 import type { ChatDraftEntries } from './chat-view';
-import { pendingChatSource } from './chat-source';
+import { ChatApiSource } from './chat-api-source';
 import './chat.css';
 let chatView: ChatView | undefined;
 let chatDrafts: ChatDraftEntries = [];
@@ -24,6 +24,7 @@ const reuse = new ReuseContext();
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const api = new ApiClient();
 const command = new CommandSlot();
+let chatCommand = new CommandSlot();
 let session: ResponseFor<'session'>['data'] | undefined;
 let issuedInvite: ResponseFor<'createManagerInvite'>['data'] | undefined;
 let members: MemberModel[] = [];
@@ -70,6 +71,7 @@ function resetEditor() {
 function clearOwnedContext() {
   chatView?.dispose(); chatView=undefined;
   chatDrafts=[];
+  chatCommand=new CommandSlot();
   issuedInvite=undefined;
   resetEditor();
   planConclusions=[];
@@ -469,8 +471,11 @@ async function load() {
     do {const response=await api.read('members',{id:session.member.labId},{...snapshotQuery(),limit:100,...(cursor?{cursor}:{})},signal);if(signal.aborted)return;members.push(...response.data);cursor=response.nextCursor??undefined;}while(cursor);
     if(signal.aborted)return;shell();
     if(path==='/') {
+      // Chat reads reauthorize each poll; the legacy list snapshot must not expire
+      // or invalidate the live conversation after a message or action mutation.
+      activeSnapshot=undefined;
       content('<div id="chat-root"></div>','科研聊天');
-      chatView=new ChatView(document.querySelector<HTMLElement>('#chat-root')!,pendingChatSource(members),chatDrafts);
+      chatView=new ChatView(document.querySelector<HTMLElement>('#chat-root')!,new ChatApiSource(api,session.member.id,members,error=>{if(error.code!=='UNAUTHENTICATED'){chatDrafts=[];chatCommand=new CommandSlot();}feedback(error);},chatCommand),chatDrafts);
       await chatView.mount();
     }
     else if(path==='/work')await dailyEntry(signal);
