@@ -12,6 +12,13 @@ import { CoordinationContext } from './coordination-view';
 import { ReuseContext } from './reuse-controller';
 import { scheduleFields, readSchedule, datedFields, readDated } from './schedule-editor';
 import { registrationPage, bindRegistration } from './registration';
+import { ChatView } from './chat-view';
+import type { ChatDraftEntries } from './chat-view';
+import { pendingChatSource } from './chat-source';
+import './chat.css';
+let chatView: ChatView | undefined;
+let chatDrafts: ChatDraftEntries = [];
+function detachChat() { if(chatView){chatDrafts=chatView.exportDrafts();chatView.dispose();chatView=undefined;} }
 const coordination = new CoordinationContext();
 const reuse = new ReuseContext();
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -61,6 +68,8 @@ function resetEditor() {
   dirty = false;
 }
 function clearOwnedContext() {
+  chatView?.dispose(); chatView=undefined;
+  chatDrafts=[];
   issuedInvite=undefined;
   resetEditor();
   planConclusions=[];
@@ -89,6 +98,8 @@ function schedule(s: Schedule) {
   return `<dl class="facts"><dt>建议时间</dt><dd>${e(date(s.suggested))}</dd><dt>硬性截止</dt><dd>${e(date(s.hardDeadline))}</dd><dt>承诺时间</dt><dd>${e(date(s.committed))}</dd><dt>预计投入</dt><dd>${s.estimatedHumanHours === null ? '未约定' : e(String(s.estimatedHumanHours)) + ' 小时'}</dd><dt>检查节点</dt><dd>${e(s.checkpoint?(s.checkpoint.kind==='date'?s.checkpoint.date+' · '+s.checkpoint.timezone:s.checkpoint.at):'未约定')}</dd></dl>`;
 }
 function shell() {
+  detachChat();
+  document.body.classList.toggle('chat-route', route()==='/');
   app.innerHTML = `<button class="skip" data-skip>跳到主要内容</button><header>${link('/', '<img src="/brand.png" width="38" height="38" alt=""><span>Research Agent Platform</span>', 'brand')}<nav aria-label="主导航">${link('/', '需求入口')}${link('/lab', '实验室任务')}${session?.isLabManager ? link('/lab/settings','实验室设置') : ''}${session ? `<span class="session-name">${e(session.member.displayName)}</span>${button('logout','退出登录')}` : link('/login','登录')}</nav></header><main id="main" tabindex="-1"><section class="state-panel" role="status">正在从服务读取…</section></main><footer>建议需确认 · 运行需验收 · 契约 ${contractVersion}</footer>`;
   document.querySelector<HTMLButtonElement>('[data-skip]')!.onclick = () => document.querySelector<HTMLElement>('main')!.focus();
   action('logout', async () => {
@@ -98,6 +109,7 @@ function shell() {
   });
 }
 function content(html: string, title: string) {
+  detachChat();
   document.title = title + ' · Research Agent Platform';
   document.querySelector('main')!.innerHTML = html + '<div id="feedback" class="feedback" aria-live="polite"></div>';
   document.querySelectorAll<HTMLAnchorElement>('.task-card a, .saved-plan a, [data-read-link]').forEach(anchor => anchor.addEventListener('click',()=>{nextReadSnapshot=activeSnapshot?.token;}));
@@ -456,7 +468,12 @@ async function load() {
     members=[];let cursor: string|undefined;
     do {const response=await api.read('members',{id:session.member.labId},{...snapshotQuery(),limit:100,...(cursor?{cursor}:{})},signal);if(signal.aborted)return;members.push(...response.data);cursor=response.nextCursor??undefined;}while(cursor);
     if(signal.aborted)return;shell();
-    if(path==='/')await dailyEntry(signal);
+    if(path==='/') {
+      content('<div id="chat-root"></div>','科研聊天');
+      chatView=new ChatView(document.querySelector<HTMLElement>('#chat-root')!,pendingChatSource(members),chatDrafts);
+      await chatView.mount();
+    }
+    else if(path==='/work')await dailyEntry(signal);
     else if(path==='/lab')await taskList(signal);
     else if(path==='/manage/invites')await inviteManagement(signal);
     else if(path==='/lab/settings')await labSettings(signal);
