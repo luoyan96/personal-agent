@@ -95,10 +95,13 @@ export class ChatView {
     try {
       const next = await this.source.read(this.controller.signal);
       if (this.disposed || version!==this.readVersion) return;
+      const previousActiveId=this.activeId;
       this.snapshot = next;
       const nextId=next.conversations.find(c => c.pinned)?.id ?? next.conversations[0]?.id;
       if (!next.conversations.some(c => c.id === this.activeId) && nextId!==this.activeId) this.select(nextId, next.conversations.find(c=>c.id===nextId)?.pinned??false);
-      if(background)this.renderLive();else this.render();
+      // A read must not replace an open material form or the current message
+      // editor. Keep the original task version until that form is submitted.
+      if(background||this.activeId&&this.activeId===previousActiveId)this.renderLive();else this.render();
       if(!this.timer&&this.source.pollIntervalMs&&this.snapshot.conversations.length)this.timer=setInterval(()=>{if(!document.hidden&&!this.composing&&!this.pending)void this.refresh(true);},this.source.pollIntervalMs);
     } catch (error) { if(version===this.readVersion)this.fail(error); }
     finally {this.reading=false;}
@@ -156,6 +159,8 @@ export class ChatView {
     const target=this.root.querySelector<HTMLSelectElement>('[data-send-target]');
     if(target){const options=`<option value="">请选择已加入的 AI</option>${(active.sendTargets??[]).map(c=>`<option value="${e(c.id)}">${e(c.label)}</option>`).join('')}`;if(target.innerHTML!==options){target.innerHTML=options;target.value=this.sendTarget;}}
     this.bindCards();this.updateSendButton();
+    const uploadOpen=this.root.querySelector<HTMLButtonElement>('[data-upload-open]');
+    if(uploadOpen)uploadOpen.disabled=!this.source.uploadText||!active.uploadTasks?.length||this.pending;
     this.renderContextChoices();
   }
   private renderContextChoices() {
@@ -283,7 +288,7 @@ export class ChatView {
     if(this.pending||!active?.canSend||!this.source.send||!this.draft.trim()||this.composing||active.group&&this.sendMode!=='chat'&&!this.sendTarget)return;
     const text=this.draft,mentions=structuredClone(this.mentions),id=active.id;
     this.pending=true;this.render();
-    try {await this.source.send(id,text,mentions,this.controller.signal,active.group&&this.sendMode!=='chat'?this.sendTarget:undefined,[...this.selectedContext]);if(this.disposed)return;this.draftMap.delete(id);if(this.activeId===id){this.draft='';this.mentions=[];}await this.refresh();}
+    try {await this.source.send(id,text,mentions,this.controller.signal,active.group&&this.sendMode!=='chat'?this.sendTarget:undefined,[...this.selectedContext]);if(this.disposed)return;this.draftMap.delete(id);if(this.activeId===id){this.draft='';this.mentions=[];this.root.querySelector<HTMLTextAreaElement>('#chat-input')!.value='';}await this.refresh();}
     catch(error) {if(!this.disposed){this.root.querySelector<HTMLElement>('.chat-input-status')!.textContent=error instanceof Error?error.message:'发送失败，输入已保留。';}}
     finally {this.pending=false;if(!this.disposed){const input=this.root.querySelector<HTMLTextAreaElement>('#chat-input')!;input.disabled=false;this.updateInput(input);this.root.querySelector<HTMLButtonElement>('[data-chat-send]')!.textContent='发送';this.root.querySelectorAll<HTMLButtonElement>('[data-card-action]').forEach(b=>b.disabled=!this.source.act);}}
   }
@@ -293,7 +298,7 @@ export class ChatView {
     this.pending=true;form.querySelectorAll<HTMLButtonElement>('button').forEach(b=>b.disabled=true);
     try {await this.source.uploadText(active.id,taskId!,String(data.get('upload-filename')),String(data.get('upload-text')),this.controller.signal,Number(version));if(this.disposed)return;dialog.close();await this.refresh();this.root.querySelector<HTMLElement>('.chat-input-status')!.textContent='文本材料已由服务保存；勾选后才会提供给 AI。';}
     catch(error){if(!this.disposed)dialog.querySelector<HTMLElement>('[data-upload-error]')!.textContent=error instanceof Error?error.message:'上传失败，文本已保留。';}
-    finally {this.pending=false;form.querySelectorAll<HTMLButtonElement>('button').forEach(b=>b.disabled=false);if(!this.disposed){this.root.querySelector<HTMLTextAreaElement>('#chat-input')!.disabled=false;this.updateSendButton();}}
+    finally {this.pending=false;form.querySelectorAll<HTMLButtonElement>('button').forEach(b=>b.disabled=false);if(!this.disposed){this.root.querySelector<HTMLTextAreaElement>('#chat-input')!.disabled=false;const uploadOpen=this.root.querySelector<HTMLButtonElement>('[data-upload-open]');if(uploadOpen)uploadOpen.disabled=!this.source.uploadText||!this.active()?.uploadTasks?.length;this.updateSendButton();}}
   }
   private async act(messageId: string, actionId: string) {
     const active=this.active();if(!this.source.act||this.pending)return;

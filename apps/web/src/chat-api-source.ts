@@ -2,6 +2,7 @@ import type {Contact,Conversation,ChatMessage,ChatAction,AgentTurn,RequestFor,Re
 import {ApiClient,ApiError,CommandSlot,Intent} from './api';
 import type {ChatSource,ChatSnapshot,ContactView,ConversationView,MessageView,ChatCardView,MentionSelection} from './chat-view';
 import {labels} from './contract-projection';
+import {runLabels} from './ai-view';
 
 export const chatBudget={maxTokens:12000,maxSeconds:120};
 const identityLabels:Record<Contact['identity']['kind'],string>={human:'真人',personal_agent:'个人 AI',public_agent:'公共 AI'};
@@ -138,7 +139,9 @@ export class ChatApiSource implements ChatSource {
       }
       cards.push({kind:'invitation',title:({create_group:'建立任务群建议',invite_contact:'加入群建议',invite_task:'任务承接邀请建议',run_task:'公共 AI 执行建议'})[action.payload.kind],detail:actionDetail(action,this.contacts)+planDetail+`\n建议有效期：${action.expiresAt}`,status:action.status==='proposed'&&!exact?'建议已失效':action.status==='applied'&&action.payload.kind==='create_group'?'任务群已建立':actionLabels[action.status],actions:action.allowedDecisions.filter(d=>d!=='confirm'||exact&&Date.parse(action.expiresAt)>Date.now()).map(decision=>({id:`decision:${decision}:${action.id}`,label:decision==='confirm'?'确认上述完整范围':'放弃此建议'}))});
     }
-    if(message.turnId) {
+    // Turn budgets and controls belong to the human who requested the reply.
+    // A shared AI reply does not grant other group members that private view.
+    if(message.turnId&&message.origin==='human'&&contact?.identity.kind==='human'&&contact.identity.memberId===this.ownerId) {
       try {
         const turn=(await this.api.read('chatTurn',{id:message.turnId},{},signal)).data;this.turns.set(turn.id,turn);
         const turnActions=turn.allowedActions.flatMap(a=>a==='cancel'?[{id:`turn:cancel:${turn.id}`,label:'取消本次生成'}]:turn.remainingBudget?[{id:`turn:retry:${turn.id}`,label:`明确重试（剩余 ${turn.remainingBudget.maxTokens} tokens / ${turn.remainingBudget.maxSeconds} 秒）`}]:[]);
@@ -159,10 +162,11 @@ export class ChatApiSource implements ChatSource {
         this.runs.set(run.id,{run,taskVersion:task.version});
         const linkId=`resource:run:${run.id}`;this.links.set(linkId,`/tasks/${run.taskId}`);
         const candidate=run.candidate;
-        const candidateText=candidate?`\n候选：${candidate.title}\n${candidate.items.map(item=>`要求：${item.requirement}\n判断：${item.assessment==='gap'?'存在缺口':'有输入材料支持'}${item.gap?'\n缺口：'+item.gap:''}\n${item.citations.map(c=>`引用 ${c.artifactId}：${c.quote}`).join('\n')}`).join('\n\n')}\n限制：${candidate.limitations.join('；')||'未报告'}\n候选不等于提交或验收。`:'';
-        cards.push({kind:run.status==='succeeded'?'result':'run',title:'公共 AI 运行',detail:`运行 ${refText(resource.ref)}\n当前版本 ${run.version} · 绑定任务 v${run.taskVersion} / 当前 v${task.version}${run.failure?'\n'+run.failure:''}${candidateText}`,status:`${run.status}${run.status==='succeeded'?run.candidateDeliverableId?' · 已提交交付，验收以交付记录为准':' · 候选成果仍需提交与验收':''}`,actions:[...(run.allowedActions.includes('cancel')?[{id:`publicrun:cancel:${run.id}`,label:'取消此公共运行'}]:[]),...(run.allowedActions.includes('submit_candidate')?[{id:`candidate:submit:${run.id}`,label:'确认提交此候选为交付'}]:[]),{id:linkId,label:'查看运行与成果'}]});
+        const checklistText=candidate?`${candidate.title}\n${candidate.items.map(item=>`要求：${item.requirement}\n判断：${item.assessment==='gap'?'存在缺口':'有输入材料支持'}${item.gap?'\n缺口：'+item.gap:''}\n${item.citations.map(c=>`引用 ${'task' in data?data.artifacts?.find(a=>a.id===c.artifactId)?.filename??c.artifactId:c.artifactId}：${c.quote}`).join('\n')}`).join('\n\n')}\n限制：${candidate.limitations.join('；')||'未报告'}`:'';
+        const candidateText=checklistText?`\n候选：${checklistText}\n候选不等于提交或验收。`:'';
+        cards.push({kind:run.status==='succeeded'?'result':'run',title:'公共 AI 运行',detail:`运行 ${refText(resource.ref)}\n当前版本 ${run.version} · 绑定任务 v${run.taskVersion} / 当前 v${task.version}${run.failure?'\n'+run.failure:''}${candidateText}`,status:`${runLabels[run.status]}${run.status==='succeeded'?run.candidateDeliverableId?' · 已提交交付，验收以交付记录为准':' · 候选成果仍需提交与验收':''}`,actions:[...(run.allowedActions.includes('cancel')?[{id:`publicrun:cancel:${run.id}`,label:'取消此公共运行'}]:[]),...(run.allowedActions.includes('submit_candidate')?[{id:`candidate:submit:${run.id}`,label:'确认提交此候选为交付'}]:[]),{id:linkId,label:'查看运行与成果'}]});
         const delivery='task' in data?data.deliverables.find(d=>d.id===run.candidateDeliverableId):undefined;
-        if(delivery)cards.push({kind:'result',title:`已提交交付 v${delivery.revision}`,detail:delivery.summary,status:delivery.review?delivery.review.decision==='accepted'?'指定版本已验收':'需修改':'待人工验收',actions:[{id:linkId,label:'查看此版本与验收'}]});
+        if(delivery)cards.push({kind:'result',title:`已提交交付 v${delivery.revision}`,detail:checklistText||delivery.summary,status:delivery.review?delivery.review.decision==='accepted'?'指定版本已验收':'需修改':'待人工验收',actions:[{id:linkId,label:'查看此版本与验收'}]});
       } else if(resource.kind==='plan') {
         // A private plan is navigable only from its authorized private projection.
         const linkId=`resource:plan:${resource.ref.id}`;this.links.set(linkId,`/plans/${resource.ref.id}`);

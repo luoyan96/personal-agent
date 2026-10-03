@@ -36,7 +36,7 @@ function harness(){
    case 'chatContacts':response=url.searchParams.has('cursor')?{data:[other],nextCursor:null}:{data:[human,own],nextCursor:'opaque_page_2'};break;
    case 'chatConversations':response={data:[group,personal],nextCursor:null};break;
    case 'chatConversation':response={data:url.pathname.endsWith(group.id)?{...group,taskIds:fullTaskMode?[task.id]:pendingTask?[summary.id]:[]}:personal};break;
-   case 'chatMessages':response={data:url.pathname.includes(group.id)?fullTaskMode?[{...message,resources:[{kind:'task',ref:{id:task.id,version:task.version}},{kind:'run',ref:{id:run.id,version:1}}]}]:pendingTask?[{...message,resources:[{kind:'task',ref:{id:summary.id,version:summary.version}},{kind:'assignment',ref:{id:'invitation_B',version:1}}]}]:turnMode?[{...message,turnId:turn.id}]:[message,message]:[],nextCursor:null};break;
+   case 'chatMessages':response={data:url.pathname.includes(group.id)?fullTaskMode?[{...message,resources:[{kind:'task',ref:{id:task.id,version:task.version}},{kind:'run',ref:{id:run.id,version:1}}]}]:pendingTask?[{...message,resources:[{kind:'task',ref:{id:summary.id,version:summary.version}},{kind:'assignment',ref:{id:'invitation_B',version:1}}]}]:turnMode?[{...message,origin:'human',senderContactId:human.id,turnId:turn.id}]:[{...message,turnId:turn.id},{...message,turnId:turn.id}]:[],nextCursor:null};break;
    case 'chatActions':response={data:url.pathname.includes(group.id)?[action]:[],nextCursor:null};break;
    case 'chatInvitations':response={data:[{id:'invitation_test',conversationId:group.id,title:'合成群',invitedContactId:own.id,invitedByMemberId:'other_owner',status:'pending',version:2}],nextCursor:null};break;
    case 'sendChatMessage':response={data:{message:{...message,id:'persisted_send',origin:'human',text:(body as RequestFor<'sendChatMessage'>['body']).text,senderContactId:human.id,actionIds:[]},turn:null}};break;
@@ -59,6 +59,7 @@ describe('frozen CHAT1 API wiring (synthetic transport)',()=>{
   const h=harness(),snapshot=await h.source.read(new AbortController().signal);
   expect(snapshot.contacts).toHaveLength(3);expect(snapshot.conversations.find(c=>c.pinned)?.id).toBe(personal.id);
   const view=snapshot.conversations.find(c=>c.id===group.id)!;expect(view.messages).toHaveLength(1);
+  expect(h.calls.some(c=>c.name==='chatTurn')).toBe(false);
   expect(view.sendTargets).toEqual([{id:own.id,label:own.displayName}]);expect(view.members.find(c=>c.id===other.id)?.canMention).toBe(false);
   expect(snapshot.contacts.find(c=>c.id===other.id)?.availability).toContain('需主人授权');
   expect(snapshot.invitations?.[0]?.detail).toContain('加入群不代表接受任务');
