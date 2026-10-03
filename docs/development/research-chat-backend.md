@@ -41,7 +41,7 @@ pnpm run ci
 
 [chat.spec.ts](../../apps/api/tests/chat.spec.ts) 的 setup 是完整合成库初始化入口：每个用例创建独立 temp SQLite/blob/master 文件，migrate 到012，seed 三位 synthetic 成员，真实 scrypt 账号/登录/CSRF，授予合成 manager，配置可识别的合成加密 Key 和公共能力。afterEach 清理全部临时材料，测试日志不打印凭据。ChatWorker 与 ExecutionWorker 都注入明确标记的 ModelCall，不请求 provider。重新运行该文件即可重建全过程；生产/API没有测试模式自动回复。
 
-10 个服务用例覆盖：缺配置持久消息/去重与重启找回、普通问答/澄清/非法 JSON、草案确认建群→@真人邀请→真人接受→上传文本→公共执行→候选→待验收 Deliverable、个人 agent owner 授权前后/私人历史隔离/撤权晚到结果、分页高水位/过滤/撤权、租约恢复/取消、建群自带 pending 分配的群投影、task version/跨群私人 plan/非法建议事务回滚、retry 预算/输入重绑定/活动 root 去重/未知用量、同名成员的 mention ID 与两个 AI 中明确 requestedAgent。
+11 个服务用例覆盖：缺配置持久消息/去重与重启找回、普通问答/澄清/非法 JSON、草案确认建群→@真人邀请→真人接受→上传文本→公共执行→候选→待验收 Deliverable、个人 agent owner 授权前后/私人历史隔离/撤权晚到结果、分页高水位/过滤/撤权、租约恢复/取消、建群自带 pending 分配的群投影、task version/跨群私人 plan/非法建议事务回滚、retry 预算/输入重绑定/活动 root 去重/未知用量、同名成员的 mention ID 与两个 AI 中明确 requestedAgent、源版本变化后派生草案/任务/待承接记录不可见。
 
 无模型配置的可操作合成本地服务初始化（使用独立新目录，避免任何生产 DB）：
 
@@ -76,8 +76,8 @@ pnpm api:start
 
 ## 检查结果
 
-- 聚焦 `pnpm test apps/api/tests/chat.spec.ts`：10/10 通过；API build/typecheck 通过。
-- `pnpm run ci`：内容、运维语法、全 workspace 构建/类型、契约导出一致性通过；313 测试中312通过，仅 `apps/web/tests/contracts.spec.ts:25` 的旧0.9.1版本断言失败。全部后端、共享契约、Harness无凭据边界测试通过，不能称根CI整体通过。最初的6处迁移总数断言已更新至012并全回归通过，历史行/会话/凭据/校验和仍保留验证。
+- 聚焦 `pnpm test apps/api/tests/chat.spec.ts`：11/11 通过；API build/typecheck 通过。
+- `pnpm run ci`：内容、运维语法、全 workspace 构建/类型、契约导出一致性通过；314 测试中313通过，仅 `apps/web/tests/contracts.spec.ts:25` 的旧0.9.1版本断言失败。全部后端、共享契约、Harness无凭据边界测试通过，不能称根CI整体通过。最初的6处迁移总数断言已更新至012并全回归通过，历史行/会话/凭据/校验和仍保留验证。
 - CI提前停止后单独执行 `node scripts/check-b0-process.mjs` 和 `pnpm --filter @research-agent/web check:production`：真实进程 smoke 与生产排除 fixtures 均通过。
 - 文档检查通过；生成输出和临时库没有提交。首次全量并行测试使长合成链路超过默认5秒，CHAT1用例时限设为15秒后通过；没有缩减断言。
 - 根CI包含的Harness凭据缺失验证是预期边界；本轮没有真实模型专项或生产交付验收。

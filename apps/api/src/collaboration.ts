@@ -95,7 +95,7 @@ export class Collaboration {
     const metadata = this.db.prepare('SELECT task_id,member_id FROM assignments WHERE id=?').get(assignmentId)
     if (!metadata) fail('NOT_FOUND')
     // Own decision history remains replayable after declining, but explicit revocation wins.
-    const allowed = this.db.prepare("SELECT t.id FROM tasks t LEFT JOIN task_access acl ON acl.task_id=t.id AND acl.member_id=? WHERE t.id=? AND t.lab_id=? AND COALESCE(acl.access,'')!='revoked' AND NOT EXISTS(SELECT 1 FROM reuse_denials rd WHERE rd.target_kind='task' AND rd.target_id=t.id AND rd.member_id=acl.member_id)").get(this.actor.id, metadata.task_id!, this.actor.labId)
+    const allowed = this.db.prepare("SELECT t.id FROM tasks t LEFT JOIN task_access acl ON acl.task_id=t.id AND acl.member_id=? WHERE t.id=? AND t.lab_id=? AND COALESCE(acl.access,'')!='revoked' AND NOT EXISTS(SELECT 1 FROM reuse_denials rd WHERE rd.target_kind='task' AND rd.target_id=t.id AND rd.member_id=acl.member_id) AND NOT EXISTS(SELECT 1 FROM chat_invalid_plans invalid WHERE invalid.plan_id=t.plan_id)").get(this.actor.id, metadata.task_id!, this.actor.labId)
     if (!allowed) fail('NOT_FOUND')
     if (metadata.member_id !== this.actor.id && this.access(String(metadata.task_id)) !== 'full') fail('NOT_FOUND')
     const row = this.db.prepare('SELECT document,offer_scope,offer_schedule FROM assignments WHERE id=?').get(assignmentId)!

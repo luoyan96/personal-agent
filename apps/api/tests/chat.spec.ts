@@ -50,8 +50,8 @@ async function setup(enabled = true) {
     const r = await call('sendChatMessage', { text, intent: 'ask_agent', agentContactId: agentId, budget, context }, { id: conversationId }, actor)
     expect(r.status, r.raw).toBe(201); return r.value.data
   }
-  async function groupProposal(contactIds = [human('member_B').id, publicAgent.id], initiallyInvite = false) {
-    const sent = await ask()
+  async function groupProposal(contactIds = [human('member_B').id, publicAgent.id], initiallyInvite = false, context:unknown[] = []) {
+    const sent = await ask(personal.id,agent('member_A').id,context)
     const output = { ...reply('建议审核两项合成工作。'), group: { title: '合成任务群', contactIds, sharedContext: { selectedText: '只分享这段合成目标。', artifactRefs: [] }, plan: { labId: 'lab_synthetic', goal: '合成目标', proposedItems: [
       { id: 'human_item', title: '待邀请工作', goal: '整理文字', deliverable: '文字清单', acceptanceCriteria: '可检查', allocation: initiallyInvite ? {kind:'invitation',memberId:'member_B'} : { kind: 'claim', audience: 'lab_members', summary: '合成待承接工作' }, dependencies: [], schedule, inputArtifactIds: [], budget: null },
       { id: 'ai_item', title: '本人负责工作', goal: '检查合成文字', deliverable: '证据清单', acceptanceCriteria: '引文可追溯', allocation: { kind: 'self' }, dependencies: [], schedule, inputArtifactIds: [], budget: null },
@@ -286,5 +286,19 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
       return model(reply())(input,signal,credential)
     }).tick()
     expect((await s.call('chatTurn',null,{id:sent.value.data.turn.id})).value.data.status).toBe('succeeded')
+  })
+
+  it('withdraws derived draft and pending assignment projections after source authority changes',async()=>{
+    const s=await setup(),source=await s.groupProposal(),sourceTask=(await s.call('task',null,{id:source.tasks[1]!})).value.data.task
+    const derived=await s.groupProposal(undefined,true,[{kind:'task',ref:{id:sourceTask.id,version:sourceTask.version}}])
+    const invitation=(await s.call('chatInvitations',null,{},1)).value.data.find((v:{conversationId:string})=>v.conversationId===derived.group.id)
+    await s.call('decideChatInvitation',{expectedVersion:invitation.version,decision:'accept'},{id:invitation.id},1)
+    const initial=(await s.call('chatMessages',null,{id:derived.group.id},1)).value.data
+    expect(initial.flatMap((m:{resources:{kind:string}[]})=>m.resources).some((r:{kind:string})=>r.kind==='assignment')).toBe(true)
+    await s.call('start',{expectedVersion:sourceTask.version},{id:sourceTask.id})
+    expect((await s.call('getPlan',null,{id:derived.action.payload.kind==='create_group'?derived.action.payload.plan.id:''})).status).toBe(404)
+    expect((await s.call('task',null,{id:derived.tasks[0]!},1)).status).toBe(404)
+    const messages=(await s.call('chatMessages',null,{id:derived.group.id},1)).value.data
+    expect(messages.flatMap((m:{resources:{kind:string}[]})=>m.resources)).toEqual([])
   })
 })
