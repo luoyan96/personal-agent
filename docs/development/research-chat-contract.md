@@ -1,6 +1,10 @@
 # 科研个人智能体与任务群接口里程碑
 
-2026-10-04，共享契约 0.10.0，聊天协议 1.0.0（CHAT1）。这是接口冻结候选，不是服务闭环验收。15 条新路由均 `implemented: false`，当前 API 返回 `501 NOT_IMPLEMENTED`；总控审阅后才实施服务和迁移。现有 0.9.1 路由保持语义，新聊天字段不进入现有任务状态对象。无新增依赖，无真实模型调用。
+2026-10-04，共享契约 0.10.0，聊天协议 1.0.0（CHAT1）。接口冻结后的服务里程碑将 15 条新路由标记为 `implemented: true`，实现和验收证据见 research-chat-backend.md。现有 0.9.1 路由保持语义，新聊天字段不进入现有任务状态对象。无新增依赖，无真实模型调用。
+
+本次未发布契约的必要修订：AgentTurn 新增必填 `budget:Budget`（原始整条尝试链总预算）、`remainingBudget:Budget|null` 和 `allowedActions:('cancel'|'retry')[]`。未知用量或预算耗尽时 remainingBudget=null，不能重试；前端只按 allowedActions 显示按钮，重试用服务器 remainingBudget。retry 创建新 turn 并在同事务更新原输入消息 turnId；GET turn 始终返回请求的 ID。原 turn 与所有尝试记录保留，同一 root 最多一个 queued/running/waiting_input，最大三次模型尝试。全部使用量从持久 attempts 计算。
+
+总控按用户核心需求修订目录与授权：同实验室所有已注册成员个人 agent 显示公开名字、稳定 ID 和 ownerMemberId；其他 owner 的私人聊天仍完全不可见。目录 availability 在无授权群时为 owner_authorization_required，在当前用户有共同 joined 群时可显示模型配置状态，但实际调用每次检查指定群 joined。被邀请的个人 agent 必须由 owner 独立接受；授权只在此 group 生效，问答只读取该群和请求者有权使用的 context，不读取 owner 私聊/私人工具。human 和 personal_agent 的邀请分别确认。owner 仅授权 agent 加入而 human 未加入时可为该 agent 查看已授权群，allowedActions 不显示 send，真人发送仍拒绝；run_task 仍只允许 lab_public 文本能力。
 
 ## 可执行类型与前端接线
 

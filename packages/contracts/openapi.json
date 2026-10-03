@@ -10,7 +10,7 @@
         "operationId": "chatContacts",
         "description": "Current lab public humans, own personal agent and configured public capabilities only; ACL before search/page.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -50,7 +50,7 @@
         ],
         "responses": {
           "200": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -355,7 +355,7 @@
         "operationId": "personalConversation",
         "description": "Ensure unique personal agent and conversation for current member; never exposes another owner history.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -397,7 +397,7 @@
         },
         "responses": {
           "200": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -850,7 +850,7 @@
         "operationId": "chatConversations",
         "description": "Joined member only; pinned personal first then updatedAt/id descending.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -881,7 +881,7 @@
         ],
         "responses": {
           "200": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -1161,7 +1161,7 @@
         "operationId": "chatConversation",
         "description": "Joined member only; invitation is not group read authority.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -1180,7 +1180,7 @@
         ],
         "responses": {
           "200": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -1456,7 +1456,7 @@
         "operationId": "createDirectConversation",
         "description": "Unique same-lab human pair; own agent resolves personal conversation. Other personal agents and public agents cannot be opened as direct chats in CHAT1.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -1508,7 +1508,7 @@
         },
         "responses": {
           "200": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -1784,7 +1784,7 @@
         "operationId": "chatMessages",
         "description": "Authorized immutable messages ordered by sequence; cursor and afterSequence mutually exclusive.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -1834,7 +1834,7 @@
         ],
         "responses": {
           "200": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -2146,7 +2146,7 @@
         "operationId": "sendChatMessage",
         "description": "Persist human message first; explicit ask_agent queues durable turn or returns persisted unavailable turn; ordinary mentions never execute tasks.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -2341,7 +2341,7 @@
         },
         "responses": {
           "201": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -2681,6 +2681,64 @@
                                     }
                                   ]
                                 },
+                                "budget": {
+                                  "type": "object",
+                                  "properties": {
+                                    "maxTokens": {
+                                      "type": "integer",
+                                      "exclusiveMinimum": 0,
+                                      "maximum": 1000000
+                                    },
+                                    "maxSeconds": {
+                                      "type": "integer",
+                                      "exclusiveMinimum": 0,
+                                      "maximum": 86400
+                                    }
+                                  },
+                                  "required": [
+                                    "maxTokens",
+                                    "maxSeconds"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "remainingBudget": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "maxTokens": {
+                                          "type": "integer",
+                                          "exclusiveMinimum": 0,
+                                          "maximum": 1000000
+                                        },
+                                        "maxSeconds": {
+                                          "type": "integer",
+                                          "exclusiveMinimum": 0,
+                                          "maximum": 86400
+                                        }
+                                      },
+                                      "required": [
+                                        "maxTokens",
+                                        "maxSeconds"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "allowedActions": {
+                                  "maxItems": 2,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "cancel",
+                                      "retry"
+                                    ]
+                                  }
+                                },
                                 "version": {
                                   "type": "integer",
                                   "minimum": 1,
@@ -2707,6 +2765,9 @@
                                 "availability",
                                 "outputMessageId",
                                 "usage",
+                                "budget",
+                                "remainingBudget",
+                                "allowedActions",
                                 "version",
                                 "createdAt",
                                 "updatedAt"
@@ -2870,7 +2931,7 @@
         "operationId": "chatTurn",
         "description": "Conversation ACL and original turn owner only; poll actual model state.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -2889,7 +2950,7 @@
         ],
         "responses": {
           "200": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -3064,6 +3125,64 @@
                             }
                           ]
                         },
+                        "budget": {
+                          "type": "object",
+                          "properties": {
+                            "maxTokens": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 1000000
+                            },
+                            "maxSeconds": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 86400
+                            }
+                          },
+                          "required": [
+                            "maxTokens",
+                            "maxSeconds"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "remainingBudget": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "maxTokens": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 1000000
+                                },
+                                "maxSeconds": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 86400
+                                }
+                              },
+                              "required": [
+                                "maxTokens",
+                                "maxSeconds"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedActions": {
+                          "maxItems": 2,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "cancel",
+                              "retry"
+                            ]
+                          }
+                        },
                         "version": {
                           "type": "integer",
                           "minimum": 1,
@@ -3090,6 +3209,9 @@
                         "availability",
                         "outputMessageId",
                         "usage",
+                        "budget",
+                        "remainingBudget",
+                        "allowedActions",
                         "version",
                         "createdAt",
                         "updatedAt"
@@ -3116,6 +3238,12 @@
                     },
                     "outputMessageId": null,
                     "usage": null,
+                    "budget": {
+                      "maxTokens": 1,
+                      "maxSeconds": 1
+                    },
+                    "remainingBudget": null,
+                    "allowedActions": [],
                     "version": 1,
                     "createdAt": "2026-09-21T08:00:00+08:00",
                     "updatedAt": "2026-09-21T08:00:00+08:00"
@@ -3242,7 +3370,7 @@
         "operationId": "cancelChatTurn",
         "description": "Original turn owner; queued/running/waiting_input only; fence late output.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -3304,7 +3432,7 @@
         },
         "responses": {
           "200": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -3479,6 +3607,64 @@
                             }
                           ]
                         },
+                        "budget": {
+                          "type": "object",
+                          "properties": {
+                            "maxTokens": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 1000000
+                            },
+                            "maxSeconds": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 86400
+                            }
+                          },
+                          "required": [
+                            "maxTokens",
+                            "maxSeconds"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "remainingBudget": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "maxTokens": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 1000000
+                                },
+                                "maxSeconds": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 86400
+                                }
+                              },
+                              "required": [
+                                "maxTokens",
+                                "maxSeconds"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedActions": {
+                          "maxItems": 2,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "cancel",
+                              "retry"
+                            ]
+                          }
+                        },
                         "version": {
                           "type": "integer",
                           "minimum": 1,
@@ -3505,6 +3691,9 @@
                         "availability",
                         "outputMessageId",
                         "usage",
+                        "budget",
+                        "remainingBudget",
+                        "allowedActions",
                         "version",
                         "createdAt",
                         "updatedAt"
@@ -3531,6 +3720,12 @@
                     },
                     "outputMessageId": null,
                     "usage": null,
+                    "budget": {
+                      "maxTokens": 1,
+                      "maxSeconds": 1
+                    },
+                    "remainingBudget": null,
+                    "allowedActions": [],
                     "version": 1,
                     "createdAt": "2026-09-21T08:00:00+08:00",
                     "updatedAt": "2026-09-21T08:00:00+08:00"
@@ -3657,7 +3852,7 @@
         "operationId": "retryChatTurn",
         "description": "Explicit owner retry creates new turn against persisted input and reauthorized current context; never automatically retries uncertain usage.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -3744,7 +3939,7 @@
         },
         "responses": {
           "202": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -3919,6 +4114,64 @@
                             }
                           ]
                         },
+                        "budget": {
+                          "type": "object",
+                          "properties": {
+                            "maxTokens": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 1000000
+                            },
+                            "maxSeconds": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 86400
+                            }
+                          },
+                          "required": [
+                            "maxTokens",
+                            "maxSeconds"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "remainingBudget": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "maxTokens": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 1000000
+                                },
+                                "maxSeconds": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 86400
+                                }
+                              },
+                              "required": [
+                                "maxTokens",
+                                "maxSeconds"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedActions": {
+                          "maxItems": 2,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "cancel",
+                              "retry"
+                            ]
+                          }
+                        },
                         "version": {
                           "type": "integer",
                           "minimum": 1,
@@ -3945,6 +4198,9 @@
                         "availability",
                         "outputMessageId",
                         "usage",
+                        "budget",
+                        "remainingBudget",
+                        "allowedActions",
                         "version",
                         "createdAt",
                         "updatedAt"
@@ -3971,6 +4227,12 @@
                     },
                     "outputMessageId": null,
                     "usage": null,
+                    "budget": {
+                      "maxTokens": 1,
+                      "maxSeconds": 1
+                    },
+                    "remainingBudget": null,
+                    "allowedActions": [],
                     "version": 1,
                     "createdAt": "2026-09-21T08:00:00+08:00",
                     "updatedAt": "2026-09-21T08:00:00+08:00"
@@ -4097,7 +4359,7 @@
         "operationId": "chatActions",
         "description": "Visible proposal and receipt history; allowedDecisions from current business authority, never model assertions.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -4137,7 +4399,7 @@
         ],
         "responses": {
           "200": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -4939,7 +5201,7 @@
         "operationId": "decideChatAction",
         "description": "Confirm exact immutable proposal only; transaction rechecks ACL/versions and invokes canonical task commands; receipt links authority objects.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -5017,7 +5279,7 @@
         },
         "responses": {
           "200": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -5889,7 +6151,7 @@
         "operationId": "chatInvitations",
         "description": "Current invitee or invited agent owner; summary only before acceptance.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -5920,7 +6182,7 @@
         ],
         "responses": {
           "200": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -6122,9 +6384,9 @@
     "/api/v1/chat/invitations/{id}/decision": {
       "post": {
         "operationId": "decideChatInvitation",
-        "description": "Human invitee or personal agent owner only; group join never accepts task assignment or shares personal context. Other owners agents remain unavailable for execution in CHAT1.",
+        "description": "Human invitee or personal agent owner only; acceptance authorizes that agent only within this group, never owner private history or task commitment.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -6195,7 +6457,7 @@
         },
         "responses": {
           "200": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {
@@ -6374,7 +6636,7 @@
         "operationId": "revokeChatMember",
         "description": "Group owner; revoke membership, fence turns, invalidate group projections. Canonical task permissions remain independently enforced; no silent withdrawal of accepted commitments.",
         "x-stage": "CHAT1",
-        "x-implemented": false,
+        "x-implemented": true,
         "security": [
           {
             "sessionCookie": []
@@ -6459,7 +6721,7 @@
         },
         "responses": {
           "200": {
-            "description": "CHAT1 contract; not implemented in B2b (501)",
+            "description": "CHAT1 contract; implemented",
             "content": {
               "application/json": {
                 "schema": {

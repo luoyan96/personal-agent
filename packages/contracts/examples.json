@@ -826,6 +826,12 @@
           },
           "outputMessageId": null,
           "usage": null,
+          "budget": {
+            "maxTokens": 1,
+            "maxSeconds": 1
+          },
+          "remainingBudget": null,
+          "allowedActions": [],
           "version": 1,
           "createdAt": "2026-09-21T08:00:00+08:00",
           "updatedAt": "2026-09-21T08:00:00+08:00"
@@ -865,6 +871,12 @@
           },
           "outputMessageId": null,
           "usage": null,
+          "budget": {
+            "maxTokens": 1,
+            "maxSeconds": 1
+          },
+          "remainingBudget": null,
+          "allowedActions": [],
           "version": 1,
           "createdAt": "2026-09-21T08:00:00+08:00",
           "updatedAt": "2026-09-21T08:00:00+08:00"
@@ -908,6 +920,12 @@
           },
           "outputMessageId": null,
           "usage": null,
+          "budget": {
+            "maxTokens": 1,
+            "maxSeconds": 1
+          },
+          "remainingBudget": null,
+          "allowedActions": [],
           "version": 1,
           "createdAt": "2026-09-21T08:00:00+08:00",
           "updatedAt": "2026-09-21T08:00:00+08:00"

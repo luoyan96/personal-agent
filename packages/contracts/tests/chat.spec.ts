@@ -20,9 +20,9 @@ describe('CHAT1 dispatch and sharing boundaries', () => {
     expect(ChatActionPayload.safeParse({ ...payload, sharedContext: { shareAllHistory: true } }).success).toBe(false)
     expect(ChatActionPayload.safeParse({ ...payload, plan: { id: 'plan_a' } }).success).toBe(false)
   })
-  it('keeps all CHAT1 endpoints explicitly unavailable until implementation', () => {
+  it('marks all CHAT1 endpoints implemented with the service milestone', () => {
     const chat = Object.values(routes).filter(r => r.stage === 'CHAT1')
     expect(chat).toHaveLength(15)
-    for (const r of chat) expect(r.implemented).toBe(false)
+    for (const r of chat) expect(r.implemented).toBe(true)
   })
 })
