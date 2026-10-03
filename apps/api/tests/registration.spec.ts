@@ -38,6 +38,22 @@ describe('invitation registration',()=>{
   expect(persisted).not.toContain(s.inviteCode);expect(persisted).not.toContain(s.payload().password)
   const auth=await s.login();expect(auth.statusCode).toBe(200);expect(auth.headers['set-cookie']).toContain('Secure');expect(auth.headers['set-cookie']).toContain('HttpOnly')
  })
+ it('accepts a nine-character password for registration and login, but rejects eight',async()=>{
+  const s=await setup()
+  expect((await s.register({...s.payload(),password:'Abcdefg8'})).statusCode).toBe(400)
+  expect((await s.register({...s.payload(),password:'NinePass9'})).statusCode).toBe(201)
+  const login=await s.app.inject({method:'POST',url:'/api/v1/auth/login',headers:{origin:s.config.origin},payload:{username:'new_member',password:'NinePass9'}})
+  expect(login.statusCode).toBe(200)
+ })
+ it('uses the same nine-character minimum for maintained accounts and password resets',async()=>{
+  const s=await setup()
+  await expect(s.op({action:'create-account',memberId:'manual',username:'manual',displayName:'Synthetic member',password:'Abcdefg8'})).rejects.toThrow()
+  await s.op({action:'create-account',memberId:'manual',username:'manual',displayName:'Synthetic member',password:'NinePass9'})
+  await expect(s.op({action:'reset-password',memberId:'manual',expectedVersion:1,password:'Abcdefg8'})).rejects.toThrow()
+  await s.op({action:'reset-password',memberId:'manual',expectedVersion:1,password:'NextPass9'})
+  const login=await s.app.inject({method:'POST',url:'/api/v1/auth/login',headers:{origin:s.config.origin},payload:{username:'manual',password:'NextPass9'}})
+  expect(login.statusCode).toBe(200)
+ })
  it('replays an acknowledged or lost success after expiry without consuming another seat; changed request conflicts',async()=>{
   const s=await setup(1),key=randomUUID();const first=await s.register(s.payload(),key)
   await s.op({action:'revoke-registration-invite',inviteId:'invite_one'})

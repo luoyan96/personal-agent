@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.9.0"
+    "version": "0.9.1"
   },
   "paths": {
     "/api/v1/health/live": {
@@ -34,7 +34,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.9.0"
+                          "const": "0.9.1"
                         },
                         "checks": {
                           "type": "object",
@@ -93,7 +93,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.9.0",
+                    "contractVersion": "0.9.1",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -247,7 +247,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.9.0"
+                          "const": "0.9.1"
                         },
                         "checks": {
                           "type": "object",
@@ -306,7 +306,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.9.0",
+                    "contractVersion": "0.9.1",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -438,7 +438,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.9.0"
+                          "const": "0.9.1"
                         },
                         "checks": {
                           "type": "object",
@@ -497,7 +497,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.9.0",
+                    "contractVersion": "0.9.1",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -534,7 +534,7 @@
                   },
                   "password": {
                     "type": "string",
-                    "minLength": 12,
+                    "minLength": 9,
                     "maxLength": 256
                   }
                 },
@@ -546,7 +546,7 @@
               },
               "example": {
                 "username": "synthetic",
-                "password": "syntheticxxx"
+                "password": "synthetic"
               }
             }
           }
@@ -1190,7 +1190,7 @@
                   },
                   "password": {
                     "type": "string",
-                    "minLength": 16,
+                    "minLength": 9,
                     "maxLength": 256
                   }
                 },
@@ -1206,7 +1206,7 @@
                 "inviteCode": "syntheticxxxxxxxxxxx",
                 "username": "synthetic",
                 "displayName": "synthetic",
-                "password": "syntheticxxxxxxx"
+                "password": "synthetic"
               }
             }
           }

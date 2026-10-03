@@ -160,7 +160,7 @@ function form(key: string, fn: (data: FormData, submitter: HTMLElement | null) =
 const field = (label: string, key: string, value = '', area = false, max = 8000) => `<label>${label}${area ? `<textarea name="${key}" required maxlength="${max}" rows="3">${e(value)}</textarea>` : `<input name="${key}" required maxlength="${max}" value="${e(value)}">`}</label>`;
 
 function login() {
-  content(`<section class="flow login"><p class="eyebrow">进入你的协作空间</p><h1>登录</h1><p class="intro">使用你的账号继续协作。</p><form data-form="login" class="panel">${field('账号','username','',false,100)}<label>密码<input name="password" type="password" required minlength="12" maxlength="256" autocomplete="current-password"></label><button class="primary" type="submit">登录</button><p class="fine">忘记密码或账号停用时请联系管理员；密码重置后使用新密码。</p></form><p>还没有账号？${link('/register','使用邀请码注册')}</p><p>${link('/help','首次使用与恢复指引')}</p></section>`, '登录');
+  content(`<section class="flow login"><p class="eyebrow">进入你的协作空间</p><h1>登录</h1><p class="intro">使用你的账号继续协作。</p><form data-form="login" class="panel">${field('账号','username','',false,100)}<label>密码<input name="password" type="password" required minlength="9" maxlength="256" autocomplete="current-password"></label><button class="primary" type="submit">登录</button><p class="fine">忘记密码或账号停用时请联系管理员；密码重置后使用新密码。</p></form><p>还没有账号？${link('/register','使用邀请码注册')}</p><p>${link('/help','首次使用与恢复指引')}</p></section>`, '登录');
   document.querySelector<HTMLInputElement>('[name=username]')!.autocomplete = 'username';
   form('login', async data => {
     busy = true;
