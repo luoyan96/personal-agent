@@ -27,6 +27,10 @@ function masterKey(config: Config) {
   } catch { fail('SERVICE_UNAVAILABLE') }
 }
 
+function masterAvailable(config: Config) {
+  try { masterKey(config); return true } catch { return false }
+}
+
 function encrypt(config: Config, labId: string, apiKey: string) {
   const nonce = randomBytes(12)
   const cipher = createCipheriv('aes-256-gcm', masterKey(config), nonce)
@@ -52,7 +56,7 @@ function row(db: DatabaseSync, labId: string): Setting | undefined {
 
 function view(db: DatabaseSync, labId: string, setting: Setting | undefined, config: Config) {
   const labName = String(db.prepare('SELECT name FROM labs WHERE id=?').get(labId)!.name)
-  return { labId, labName, enabled: setting?.enabled === 1, platformEnabled: config.aiEnabled && !!config.credentialKeyFile, hasApiKey: !!setting?.encrypted_api_key, model: setting?.model ?? 'deepseek-flash', version: setting?.version ?? 0, updatedAt: setting?.updated_at ?? null }
+  return { labId, labName, enabled: setting?.enabled === 1, platformEnabled: config.aiEnabled && masterAvailable(config), hasApiKey: !!setting?.encrypted_api_key, model: setting?.model ?? 'deepseek-flash', version: setting?.version ?? 0, updatedAt: setting?.updated_at ?? null }
 }
 
 export function labAiSettings(db: DatabaseSync, actor: Actor, input: RequestFor<'labAiSettings'>, config: Config): ResponseFor<'labAiSettings'> {
@@ -87,7 +91,7 @@ export function updateLabAiSettings(db: DatabaseSync, actor: Actor, input: Reque
 
 export function labAiRuntime(db: DatabaseSync, labId: string, config: Config) {
   const setting = row(db, labId)
-  return { enabled: config.aiEnabled && setting?.enabled === 1 && !!setting.encrypted_api_key && !!config.credentialKeyFile, model: setting?.model ?? config.model }
+  return { enabled: config.aiEnabled && setting?.enabled === 1 && !!setting.encrypted_api_key && masterAvailable(config), model: setting?.model ?? config.model }
 }
 
 export function labApiKey(db: DatabaseSync, labId: string, config: Config) {

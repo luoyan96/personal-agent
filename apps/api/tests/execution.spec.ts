@@ -224,12 +224,12 @@ describe('B3 durable service with explicit deterministic model doubles (not G3 l
     const child=spawn(process.execPath,[resolve('apps/api/dist/worker.js'),'--once'],{env:{...process.env,NODE_ENV:'test',DATABASE_PATH:databasePath,BLOB_ROOT:join(directory,'blobs'),B3_AI_ENABLED:'1',LAB_CREDENTIAL_KEY_FILE:secretFile},windowsHide:true,stdio:'ignore'})
     expect((await once(child,'exit'))[0]).toBe(0)
     renameSync(hiddenFile,secretFile)
-    const r=await runDetail(q.run.id);expect(r.status).toBe('failed');expect(r.failure).toBe('SERVICE_UNAVAILABLE');expect(r.usageDetail).toBeNull()
+    const r=await runDetail(q.run.id);expect(r.status).toBe('cancelled');expect(r.failure).toBe('MODEL_UNAVAILABLE');expect(r.usageDetail).toBeNull()
     const q2=await queue();let release!:(r:ModelResult)=>void;const running=worker(async()=>new Promise<ModelResult>(resolve=>{release=resolve})).tick()
     db.prepare('UPDATE execution_jobs SET lease_until=0 WHERE id=?').run(q2.run.id)
     transaction(db,()=>reconcile(db,config()));release(result(checklist(q2.artifact)));await running;expect((await runDetail(q2.run.id)).status).toBe('interrupted')
     await stopServers();migrate(db);migrate(db);address=(await startServer()).url;secondAddress=(await startServer()).url
-    expect((await runDetail(q.run.id)).failure).toBe('SERVICE_UNAVAILABLE');expect((await runDetail(q2.run.id)).candidate).toBeNull()
+    expect((await runDetail(q.run.id)).failure).toBe('MODEL_UNAVAILABLE');expect((await runDetail(q2.run.id)).candidate).toBeNull()
   })
   it('A10 explicitly selected planning context is tracked and withdrawn history cannot reveal full task contents',async()=>{
     const q=await queue(clients.B,'invitation')
