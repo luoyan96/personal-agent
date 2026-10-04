@@ -122,7 +122,7 @@ export class OpenImCallbacks {
     if(body.contentType===110&&body.msgFrom===200){const pointer=this.pointer(body);if(pointer.success)this.db.prepare("UPDATE im_message_outbox SET status='sent',server_message_id=?,updated_at=? WHERE message_id=? AND status IN ('sending','uncertain')").run(String(body.serverMsgID??''),new Date().toISOString(),pointer.data.messageId);return {errCode:0,errMsg:''}}
     if(body.contentType!==101&&body.contentType!==106)return {errCode:0,errMsg:''}
     let text:unknown
-    try{const content=typeof body.content==='string'?JSON.parse(body.content):body.content as Body;text=((content?.textElem??content) as Body)?.content}catch{return {errCode:0,errMsg:''}}
+    try{const content=typeof body.content==='string'?JSON.parse(body.content):body.content as Body,value=(content?.atTextElem??content?.textElem??content) as Body;text=body.contentType===106?value?.text:value?.content}catch{return {errCode:0,errMsg:''}}
     if(typeof text!=='string'||!text.length||text.length>8000)return {errCode:0,errMsg:''}
     const actor=this.actor(body.sendID,body.senderPlatformID),chat=this.bridge.chat(actor)
     let id:string
