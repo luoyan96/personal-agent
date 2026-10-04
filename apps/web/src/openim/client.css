@@ -1,0 +1,48 @@
+/* Ported from OpenIM electron-demo at 62d7ca7b12e91144b315f36c8ebd1d9e0457a352.
+ * Upstream Tailwind @apply expanded to CSS, module names scoped to .chat-window.
+ * Sources: styles/global.scss; ConversationSider/conversation-item.module.scss;
+ * queryChat/MessageItem/message-item.module.scss; LeftNavBar/index.tsx;
+ * QueryChat/index.tsx and ChatFooter/index.tsx. Full attribution in third-party/openim. */
+.chat-window {
+  --chat-bubble:#f4f5f7;
+  --chat-bubble-sender:#cce7fe;
+  --base-black:#0c1c33;
+  --primary:#0089ff;
+  --primary-active:#f3f8ff;
+  --sub-text:#8e9ab0;
+  --gap-text:#e8eaef;
+  --warn-text:#ff381f;
+  color:var(--base-black);
+}
+.chat-window ::-webkit-scrollbar { width:6px; background-color:transparent; }
+.chat-window ::-webkit-scrollbar-track { background:transparent; }
+.chat-window ::-webkit-scrollbar-thumb { border-radius:3px; background:#b7bdcb; }
+.chat-window img { -webkit-user-drag:none; }
+.chat-window .chat-contact {
+  position:relative; margin:4px 0; display:flex; align-items:center;
+  border-radius:6px; padding:8px; border:1px solid transparent;
+}
+.chat-window .chat-contact:hover,.chat-window .chat-contact.chat-selected { background:var(--primary-active); }
+.chat-contact.chat-pinned::after {
+  content:''; position:absolute; right:0; top:0; border:4px solid;
+  border-color:var(--primary) var(--primary) transparent transparent;
+}
+.chat-conversation-copy { margin-left:12px; display:flex; height:44px; flex:1; flex-direction:column; justify-content:space-between; overflow:hidden; }
+.chat-conversation-title { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.chat-conversation-title strong { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+.chat-conversation-title time { flex-shrink:0; color:var(--sub-text); font-size:11px; }
+.chat-conversation-preview { min-height:16px; flex:1; overflow:hidden; font-size:12px; color:rgba(81,94,112,.5); text-overflow:ellipsis; white-space:nowrap; }
+.chat-message { position:relative; display:flex; padding:12px 0; user-select:text; }
+.chat-message-copy { margin-left:12px; display:flex; flex:1; flex-direction:column; align-items:flex-start; min-width:0; }
+.chat-sender { margin-bottom:4px; display:flex; width:100%; font-size:12px; }
+.chat-bubble { width:fit-content; border-radius:6px; padding:10px; background-color:var(--chat-bubble); word-wrap:break-word; word-break:break-word; white-space:pre-wrap; }
+.chat-own { flex-direction:row-reverse; }
+.chat-own .chat-message-copy { margin-left:0; margin-right:12px; align-items:flex-end; }
+.chat-own .chat-sender { flex-direction:row-reverse; }
+.chat-own .chat-bubble { background-color:var(--chat-bubble-sender); }
+.chat-rail button,.chat-rail a { margin-bottom:12px; display:flex; height:52px; width:48px; cursor:pointer; flex-direction:column; align-items:center; justify-content:center; border-radius:6px; }
+.chat-rail button[aria-pressed=true] { background:#e9e9eb; }
+.chat-rail img { width:20px; height:20px; object-fit:contain; }
+.chat-composer { position:relative; background:white; border-top:1px solid var(--gap-text); }
+.chat-composer-bottom { display:flex; align-items:center; justify-content:flex-end; padding:8px 0; }
+.chat-avatar { min-width:42px; min-height:42px; line-height:40px; background-color:#0289fa; color:white; border-radius:6px; }

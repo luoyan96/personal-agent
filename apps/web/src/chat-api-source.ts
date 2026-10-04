@@ -23,7 +23,7 @@ function scheduleText(schedule:Schedule):string {
 export function contactProjection(contact:Contact, contacts:Contact[], members:{id:string;displayName:string}[],currentMemberId?:string):ContactView {
   const identity=contact.identity;
   const owner=identity.kind==='human'?'本实验室成员':`主人：${members.find(m=>m.id===identity.ownerMemberId)?.displayName ?? contacts.find(c=>c.identity.kind==='human'&&c.identity.memberId===identity.ownerMemberId)?.displayName ?? identity.ownerMemberId}`;
-  return {id:contact.id,name:contact.displayName,identity:identityLabels[identity.kind],owner,icon:identity.kind==='human'?'user':'robot',canOpenDirect:identity.kind==='human'||identity.kind==='personal_agent'&&identity.ownerMemberId===currentMemberId,directHint:identity.kind==='public_agent'?'公共 AI 在任务群中使用。':identity.kind==='personal_agent'?'其他成员的个人 AI 需主人授权加入任务群，私人聊天仅限主人。':undefined,availability:identity.kind==='human'?'真人 · 在线与空闲状态未提供':`${availabilityLabels[contact.availability.status]}${contact.availability.reason?` · ${reasonLabels[contact.availability.reason]}`:''}`};
+  return {id:contact.id,name:contact.displayName,identity:identityLabels[identity.kind],owner,icon:identity.kind==='human'?'user':'robot',canOpenDirect:identity.kind==='human'&&identity.memberId!==currentMemberId||identity.kind==='personal_agent'&&identity.ownerMemberId===currentMemberId,directHint:identity.kind==='human'&&identity.memberId===currentMemberId?'这是你自己的成员资料，可通过个人助理聊天。':identity.kind==='public_agent'?'公共 AI 在任务群中使用。':identity.kind==='personal_agent'?'其他成员的个人 AI 需主人授权加入任务群，私人聊天仅限主人。':undefined,availability:identity.kind==='human'?'真人 · 在线与空闲状态未提供':`${availabilityLabels[contact.availability.status]}${contact.availability.reason?` · ${reasonLabels[contact.availability.reason]}`:''}`};
 }
 
 /** Complete immutable action payload, before any confirm control is displayed. */
@@ -59,11 +59,26 @@ export class ChatApiSource implements ChatSource {
   private contextRefs=new Map<string,Map<string,NonNullable<RequestFor<'sendChatMessage'>['body']['context']>[number]>>();
   private runs=new Map<string,{run:ResponseFor<'getRun'>['data'];taskVersion:number}>();
   private personalSlot=new CommandSlot();
+  private readSlots=new Map<string,CommandSlot>();
   private disposed=false;
   private isLabManager=false;
   constructor(private api:ApiClient,private ownerId:string,private members:{id:string;displayName:string}[],private securityFailure:(error:ApiError)=>void,private slot:CommandSlot=new CommandSlot()) {}
-  dispose() {this.disposed=true;this.personal=undefined;this.contacts=[];this.conversations.clear();this.actions.clear();this.invitations.clear();this.turns.clear();this.links.clear();this.taskRefs.clear();this.taskInvites.clear();this.taskVersions.clear();this.contextRefs.clear();this.runs.clear();this.personalSlot.discard();}
+  dispose() {this.disposed=true;this.personal=undefined;this.contacts=[];this.conversations.clear();this.actions.clear();this.invitations.clear();this.turns.clear();this.links.clear();this.taskRefs.clear();this.taskInvites.clear();this.taskVersions.clear();this.contextRefs.clear();this.runs.clear();this.readSlots.clear();this.personalSlot.discard();}
   discardPending(){this.slot.discard();}
+  hasPending(){return !!this.slot.intent;}
+  async markRead(id:string,throughSequence:number,signal:AbortSignal):Promise<number> {
+    const conversation=this.conversations.get(id);
+    if(!conversation)return 0;
+    if(throughSequence<=conversation.viewerState.readSequence)return conversation.viewerState.unreadCount;
+    let slot=this.readSlots.get(id);if(!slot){slot=new CommandSlot();this.readSlots.set(id,slot);}
+    const intent=slot.intent as Intent<'markChatRead'>|undefined??new Intent('markChatRead',{throughSequence},{id});
+    try {const response=await slot.run(this.api,intent,signal);conversation.viewerState=response.data;return response.data.unreadCount;}
+    catch(error){this.handleSecurity(error);throw error;}
+  }
+  async setPinned(id:string,pinned:boolean,signal:AbortSignal):Promise<void> {
+    const conversation=this.conversations.get(id);if(!conversation)throw new ApiError('NOT_FOUND','会话不可访问。');
+    await this.execute('updateChatPreferences',{expectedVersion:conversation.viewerState.version,pinned},{id},signal);
+  }
   private async execute<K extends RouteName>(route:K,body:RequestFor<K>['body'],params:RequestFor<K>['params'],signal:AbortSignal):Promise<ResponseFor<K>> {
     signal.throwIfAborted();
     const retained=this.slot.intent;
@@ -120,11 +135,13 @@ export class ChatApiSource implements ChatSource {
         const projected:MessageView[]=[];
         for(const message of [...new Map(messages.map(m=>[m.id,m])).values()].sort((a,b)=>a.sequence-b.sequence))projected.push(await this.messageProjection(message,actions,taskDetails,signal));
         const joined=conversation.members.filter(m=>m.status==='joined').map(m=>contacts.find(c=>c.id===m.contactId)).filter((c):c is Contact=>!!c);
-        views.push({id:conversation.id,title:conversation.title,subtitle:conversation.kind==='personal'?`个人 AI · 主人：${auth.data.member.displayName}`:conversation.kind==='group'?'任务群 · 加入群与任务承接分别确认':'真人私聊',preview:messages.at(-1)?.text??'暂无消息',pinned:conversation.kind==='personal'&&conversation.ownerMemberId===this.ownerId,group:conversation.kind==='group',canSend:conversation.allowedActions.includes('send'),messages:projected,members:conversation.members.map(m=>{const contact=contacts.find(c=>c.id===m.contactId);return {...(contact?contactProjection(contact,contacts,this.members,this.ownerId):{id:m.contactId,name:m.contactId,identity:'身份待确认',owner:'归属待确认',icon:'user' as const,availability:''}),availability:memberLabels[m.status],canMention:m.status==='joined'};}),sendTargets:joined.filter(c=>c.identity.kind!=='human').map(c=>({id:c.id,label:c.displayName})),contextChoices:contexts,uploadTasks});
+        const latest=messages.reduce<ChatMessage|undefined>((last,message)=>!last||message.sequence>last.sequence?message:last,undefined);
+        const latestCards=projected.at(-1)?.cards;
+        views.push({id:conversation.id,title:conversation.title,subtitle:conversation.kind==='personal'?`个人 AI · 主人：${auth.data.member.displayName}`:conversation.kind==='group'?`任务群 · ${joined.length} 位已加入成员`:'真人私聊',preview:latest?.text||latestCards?.map(c=>`[${c.title}] ${c.status}`).join(' · ')||'暂无消息',pinned:conversation.viewerState.pinned,fixed:conversation.kind==='personal'&&conversation.ownerMemberId===this.ownerId,unreadCount:conversation.viewerState.unreadCount,displayedThroughSequence:latest?.sequence??0,lastMessageAt:latest?.createdAt,icon:conversation.kind==='direct'?'user':'robot',group:conversation.kind==='group',canSend:conversation.allowedActions.includes('send'),messages:projected,members:conversation.members.map(m=>{const contact=contacts.find(c=>c.id===m.contactId);return {...(contact?contactProjection(contact,contacts,this.members,this.ownerId):{id:m.contactId,name:m.contactId,identity:'身份待确认',owner:'归属待确认',icon:'user' as const,availability:''}),availability:memberLabels[m.status],canMention:m.status==='joined'};}),sendTargets:joined.filter(c=>c.identity.kind!=='human').map(c=>({id:c.id,label:c.displayName})),contextChoices:contexts,uploadTasks});
       }
       signal.throwIfAborted();if(this.disposed)throw new DOMException('Disposed','AbortError');
       this.conversations=nextConversations;this.actions=nextActions;this.taskRefs=nextTaskRefs;this.invitations=new Map(invitations.map(i=>[i.id,i]));
-      return {contacts:contacts.map(c=>contactProjection(c,contacts,this.members,this.ownerId)),conversations:views,notice:'消息与操作状态来自服务 · 群内 @不会自动执行任务',invitations:invitations.map(i=>({id:i.id,title:i.title,detail:`邀请联系人：${contacts.find(c=>c.id===i.invitedContactId)?.displayName??i.invitedContactId}\n邀请人：${this.members.find(m=>m.id===i.invitedByMemberId)?.displayName??i.invitedByMemberId}\n加入群不代表接受任务，也不分享个人助理历史。`,status:invitationLabels[i.status],actions:i.status==='pending'?[{id:`invitation:accept:${i.id}`,label:'接受群邀请'},{id:`invitation:decline:${i.id}`,label:'拒绝群邀请'}]:[]}))};
+      return {contacts:contacts.map(c=>contactProjection(c,contacts,this.members,this.ownerId)),conversations:views,notice:'',invitations:invitations.map(i=>({id:i.id,title:i.title,detail:`邀请联系人：${contacts.find(c=>c.id===i.invitedContactId)?.displayName??i.invitedContactId}\n邀请人：${this.members.find(m=>m.id===i.invitedByMemberId)?.displayName??i.invitedByMemberId}\n加入群不代表接受任务，也不分享个人助理历史。`,status:invitationLabels[i.status],actions:i.status==='pending'?[{id:`invitation:accept:${i.id}`,label:'接受群邀请'},{id:`invitation:decline:${i.id}`,label:'拒绝群邀请'}]:[]}))};
     } catch(error){this.handleSecurity(error);throw error;}
   }
   private async messageProjection(message:ChatMessage,actions:ChatAction[],taskDetails:Map<string,ResponseFor<'task'>['data']>,signal:AbortSignal):Promise<MessageView> {
@@ -197,7 +214,7 @@ export class ChatApiSource implements ChatSource {
         if(!found)cards.push({kind:'result',title:({assignment:'任务承接记录',deliverable:'交付版本',artifact:'授权附件'})[resource.kind],detail:refText(resource.ref),status:'服务授权引用 · 当前未读取到可检查的详情'});
       }
     }
-    return {id:message.id,sender:contact?.displayName??(message.origin==='service'?'服务回执':'身份待确认'),identity:contact?identityLabels[contact.identity.kind]:'服务',senderIcon:contact?.identity.kind==='human'?'user':'robot',own:contact?.identity.kind==='human'&&contact.identity.memberId===this.ownerId,text:message.text??'',time:new Date(message.createdAt).toLocaleString('zh-CN'),cards};
+    return {id:message.id,sender:contact?.displayName??(message.origin==='service'?'服务回执':'身份待确认'),identity:contact?identityLabels[contact.identity.kind]:'服务',senderIcon:contact?.identity.kind==='human'?'user':'robot',own:contact?.identity.kind==='human'&&contact.identity.memberId===this.ownerId,text:message.text??'',time:new Date(message.createdAt).toLocaleString('zh-CN'),createdAt:message.createdAt,cards};
   }
   private taskInvitationActions(id:string,assignmentVersion:number,taskVersion:number) {
     this.taskInvites.set(id,{assignmentVersion,taskVersion});
@@ -233,7 +250,9 @@ export class ChatApiSource implements ChatSource {
     if(kind==='invitation') {
       const invitation=this.invitations.get(id);if(!invitation||(decision!=='accept'&&decision!=='decline'))throw new ApiError('INVALID_STATE','邀请状态已变化，请刷新。');
       await this.execute('decideChatInvitation',{expectedVersion:invitation.version,decision},{id},signal);
-      return decision==='accept'?invitation.conversationId:conversationId;
+      // Granting one's AI permission to join does not join its human owner.
+      const human=this.contacts.find(c=>c.id===invitation.invitedContactId)?.identity.kind==='human';
+      return decision==='accept'&&human?invitation.conversationId:conversationId;
     }
     if(kind==='taskinvitation') {
       const pending=this.taskInvites.get(id);if(!pending||(decision!=='accepted'&&decision!=='declined'))throw new ApiError('INVALID_STATE','任务邀请已变化，请重新读取。');

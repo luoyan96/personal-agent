@@ -9,13 +9,13 @@ const human=Contact.parse({id:'contact_human',labId:'lab_test',displayName:'合�
 const own=Contact.parse({...human,id:'contact_own_agent',displayName:'自己的助理',identity:{kind:'personal_agent',ownerMemberId:'owner_test'},availability:{status:'unavailable',reason:'missing_credentials'}});
 const other=Contact.parse({...own,id:'contact_other_agent',displayName:'其他成员助理',identity:{kind:'personal_agent',ownerMemberId:'other_owner'},availability:{status:'unavailable',reason:'owner_authorization_required'}});
 const member=(contactId:string,status='joined')=>({contactId,role:'member',status,version:1});
-const personal=Conversation.parse({id:'personal_test',labId:'lab_test',kind:'personal',title:'自己的助理',ownerMemberId:'owner_test',version:1,members:[member(human.id),member(own.id)],taskIds:[],lastSequence:0,createdAt:at,updatedAt:at,allowedActions:['send']});
-const group=Conversation.parse({...personal,id:'group_test',kind:'group',title:'合成群',members:[member(human.id),member(own.id),member(other.id,'invited')],lastSequence:1,allowedActions:['send','invite','manage']});
+const personal=Conversation.parse({id:'personal_test',labId:'lab_test',kind:'personal',title:'自己的助理',ownerMemberId:'owner_test',version:1,members:[member(human.id),member(own.id)],taskIds:[],lastSequence:0,createdAt:at,updatedAt:at,allowedActions:['send'],viewerState:{readSequence:0,unreadCount:0,pinned:true,version:1}});
+const group=Conversation.parse({...personal,id:'group_test',kind:'group',title:'合成群',members:[member(human.id),member(own.id),member(other.id,'invited')],lastSequence:1,allowedActions:['send','invite','manage'],viewerState:{readSequence:0,unreadCount:1,pinned:false,version:1}});
 const message=ChatMessage.parse({id:'message_test',conversationId:group.id,sequence:1,senderContactId:own.id,origin:'model',text:'合成建议',mentions:[],resources:[],actionIds:['action_test'],turnId:null,createdAt:at});
 const action=ChatAction.parse({id:'action_test',conversationId:group.id,sourceMessageId:message.id,payload:{kind:'create_group',title:'新任务群',plan:{id:'plan_test',version:1},contactIds:[human.id,other.id],sharedContext:{selectedText:'仅分享这个合成片段',artifactRefs:[{id:'artifact_test',version:2}]}},status:'proposed',version:1,createdAt:at,expiresAt:'2026-12-04T00:00:00Z',allowedDecisions:['confirm','dismiss']});
 function harness(){
  const calls:{name:RouteName;body:unknown;headers:HeadersInit|undefined}[]=[],security=vi.fn();
- let failSend=false,otherOwner=false,failEnsure=false,pendingTask=false,fullTaskMode=false,planVersion=1,turnMode=false;
+ let failSend=false,failRead=false,otherOwner=false,failEnsure=false,pendingTask=false,fullTaskMode=false,planVersion=1,turnMode=false;
  const summary=routes.task.response.parse(fixtures.invitationSummary.value).data;
  const task={...fixtures.blockedTask.value.data,allowedActions:['upload','run']};
  const artifact={...fixtures.revokedArtifactMetadata.value.data,id:'artifact_test',taskId:task.id,accessStatus:'available'};
@@ -29,6 +29,7 @@ function harness(){
   const name=entry[0] as RouteName,body=init?.body?JSON.parse(String(init.body)):null;
   calls.push({name,body,headers:init?.headers});
   if(name==='sendChatMessage'&&failSend)throw new Error('synthetic transport error');
+  if(name==='markChatRead'&&failRead)throw new Error('synthetic read transport error');
   let response:unknown;
   switch(name){
    case 'session':{const data=routes.session.response.parse(structuredClone(endpointExamples.session!.response)).data;data.member.id=otherOwner?'other_owner':'owner_test';response={data};break;}
@@ -43,6 +44,8 @@ function harness(){
    case 'decideChatAction':response={data:{action:{...action,status:'applied',version:2},conversationId:group.id,resources:[]}};break;
    case 'decideChatInvitation':response={data:member(own.id)};break;
    case 'createDirectConversation':response={data:personal};break;
+   case 'markChatRead':response={data:{...group.viewerState,readSequence:1,unreadCount:0}};break;
+   case 'updateChatPreferences':response={data:{...group.viewerState,pinned:true,version:2}};break;
    case 'task':response={data:fullTaskMode?fullTask:summary};break;
    case 'getPlan':response={data:{...fixtures.invitationPlan.value.data,id:'plan_test',version:planVersion}};break;
    case 'getRun':response={data:run};break;
@@ -52,7 +55,7 @@ function harness(){
   routes[name].response.parse(response);
   return new Response(JSON.stringify(response),{status:routes[name].status,headers:{'Content-Type':'application/json','X-Contract-Version':contractVersion}});
  }));client.csrfToken='test-csrf';
- return {source:new ChatApiSource(client,'owner_test',[{id:'owner_test',displayName:'合成主人'}],security),calls,security,failSend:(value:boolean)=>{failSend=value;},otherOwner:()=>{otherOwner=true;},failEnsure:()=>{failEnsure=true;},pendingTask:()=>{pendingTask=true;},fullTask:()=>{fullTaskMode=true;},stalePlan:()=>{planVersion=2;},turn:()=>{turnMode=true;}};
+ return {source:new ChatApiSource(client,'owner_test',[{id:'owner_test',displayName:'合成主人'}],security),calls,security,failSend:(value:boolean)=>{failSend=value;},failRead:(value:boolean)=>{failRead=value;},otherOwner:()=>{otherOwner=true;},failEnsure:()=>{failEnsure=true;},pendingTask:()=>{pendingTask=true;},fullTask:()=>{fullTaskMode=true;},stalePlan:()=>{planVersion=2;},turn:()=>{turnMode=true;}};
 }
 describe('frozen CHAT1 API wiring (synthetic transport)',()=>{
  it('ensures real default conversation, consumes opaque paging and deduplicates messages',async()=>{
@@ -99,6 +102,7 @@ describe('frozen CHAT1 API wiring (synthetic transport)',()=>{
   expect(contactProjection(other,[human,own,other],[]).owner).toContain('other_owner');
   const run=ChatAction.parse({...action,payload:{kind:'run_task',contactId:own.id,task:{id:'task_test',version:4},capability:{id:'capability_test',version:2,visibility:'lab_public'},budget:chatBudget,inputArtifactRefs:[]}});
   expect(actionDetail(run,[human,own])).toContain('12000 tokens / 120 秒');
+  expect(contactProjection(human,[human,own],[],'owner_test')).toMatchObject({canOpenDirect:false,directHint:'这是你自己的成员资料，可通过个人助理聊天。'});
  });
  it('excludes pending-invite task summary from AI context and accepts task inline independently of group join',async()=>{
   const h=harness(),signal=new AbortController().signal;h.pendingTask();const snapshot=await h.source.read(signal);
@@ -125,5 +129,19 @@ describe('frozen CHAT1 API wiring (synthetic transport)',()=>{
  it('retries only with service remaining budget and allowed action',async()=>{
   const h=harness(),signal=new AbortController().signal;h.turn();await h.source.read(signal);
   await h.source.act(group.id,message.id,'turn:retry:turn_test',signal);expect(h.calls.at(-1)).toMatchObject({name:'retryChatTurn',body:{budget:{maxTokens:800,maxSeconds:90}}});
+ });
+ it('reads without acknowledging unopened chats; marks only delivered sequence and keeps exact failed read key',async()=>{
+  const h=harness(),signal=new AbortController().signal,snapshot=await h.source.read(signal);
+  expect(snapshot.conversations.find(c=>c.id===group.id)?.unreadCount).toBe(1);
+  expect(h.calls.filter(c=>c.name==='markChatRead')).toHaveLength(0);
+  h.failRead(true);await expect(h.source.markRead(group.id,1,signal)).rejects.toMatchObject({code:'NETWORK_ERROR'});
+  h.failRead(false);expect(await h.source.markRead(group.id,1,signal)).toBe(0);
+  const reads=h.calls.filter(c=>c.name==='markChatRead');expect(reads).toHaveLength(2);expect(reads[0]?.body).toEqual({throughSequence:1});expect(reads[0]?.headers).toEqual(reads[1]?.headers);
+  await h.source.markRead(group.id,1,signal);expect(h.calls.filter(c=>c.name==='markChatRead')).toHaveLength(2);
+  await h.source.setPinned(group.id,true,signal);expect(h.calls.at(-1)).toMatchObject({name:'updateChatPreferences',body:{expectedVersion:1,pinned:true}});
+ });
+ it('does not navigate an AI owner into a group after accepting only an AI invitation',async()=>{
+  const h=harness(),signal=new AbortController().signal;await h.source.read(signal);
+  expect(await h.source.act(personal.id,'invitation:invitation_test','invitation:accept:invitation_test',signal)).toBe(personal.id);
  });
 });

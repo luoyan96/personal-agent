@@ -12,7 +12,7 @@ import { CoordinationContext } from './coordination-view';
 import { ReuseContext } from './reuse-controller';
 import { scheduleFields, readSchedule, datedFields, readDated } from './schedule-editor';
 import { registrationPage, bindRegistration } from './registration';
-import { ChatView } from './chat-view';
+import { ChatView, clearStoredChatDrafts } from './chat-view';
 import type { ChatDraftEntries } from './chat-view';
 import { ChatApiSource } from './chat-api-source';
 import './chat.css';
@@ -69,6 +69,7 @@ function resetEditor() {
   dirty = false;
 }
 function clearOwnedContext() {
+  clearStoredChatDrafts(session?.member.id);
   chatView?.dispose(); chatView=undefined;
   chatDrafts=[];
   chatCommand=new CommandSlot();
@@ -106,7 +107,7 @@ function shell() {
   document.querySelector<HTMLButtonElement>('[data-skip]')!.onclick = () => document.querySelector<HTMLElement>('main')!.focus();
   action('logout', async () => {
     await api.call('logout', {params:{},query:{},headers:{},body:{}});
-    session = undefined; api.csrfToken = ''; members = []; clearOwnedContext();
+    clearOwnedContext(); session = undefined; api.csrfToken = ''; members = [];
     location.hash = '/login'; await load();
   });
 }
@@ -475,7 +476,7 @@ async function load() {
       // or invalidate the live conversation after a message or action mutation.
       activeSnapshot=undefined;
       content('<div id="chat-root"></div>','科研聊天');
-      chatView=new ChatView(document.querySelector<HTMLElement>('#chat-root')!,new ChatApiSource(api,session.member.id,members,error=>{if(error.code!=='UNAUTHENTICATED'){chatDrafts=[];chatCommand=new CommandSlot();}feedback(error);},chatCommand),chatDrafts);
+      chatView=new ChatView(document.querySelector<HTMLElement>('#chat-root')!,new ChatApiSource(api,session.member.id,members,error=>{clearStoredChatDrafts(session?.member.id);if(error.code!=='UNAUTHENTICATED'){chatDrafts=[];chatCommand=new CommandSlot();}feedback(error);},chatCommand),chatDrafts,session.member.id);
       await chatView.mount();
     }
     else if(path==='/work')await dailyEntry(signal);
