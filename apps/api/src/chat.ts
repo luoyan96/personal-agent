@@ -8,17 +8,19 @@ import { hash, signingKey } from './auth.js'
 import { labAiRuntime } from './lab-ai-settings.js'
 import type { Config } from './config.js'
 import { fail } from './errors.js'
+import { ContactDirectory, directoryCommands } from './contact-directory.js'
 
 export type ChatCommand = keyof typeof chatRoutes
 type Resource = z.infer<typeof ChatResource>
-export type TurnInput = { budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number }
-export type ChatRequest = { params: { id?: string; contactId?: string }; query: { cursor?: string; limit?: number; search?: string; afterSequence?: number }; headers: { 'Idempotency-Key'?: string }; body: unknown }
+export type TurnInput = { budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string }
+export type ChatRequest = { params: { id?: string; contactId?: string }; query: { cursor?: string; limit?: number; search?: string; afterSequence?: number; view?: 'directory'|'mine'; direction?: 'all'|'incoming'|'outgoing'; status?: 'all'|'pending'; scope?: 'private_agent'|'conversation'; scopeId?: string }; headers: { 'Idempotency-Key'?: string }; body: unknown }
 type Request = ChatRequest
 const decode = (value: unknown) => JSON.parse(String(value))
 const encode = JSON.stringify
 export class ChatService {
   constructor(readonly c: Collaboration, readonly config: Config) {}
   get db() { return this.c.db }
+  get directory() { return new ContactDirectory(this) }
   get ai() { const r = labAiRuntime(this.db, this.c.actor.labId, this.config); return new AiService(this.c, r.enabled, r.model) }
   availability(): Contact['availability'] {
     const s = this.db.prepare('SELECT enabled,encrypted_api_key FROM lab_ai_settings WHERE lab_id=?').get(this.c.actor.labId)
@@ -40,7 +42,8 @@ export class ChatService {
     const row = this.db.prepare("SELECT id FROM chat_contacts WHERE lab_id=? AND kind='human' AND principal=?").get(this.c.actor.labId, memberId)
     if (!row) fail('NOT_FOUND'); return this.contact(String(row.id))
   }
-  contact(id: string): Contact {
+  contact(id: string): Contact { return this.directory.contact(id) }
+  baseContact(id: string): Contact {
     const row = this.db.prepare('SELECT * FROM chat_contacts WHERE id=? AND lab_id=?').get(id, this.c.actor.labId)
     if (!row) fail('NOT_FOUND')
     const owner = this.db.prepare('SELECT m.display_name,m.version,a.disabled FROM members m JOIN auth_accounts a ON a.member_id=m.id WHERE m.id=? AND m.lab_id=?').get(row.owner_id!, this.c.actor.labId)
@@ -65,14 +68,17 @@ export class ChatService {
     const value = Conversation.parse(decode(row.document))
     value.members = this.db.prepare('SELECT contact_id,role,status,version FROM chat_members WHERE conversation_id=? ORDER BY contact_id').all(id).map(r => ConversationMember.parse({ contactId: r.contact_id, role: r.role, status: r.status, version: r.version }))
     value.allowedActions = value.kind === 'group' && value.ownerMemberId === this.c.actor.id ? ['send', 'invite', 'manage'] : value.members.some(m => m.contactId === self && m.status === 'joined') ? ['send'] : []
+    if(value.ownerMemberId===this.c.actor.id)value.allowedActions.push('manage_memory')
     // Task association is an ACL-filtered directory, not a grant.
     value.taskIds = value.taskIds.filter(taskId => { try { this.c.taskRow(taskId); return true } catch { return false } })
     if (value.kind === 'direct') {
       const other = value.members.find(member => member.contactId !== self)
       if (other) {
-        try { value.title = this.contact(other.contactId).displayName }
-        catch { value.title = '已停用成员' }
+        const contact=this.contact(other.contactId);if(!contact.allowedActions.includes('chat'))fail('NOT_FOUND');value.title=contact.displayName
       }
+    } else if(value.kind==='personal') {
+      const agent=value.members.find(member=>member.contactId!==self)
+      if(agent)value.title=this.contact(agent.contactId).displayName
     }
     if (withViewerState) value.viewerState = this.viewerState(value)
     return value
@@ -127,7 +133,8 @@ export class ChatService {
     const contact = this.contact(contactId)
     if (!group.members.some(m => m.contactId === contactId && m.status === 'joined')) fail('NOT_FOUND')
     if (contact.identity.kind === 'human') fail('VALIDATION_ERROR')
-    if (group.kind === 'direct' || (group.kind === 'personal' && contact.identity.kind !== 'personal_agent')) fail('FORBIDDEN')
+    if (group.kind === 'personal' && (contact.identity.kind !== 'personal_agent'||contact.profile.role!=='coordinator'||contact.identity.ownerMemberId!==this.c.actor.id)) fail('FORBIDDEN')
+    if (group.kind==='direct')this.directory.requireDirect(contact)
     if (contact.identity.kind === 'personal_agent') contact.availability = this.availability()
     return contact
   }
@@ -154,6 +161,7 @@ export class ChatService {
     const turn = AgentTurn.parse(decode(row.document)), input = decode(row.request_json) as TurnInput
     const group = this.conversation(turn.conversationId, false); this.joinedAgent(group, turn.agentContactId)
     if (exact) this.c.checkVersion(group.version, input.conversationVersion)
+    if (exact && input.agentContextFingerprint && input.agentContextFingerprint!==this.directory.modelContext(turn.agentContactId,group.id).fingerprint)fail('VERSION_CONFLICT')
     for (const ref of input.context) this.checkResource(ref, group.id, exact, true)
     return { row, turn, input, group }
   }
@@ -255,6 +263,7 @@ export class ChatService {
   }
   newTurn(group: Conversation, message: ChatMessage, agentId: string, input: TurnInput, root?: string) {
     const agent = this.joinedAgent(group, agentId)
+    input.agentContextFingerprint=this.directory.modelContext(agentId,group.id).fingerprint
     if(root&&this.db.prepare("SELECT 1 FROM chat_turns WHERE root_id=? AND status IN ('queued','running','waiting_input')").get(root))fail('INVALID_STATE')
     if (Number(this.db.prepare("SELECT count(*) n FROM chat_turns WHERE owner_id=? AND status IN ('queued','running')").get(this.c.actor.id)!.n) >= 5) fail('RATE_LIMITED')
     const availability = agent.availability
@@ -283,6 +292,7 @@ export class ChatService {
   }
   cursorMac(value: string) { return createHmac('sha256', signingKey(this.db)).update(`chat:${value}`).digest('hex') }
   authorize(name: ChatCommand, req: Request) {
+    if(this.directory.authorize(name,req))return
     const id = req.params.id
     if (name === 'chatTurn' || name === 'cancelChatTurn' || name === 'retryChatTurn') this.turn(id!)
     else if (name === 'decideChatAction') this.action(id!)
@@ -296,6 +306,7 @@ export class ChatService {
     if (cached) {
       if (cached.request_hash !== fingerprint) fail('IDEMPOTENCY_CONFLICT')
       const previous = decode(cached.response_json)
+      const directoryReplay=this.directory.replay(name,previous);if(directoryReplay)return route.response.parse(directoryReplay)
       if (name === 'sendChatMessage') {const message=this.projectedMessage(previous.data.message.id);return route.response.parse({ data: { message, turn: message.turnId ? this.turn(message.turnId) : null } })}
       if (name === 'personalConversation') return { data: { conversation: this.conversation(previous.data.conversation.id), agent: this.contact(previous.data.agent.id) } }
       if (name === 'createDirectConversation') return { data: this.conversation(previous.data.id) }
@@ -310,19 +321,23 @@ export class ChatService {
   }
   handle(name: ChatCommand, req: Request): unknown {
     const id = req.params.id!, b = req.body
-    if (name === 'chatContacts') return this.page(name, req.query, this.db.prepare('SELECT id FROM chat_contacts WHERE lab_id=?').all(this.c.actor.labId).map(r => String(r.id)).filter(id => { try { return this.contact(id).displayName.toLocaleLowerCase().includes((req.query.search ?? '').toLocaleLowerCase()) } catch { return false } }).sort((a, b) => this.contact(a).displayName.localeCompare(this.contact(b).displayName) || a.localeCompare(b)), id => this.contact(id))
+    if((directoryCommands as readonly string[]).includes(name))return this.directory.handle(name,req)
+    if (name === 'chatContacts') return this.page(name, req.query, this.db.prepare('SELECT id FROM chat_contacts WHERE lab_id=?').all(this.c.actor.labId).map(r => String(r.id)).filter(id => { try { const contact=this.contact(id);return (req.query.view!=='mine'||contact.relationship.status==='own'||contact.relationship.status==='accepted')&&[contact.displayName,contact.profile.introduction,contact.profile.capabilityDescription].join(' ').toLocaleLowerCase().includes((req.query.search ?? '').toLocaleLowerCase()) } catch { return false } }).sort((a, b) => this.contact(a).displayName.localeCompare(this.contact(b).displayName) || a.localeCompare(b)), id => {const contact=this.contact(id);if(req.query.view==='mine'&&!['own','accepted'].includes(contact.relationship.status))fail('NOT_FOUND');return contact})
     if (name === 'personalConversation') {
-      const agentId = String(this.db.prepare("SELECT id FROM chat_contacts WHERE lab_id=? AND kind='personal_agent' AND owner_id=?").get(this.c.actor.labId, this.c.actor.id)!.id), agent = this.contact(agentId)
+      const agentId = String(this.db.prepare("SELECT id FROM chat_contacts WHERE lab_id=? AND kind='personal_agent' AND owner_id=? AND principal=owner_id").get(this.c.actor.labId, this.c.actor.id)!.id), agent = this.contact(agentId)
       return { data: { conversation: this.newConversation('personal', agent.displayName, [agentId], `personal:${this.c.actor.labId}:${this.c.actor.id}`), agent } }
     }
     if (name === 'createDirectConversation') {
       const contact = this.contact((b as RequestFor<'createDirectConversation'>['body']).contactId)
-      if (contact.identity.kind === 'personal_agent') {
-        if (contact.identity.ownerMemberId !== this.c.actor.id) fail('FORBIDDEN')
+      this.directory.requireDirect(contact)
+      if (contact.identity.kind === 'personal_agent' && contact.identity.ownerMemberId===this.c.actor.id && contact.profile.role==='coordinator') {
         return { data: (this.handle('personalConversation', { ...req, body: {} }) as { data: { conversation: Conversation } }).data.conversation }
       }
-      if (contact.identity.kind !== 'human' || contact.identity.memberId === this.c.actor.id) fail('FORBIDDEN')
-      return { data: this.newConversation('direct', contact.displayName, [contact.id], `direct:${this.c.actor.labId}:${[this.c.actor.id, contact.identity.memberId].sort().join(':')}`) }
+      if (contact.identity.kind === 'human') {
+        if(contact.identity.memberId===this.c.actor.id)fail('FORBIDDEN')
+        return { data: this.newConversation('direct', contact.displayName, [contact.id], `direct:${this.c.actor.labId}:${[this.c.actor.id, contact.identity.memberId].sort().join(':')}`) }
+      }
+      return {data:this.newConversation('direct',contact.displayName,[contact.id],`agentdirect:${this.c.actor.labId}:${this.c.actor.id}:${contact.id}`)}
     }
     if (name === 'chatConversation') return { data: this.conversation(id) }
     if (name === 'markChatRead') {

@@ -71,10 +71,155 @@ async function setup(enabled = true) {
     expect(value?.payload, actions.raw).toEqual(action)
     return value
   }
-  return { dir, db, config, app, clients, accounts, call, contacts, human, agent, publicAgent, personal, ask, groupProposal, proposeAction }
+  async function connect(contactId:string, actor=0) {
+    const requested=await call('requestContact',{}, {id:contactId},actor)
+    expect(requested.status,requested.raw).toBe(200)
+    if(requested.value.data.relationship.status==='pending_outbound') {
+      const target=contacts.find(contact=>contact.id===contactId)!, owner=target.identity.kind==='human'?target.identity.memberId:target.identity.ownerMemberId,decider=['member_A','member_B','member_C'].indexOf(owner)
+      expect((await call('decideContactRequest',{expectedVersion:requested.value.data.relationship.version,decision:'accept'},{id:requested.value.data.relationship.requestId},decider)).status).toBe(200)
+    }
+  }
+  return { dir, db, config, app, clients, accounts, call, contacts, human, agent, publicAgent, personal, ask, groupProposal, proposeAction, connect }
 }
 
 describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
+  it('persists owned agent profiles and requires independent human/private-agent contact acceptance',async()=>{
+    const s=await setup(),body={displayName:'合成文献助理',introduction:'整理合成文献',capabilityDescription:'方法介绍，不是已验证工具',personality:'先列证据再给结论'},key=randomUUID()
+    const created=await s.call('createPersonalAgent',body,{},0,'',key);expect(created.status,created.raw).toBe(201)
+    const specialist=created.value.data as Contact;expect(specialist.profile).toMatchObject({role:'specialist',personality:body.personality,version:1});expect(specialist.relationship.status).toBe('own')
+    expect((await s.call('createPersonalAgent',body,{},0,'',key)).value.data.id).toBe(specialist.id)
+    expect(s.db.prepare("SELECT count(*) n FROM chat_contacts WHERE kind='personal_agent' AND principal<>owner_id").get()!.n).toBe(1)
+    expect((await s.call('chatContact',null,{id:specialist.id},1)).value.data.allowedActions).toContain('request')
+    expect((await s.call('createDirectConversation',{contactId:specialist.id},{},1)).status).toBe(403)
+    const requested=await s.call('requestContact',{}, {id:specialist.id},1),relation=requested.value.data.relationship
+    expect(relation.status).toBe('pending_outbound')
+    expect((await s.call('requestContact',{}, {id:specialist.id},1)).value.data.relationship.requestId).toBe(relation.requestId)
+    expect((await s.call('decideContactRequest',{expectedVersion:relation.version,decision:'accept'},{id:relation.requestId},1)).status).toBe(403)
+    expect((await s.call('decideContactRequest',{expectedVersion:relation.version,decision:'accept'},{id:relation.requestId},2)).status).toBe(404)
+    expect((await s.call('decideContactRequest',{expectedVersion:relation.version,decision:'accept'},{id:relation.requestId})).status).toBe(200)
+    const bDirect=(await s.call('createDirectConversation',{contactId:specialist.id},{},1)).value.data as Conversation
+    expect((await s.call('chatConversation',null,{id:bDirect.id})).status).toBe(404)
+    const aDirect=(await s.call('createDirectConversation',{contactId:specialist.id})).value.data as Conversation
+    expect(aDirect.id).not.toBe(bDirect.id)
+    expect((await s.call('updateContactProfile',{...body,displayName:'越权名称',expectedVersion:1},{id:specialist.id},1)).status).toBe(403)
+    expect((await s.call('updateContactProfile',{...body,displayName:'更新助理',expectedVersion:1},{id:specialist.id})).value.data.profile.version).toBe(2)
+    expect((await s.call('updateContactProfile',{...body,expectedVersion:1},{id:specialist.id})).value.error.code).toBe('VERSION_CONFLICT')
+    const humanBody={...body,displayName:'更新真人A'}
+    expect((await s.call('updateContactProfile',{...humanBody,expectedVersion:1},{id:s.human('member_A').id})).status).toBe(200)
+    expect(s.db.prepare("SELECT display_name FROM members WHERE id='member_A'").get()!.display_name).toBe('更新真人A')
+    expect((await s.call('createDirectConversation',{contactId:s.human('member_C').id})).status).toBe(403)
+    const humanRequest=(await s.call('requestContact',{}, {id:s.human('member_C').id})).value.data.relationship
+    expect((await s.call('decideContactRequest',{expectedVersion:humanRequest.version,decision:'decline'},{id:humanRequest.requestId},2)).value.data.status).toBe('declined')
+    expect((await s.call('createDirectConversation',{contactId:s.human('member_C').id})).status).toBe(403)
+    await s.connect(s.human('member_C').id)
+    expect((await s.call('chatContact',null,{id:s.human('member_A').id},2)).value.data.relationship.status).toBe('accepted')
+    const publicRequest=await s.call('requestContact',{}, {id:s.publicAgent.id},1);expect(publicRequest.value.data.relationship.status).toBe('accepted')
+    expect((await s.call('createDirectConversation',{contactId:s.publicAgent.id},{},1)).status).toBe(200)
+    const coordinator=(await s.call('personalConversation',{})).value.data.agent as Contact;expect(coordinator.profile.role).toBe('coordinator')
+    expect((await s.call('chatContacts',null,{},1,'?view=mine')).value.data.some((contact:Contact)=>contact.id===specialist.id)).toBe(true)
+  })
+
+  it('version-controls private and shared memories and rechecks active/mine/pending filters on saved cursors',async()=>{
+    const s=await setup(),scope={scope:'private_agent',scopeId:s.agent('member_A').id},first=(await s.call('createChatMemory',{...scope,content:'第一条',source:'人工保存'})).value.data
+    const second=(await s.call('createChatMemory',{...scope,content:'第二条',source:null})).value.data
+    const query=`?scope=private_agent&scopeId=${scope.scopeId}&limit=1`,page=await s.call('chatMemories',null,{},0,query),remaining=[first,second].find(memory=>memory.id!==page.value.data[0].id)!
+    expect(page.value.nextCursor).toBeTruthy()
+    expect((await s.call('revokeChatMemory',{expectedVersion:remaining.version},{id:remaining.id})).value.data.status).toBe('revoked')
+    expect((await s.call('chatMemories',null,{},0,`${query}&cursor=${page.value.nextCursor}`)).value.data).toEqual([])
+    const active=[first,second].find(memory=>memory.id!==remaining.id)!,revised=await s.call('reviseChatMemory',{expectedVersion:1,content:'修订内容',source:null},{id:active.id})
+    expect(revised.value.data.version).toBe(2)
+    expect((await s.call('reviseChatMemory',{expectedVersion:1,content:'过期',source:null},{id:active.id})).value.error.code).toBe('VERSION_CONFLICT')
+    expect((await s.call('chatMemoryHistory',null,{id:active.id})).value.data.revisions.map((memory:{content:string})=>memory.content)).toEqual([active.content,'修订内容'])
+    expect((await s.call('chatMemories',null,{},1,query)).status).toBe(404)
+    expect((await s.call('chatMemoryHistory',null,{id:active.id},1)).status).toBe(404)
+    const created=await s.groupProposal(),groupId=created.group.id,invite=(await s.call('chatInvitations',null,{},1)).value.data[0]
+    const shared=(await s.call('createChatMemory',{scope:'conversation',scopeId:groupId,content:'群共同记忆',source:null})).value.data
+    expect((await s.call('chatMemories',null,{},1,`?scope=conversation&scopeId=${groupId}`)).status).toBe(404)
+    await s.call('decideChatInvitation',{expectedVersion:invite.version,decision:'accept'},{id:invite.id},1)
+    expect((await s.call('chatMemories',null,{},1,`?scope=conversation&scopeId=${groupId}`)).value.data[0].allowedActions).toEqual([])
+    expect((await s.call('reviseChatMemory',{expectedVersion:1,content:'非owner修改',source:null},{id:shared.id},1)).status).toBe(403)
+    // Requests and contact lists are also live-filtered on saved ID snapshots.
+    await s.call('requestContact',{}, {id:s.human('member_B').id});await s.call('requestContact',{}, {id:s.human('member_C').id})
+    const requests=await s.call('contactRequests',null,{},0,'?limit=1'),all=(await s.call('contactRequests',null,{},0)).value.data,next=all.find((request:{id:string})=>request.id!==requests.value.data[0].id)
+    await s.call('decideContactRequest',{expectedVersion:next.version,decision:'accept'},{id:next.id},next.deciderMemberId==='member_B'?1:2)
+    expect((await s.call('contactRequests',null,{},0,`?limit=1&cursor=${requests.value.nextCursor}`)).value.data).toEqual([])
+    await s.connect(s.human('member_B').id);await s.connect(s.human('member_C').id)
+    const mine=await s.call('chatContacts',null,{},0,'?view=mine&limit=1'),toRevoke=(await s.call('chatContact',null,{id:s.human('member_B').id})).value.data
+    await s.call('revokeContact',{expectedVersion:toRevoke.relationship.version},{id:toRevoke.id})
+    let cursor=mine.value.nextCursor;const later:Contact[]=[]
+    while(cursor){const page=await s.call('chatContacts',null,{},0,`?view=mine&limit=1&cursor=${cursor}`);later.push(...page.value.data);cursor=page.value.nextCursor}
+    expect(later.some(contact=>contact.id===toRevoke.id)).toBe(false)
+  })
+
+  it('actually injects stable agent profile and permitted persistent memories after history truncation while isolating other-user/group scopes',async()=>{
+    const s=await setup(),profile={displayName:'证据助理',introduction:'INTRO_SENTINEL',capabilityDescription:'CAPABILITY_SENTINEL',personality:'PERSONALITY_SENTINEL'},specialist=(await s.call('createPersonalAgent',profile)).value.data as Contact
+    const ownerDirect=(await s.call('createDirectConversation',{contactId:specialist.id})).value.data as Conversation
+    await s.call('createChatMemory',{scope:'private_agent',scopeId:specialist.id,content:'OWNER_PRIVATE_MEMORY_SENTINEL',source:'持续记忆'})
+    await s.call('createChatMemory',{scope:'conversation',scopeId:ownerDirect.id,content:'OWNER_DIRECT_MEMORY_SENTINEL',source:null})
+    await s.call('sendChatMessage',{text:'TRUNCATED_OWNER_HISTORY_SENTINEL'},{id:ownerDirect.id})
+    for(let i=0;i<21;i++)await s.call('sendChatMessage',{text:`合成截断窗口${i}`},{id:ownerDirect.id})
+    await s.ask(ownerDirect.id,specialist.id)
+    await new ChatWorker(s.db,s.config,async(input,signal,credential)=>{
+      const prompt=JSON.parse(input.prompt);expect(prompt.requestedAgent.profile).toMatchObject({role:'specialist',personality:profile.personality,capabilityDescription:profile.capabilityDescription})
+      expect(prompt.memories.map((memory:{content:string})=>memory.content)).toEqual(expect.arrayContaining(['OWNER_PRIVATE_MEMORY_SENTINEL','OWNER_DIRECT_MEMORY_SENTINEL']))
+      expect(input.prompt).not.toContain('TRUNCATED_OWNER_HISTORY_SENTINEL');expect(prompt.requestedAgent.relationship).toBeUndefined();expect(prompt.contacts.every((contact:Contact)=>!('relationship' in contact)&&!('allowedActions' in contact))).toBe(true)
+      return model(reply())(input,signal,credential)
+    }).tick()
+    const request=(await s.call('requestContact',{}, {id:specialist.id},1)).value.data.relationship
+    await s.call('decideContactRequest',{expectedVersion:request.version,decision:'accept'},{id:request.requestId})
+    const otherDirect=(await s.call('createDirectConversation',{contactId:specialist.id},{},1)).value.data as Conversation
+    await s.call('createChatMemory',{scope:'conversation',scopeId:otherDirect.id,content:'OTHER_DIRECT_MEMORY_SENTINEL',source:null},{},1)
+    await s.ask(otherDirect.id,specialist.id,[],'其他成员问题',1)
+    await new ChatWorker(s.db,s.config,async(input,signal,credential)=>{expect(input.prompt).toContain('OTHER_DIRECT_MEMORY_SENTINEL');expect(input.prompt).toContain('PERSONALITY_SENTINEL');expect(input.prompt).not.toContain('OWNER_PRIVATE_MEMORY_SENTINEL');expect(input.prompt).not.toContain('OWNER_DIRECT_MEMORY_SENTINEL');return model(reply())(input,signal,credential)}).tick()
+    const created=await s.groupProposal([specialist.id]),groupId=created.group.id,agentInvite=(await s.call('chatInvitations')).value.data.find((invite:{invitedContactId:string})=>invite.invitedContactId===specialist.id)
+    await s.call('decideChatInvitation',{expectedVersion:agentInvite.version,decision:'accept'},{id:agentInvite.id})
+    await s.call('createChatMemory',{scope:'conversation',scopeId:groupId,content:'GROUP_SHARED_MEMORY_SENTINEL',source:null})
+    await s.ask(groupId,specialist.id)
+    await new ChatWorker(s.db,s.config,async(input,signal,credential)=>{expect(input.prompt).toContain('GROUP_SHARED_MEMORY_SENTINEL');expect(input.prompt).not.toContain('OWNER_PRIVATE_MEMORY_SENTINEL');expect(input.prompt).not.toContain('OWNER_DIRECT_MEMORY_SENTINEL');expect(input.prompt).not.toContain('OTHER_DIRECT_MEMORY_SENTINEL');return model(reply())(input,signal,credential)}).tick()
+  })
+
+  it('fences queued and late profile/memory results, and relationship revocation preserves returned usage',async()=>{
+    const s=await setup(),profile={displayName:'迟到验收助理',introduction:'',capabilityDescription:'',personality:'原设定'},agent=(await s.call('createPersonalAgent',profile)).value.data as Contact,direct=(await s.call('createDirectConversation',{contactId:agent.id})).value.data as Conversation
+    const memory=(await s.call('createChatMemory',{scope:'private_agent',scopeId:agent.id,content:'原记忆',source:null})).value.data
+    const queued=await s.ask(direct.id,agent.id)
+    await s.call('reviseChatMemory',{expectedVersion:1,content:'新记忆',source:null},{id:memory.id})
+    expect((await s.call('chatTurn',null,{id:queued.turn.id})).value.data).toMatchObject({status:'cancelled',failure:'INPUT_CHANGED',outputMessageId:null})
+    const runningTurn=await s.ask(direct.id,agent.id);let start!:()=>void,finish!:(result:Awaited<ReturnType<ModelCall>>)=>void
+    const began=new Promise<void>(resolve=>{start=resolve}),pending=new Promise<Awaited<ReturnType<ModelCall>>>(resolve=>{finish=resolve}),running=new ChatWorker(s.db,s.config,async()=>{start();return pending}).tick();await began
+    await s.call('updateContactProfile',{...profile,personality:'新设定',expectedVersion:1},{id:agent.id})
+    finish({text:JSON.stringify(reply('LATE_PROFILE_RESULT_SENTINEL')),failure:null,inputTokens:12,outputTokens:34,elapsedMs:20});await running
+    expect((await s.call('chatTurn',null,{id:runningTurn.turn.id})).value.data).toMatchObject({status:'cancelled',failure:'INPUT_CHANGED',usage:{inputTokens:12,outputTokens:34}})
+    expect((await s.call('chatMessages',null,{id:direct.id})).raw).not.toContain('LATE_PROFILE_RESULT_SENTINEL')
+    const relation=(await s.call('requestContact',{}, {id:agent.id},1)).value.data.relationship;await s.call('decideContactRequest',{expectedVersion:relation.version,decision:'accept'},{id:relation.requestId})
+    const bDirect=(await s.call('createDirectConversation',{contactId:agent.id},{},1)).value.data as Conversation,key=randomUUID(),sendBody={text:'撤权前问题',intent:'ask_agent',agentContactId:agent.id,budget}
+    const sent=await s.call('sendChatMessage',sendBody,{id:bDirect.id},1,'',key)
+    const current=(await s.call('chatContact',null,{id:agent.id},1)).value.data.relationship
+    await s.call('revokeContactRequest',{expectedVersion:current.version},{id:current.requestId})
+    expect((await s.call('chatConversation',null,{id:bDirect.id},1)).status).toBe(404)
+    expect((await s.call('sendChatMessage',sendBody,{id:bDirect.id},1,'',key)).status).toBe(404)
+    const saved=JSON.parse(String(s.db.prepare('SELECT document FROM chat_turns WHERE id=?').get(sent.value.data.turn.id)!.document));expect(saved).toMatchObject({status:'cancelled',failure:'AUTHORITY_CHANGED'})
+  })
+
+  it('migrates existing 013 human pairs to accepted contacts and retains agent/profile/memory over real HTTP restart',async()=>{
+    const s=await setup(false);await s.connect(s.human('member_B').id)
+    const direct=(await s.call('createDirectConversation',{contactId:s.human('member_B').id})).value.data as Conversation
+    await s.call('sendChatMessage',{text:'旧013真人聊天'},{id:direct.id});await s.call('updateChatPreferences',{expectedVersion:1,pinned:true},{id:direct.id})
+    const previous=s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(direct.id)!.document
+    s.db.exec('DROP TABLE chat_memory_revisions; DROP TABLE chat_memories; DROP TABLE chat_contact_requests; DROP TABLE chat_contact_profiles; DELETE FROM schema_migrations WHERE version=14')
+    migrate(s.db);migrate(s.db)
+    expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(14)
+    expect(s.db.prepare('SELECT count(*) n FROM chat_contact_requests').get()!.n).toBe(1)
+    expect(s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(direct.id)!.document).toBe(previous)
+    expect((await s.call('chatContact',null,{id:s.human('member_B').id})).value.data.relationship.status).toBe('accepted')
+    expect((await s.call('chatConversation',null,{id:direct.id},1)).status).toBe(200)
+    const profile={displayName:'持久化助理',introduction:'长期介绍',capabilityDescription:'合成能力',personality:'持续性格'},agent=(await s.call('createPersonalAgent',profile)).value.data as Contact
+    const memory=(await s.call('createChatMemory',{scope:'private_agent',scopeId:agent.id,content:'重启保留记忆',source:null})).value.data
+    const url=await s.app.listen({port:0,host:'127.0.0.1'}),before=await fetch(`${url}/api/v1/chat/contacts/${agent.id}`,{headers:{cookie:s.clients[0]!.cookie}});expect(before.status).toBe(200)
+    await s.app.close();const restarted=createServer(s.config);cleanup.push(()=>restarted.close());const next=await restarted.listen({port:0,host:'127.0.0.1'})
+    const restored=await fetch(`${next}/api/v1/chat/contacts/${agent.id}`,{headers:{cookie:s.clients[0]!.cookie}});expect((await restored.json()).data.profile.personality).toBe(profile.personality)
+    const memories=await fetch(`${next}/api/v1/chat/memories?scope=private_agent&scopeId=${agent.id}`,{headers:{cookie:s.clients[0]!.cookie}});expect((await memories.json()).data[0]).toMatchObject({id:memory.id,content:'重启保留记忆'})
+  })
+
   it('upgrades a populated migration 012 chat database without rewriting existing conversations or messages', async () => {
     const s = await setup(false)
     await s.call('sendChatMessage', { text: '保留旧聊天记录' }, { id: s.personal.id })
@@ -82,16 +227,17 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     const message = s.db.prepare('SELECT document FROM chat_messages WHERE conversation_id=?').get(s.personal.id)!.document
     // Reconstruct the exact 012 shape by removing only the new 013 table/history.
     // Existing applied checksums and all chat rows remain untouched.
-    s.db.exec('DROP TABLE chat_viewer_states; DELETE FROM schema_migrations WHERE version=13')
+    s.db.exec('DROP TABLE chat_memory_revisions; DROP TABLE chat_memories; DROP TABLE chat_contact_requests; DROP TABLE chat_contact_profiles; DROP TABLE chat_viewer_states; DELETE FROM schema_migrations WHERE version>=13')
     migrate(s.db); migrate(s.db)
-    expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(13)
+    expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(14)
     expect(s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(s.personal.id)!.document).toBe(previous)
     expect(s.db.prepare('SELECT document FROM chat_messages WHERE conversation_id=?').get(s.personal.id)!.document).toBe(message)
     expect((await s.call('chatConversation', null, { id: s.personal.id })).value.data.viewerState).toEqual({ readSequence: 0, unreadCount: 0, pinned: true, version: 1 })
   })
 
   it('persists actor read and pin state over two real HTTP browser sessions, logout and server restart', async () => {
-    const s = await setup(false), direct = (await s.call('createDirectConversation', { contactId: s.human('member_B').id })).value.data as Conversation
+    const s = await setup(false); await s.connect(s.human('member_B').id)
+    const direct = (await s.call('createDirectConversation', { contactId: s.human('member_B').id })).value.data as Conversation
     const url = await s.app.listen({ port: 0, host: '127.0.0.1' })
     async function loginHttp(actor = 1, base = url) {
       const account = s.accounts[actor]!, login = await fetch(`${base}/api/v1/auth/login`, { method: 'POST', headers: { origin: s.config.origin, 'content-type': 'application/json' }, body: JSON.stringify({ username: account.username, password: account.password }) })
@@ -132,12 +278,14 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
   })
 
   it('projects the opposite direct participant, preserves personal-first sorting and rejects stale pin changes', async () => {
-    const s = await setup(false), pinKey = randomUUID(), aDirect = (await s.call('createDirectConversation', { contactId: s.human('member_B').id })).value.data as Conversation
+    const s = await setup(false), pinKey = randomUUID(); await s.connect(s.human('member_B').id)
+    const aDirect = (await s.call('createDirectConversation', { contactId: s.human('member_B').id })).value.data as Conversation
     const bDirect = (await s.call('createDirectConversation', { contactId: s.human('member_A').id }, {}, 1)).value.data as Conversation
     expect(aDirect.id).toBe(bDirect.id); expect(aDirect.title).toBe('Synthetic B'); expect(bDirect.title).toBe('Synthetic A')
     s.db.prepare("UPDATE members SET display_name='Synthetic A updated',version=version+1 WHERE id='member_A'").run()
     expect((await s.call('chatConversation', null, { id: aDirect.id }, 1)).value.data.title).toBe('Synthetic A updated')
     expect(JSON.parse(String(s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(aDirect.id)!.document)).title).toBe('Synthetic B')
+    await s.connect(s.human('member_C').id)
     const cDirect = (await s.call('createDirectConversation', { contactId: s.human('member_C').id })).value.data as Conversation
     await s.call('sendChatMessage', { text: '更新较新的会话' }, { id: cDirect.id })
     expect((await s.call('updateChatPreferences', { expectedVersion: 1, pinned: true }, { id: aDirect.id }, 0, '', pinKey)).value.data).toMatchObject({ pinned: true, version: 2 })
