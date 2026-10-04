@@ -8,6 +8,13 @@ export const readProfileInput=(form:HTMLFormElement):ProfileInput=>{
   const value=(name:string)=>(form.elements.namedItem(name) as HTMLInputElement).value;
   return {displayName:value('displayName'),introduction:value('introduction'),capabilityDescription:value('capabilityDescription'),personality:value('personality')};
 };
+const protectComposition=(form:HTMLFormElement)=>{
+  let composing=false;
+  form.addEventListener('compositionstart',()=>{composing=true;});
+  form.addEventListener('compositionend',()=>{composing=false;});
+  form.addEventListener('keydown',event=>{if(event.key==='Enter'&&(composing||event.isComposing||event.keyCode===229))event.preventDefault();});
+  form.addEventListener('submit',event=>{if(composing){event.preventDefault();event.stopImmediatePropagation();}},true);
+};
 export function renderContactProfile(contact:ContactView):string {
   const row=(label:string,value?:string)=>`<dt>${e(label)}</dt><dd>${e(value||'尚未填写')}</dd>`;
   return `<section class="chat-contact-detail" aria-label="联系人详情"><span class="chat-avatar chat-avatar-${contact.icon}">${contact.icon==='user'?e(Array.from(contact.name)[0]??''):'<i class="ph ph-robot" aria-hidden="true"></i>'}</span><h3>${e(contact.name)}</h3><span class="chat-identity">${e(contact.identity)} · ${e(contact.role??'身份待确认')}</span><dl>${row('归属',contact.owner)}${row('当前状态',contact.availability)}${row('联系人关系',contact.relationship)}${row('介绍',contact.introduction)}${row('能力介绍',contact.capabilityDescription)}${contact.icon==='robot'?row('性格 / 方式',contact.personality):''}</dl><details class="contact-id"><summary>身份记录</summary><p>${e(contact.id)} · 档案 v${contact.profileVersion??'待确认'}</p></details><p>${e(contact.directHint??'')}</p><div class="chat-card-actions">${contact.canOpenDirect?button('data-profile-chat','发消息'):''}${contact.canRequest?button('data-profile-request','添加联系人'):''}${contact.canEdit?button('data-profile-edit','编辑资料'):''}${contact.canManagePrivateMemory?button('data-profile-memory','私有记忆'):''}${contact.canRemove?button('data-profile-remove','移除联系人'):''}</div><p data-profile-status class="chat-input-status" role="status"></p></section>`;
@@ -20,6 +27,7 @@ export class ContactPanel {
   private editing=false;
   private busy=false;
   private alive=true;
+  private requestFilter='pending';
   constructor(private root:HTMLElement,private source:ChatSource,private signal:AbortSignal,snapshot:ChatSnapshot,private selected:string|undefined,private refresh:()=>Promise<void>,private openChat:(id:string)=>Promise<void>,private back:()=>void) {this.snapshot=snapshot;this.render();}
   dispose(){this.alive=false;}
   sync(snapshot:ChatSnapshot) {this.snapshot=snapshot;if(!this.editing&&!this.busy&&!this.root.querySelector('dialog[open]'))this.render();}
@@ -35,7 +43,8 @@ export class ContactPanel {
     if(this.selected==='create')this.edit();
   }
   private requests() {
-    return `<section class="contact-requests"><h3>添加与授权请求</h3><p>添加联系人与加入任务群分别同意。</p>${(this.snapshot.contactRequests??[]).map(r=>`<article class="contact-request"><strong>${e(r.requester)} → ${e(r.target)}</strong><p>${r.canAccept?'等待你同意':'等待对方同意'}</p><div class="chat-card-actions">${r.canAccept?button(`data-request-decision="accept" data-request-id="${e(r.id)}"`,'同意添加'):''}${r.canDecline?button(`data-request-decision="decline" data-request-id="${e(r.id)}"`,'拒绝'):''}${r.canRevoke?button(`data-request-revoke="${e(r.id)}"`,'撤回请求'):''}</div></article>`).join('')||'<div class="chat-empty"><h3>暂无待处理请求</h3><p>新的添加请求会显示在这里。</p></div>'}<p data-profile-status class="chat-input-status" role="status"></p></section>`;
+    const statuses:Record<string,string>={pending:'待同意',accepted:'已同意添加',declined:'已拒绝',revoked:'已撤销'};
+    return `<section class="contact-requests"><h3>添加与授权请求</h3><p>添加联系人与加入任务群分别同意。</p><div class="contact-tabs">${button('data-request-filter="pending"'+(this.requestFilter==='pending'?' aria-pressed="true"':''),'待处理')}${button('data-request-filter="all"'+(this.requestFilter==='all'?' aria-pressed="true"':''),'全部记录')}</div>${(this.snapshot.contactRequests??[]).filter(r=>this.requestFilter==='all'||r.status==='pending').map(r=>`<article class="contact-request"><strong>${e(r.requester)} → ${e(r.target)}</strong><p>${r.status==='pending'?(r.canAccept?'等待你同意':'等待对方同意'):e(statuses[r.status]??r.status)}</p><div class="chat-card-actions">${r.canAccept?button(`data-request-decision="accept" data-request-id="${e(r.id)}"`,'同意添加'):''}${r.canDecline?button(`data-request-decision="decline" data-request-id="${e(r.id)}"`,'拒绝'):''}${r.canRevoke?button(`data-request-revoke="${e(r.id)}"`,r.status==='pending'?'撤回请求':'撤销添加授权'):''}</div><div data-request-review></div></article>`).join('')||'<div class="chat-empty"><h3>暂无请求记录</h3><p>新的添加请求会显示在这里。</p></div>'}<p data-profile-status class="chat-input-status" role="status"></p></section>`;
   }
   private bind() {
     this.root.querySelector<HTMLButtonElement>('.chat-back')!.onclick=this.back;
@@ -53,7 +62,15 @@ export class ContactPanel {
       section.querySelector<HTMLButtonElement>('[data-cancel-remove]')!.onclick=()=>this.render();
     });
     this.root.querySelectorAll<HTMLButtonElement>('[data-request-decision]').forEach(b=>b.onclick=()=>{const request=this.snapshot.contactRequests!.find(r=>r.id===b.dataset.requestId)!;void this.perform(()=>this.source.decideContactRequest!(request.id,b.dataset.requestDecision as 'accept'|'decline',request.version,this.signal));});
-    this.root.querySelectorAll<HTMLButtonElement>('[data-request-revoke]').forEach(b=>b.onclick=()=>{const request=this.snapshot.contactRequests!.find(r=>r.id===b.dataset.requestRevoke)!;void this.perform(()=>this.source.revokeContactRequest!(request.id,request.version,this.signal));});
+    this.root.querySelectorAll<HTMLButtonElement>('[data-request-filter]').forEach(b=>b.onclick=()=>{this.requestFilter=b.dataset.requestFilter!;this.render();});
+    this.root.querySelectorAll<HTMLButtonElement>('[data-request-revoke]').forEach(b=>b.onclick=()=>{
+      const request=this.snapshot.contactRequests!.find(r=>r.id===b.dataset.requestRevoke)!;
+      if(request.status==='pending'){void this.perform(()=>this.source.revokeContactRequest!(request.id,request.version,this.signal));return;}
+      const review=b.closest('article')!.querySelector<HTMLElement>('[data-request-review]')!;
+      review.innerHTML=`<p>撤销 ${e(request.requester)} → ${e(request.target)} 的添加授权后，此私聊将不可访问。既有群和任务仍按原权限处理。</p>${button('data-confirm-revoke-contact','确认撤销添加授权')}${button('data-cancel-revoke-contact','取消')}`;
+      review.querySelector<HTMLButtonElement>('[data-cancel-revoke-contact]')!.onclick=()=>review.innerHTML='';
+      review.querySelector<HTMLButtonElement>('[data-confirm-revoke-contact]')!.onclick=()=>void this.perform(()=>this.source.revokeContactRequest!(request.id,request.version,this.signal));
+    });
   }
   private async perform(action:()=>Promise<void>,reload=true) {
     if(this.busy||!this.valid())return;
@@ -72,7 +89,8 @@ export class ContactPanel {
       this.source.discardPending?.();await this.refresh();const current=this.snapshot.contacts.find(c=>c.id===contact!.id);if(!current?.canEdit)throw new Error('当前不能编辑此档案。');version=current.profileVersion;
       this.root.querySelector<HTMLElement>('[data-profile-version]')!.textContent=`最新档案 v${version}：${current.name}；介绍：${current.introduction||'尚未填写'}；能力：${current.capabilityDescription||'尚未填写'}；方式：${current.personality||'尚未填写'}。核对后再次保存将使用此版本。`;
     },false));
-    this.root.querySelector<HTMLFormElement>('[data-profile-form]')!.onsubmit=event=>{
+    const form=this.root.querySelector<HTMLFormElement>('[data-profile-form]')!;protectComposition(form);
+    form.onsubmit=event=>{
       event.preventDefault();const input=readProfileInput(event.currentTarget as HTMLFormElement);
       void this.perform(async()=>{if(contact)await this.source.saveProfile!(contact.id,input,version!,this.signal);else this.selected=await this.source.createAgent!(input,this.signal);if(!this.valid())return;this.editing=false;await this.refresh();if(this.valid())this.render();},false);
     };
@@ -104,7 +122,8 @@ export function openMemoryPanel(host:HTMLElement,source:ChatSource,scope:MemoryS
     editor.innerHTML=`<form data-memory-form class="contact-form"><h4>${memory?'编辑记忆':'保存记忆'}</h4><label>记忆内容<textarea name="content" required maxlength="2000" rows="4">${e(memory?.content??'')}</textarea></label><label>来源 / 依据<input name="source" maxlength="1000" value="${e(memory?.source??'')}"></label><p data-memory-version>${memory?'基于 v'+version:''}</p><div class="chat-card-actions">${button('data-memory-cancel','取消')}<button type="submit">保存记忆</button></div>${memory?button('data-memory-rebase','读取新版本并保留填写'):''}</form>`;
     editor.querySelector<HTMLButtonElement>('[data-memory-cancel]')!.onclick=()=>editor.innerHTML='';
     editor.querySelector<HTMLButtonElement>('[data-memory-rebase]')?.addEventListener('click',()=>void run(async()=>{source.discardPending?.();await load();const current=memories.find(m=>m.id===memory!.id);if(!current?.canEdit)throw new Error('此记忆已撤销或不再可编辑。');version=current.version;editor.querySelector<HTMLElement>('[data-memory-version]')!.textContent=`最新 v${version}：${current.content}。核对后再次保存将使用此版本。`;status('填写内容保留，请核对最新保存记录。');}));
-    editor.querySelector<HTMLFormElement>('form')!.onsubmit=event=>{event.preventDefault();const form=event.currentTarget as HTMLFormElement,content=(form.elements.namedItem('content') as HTMLTextAreaElement).value,origin=(form.elements.namedItem('source') as HTMLInputElement).value;void run(async()=>{await source.saveMemory!(scope,content,origin||null,signal,memory?.id,version);if(valid()){editor.innerHTML='';await load();status('记忆已保存。');}});};
+    const form=editor.querySelector<HTMLFormElement>('form')!;protectComposition(form);
+    form.onsubmit=event=>{event.preventDefault();const form=event.currentTarget as HTMLFormElement,content=(form.elements.namedItem('content') as HTMLTextAreaElement).value,origin=(form.elements.namedItem('source') as HTMLInputElement).value;void run(async()=>{await source.saveMemory!(scope,content,origin||null,signal,memory?.id,version);if(valid()){editor.innerHTML='';await load();status('记忆已保存。');}});};
   };
   dialog.querySelector<HTMLButtonElement>('[data-memory-close]')!.onclick=close;
   dialog.querySelector<HTMLButtonElement>('[data-memory-new]')?.addEventListener('click',()=>edit());

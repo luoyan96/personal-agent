@@ -34,7 +34,7 @@ function harness(){
   switch(name){
    case 'session':{const data=routes.session.response.parse(structuredClone(endpointExamples.session!.response)).data;data.member.id=otherOwner?'other_owner':'owner_test';response={data};break;}
    case 'personalConversation':if(failEnsure)return new Response(JSON.stringify({error:{code:'NOT_IMPLEMENTED',message:'未实现',requestId:'req_test'}}),{status:501});response={data:{conversation:personal,agent:own}};break;
-   case 'contactRequests':response={data:[],nextCursor:null};break;
+   case 'contactRequests':response={data:['pending','accepted','revoked'].map((status,i)=>({id:'request_'+status,requesterMemberId:'other_owner',requesterContactId:human.id,targetContactId:own.id,deciderMemberId:'owner_test',status,version:i+1,createdAt:at,updatedAt:at,allowedDecisions:status==='pending'?['accept','decline']:[]})),nextCursor:null};break;
    case 'chatContacts':response=url.searchParams.has('cursor')?{data:[other],nextCursor:null}:{data:[human,own],nextCursor:'opaque_page_2'};break;
    case 'chatConversations':response={data:[group,personal,...(directMode?[{...personal,id:'direct_agent',kind:'direct'}]:[])],nextCursor:null};break;
    case 'chatConversation':response={data:url.pathname.endsWith(group.id)?{...group,taskIds:fullTaskMode?[task.id]:pendingTask?[summary.id]:[]}:url.pathname.endsWith('direct_agent')?{...personal,id:'direct_agent',kind:'direct'}:personal};break;
@@ -59,6 +59,12 @@ function harness(){
  return {direct:()=>{directMode=true;},source:new ChatApiSource(client,'owner_test',[{id:'owner_test',displayName:'合成主人'}],security),calls,security,failSend:(value:boolean)=>{failSend=value;},failRead:(value:boolean)=>{failRead=value;},otherOwner:()=>{otherOwner=true;},failEnsure:()=>{failEnsure=true;},pendingTask:()=>{pendingTask=true;},fullTask:()=>{fullTaskMode=true;},stalePlan:()=>{planVersion=2;},turn:()=>{turnMode=true;}};
 }
 describe('frozen CHAT1 API wiring (synthetic transport)',()=>{
+ it('exposes accepted owner authorizations for explicit revocation, without pending actions on processed records',async()=>{
+  const h=harness(),snapshot=await h.source.read(new AbortController().signal);
+  expect(snapshot.contactRequests?.find(r=>r.status==='accepted')).toMatchObject({canRevoke:true,canAccept:false,canDecline:false,version:2});
+  expect(snapshot.contactRequests?.find(r=>r.status==='pending')).toMatchObject({canRevoke:true,canAccept:true,canDecline:true});
+  expect(snapshot.contactRequests?.find(r=>r.status==='revoked')).toMatchObject({canRevoke:false,canAccept:false,canDecline:false});
+ });
  it('uses real permissions for profile, relationships, owned memory and self chat',()=>{
   const specialist=Contact.parse({...own,profile:{role:'specialist',introduction:'介绍',capabilityDescription:'仅用户设定',personality:'简洁',version:7},relationship:{status:'own',requestId:null,version:0},allowedActions:['chat','edit_profile','manage_private_memory']});
   expect(contactProjection(specialist,[human,specialist],[],'owner_test')).toMatchObject({canOpenDirect:true,canEdit:true,canManagePrivateMemory:true,profileVersion:7,mine:true,role:'专属 Agent',personality:'简洁'});

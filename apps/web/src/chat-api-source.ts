@@ -104,7 +104,7 @@ export class ChatApiSource implements ChatSource {
         allPages<Contact>(cursor=>this.api.read('chatContacts',{}, {limit:100,...(cursor?{cursor}:{})},signal),signal),
         allPages<Conversation>(cursor=>this.api.read('chatConversations',{}, {limit:100,...(cursor?{cursor}:{})},signal),signal),
         allPages<Invitation>(cursor=>this.api.read('chatInvitations',{}, {limit:100,...(cursor?{cursor}:{})},signal),signal),
-        allPages<ContactRequest>(cursor=>this.api.read('contactRequests',{}, {limit:100,direction:'all',status:'pending',...(cursor?{cursor}:{})},signal),signal),
+        allPages<ContactRequest>(cursor=>this.api.read('contactRequests',{}, {limit:100,direction:'all',status:'all',...(cursor?{cursor}:{})},signal),signal),
       ]);
       signal.throwIfAborted();if(this.disposed)throw new DOMException('Disposed','AbortError');
       this.contacts=contacts;
@@ -146,7 +146,7 @@ export class ChatApiSource implements ChatSource {
       }
       signal.throwIfAborted();if(this.disposed)throw new DOMException('Disposed','AbortError');
       this.conversations=nextConversations;this.actions=nextActions;this.taskRefs=nextTaskRefs;this.invitations=new Map(invitations.map(i=>[i.id,i]));
-      return {contacts:contacts.map(c=>contactProjection(c,contacts,this.members,this.ownerId)),conversations:views,notice:'',contactRequests:requests.map(r=>({id:r.id,requester:contacts.find(c=>c.id===r.requesterContactId)?.displayName??r.requesterContactId,target:contacts.find(c=>c.id===r.targetContactId)?.displayName??r.targetContactId,status:r.status,version:r.version,canAccept:r.allowedDecisions.includes('accept'),canDecline:r.allowedDecisions.includes('decline'),canRevoke:r.requesterMemberId===this.ownerId||r.deciderMemberId===this.ownerId})),invitations:invitations.map(i=>({id:i.id,title:i.title,detail:`邀请联系人：${contacts.find(c=>c.id===i.invitedContactId)?.displayName??i.invitedContactId}\n邀请人：${this.members.find(m=>m.id===i.invitedByMemberId)?.displayName??i.invitedByMemberId}\n加入群不代表接受任务，也不分享个人助理历史。`,status:invitationLabels[i.status],actions:i.status==='pending'?[{id:`invitation:accept:${i.id}`,label:'接受群邀请'},{id:`invitation:decline:${i.id}`,label:'拒绝群邀请'}]:[]}))};
+      return {contacts:contacts.map(c=>contactProjection(c,contacts,this.members,this.ownerId)),conversations:views,notice:'',contactRequests:requests.map(r=>({id:r.id,requester:contacts.find(c=>c.id===r.requesterContactId)?.displayName??r.requesterContactId,target:contacts.find(c=>c.id===r.targetContactId)?.displayName??r.targetContactId,status:r.status,version:r.version,canAccept:r.allowedDecisions.includes('accept'),canDecline:r.allowedDecisions.includes('decline'),canRevoke:['pending','accepted'].includes(r.status)&&(r.requesterMemberId===this.ownerId||r.deciderMemberId===this.ownerId)})),invitations:invitations.map(i=>({id:i.id,title:i.title,detail:`邀请联系人：${contacts.find(c=>c.id===i.invitedContactId)?.displayName??i.invitedContactId}\n邀请人：${this.members.find(m=>m.id===i.invitedByMemberId)?.displayName??i.invitedByMemberId}\n加入群不代表接受任务，也不分享个人助理历史。`,status:invitationLabels[i.status],actions:i.status==='pending'?[{id:`invitation:accept:${i.id}`,label:'接受群邀请'},{id:`invitation:decline:${i.id}`,label:'拒绝群邀请'}]:[]}))};
     } catch(error){this.handleSecurity(error);throw error;}
   }
   private async messageProjection(message:ChatMessage,actions:ChatAction[],taskDetails:Map<string,ResponseFor<'task'>['data']>,signal:AbortSignal):Promise<MessageView> {
