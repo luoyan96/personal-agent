@@ -106,6 +106,44 @@
 .chat-contact-detail dt { color:var(--chat-sub); }
 .chat-contact-detail dd { margin:0; overflow-wrap:anywhere; }
 .chat-contact-detail p { font-size:12px; color:var(--chat-sub); margin:0 0 18px; }
+.chat-window .chat-self-avatar {padding:0;margin-bottom:22px;}
+.chat-self-avatar .chat-avatar {background:#dce9f8;color:#4b82be;}
+.contact-tabs,.contact-tools {display:flex;gap:6px;margin-top:12px;}
+.contact-tabs button,.contact-tools button {font-size:12px;padding:5px 9px;border:0;background:#f5f7fa;}
+.contact-tabs button[aria-pressed=true] {color:var(--primary);background:#edf5ff;}
+.contact-tools {margin-top:7px;justify-content:space-between;}
+.contact-tools button {background:transparent;color:#73859b;}
+.contact-workspace {flex:1;min-height:0;overflow:auto;}
+.contact-workspace .chat-contact-detail {width:min(640px,100%);margin:0 auto;padding:28px 36px;}
+.chat-contact-detail dd {white-space:pre-wrap;}
+.chat-contact-detail .chat-card-actions {justify-content:center;margin:16px 0;}
+.contact-id {font-size:11px;color:var(--chat-sub);text-align:left;margin:10px 0;}
+.contact-id p {overflow-wrap:anywhere;margin:8px 0;}
+.contact-form {max-width:620px;margin:0 auto;padding:24px 32px;}
+.contact-form h3,.contact-form h4 {margin:0 0 8px;font-size:18px;font-weight:500;}
+.contact-form>p,.contact-requests>p {font-size:12px;color:var(--chat-sub);margin:8px 0 16px;white-space:pre-wrap;overflow-wrap:anywhere;}
+.contact-form label {display:flex;flex-direction:column;gap:5px;margin:15px 0;color:#536782;font-size:13px;}
+.contact-form input,.contact-form textarea {font:inherit;color:var(--base-black);min-width:0;width:100%;padding:8px 10px;border:1px solid var(--chat-line);border-radius:6px;background:white;}
+.contact-form textarea {resize:vertical;}
+.contact-form button,.contact-requests button,.contact-memory button {padding:6px 12px;border:1px solid var(--chat-line);background:#f5f9ff;font-size:12px;color:#427db2;}
+.contact-form button[type=submit],.contact-memory [data-memory-new],.chat-contact-detail [data-profile-chat] {background:var(--primary);color:white;border-color:var(--primary);}
+.contact-form [data-profile-rebase],.contact-form [data-memory-rebase] {margin-top:12px;font-size:11px;background:transparent;}
+.contact-requests {padding:26px;max-width:680px;margin:auto;}
+.contact-request {padding:16px 0;border-bottom:1px solid var(--chat-line);}
+.contact-request>p {font-size:12px;color:var(--chat-sub);margin:7px 0;}
+.chat-heading h2[role=button] {cursor:pointer;}
+.chat-heading h2[role=button]:focus-visible {outline:2px solid var(--primary);outline-offset:3px;}
+.chat-members button {font-size:12px;border:0;background:#f4f8fd;padding:4px 8px;}
+.contact-memory {font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif;}
+.contact-memory .memory-heading {display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.contact-memory h3 {margin:0;font-size:18px;}
+.contact-memory>p {color:#73859b;font-size:12px;margin:8px 0;}
+.contact-memory .contact-form {padding:15px 0;}
+.memory-item {border-top:1px solid #e6ebf2;padding:14px 0;overflow-wrap:anywhere;}
+.memory-item p {margin:0 0 8px;white-space:pre-wrap;font-size:13px;}
+.memory-item small {font-size:11px;color:#7c8799;}
+.memory-item [data-memory-detail] section {border-left:2px solid #dce9f8;padding-left:10px;margin-top:12px;}
+.contact-workspace>.chat-discard {margin:10px 30px;}
 .chat-upload { width:min(560px,calc(100vw - 24px)); max-height:calc(100dvh - 40px); overflow:auto; border:1px solid #e8eaef; border-radius:8px; padding:18px; }
 .chat-upload::backdrop { background:#0c1c3360; }
 .chat-upload form { font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif; }
@@ -151,4 +189,8 @@ body.chat-route .feedback:empty { display:none; }
   .chat-send-options { gap:6px; font-size:11px; }
   .chat-send-options select { max-width:135px; }
   .chat-contact-detail { padding:28px 22px; }
+  .contact-workspace .chat-contact-detail {padding:22px 18px;}
+  .contact-form {padding:22px 18px;}
+  .contact-tabs button {padding:5px 7px;font-size:11px;}
+  .contact-requests {padding:22px 16px;}
 }

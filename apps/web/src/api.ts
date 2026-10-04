@@ -64,10 +64,10 @@ export class ApiClient {
     if (!result.success) throw new ApiError('INVALID_RESPONSE', '服务响应不符合共享契约，未更新页面状态。');
     return result.data as ResponseFor<K>;
   }
-  read<K extends RouteName>(name: K, params = {}, query = {}, signal?: AbortSignal) {
+  read<K extends RouteName>(name: K, params = {}, query = {}, signal?: AbortSignal):Promise<ResponseFor<K>> {
     return this.call(name, {params, query, headers: {}, body: null} as RequestFor<K>, signal);
   }
-  send<K extends RouteName>(intent: Intent<K>, signal?: AbortSignal) {
+  send<K extends RouteName>(intent: Intent<K>, signal?: AbortSignal):Promise<ResponseFor<K>> {
     return this.call(intent.route, {params: intent.params, query: {}, headers: routes[intent.route].idempotent ? {'Idempotency-Key': intent.key} : {}, body: intent.body} as RequestFor<K>, signal);
   }
 }

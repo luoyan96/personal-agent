@@ -2,13 +2,21 @@
  * persistence, IDs, status translation and command idempotency. No API DTOs here. */
 import { escapeHtml as e } from './view-model';
 import { bytesToSize, getFileType, formatConversationTime, formatMessageTime } from './openim/common';
+import { ContactPanel, openMemoryPanel } from './contact-panel';
 
 export interface ContactView {
   id: string; name: string; identity: string; owner: string; availability: string;
   icon: 'user' | 'robot';
   canMention?:boolean;
   canOpenDirect?:boolean; directHint?:string;
+  role?:string; introduction?:string; capabilityDescription?:string; personality?:string; profileVersion?:number;
+  relationship?:string; relationshipVersion?:number; relationshipRequestId?:string|null;
+  mine?:boolean; canRequest?:boolean; canRemove?:boolean; canEdit?:boolean; canManagePrivateMemory?:boolean;
 }
+export interface ProfileInput {displayName:string;introduction:string;capabilityDescription:string;personality:string}
+export interface ContactRequestView {id:string;requester:string;target:string;status:string;version:number;canAccept:boolean;canDecline:boolean;canRevoke:boolean}
+export interface MemoryView {id:string;content:string;source:string|null;version:number;status:string;updatedAt:string;canEdit:boolean;canRevoke:boolean}
+export interface MemoryScope {kind:'private_agent'|'conversation';id:string;label:string;canManage:boolean}
 export interface ChatCardView {
   title: string; detail: string; status: string;
   kind: 'invitation' | 'run' | 'result' | 'error';
@@ -27,10 +35,12 @@ export interface ConversationView {
   sendTargets?: {id:string;label:string}[];
   contextChoices?: {key:string;label:string;requiresKey?:string}[];
   uploadTasks?: {id:string;label:string;version:number}[];
+  profileContactId?:string; canManageMemory?:boolean;
 }
 export interface ChatSnapshot {
   contacts: ContactView[]; conversations: ConversationView[];
   notice: string;
+  contactRequests?:ContactRequestView[];
   invitations?: {id:string;title:string;detail:string;status:string;actions:{id:string;label:string}[]}[];
 }
 export interface MentionSelection { contactId: string; name: string; start: number; end: number }
@@ -47,6 +57,16 @@ export interface ChatSource {
   markRead?(conversationId:string, throughSequence:number, signal:AbortSignal):Promise<number>;
   setPinned?(conversationId:string,pinned:boolean,signal:AbortSignal):Promise<void>;
   hasPending?():boolean;
+  saveProfile?(id:string,input:ProfileInput,expectedVersion:number,signal:AbortSignal):Promise<void>;
+  createAgent?(input:ProfileInput,signal:AbortSignal):Promise<string>;
+  requestContact?(id:string,signal:AbortSignal):Promise<void>;
+  removeContact?(id:string,expectedVersion:number,signal:AbortSignal):Promise<void>;
+  decideContactRequest?(id:string,decision:'accept'|'decline',expectedVersion:number,signal:AbortSignal):Promise<void>;
+  revokeContactRequest?(id:string,expectedVersion:number,signal:AbortSignal):Promise<void>;
+  readMemories?(scope:MemoryScope,signal:AbortSignal):Promise<MemoryView[]>;
+  saveMemory?(scope:MemoryScope,content:string,source:string|null,signal:AbortSignal,id?:string,expectedVersion?:number):Promise<void>;
+  revokeMemory?(id:string,expectedVersion:number,signal:AbortSignal):Promise<void>;
+  memoryHistory?(id:string,signal:AbortSignal):Promise<MemoryView[]>;
 }
 const icon = (name: string) => `<i class="ph ph-${name}" aria-hidden="true"></i>`;
 const avatar = (name: string, title?:string) => `<span class="chat-avatar chat-avatar-${e(name)}">${name==='users'?'<img src="/openim/group.png" alt="">':name==='user'&&title?e(Array.from(title)[0]??''):icon(name)}</span>`;
@@ -87,6 +107,8 @@ export class ChatView {
   private composing = false;
   private showMembers = false;
   private contactId?:string;
+  private contactPanel?:ContactPanel;
+  private contactFilter='mine';
   private mobileDetail = false;
   private mentionIndex = 0;
   private candidates: ContactView[] = [];
@@ -115,7 +137,7 @@ export class ChatView {
   }
   private persistDrafts() {if(this.ownerId)try{this.draftMap.set(this.activeId??'',{text:this.draft,mentions:this.mentions});sessionStorage.setItem(draftKey(this.ownerId),JSON.stringify([...this.draftMap].filter(([,d])=>d.text)));}catch{/* typing stays usable without storage */}}
   async mount() { this.render(); await this.refresh(); }
-  dispose() { this.disposed = true; clearInterval(this.timer); this.controller.abort(); this.source.dispose?.(); this.draftMap.clear(); this.draft = ''; this.mentions = []; this.snapshot = {contacts:[],conversations:[],notice:''}; }
+  dispose() { this.disposed = true; this.contactPanel?.dispose();clearInterval(this.timer); this.controller.abort(); this.source.dispose?.(); this.draftMap.clear(); this.draft = ''; this.mentions = []; this.snapshot = {contacts:[],conversations:[],notice:''}; }
   private active() { return this.snapshot.conversations.find(c => c.id === this.activeId); }
   private async refresh(background=false) {
     if(this.disposed||this.reading||this.pending&&background)return;
@@ -164,7 +186,7 @@ export class ChatView {
     if (!list) return;
     const matches = (text: string) => text.toLocaleLowerCase().includes(this.search.toLocaleLowerCase());
     if (this.tab === 'contacts') {
-      const contacts = this.snapshot.contacts.filter(c => matches(c.name + c.identity + c.owner));
+      const contacts = this.snapshot.contacts.filter(c => (this.contactFilter==='directory'||c.mine)&&matches(c.name + c.identity + c.owner+(c.capabilityDescription??'')+(c.introduction??'')));
       list.innerHTML = contacts.map(c => `<button type="button" class="chat-contact ${this.contactId===c.id?'chat-selected':''}" data-contact="${e(c.id)}" aria-pressed="${this.contactId===c.id}">${avatar(c.icon,c.name)}<span class="chat-conversation-copy"><strong>${e(c.name)}</strong><small>${e(c.identity)} · ${e(c.owner)}</small></span></button>`).join('') || '<p class="chat-list-empty">暂无匹配联系人</p>';
       list.querySelectorAll<HTMLButtonElement>('[data-contact]').forEach(button => button.onclick = () => {this.contactId=button.dataset.contact;this.mobileDetail=true;this.render();});
     } else {
@@ -184,7 +206,7 @@ export class ChatView {
     panel.hidden=!(this.snapshot.invitations?.length);
   }
   private renderLive() {
-    if(this.tab==='contacts'){this.renderList();this.renderContactDetail();this.renderInvitations();return;}
+    if(this.tab==='contacts'){this.renderList();this.contactPanel?.sync(this.snapshot);this.renderInvitations();return;}
     const active=this.active();
     if(!active){this.render();return;}
     this.renderList();this.renderInvitations();
@@ -195,7 +217,7 @@ export class ChatView {
     const history=this.root.querySelector<HTMLElement>('.chat-history')!,scroll=history.scrollTop,atBottom=history.scrollHeight-scroll-history.clientHeight<30;
     const content=renderHistory(active.messages);
     if(history.dataset.content!==content){const opened=[...history.querySelectorAll<HTMLDetailsElement>('details[open]')].map(d=>d.dataset.cardDetail);history.innerHTML=content;history.dataset.content=content;history.querySelectorAll<HTMLDetailsElement>('details').forEach(d=>d.open=opened.includes(d.dataset.cardDetail));history.scrollTop=atBottom?history.scrollHeight:scroll;}
-    this.root.querySelector<HTMLElement>('.chat-members')!.innerHTML=active.members.map(c=>`<span>${e(c.name)} · ${e(c.identity)} · ${e(c.owner)} · ${e(c.availability)}</span>`).join('');
+    this.renderMemberLinks();
     if(this.sendTarget&&!active.sendTargets?.some(c=>c.id===this.sendTarget)){this.sendTarget='';const target=this.root.querySelector<HTMLSelectElement>('[data-send-target]');if(target)target.value='';}
     const target=this.root.querySelector<HTMLSelectElement>('[data-send-target]');
     if(target){const options=`<option value="">请选择已加入的 AI</option>${(active.sendTargets??[]).map(c=>`<option value="${e(c.id)}">${e(c.label)}</option>`).join('')}`;if(target.innerHTML!==options){target.innerHTML=options;target.value=this.sendTarget;}}
@@ -227,7 +249,7 @@ export class ChatView {
     if (this.source.openContact && contact.canOpenDirect!==false && !this.pending) {
       this.pending = true;
       try { const conversationId = await this.source.openContact(id,this.controller.signal); if(this.disposed)return; await this.refresh(); this.tab = 'chats'; this.select(conversationId); }
-      catch(error) {this.fail(error);} finally {this.pending=false;if(!this.disposed)this.render();}
+      catch(error) {if(!this.disposed){const status=this.root.querySelector<HTMLElement>('[data-profile-status]');if(status)status.textContent=error instanceof Error?error.message:'私聊打开失败。';throw error;}} finally {this.pending=false;}
     } else {
       const info = this.root.querySelector<HTMLElement>('[data-contact-info]')!;
       info.hidden = false; info.textContent = `${contact.name} · ${contact.identity} · ${contact.owner} · ${contact.availability}。${contact.directHint??'私聊入口待接通。'}`;
@@ -238,24 +260,25 @@ export class ChatView {
     this.root.querySelector<HTMLInputElement>('.chat-search input')!.oninput=event=>{this.search=(event.target as HTMLInputElement).value;this.renderList();};
     this.root.querySelector<HTMLButtonElement>('.chat-back')?.addEventListener('click',()=>{this.mobileDetail=false;this.render();});
   }
+  private showContact(id:string){this.contactId=id;this.tab='contacts';this.mobileDetail=true;this.render();}
   private renderContactDetail() {
-    const contact=this.snapshot.contacts.find(c=>c.id===this.contactId),main=this.root.querySelector<HTMLElement>('.chat-main')!;
-    main.innerHTML=`<div class="chat-heading"><button type="button" class="chat-back" aria-label="返回会话列表">${icon('arrow-left')}</button><div><h2>${e(contact?.name??'通讯录')}</h2><p>${contact?e(contact.identity):'人与智能体，共同协作'}</p></div></div>${contact?`<section class="chat-contact-detail" aria-label="联系人详情">${avatar(contact.icon,contact.name)}<h3>${e(contact.name)}</h3><span class="chat-identity">${e(contact.identity)}</span><dl><dt>归属</dt><dd>${e(contact.owner)}</dd><dt>当前状态</dt><dd>${e(contact.availability)}</dd></dl><p>${e(contact.directHint??(this.source.openContact?'可发起私聊。':'私聊入口待接通。'))}</p><button type="button" data-open-contact ${this.pending||!this.source.openContact||contact.canOpenDirect===false?'disabled':''}>${this.pending?'正在打开…':'发消息'}</button><p class="chat-input-status" role="status"></p></section>`:`<div class="chat-empty">${icon('address-book')}<h3>选择一位联系人</h3><p>查看真人和 AI 的身份、归属与状态。</p></div>`}`;
-    this.bindNavigation();
-    this.root.querySelector<HTMLButtonElement>('[data-open-contact]')?.addEventListener('click',()=>void this.openContact(contact!.id));
+    this.contactPanel=new ContactPanel(this.root.querySelector<HTMLElement>('.chat-main')!,this.source,this.controller.signal,this.snapshot,this.contactId,()=>this.refresh(),id=>this.openContact(id),()=>{this.mobileDetail=false;this.render();});
   }
+  private renderMemberLinks(){const panel=this.root.querySelector<HTMLElement>('.chat-members');if(!panel)return;panel.innerHTML=(this.active()?.members??[]).map(c=>`<button type="button" data-member-profile="${e(c.id)}">${e(c.name)} · ${e(c.identity)} · ${e(c.availability)}</button>`).join('');panel.querySelectorAll<HTMLButtonElement>('[data-member-profile]').forEach(b=>b.onclick=()=>this.showContact(b.dataset.memberProfile!));}
   private render() {
     if (this.disposed) return;
+    this.contactPanel?.dispose();this.contactPanel=undefined;
     const active = this.active();
     const previousHistory=this.root.querySelector<HTMLElement>('.chat-history');
     const sameHistory=!!previousHistory&&previousHistory.dataset.conversation===this.activeId;
     const previousScroll=sameHistory?previousHistory!.scrollTop:undefined;
     const wasAtBottom=sameHistory&&previousHistory!.scrollHeight-previousHistory!.scrollTop-previousHistory!.clientHeight<30;
     const opened=sameHistory?[...previousHistory!.querySelectorAll<HTMLDetailsElement>('details[open]')].map(d=>d.dataset.cardDetail):[];
-    this.root.innerHTML = `<section class="chat-window ${this.mobileDetail ? 'chat-detail-open' : ''}" aria-label="科研聊天"><nav class="chat-rail" aria-label="聊天导航">${avatar('user')}<button type="button" data-tab="chats" aria-label="会话" aria-pressed="${this.tab === 'chats'}"><img src="/openim/nav_bar_message${this.tab==='chats'?'_active':''}.png" alt=""><span>聊天</span></button><button type="button" data-tab="contacts" aria-label="通讯录" aria-pressed="${this.tab === 'contacts'}"><img src="/openim/nav_bar_contact${this.tab==='contacts'?'_active':''}.png" alt=""><span>通讯录</span></button><a href="#/work" aria-label="任务与协作">${icon('squares-four')}<span>任务</span></a></nav><aside class="chat-list" aria-label="${this.tab === 'chats' ? '会话列表' : '通讯录'}"><div class="chat-list-top"><h1>${this.tab === 'chats' ? '会话' : '通讯录'}</h1><label class="chat-search">${icon('magnifying-glass')}<input aria-label="搜索会话或联系人" placeholder="搜索" value="${e(this.search)}"></label></div><div class="chat-list-content"></div><p data-contact-info class="chat-contact-info" role="status" hidden></p></aside><section class="chat-main" aria-label="聊天区域"><div class="chat-heading"><button type="button" class="chat-back" aria-label="返回会话列表">${icon('arrow-left')}</button><div><h2>${e(active?.title ?? '我的科研助理')}</h2><p>${e(active?.subtitle ?? '你的个人智能体 · AI 身份与归属待服务确认')}</p></div>${active&&!active.fixed&&this.source.setPinned?`<button type="button" data-chat-pin aria-label="${active.pinned?'取消置顶':'置顶会话'}" title="${active.pinned?'取消置顶':'置顶会话'}">${icon('push-pin')}</button>`:''}<button type="button" data-chat-refresh aria-label="刷新会话" title="刷新会话">${icon('arrow-clockwise')}</button>${active?.group ? `<button type="button" data-members aria-label="查看群成员" aria-expanded="${this.showMembers}">${icon('users')}</button>` : ''}</div><div class="chat-members" ${this.showMembers ? '' : 'hidden'}>${(active?.members ?? []).map(c => `<span>${e(c.name)} · ${e(c.identity)} · ${e(c.owner)} · ${e(c.availability)}</span>`).join('')}</div><div class="chat-notice" role="status" ${this.snapshot.notice?'':'hidden'}><span>${e(this.snapshot.notice)}</span></div><div class="chat-history" role="log" aria-label="聊天消息">${active?.messages.length ? renderHistory(active.messages) : `<div class="chat-empty">${icon('chat-circle-dots')}<h3>${active ? '从这里开始对话' : '会话服务待接通'}</h3><p>${active ? '提出你的需求，协作安排会在聊天中确认。' : '暂无可读取的聊天记录。你可以先写下需求，接通后再发送。'}</p></div>`}</div><div class="chat-composer"><div class="chat-mention-list" role="listbox" aria-label="选择 @联系人" hidden></div><label for="chat-input" class="chat-input-label">消息</label><textarea id="chat-input" rows="3" placeholder="${active?.group?'发送消息，输入 @ 选择成员':active?.icon==='user'?'发送消息…':'告诉助理你想完成什么…'}" aria-describedby="chat-hint" aria-controls="chat-mentions">${e(this.draft)}</textarea><div class="chat-composer-bottom"><small id="chat-hint">Enter 发送 · Shift + Enter 换行</small><button type="button" data-chat-send ${!active?.canSend || !this.source.send || this.pending || !this.draft.trim() ? 'disabled' : ''}>${this.pending ? '发送中…' : '发送'}</button></div><p class="chat-input-status" role="status">${!active?.canSend || !this.source.send ? '发送待接通 · 输入不会触发执行' : ''}</p></div></section></section>`;
+    this.root.innerHTML = `<section class="chat-window ${this.mobileDetail ? 'chat-detail-open' : ''}" aria-label="科研聊天"><nav class="chat-rail" aria-label="聊天导航"><button type="button" data-my-profile aria-label="我的资料" class="chat-self-avatar">${avatar('user')}</button><button type="button" data-tab="chats" aria-label="会话" aria-pressed="${this.tab === 'chats'}"><img src="/openim/nav_bar_message${this.tab==='chats'?'_active':''}.png" alt=""><span>聊天</span></button><button type="button" data-tab="contacts" aria-label="通讯录" aria-pressed="${this.tab === 'contacts'}"><img src="/openim/nav_bar_contact${this.tab==='contacts'?'_active':''}.png" alt=""><span>通讯录</span></button><a href="#/work" aria-label="任务与协作">${icon('squares-four')}<span>任务</span></a></nav><aside class="chat-list" aria-label="${this.tab === 'chats' ? '会话列表' : '通讯录'}"><div class="chat-list-top"><h1>${this.tab === 'chats' ? '会话' : '通讯录'}</h1><label class="chat-search">${icon('magnifying-glass')}<input aria-label="搜索会话或联系人" placeholder="搜索" value="${e(this.search)}"></label></div><div class="chat-list-content"></div><p data-contact-info class="chat-contact-info" role="status" hidden></p></aside><section class="chat-main" aria-label="聊天区域"><div class="chat-heading"><button type="button" class="chat-back" aria-label="返回会话列表">${icon('arrow-left')}</button><div><h2 data-chat-profile ${active?.profileContactId?'role="button" tabindex="0" title="查看联系人资料"':''}>${e(active?.title ?? '我的科研助理')}</h2><p>${e(active?.subtitle ?? '你的个人智能体 · AI 身份与归属待服务确认')}</p></div>${active&&!active.fixed&&this.source.setPinned?`<button type="button" data-chat-pin aria-label="${active.pinned?'取消置顶':'置顶会话'}" title="${active.pinned?'取消置顶':'置顶会话'}">${icon('push-pin')}</button>`:''}<button type="button" data-chat-refresh aria-label="刷新会话" title="刷新会话">${icon('arrow-clockwise')}</button>${active?.group ? `<button type="button" data-members aria-label="查看群成员" aria-expanded="${this.showMembers}">${icon('users')}</button>` : ''}</div><div class="chat-members" ${this.showMembers ? '' : 'hidden'}>${(active?.members ?? []).map(c => `<span>${e(c.name)} · ${e(c.identity)} · ${e(c.owner)} · ${e(c.availability)}</span>`).join('')}</div><div class="chat-notice" role="status" ${this.snapshot.notice?'':'hidden'}><span>${e(this.snapshot.notice)}</span></div><div class="chat-history" role="log" aria-label="聊天消息">${active?.messages.length ? renderHistory(active.messages) : `<div class="chat-empty">${icon('chat-circle-dots')}<h3>${active ? '从这里开始对话' : '会话服务待接通'}</h3><p>${active ? '提出你的需求，协作安排会在聊天中确认。' : '暂无可读取的聊天记录。你可以先写下需求，接通后再发送。'}</p></div>`}</div><div class="chat-composer"><div class="chat-mention-list" role="listbox" aria-label="选择 @联系人" hidden></div><label for="chat-input" class="chat-input-label">消息</label><textarea id="chat-input" rows="3" placeholder="${active?.group?'发送消息，输入 @ 选择成员':active?.fixed?'告诉助理你想完成什么…':'发送消息…'}" aria-describedby="chat-hint" aria-controls="chat-mentions">${e(this.draft)}</textarea><div class="chat-composer-bottom"><small id="chat-hint">Enter 发送 · Shift + Enter 换行</small><button type="button" data-chat-send ${!active?.canSend || !this.source.send || this.pending || !this.draft.trim() ? 'disabled' : ''}>${this.pending ? '发送中…' : '发送'}</button></div><p class="chat-input-status" role="status">${!active?.canSend || !this.source.send ? '发送待接通 · 输入不会触发执行' : ''}</p></div></section></section>`;
     this.renderList();
     this.bindNavigation();
-    if(this.tab==='contacts'){this.root.querySelector('.chat-list')!.insertAdjacentHTML('beforeend','<section class="chat-invitations" aria-label="群邀请" hidden></section>');this.renderInvitations();this.renderContactDetail();return;}
+    this.root.querySelector<HTMLButtonElement>('[data-my-profile]')!.onclick=()=>{const own=this.snapshot.contacts.find(c=>c.icon==='user'&&c.canEdit);if(own)this.showContact(own.id);};
+    if(this.tab==='contacts'){this.root.querySelector('.chat-list-top')!.insertAdjacentHTML('beforeend',`<div class="contact-tabs"><button type="button" data-contact-filter="mine" aria-pressed="${this.contactFilter==='mine'}">我的联系人</button><button type="button" data-contact-filter="directory" aria-pressed="${this.contactFilter==='directory'}">发现</button></div><div class="contact-tools"><button type="button" data-contact-requests>请求${this.snapshot.contactRequests?.length?' ('+this.snapshot.contactRequests.length+')':''}</button>${this.source.createAgent?'<button type="button" data-agent-create>创建 Agent</button>':''}</div>`);this.root.querySelectorAll<HTMLButtonElement>('[data-contact-filter]').forEach(b=>b.onclick=()=>{this.contactFilter=b.dataset.contactFilter!;this.render();});this.root.querySelector<HTMLButtonElement>('[data-contact-requests]')!.onclick=()=>this.showContact('requests');this.root.querySelector<HTMLButtonElement>('[data-agent-create]')?.addEventListener('click',()=>this.showContact('create'));this.root.querySelector('.chat-list')!.insertAdjacentHTML('beforeend','<section class="chat-invitations" aria-label="群邀请" hidden></section>');this.renderInvitations();this.renderContactDetail();return;}
     this.root.querySelector('.chat-composer')!.insertAdjacentHTML('afterbegin','<small class="chat-bound-mentions" data-bound-mentions></small>');
     this.renderBoundMentions();
     this.root.querySelector('.chat-list')!.insertAdjacentHTML('beforeend','<section class="chat-invitations" aria-label="群邀请" hidden></section>');
@@ -282,6 +305,9 @@ export class ChatView {
     this.root.querySelector<HTMLInputElement>('.chat-search input')!.oninput = event => {this.search=(event.target as HTMLInputElement).value;this.renderList();};
     this.root.querySelector<HTMLButtonElement>('.chat-back')!.onclick=()=>{this.mobileDetail=false;this.render();};
     this.root.querySelector<HTMLButtonElement>('[data-members]')?.addEventListener('click',()=>{this.showMembers=!this.showMembers;this.render();});
+    const profile=this.root.querySelector<HTMLElement>('[data-chat-profile]');if(active?.profileContactId&&profile){profile.onclick=()=>this.showContact(active.profileContactId!);profile.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();this.showContact(active.profileContactId!);}};}
+    this.renderMemberLinks();
+    if(active&&this.source.readMemories){this.root.querySelector('.chat-heading')!.insertAdjacentHTML('beforeend','<button type="button" data-conversation-memory title="会话共同记忆" aria-label="会话共同记忆"><i class="ph ph-notebook" aria-hidden="true"></i></button>');this.root.querySelector<HTMLButtonElement>('[data-conversation-memory]')!.onclick=()=>openMemoryPanel(this.root,this.source,{kind:'conversation',id:active.id,label:active.title,canManage:active.canManageMemory??false},this.controller.signal);}
     this.root.querySelector<HTMLButtonElement>('[data-chat-refresh]')!.onclick=()=>void this.refresh();
     this.root.querySelector<HTMLButtonElement>('[data-chat-pin]')?.addEventListener('click',()=>void this.pinActive());
     this.root.querySelector<HTMLButtonElement>('[data-chat-send]')!.onclick=()=>void this.send();

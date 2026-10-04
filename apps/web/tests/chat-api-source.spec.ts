@@ -15,7 +15,7 @@ const message=ChatMessage.parse({id:'message_test',conversationId:group.id,seque
 const action=ChatAction.parse({id:'action_test',conversationId:group.id,sourceMessageId:message.id,payload:{kind:'create_group',title:'新任务群',plan:{id:'plan_test',version:1},contactIds:[human.id,other.id],sharedContext:{selectedText:'仅分享这个合成片段',artifactRefs:[{id:'artifact_test',version:2}]}},status:'proposed',version:1,createdAt:at,expiresAt:'2026-12-04T00:00:00Z',allowedDecisions:['confirm','dismiss']});
 function harness(){
  const calls:{name:RouteName;body:unknown;headers:HeadersInit|undefined}[]=[],security=vi.fn();
- let failSend=false,failRead=false,otherOwner=false,failEnsure=false,pendingTask=false,fullTaskMode=false,planVersion=1,turnMode=false;
+ let directMode=false;let failSend=false,failRead=false,otherOwner=false,failEnsure=false,pendingTask=false,fullTaskMode=false,planVersion=1,turnMode=false;
  const summary=routes.task.response.parse(fixtures.invitationSummary.value).data;
  const task={...fixtures.blockedTask.value.data,allowedActions:['upload','run']};
  const artifact={...fixtures.revokedArtifactMetadata.value.data,id:'artifact_test',taskId:task.id,accessStatus:'available'};
@@ -34,9 +34,10 @@ function harness(){
   switch(name){
    case 'session':{const data=routes.session.response.parse(structuredClone(endpointExamples.session!.response)).data;data.member.id=otherOwner?'other_owner':'owner_test';response={data};break;}
    case 'personalConversation':if(failEnsure)return new Response(JSON.stringify({error:{code:'NOT_IMPLEMENTED',message:'未实现',requestId:'req_test'}}),{status:501});response={data:{conversation:personal,agent:own}};break;
+   case 'contactRequests':response={data:[],nextCursor:null};break;
    case 'chatContacts':response=url.searchParams.has('cursor')?{data:[other],nextCursor:null}:{data:[human,own],nextCursor:'opaque_page_2'};break;
-   case 'chatConversations':response={data:[group,personal],nextCursor:null};break;
-   case 'chatConversation':response={data:url.pathname.endsWith(group.id)?{...group,taskIds:fullTaskMode?[task.id]:pendingTask?[summary.id]:[]}:personal};break;
+   case 'chatConversations':response={data:[group,personal,...(directMode?[{...personal,id:'direct_agent',kind:'direct'}]:[])],nextCursor:null};break;
+   case 'chatConversation':response={data:url.pathname.endsWith(group.id)?{...group,taskIds:fullTaskMode?[task.id]:pendingTask?[summary.id]:[]}:url.pathname.endsWith('direct_agent')?{...personal,id:'direct_agent',kind:'direct'}:personal};break;
    case 'chatMessages':response={data:url.pathname.includes(group.id)?fullTaskMode?[{...message,resources:[{kind:'task',ref:{id:task.id,version:task.version}},{kind:'run',ref:{id:run.id,version:1}}]}]:pendingTask?[{...message,resources:[{kind:'task',ref:{id:summary.id,version:summary.version}},{kind:'assignment',ref:{id:'invitation_B',version:1}}]}]:turnMode?[{...message,origin:'human',senderContactId:human.id,turnId:turn.id}]:[{...message,turnId:turn.id},{...message,turnId:turn.id}]:[],nextCursor:null};break;
    case 'chatActions':response={data:url.pathname.includes(group.id)?[action]:[],nextCursor:null};break;
    case 'chatInvitations':response={data:[{id:'invitation_test',conversationId:group.id,title:'合成群',invitedContactId:own.id,invitedByMemberId:'other_owner',status:'pending',version:2}],nextCursor:null};break;
@@ -55,9 +56,39 @@ function harness(){
   routes[name].response.parse(response);
   return new Response(JSON.stringify(response),{status:routes[name].status,headers:{'Content-Type':'application/json','X-Contract-Version':contractVersion}});
  }));client.csrfToken='test-csrf';
- return {source:new ChatApiSource(client,'owner_test',[{id:'owner_test',displayName:'合成主人'}],security),calls,security,failSend:(value:boolean)=>{failSend=value;},failRead:(value:boolean)=>{failRead=value;},otherOwner:()=>{otherOwner=true;},failEnsure:()=>{failEnsure=true;},pendingTask:()=>{pendingTask=true;},fullTask:()=>{fullTaskMode=true;},stalePlan:()=>{planVersion=2;},turn:()=>{turnMode=true;}};
+ return {direct:()=>{directMode=true;},source:new ChatApiSource(client,'owner_test',[{id:'owner_test',displayName:'合成主人'}],security),calls,security,failSend:(value:boolean)=>{failSend=value;},failRead:(value:boolean)=>{failRead=value;},otherOwner:()=>{otherOwner=true;},failEnsure:()=>{failEnsure=true;},pendingTask:()=>{pendingTask=true;},fullTask:()=>{fullTaskMode=true;},stalePlan:()=>{planVersion=2;},turn:()=>{turnMode=true;}};
 }
 describe('frozen CHAT1 API wiring (synthetic transport)',()=>{
+ it('uses real permissions for profile, relationships, owned memory and self chat',()=>{
+  const specialist=Contact.parse({...own,profile:{role:'specialist',introduction:'介绍',capabilityDescription:'仅用户设定',personality:'简洁',version:7},relationship:{status:'own',requestId:null,version:0},allowedActions:['chat','edit_profile','manage_private_memory']});
+  expect(contactProjection(specialist,[human,specialist],[],'owner_test')).toMatchObject({canOpenDirect:true,canEdit:true,canManagePrivateMemory:true,profileVersion:7,mine:true,role:'专属 Agent',personality:'简洁'});
+  const pending=Contact.parse({...other,relationship:{status:'pending_outbound',requestId:'request_test',version:2},allowedActions:[]});
+  expect(contactProjection(pending,[pending],[],'owner_test')).toMatchObject({canOpenDirect:false,canManagePrivateMemory:false,mine:false,relationship:'等待同意'});
+  expect(contactProjection(Contact.parse({...human,allowedActions:['edit_profile']}),[human],[],'owner_test').canOpenDirect).toBe(false);
+ });
+ it('uses actual Agent identity in specialist direct and keeps the demand coordinator fixed',async()=>{
+  const h=harness();h.direct();const signal=new AbortController().signal,snapshot=await h.source.read(signal);
+  expect(snapshot.conversations.find(c=>c.fixed)).toMatchObject({title:'需求与协作',profileContactId:own.id,subtitle:own.displayName+' · 需求协调 Agent'});
+  expect(snapshot.conversations.find(c=>c.id==='direct_agent')).toMatchObject({title:own.displayName,icon:'robot',fixed:false});
+  await h.source.send('direct_agent','私聊需求',[],signal);
+  expect(h.calls.at(-1)?.body).toMatchObject({intent:'ask_agent',agentContactId:own.id,budget:chatBudget,context:[]});
+ });
+ it('wires all explicit profile relationship and memory versions without eager private reads',async()=>{
+  const h=harness(),signal=new AbortController().signal;await h.source.read(signal);
+  expect(h.calls.some(c=>c.name==='chatMemories')).toBe(false);
+  const input={displayName:'合成 Agent',introduction:'介绍',capabilityDescription:'文献整理',personality:'谨慎'};
+  await h.source.saveProfile(own.id,input,7,signal);expect(h.calls.at(-1)).toMatchObject({name:'updateContactProfile',body:{...input,expectedVersion:7}});
+  await h.source.createAgent(input,signal);expect(h.calls.at(-1)).toMatchObject({name:'createPersonalAgent',body:input});
+  await h.source.requestContact(other.id,signal);expect(h.calls.at(-1)?.name).toBe('requestContact');
+  await h.source.decideContactRequest('request_test','accept',3,signal);expect(h.calls.at(-1)).toMatchObject({name:'decideContactRequest',body:{expectedVersion:3,decision:'accept'}});
+  await h.source.removeContact(other.id,4,signal);expect(h.calls.at(-1)).toMatchObject({name:'revokeContact',body:{expectedVersion:4}});
+  await h.source.revokeContactRequest('request_test',5,signal);expect(h.calls.at(-1)).toMatchObject({name:'revokeContactRequest',body:{expectedVersion:5}});
+  const scope={kind:'private_agent' as const,id:own.id,label:own.displayName,canManage:true};
+  await h.source.readMemories(scope,signal);await h.source.saveMemory(scope,'合成偏好',null,signal);expect(h.calls.at(-1)).toMatchObject({name:'createChatMemory',body:{scope:'private_agent',scopeId:own.id,content:'合成偏好',source:null}});
+  await h.source.saveMemory(scope,'修订','本人',signal,'memory_test',9);expect(h.calls.at(-1)).toMatchObject({name:'reviseChatMemory',body:{expectedVersion:9,content:'修订',source:'本人'}});
+  await h.source.revokeMemory('memory_test',10,signal);expect(h.calls.at(-1)).toMatchObject({name:'revokeChatMemory',body:{expectedVersion:10}});
+  await h.source.memoryHistory('memory_test',signal);expect(h.calls.at(-1)?.name).toBe('chatMemoryHistory');
+ });
  it('ensures real default conversation, consumes opaque paging and deduplicates messages',async()=>{
   const h=harness(),snapshot=await h.source.read(new AbortController().signal);
   expect(snapshot.contacts).toHaveLength(3);expect(snapshot.conversations.find(c=>c.pinned)?.id).toBe(personal.id);
@@ -102,7 +133,7 @@ describe('frozen CHAT1 API wiring (synthetic transport)',()=>{
   expect(contactProjection(other,[human,own,other],[]).owner).toContain('other_owner');
   const run=ChatAction.parse({...action,payload:{kind:'run_task',contactId:own.id,task:{id:'task_test',version:4},capability:{id:'capability_test',version:2,visibility:'lab_public'},budget:chatBudget,inputArtifactRefs:[]}});
   expect(actionDetail(run,[human,own])).toContain('12000 tokens / 120 秒');
-  expect(contactProjection(human,[human,own],[],'owner_test')).toMatchObject({canOpenDirect:false,directHint:'这是你自己的成员资料，可通过个人助理聊天。'});
+  expect(contactProjection(human,[human,own],[],'owner_test')).toMatchObject({canOpenDirect:false,directHint:'这是你自己的成员资料，可通过需求与协作聊天。'});
  });
  it('excludes pending-invite task summary from AI context and accepts task inline independently of group join',async()=>{
   const h=harness(),signal=new AbortController().signal;h.pendingTask();const snapshot=await h.source.read(signal);

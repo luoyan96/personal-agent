@@ -1,6 +1,6 @@
-import type {Contact,Conversation,ChatMessage,ChatAction,AgentTurn,RequestFor,ResponseFor,RouteName} from '@research-agent-platform/contracts';
+import type {Contact,ContactRequest,ChatMemory,Conversation,ChatMessage,ChatAction,AgentTurn,RequestFor,ResponseFor,RouteName} from '@research-agent-platform/contracts';
 import {ApiClient,ApiError,CommandSlot,Intent} from './api';
-import type {ChatSource,ChatSnapshot,ContactView,ConversationView,MessageView,ChatCardView,MentionSelection} from './chat-view';
+import type {ChatSource,ChatSnapshot,ContactView,ConversationView,MessageView,ChatCardView,MentionSelection,ProfileInput,MemoryView,MemoryScope} from './chat-view';
 import {labels} from './contract-projection';
 import {runLabels} from './ai-view';
 
@@ -23,8 +23,10 @@ function scheduleText(schedule:Schedule):string {
 export function contactProjection(contact:Contact, contacts:Contact[], members:{id:string;displayName:string}[],currentMemberId?:string):ContactView {
   const identity=contact.identity;
   const owner=identity.kind==='human'?'本实验室成员':`主人：${members.find(m=>m.id===identity.ownerMemberId)?.displayName ?? contacts.find(c=>c.identity.kind==='human'&&c.identity.memberId===identity.ownerMemberId)?.displayName ?? identity.ownerMemberId}`;
-  return {id:contact.id,name:contact.displayName,identity:identityLabels[identity.kind],owner,icon:identity.kind==='human'?'user':'robot',canOpenDirect:identity.kind==='human'&&identity.memberId!==currentMemberId||identity.kind==='personal_agent'&&identity.ownerMemberId===currentMemberId,directHint:identity.kind==='human'&&identity.memberId===currentMemberId?'这是你自己的成员资料，可通过个人助理聊天。':identity.kind==='public_agent'?'公共 AI 在任务群中使用。':identity.kind==='personal_agent'?'其他成员的个人 AI 需主人授权加入任务群，私人聊天仅限主人。':undefined,availability:identity.kind==='human'?'真人 · 在线与空闲状态未提供':`${availabilityLabels[contact.availability.status]}${contact.availability.reason?` · ${reasonLabels[contact.availability.reason]}`:''}`};
+  const ownHuman=identity.kind==='human'&&identity.memberId===currentMemberId;
+  return {id:contact.id,name:contact.displayName,identity:identityLabels[identity.kind],owner,icon:identity.kind==='human'?'user':'robot',canOpenDirect:!ownHuman&&contact.allowedActions.includes('chat'),directHint:ownHuman?'这是你自己的成员资料，可通过需求与协作聊天。':contact.allowedActions.includes('chat')?'已获准私聊。':identity.kind==='public_agent'?'添加此公共 Agent 后可发消息。':'添加联系人并获得同意后可发消息；入群和任务承接仍分别确认。',availability:identity.kind==='human'?'真人 · 在线与空闲状态未提供':`${availabilityLabels[contact.availability.status]}${contact.availability.reason?` · ${reasonLabels[contact.availability.reason]}`:''}`,role:({human:'实验室成员',coordinator:'需求协调 Agent',specialist:'专属 Agent',public_capability:'公共能力 Agent'})[contact.profile.role],introduction:contact.profile.introduction,capabilityDescription:contact.profile.capabilityDescription,personality:contact.profile.personality,profileVersion:contact.profile.version,relationship:({own:'本人 / 本人负责',none:'尚未添加',pending_outbound:'等待同意',pending_inbound:'等待你同意',accepted:'已添加',declined:'已拒绝',revoked:'已撤销'})[contact.relationship.status],relationshipVersion:contact.relationship.version,relationshipRequestId:contact.relationship.requestId,mine:['own','accepted'].includes(contact.relationship.status),canRequest:contact.allowedActions.includes('request'),canRemove:contact.allowedActions.includes('remove'),canEdit:contact.allowedActions.includes('edit_profile'),canManagePrivateMemory:contact.allowedActions.includes('manage_private_memory')};
 }
+const memoryProjection=(memory:ChatMemory):MemoryView=>({id:memory.id,content:memory.content,source:memory.source,version:memory.version,status:memory.status==='active'?'有效':'已撤销',updatedAt:memory.updatedAt,canEdit:memory.allowedActions.includes('edit'),canRevoke:memory.allowedActions.includes('revoke')});
 
 /** Complete immutable action payload, before any confirm control is displayed. */
 export function actionDetail(action:ChatAction, contacts:Contact[]):string {
@@ -98,10 +100,11 @@ export class ChatApiSource implements ChatSource {
         const intent=this.personalSlot.intent as Intent<'personalConversation'>|undefined??new Intent('personalConversation',{},{});
         this.personal=(await this.personalSlot.run(this.api,intent,signal)).data;
       }
-      const [contacts,conversations,invitations]=await Promise.all([
+      const [contacts,conversations,invitations,requests]=await Promise.all([
         allPages<Contact>(cursor=>this.api.read('chatContacts',{}, {limit:100,...(cursor?{cursor}:{})},signal),signal),
         allPages<Conversation>(cursor=>this.api.read('chatConversations',{}, {limit:100,...(cursor?{cursor}:{})},signal),signal),
         allPages<Invitation>(cursor=>this.api.read('chatInvitations',{}, {limit:100,...(cursor?{cursor}:{})},signal),signal),
+        allPages<ContactRequest>(cursor=>this.api.read('contactRequests',{}, {limit:100,direction:'all',status:'pending',...(cursor?{cursor}:{})},signal),signal),
       ]);
       signal.throwIfAborted();if(this.disposed)throw new DOMException('Disposed','AbortError');
       this.contacts=contacts;
@@ -137,11 +140,13 @@ export class ChatApiSource implements ChatSource {
         const joined=conversation.members.filter(m=>m.status==='joined').map(m=>contacts.find(c=>c.id===m.contactId)).filter((c):c is Contact=>!!c);
         const latest=messages.reduce<ChatMessage|undefined>((last,message)=>!last||message.sequence>last.sequence?message:last,undefined);
         const latestCards=projected.at(-1)?.cards;
-        views.push({id:conversation.id,title:conversation.title,subtitle:conversation.kind==='personal'?`个人 AI · 主人：${auth.data.member.displayName}`:conversation.kind==='group'?`任务群 · ${joined.length} 位已加入成员`:'真人私聊',preview:latest?.text||latestCards?.map(c=>`[${c.title}] ${c.status}`).join(' · ')||'暂无消息',pinned:conversation.viewerState.pinned,fixed:conversation.kind==='personal'&&conversation.ownerMemberId===this.ownerId,unreadCount:conversation.viewerState.unreadCount,displayedThroughSequence:latest?.sequence??0,lastMessageAt:latest?.createdAt,icon:conversation.kind==='direct'?'user':'robot',group:conversation.kind==='group',canSend:conversation.allowedActions.includes('send'),messages:projected,members:conversation.members.map(m=>{const contact=contacts.find(c=>c.id===m.contactId);return {...(contact?contactProjection(contact,contacts,this.members,this.ownerId):{id:m.contactId,name:m.contactId,identity:'身份待确认',owner:'归属待确认',icon:'user' as const,availability:''}),availability:memberLabels[m.status],canMention:m.status==='joined'};}),sendTargets:joined.filter(c=>c.identity.kind!=='human').map(c=>({id:c.id,label:c.displayName})),contextChoices:contexts,uploadTasks});
+        const peer=joined.find(c=>c.identity.kind!=='human')??joined.find(c=>c.identity.kind==='human'&&c.identity.memberId!==this.ownerId);
+        const fixed=conversation.kind==='personal'&&conversation.ownerMemberId===this.ownerId;
+        views.push({id:conversation.id,title:fixed?'需求与协作':conversation.kind==='direct'?peer?.displayName??conversation.title:conversation.title,subtitle:fixed?`${peer?.displayName??conversation.title} · 需求协调 Agent`:conversation.kind==='group'?`任务群 · ${joined.length} 位已加入成员`:peer?`${identityLabels[peer.identity.kind]} · ${peer.displayName}`:'私聊',profileContactId:conversation.kind==='group'?undefined:peer?.id,canManageMemory:conversation.allowedActions.includes('manage_memory'),preview:latest?.text||latestCards?.map(c=>`[${c.title}] ${c.status}`).join(' · ')||'暂无消息',pinned:conversation.viewerState.pinned,fixed,unreadCount:conversation.viewerState.unreadCount,displayedThroughSequence:latest?.sequence??0,lastMessageAt:latest?.createdAt,icon:peer?.identity.kind==='human'?'user':'robot',group:conversation.kind==='group',canSend:conversation.allowedActions.includes('send'),messages:projected,members:conversation.members.map(m=>{const contact=contacts.find(c=>c.id===m.contactId);return {...(contact?contactProjection(contact,contacts,this.members,this.ownerId):{id:m.contactId,name:m.contactId,identity:'身份待确认',owner:'归属待确认',icon:'user' as const,availability:''}),availability:memberLabels[m.status],canMention:m.status==='joined'};}),sendTargets:joined.filter(c=>c.identity.kind!=='human').map(c=>({id:c.id,label:c.displayName})),contextChoices:contexts,uploadTasks});
       }
       signal.throwIfAborted();if(this.disposed)throw new DOMException('Disposed','AbortError');
       this.conversations=nextConversations;this.actions=nextActions;this.taskRefs=nextTaskRefs;this.invitations=new Map(invitations.map(i=>[i.id,i]));
-      return {contacts:contacts.map(c=>contactProjection(c,contacts,this.members,this.ownerId)),conversations:views,notice:'',invitations:invitations.map(i=>({id:i.id,title:i.title,detail:`邀请联系人：${contacts.find(c=>c.id===i.invitedContactId)?.displayName??i.invitedContactId}\n邀请人：${this.members.find(m=>m.id===i.invitedByMemberId)?.displayName??i.invitedByMemberId}\n加入群不代表接受任务，也不分享个人助理历史。`,status:invitationLabels[i.status],actions:i.status==='pending'?[{id:`invitation:accept:${i.id}`,label:'接受群邀请'},{id:`invitation:decline:${i.id}`,label:'拒绝群邀请'}]:[]}))};
+      return {contacts:contacts.map(c=>contactProjection(c,contacts,this.members,this.ownerId)),conversations:views,notice:'',contactRequests:requests.map(r=>({id:r.id,requester:contacts.find(c=>c.id===r.requesterContactId)?.displayName??r.requesterContactId,target:contacts.find(c=>c.id===r.targetContactId)?.displayName??r.targetContactId,status:r.status,version:r.version,canAccept:r.allowedDecisions.includes('accept'),canDecline:r.allowedDecisions.includes('decline'),canRevoke:r.requesterMemberId===this.ownerId||r.deciderMemberId===this.ownerId})),invitations:invitations.map(i=>({id:i.id,title:i.title,detail:`邀请联系人：${contacts.find(c=>c.id===i.invitedContactId)?.displayName??i.invitedContactId}\n邀请人：${this.members.find(m=>m.id===i.invitedByMemberId)?.displayName??i.invitedByMemberId}\n加入群不代表接受任务，也不分享个人助理历史。`,status:invitationLabels[i.status],actions:i.status==='pending'?[{id:`invitation:accept:${i.id}`,label:'接受群邀请'},{id:`invitation:decline:${i.id}`,label:'拒绝群邀请'}]:[]}))};
     } catch(error){this.handleSecurity(error);throw error;}
   }
   private async messageProjection(message:ChatMessage,actions:ChatAction[],taskDetails:Map<string,ResponseFor<'task'>['data']>,signal:AbortSignal):Promise<MessageView> {
@@ -222,7 +227,7 @@ export class ChatApiSource implements ChatSource {
   }
   async send(id:string,text:string,mentions:MentionSelection[],signal:AbortSignal,target?:string,contextKeys:string[]=[]) {
     const conversation=this.conversations.get(id);if(!conversation?.allowedActions.includes('send'))throw new ApiError('FORBIDDEN','当前不能向此会话发送消息。');
-    const agentId=conversation.kind==='personal'?this.personal?.agent.id:target;
+    const agentId=conversation.kind==='personal'?this.personal?.agent.id:conversation.kind==='direct'?conversation.members.find(m=>m.status==='joined'&&this.contacts.some(c=>c.id===m.contactId&&c.identity.kind!=='human'))?.contactId:target;
     if(agentId&&!conversation.members.some(m=>m.contactId===agentId&&m.status==='joined'))throw new ApiError('VALIDATION_ERROR','请重新选择群内已加入的 AI。');
     const context:RequestFor<'sendChatMessage'>['body']['context']=[];
     for(const key of new Set(contextKeys)) {const resource=this.contextRefs.get(id)?.get(key);if(!resource)throw new ApiError('FORBIDDEN','所选材料权限或版本已变化，请重新读取。');context.push(resource);}
@@ -230,6 +235,25 @@ export class ChatApiSource implements ChatSource {
     await this.execute('sendChatMessage',body,{id},signal);
   }
   async openContact(id:string,signal:AbortSignal) {return (await this.execute('createDirectConversation',{contactId:id},{},signal)).data.id;}
+  async saveProfile(id:string,input:ProfileInput,expectedVersion:number,signal:AbortSignal) {await this.execute('updateContactProfile',{...input,expectedVersion},{id},signal);}
+  async createAgent(input:ProfileInput,signal:AbortSignal) {return (await this.execute('createPersonalAgent',input,{},signal)).data.id;}
+  async requestContact(id:string,signal:AbortSignal) {await this.execute('requestContact',{},{id},signal);}
+  async removeContact(id:string,expectedVersion:number,signal:AbortSignal) {await this.execute('revokeContact',{expectedVersion},{id},signal);}
+  async decideContactRequest(id:string,decision:'accept'|'decline',expectedVersion:number,signal:AbortSignal) {await this.execute('decideContactRequest',{expectedVersion,decision},{id},signal);}
+  async revokeContactRequest(id:string,expectedVersion:number,signal:AbortSignal) {await this.execute('revokeContactRequest',{expectedVersion},{id},signal);}
+  async readMemories(scope:MemoryScope,signal:AbortSignal) {
+    try{return (await allPages<ChatMemory>(cursor=>this.api.read('chatMemories',{}, {scope:scope.kind,scopeId:scope.id,limit:100,...(cursor?{cursor}:{})},signal),signal)).map(memoryProjection);}
+    catch(error){this.handleSecurity(error);throw error;}
+  }
+  async saveMemory(scope:MemoryScope,content:string,source:string|null,signal:AbortSignal,id?:string,expectedVersion?:number) {
+    if(id){if(expectedVersion===undefined)throw new ApiError('VALIDATION_ERROR','记忆版本未提供。');await this.execute('reviseChatMemory',{content,source,expectedVersion},{id},signal);}
+    else await this.execute('createChatMemory',{scope:scope.kind,scopeId:scope.id,content,source},{},signal);
+  }
+  async revokeMemory(id:string,expectedVersion:number,signal:AbortSignal) {await this.execute('revokeChatMemory',{expectedVersion},{id},signal);}
+  async memoryHistory(id:string,signal:AbortSignal) {
+    try{return (await this.api.read('chatMemoryHistory',{id},{},signal)).data.revisions.map(memoryProjection);}
+    catch(error){this.handleSecurity(error);throw error;}
+  }
   async uploadText(conversationId:string,taskId:string,filename:string,text:string,signal:AbortSignal,expectedTaskVersion:number) {
     const conversation=this.conversations.get(conversationId),version=this.taskVersions.get(taskId);
     if(!conversation?.taskIds.includes(taskId)||!version)throw new ApiError('FORBIDDEN','此群没有可上传材料的任务。');
