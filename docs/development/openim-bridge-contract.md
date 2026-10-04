@@ -38,6 +38,8 @@ Mapping 是 `{researchConversationId,imConversationID,kind,peerUserID,groupID,pi
 
 回调基址 `/api/v1/im/callback/<独立key>`，OpenIM 将具体 callbackCommand 追加到路径。管理网络和回调应由受信服务访问；浏览器仅获取本人user token。同步网络调用安排在 SQLite transaction 之外，并在返回前重新核验当前 session/ACL；失败可重试，不伪造远端成功。回调及 outbox 实施配置详见后端交接报告。
 
+真实服务器须使用固定源码加 `rap-auth.patch` 的派生镜像：回调携带来自真实mcontext的operator/platform及policy标记。缺少可信身份或实际policy探针未通过时fail closed。配置、验证证据与当前运行边界见 [后台交接](openim-bridge-backend-report.md)。
+
 ## 手动群组操作（无模型依赖）
 
 - `imCreateGroup` POST `/api/v1/im/groups`，body 为 `{title,contactIds,sharedContext:{selectedText,artifactRefs},plan:null或{id,version}}`，返回 `data:Conversation`。contactIds 为1至20个。null plan 创建讨论群，不产生任务；非null计划按原受控建群规则版本确认。选择的资料按当前权限检查。
