@@ -1,6 +1,6 @@
 # 开发路线图
 
-2026-10-04 当前批次：[个人智能体与任务群](development/research-chat-brief.md)已完成本地整合与[共同验收](development/research-chat-overall.md)。契约 0.10.0、聊天协议 1.0.0、迁移 012；真实 HTTP/SQLite/浏览器与注入合成 ModelCall 完成受控协作闭环。按用户安排先展示本地版本，再处理 GitHub；尚未部署，本批真实模型调用与真实多人试用仍待完成。旧 G 批次记录保留历史证据。
+2026-10-04 当前批次：[个人智能体与任务群](development/research-chat-brief.md)已完成本地整合与[共同验收](development/research-chat-overall.md)，固定提交 `52629857c069761ff8ebf78a4141dc0975425b17` 已按用户授权[部署 ECS](deployment/ecs.md#2026-10-04-科研聊天升级已部署)。契约 0.10.0、聊天协议 1.0.0、迁移 012；本地真实 HTTP/SQLite/浏览器与注入合成 ModelCall 完成受控协作闭环。生产已通过备份/恢复迁移、9 组 HTTPS 合成检查及桌面/窄屏发送/持久化验证；本批生产真实模型调用、成功 AI 群协作闭环和真实多人试用仍待完成。未推 GitHub 或合并 main；旧 G 批次记录保留历史证据。
 
 历史工程路线日期：2026-09-30。长期任务与能力匹配方向不变，科研作为第一落地场景。当前范围以[第一阶段计划](phase-one.md)为准，完整目标见[产品规划 v0.5](product-plan.md)，任务规则见[分配与能力边界](task-allocation.md)。
 
