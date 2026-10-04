@@ -63,6 +63,7 @@ export function renderMessage(message: MessageView): string {
 }
 
 export function renderHistory(messages:MessageView[]):string {
+  if(!messages.length)return `<div class="chat-empty">${icon('chat-circle-dots')}<h3>从这里开始对话</h3><p>提出你的需求，协作安排会在聊天中确认。</p></div>`;
   let previous=0;
   return messages.map(message=>{
     const timestamp=message.createdAt?Date.parse(message.createdAt):NaN;

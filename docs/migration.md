@@ -46,3 +46,9 @@
 ## 008：小组维护与恢复
 
 新增account_controls及maintenance_audit，不修改001—007或业务承诺；既有账号维护版本初始化为1。API契约保持0.6.2。升级前停写备份；本版备份工具支持已知G4a迁移前缀，恢复仅到新目录并使旧会话/未结束运行失效。命令、审计、密钥保管与恢复验证见[B5a联调包](development/b5a-handoff.md)。
+
+## 2026-10-04：OpenIM UI 采用与会话状态
+
+用户选定 OpenIM 聊天客户端并授权采用可用源码。上游完整参考仓库保持独立；实际适用的 UI 模块从 `openimsdk/openim-electron-demo` 提交 `62d7ca7b12e91144b315f36c8ebd1d9e0457a352` 移植到当前 Vite/TypeScript 应用，逐文件源路径、使用位置和修改说明见 [来源清单](../apps/web/third-party/openim/ORIGIN.md)。保留原 LICENSE 和 README 许可声明；未把依赖整套 React/Electron/IM SDK 的模块伪装成当前服务的已接通能力。用户后续沟通商业授权，当前来源记录不声称取得商业许可。
+
+科研账号、实验室、任务、材料、worker 与 DeepSeek Harness 继续由现有权威服务管理。契约升级 0.11.0、聊天协议 1.1.0，迁移 013 只新增每真人成员的已读游标与置顶偏好，不改 001—012。会话标题及未读数由当前成员投影，不写入共享历史。旧会话已读游标从 0 开始，不推测旧消息已读。本人 agent 的群授权与真人阅读群历史分别确认，详见 [会话状态接口](development/research-chat-viewer-state.md)。

@@ -122,6 +122,8 @@ body.chat-route>#app>header nav>a:first-child { display:none; }
 body.chat-route>#app>header button { color:white; font-size:11px; padding:4px 8px; border:1px solid #ffffff55; background:transparent; }
 body.chat-route>#app>main { padding:0; margin:0; max-width:none; }
 body.chat-route>#app>footer { display:none; }
+body.chat-route .feedback { position:fixed; right:16px; bottom:16px; z-index:40; max-width:min(420px,calc(100vw - 32px)); }
+body.chat-route .feedback:empty { display:none; }
 @media(max-width:1050px) { .chat-window { grid-template-columns:60px 250px minmax(0,1fr); } .chat-history { padding:12px 20px; } }
 @media(max-width:760px) { .chat-window { grid-template-columns:52px 216px minmax(0,1fr); } .chat-history { padding:12px 14px; } .chat-composer { padding:10px 14px; } .chat-message-copy { max-width:calc(100% - 48px); } .chat-heading { padding:14px; } }
 @media(max-width:600px) {
