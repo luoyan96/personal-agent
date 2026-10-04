@@ -8,8 +8,12 @@ describe('B0 executable contract', () => {
     const example = endpointExamples[name]!
     expect(route.request.safeParse(example.request).success).toBe(true)
     expect(route.response.safeParse(example.response).success).toBe(true)
-    expect(route.implemented).toBe(route.stage === 'B0' || route.stage === 'B1' || route.stage === 'B2a' || route.stage === 'B2b' || route.stage === 'B3' || route.stage === 'B4a' || route.stage === 'B5b' || route.stage === 'CHAT1')
-    if (route.method !== 'GET' && !['login', 'logout'].includes(name)) expect(route.idempotent).toBe(true)
+    expect(route.implemented).toBe(['B0','B1','B2a','B2b','B3','B4a','B5b','CHAT1','IM1'].includes(route.stage))
+    // Token issuance must never cache an IM credential in a canonical receipt.
+    // Remote reconciliation is repeated and reauthorized against current state.
+    const immediateTransport=['imSession','imSync','imSyncConversation']
+    if (route.method !== 'GET' && !['login', 'logout',...immediateTransport].includes(name)) expect(route.idempotent).toBe(true)
+    if(immediateTransport.includes(name))expect(route.idempotent).toBe(false)
   })
   it('rejects actor spoofing and arbitrary status update', () => {
     const req = endpointExamples.claim!.request as Record<string, unknown>

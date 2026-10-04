@@ -10,7 +10,7 @@ import type { Config } from './config.js'
 import { fail } from './errors.js'
 import { ContactDirectory, directoryCommands } from './contact-directory.js'
 
-export type ChatCommand = keyof typeof chatRoutes
+export type ChatCommand = keyof typeof chatRoutes | 'imCreateGroup' | 'imInviteContact'
 type Resource = z.infer<typeof ChatResource>
 export type TurnInput = { budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string }
 export type ChatRequest = { params: { id?: string; contactId?: string }; query: { cursor?: string; limit?: number; search?: string; afterSequence?: number; view?: 'directory'|'mine'; direction?: 'all'|'incoming'|'outgoing'; status?: 'all'|'pending'; scope?: 'private_agent'|'conversation'; scopeId?: string }; headers: { 'Idempotency-Key'?: string }; body: unknown }
@@ -221,21 +221,7 @@ export class ChatService {
     const group = this.conversation(groupId, false)
     if (payload.kind === 'create_group') {
       if (group.kind !== 'personal') fail('FORBIDDEN')
-      const plan = this.c.plan(payload.plan.id); this.c.checkVersion(plan.version, payload.plan.version)
-      if (plan.status !== 'draft' || !plan.proposedItems.length || plan.proposedItems.length > 20) fail('INVALID_STATE')
-      const memberIds = new Set([this.c.actor.id])
-      for (const contactId of payload.contactIds) { const contact = this.contact(contactId); if (contact.identity.kind === 'human') memberIds.add(contact.identity.memberId) }
-      if (new Set(payload.contactIds).size !== payload.contactIds.length) fail('VALIDATION_ERROR')
-      for (const item of plan.proposedItems) {
-        // Canonical confirmPlan auto-dispatches public allocations: require a separate run confirmation in CHAT1.
-        if (item.allocation.kind === 'public_agent' || item.inputArtifactIds.length) fail('FORBIDDEN')
-        if (item.allocation.kind === 'invitation' && !memberIds.has(item.allocation.memberId)) fail('FORBIDDEN')
-      }
-      for (const ref of payload.sharedContext.artifactRefs) {
-        this.checkResource({ kind: 'artifact', ref }, groupId, true)
-        const artifact = this.c.coordination.artifact(ref.id).model
-        if (this.c.task(artifact.taskId).initiatorId !== this.c.actor.id) fail('FORBIDDEN')
-      }
+      this.validateGroupInput(payload,groupId)
       return
     }
     if (group.kind !== 'group' || (payload.kind !== 'run_task' && group.ownerMemberId !== this.c.actor.id)) fail('FORBIDDEN')
@@ -253,6 +239,48 @@ export class ChatService {
       for (const ref of payload.inputArtifactRefs) this.checkResource({ kind: 'artifact', ref }, groupId, true)
       this.ai.validateNewRun(task.id, { expectedVersion: payload.task.version, capability: payload.capability, budget: payload.budget, inputArtifactIds: payload.inputArtifactRefs.map(ref => ref.id), conclusionRefs: [] })
     }
+  }
+  validateGroupInput(payload:RequestFor<'imCreateGroup'>['body'],groupId:string) {
+      if (new Set(payload.contactIds).size !== payload.contactIds.length) fail('VALIDATION_ERROR')
+      for(const id of payload.contactIds)this.contact(id)
+      if(payload.plan){
+      const plan = this.c.plan(payload.plan.id); this.c.checkVersion(plan.version, payload.plan.version)
+      if (plan.status !== 'draft' || !plan.proposedItems.length || plan.proposedItems.length > 20) fail('INVALID_STATE')
+      const memberIds = new Set([this.c.actor.id])
+      for (const contactId of payload.contactIds) { const contact = this.contact(contactId); if (contact.identity.kind === 'human') memberIds.add(contact.identity.memberId) }
+      for (const item of plan.proposedItems) {
+        // Canonical confirmPlan auto-dispatches public allocations: require a separate run confirmation in CHAT1.
+        if (item.allocation.kind === 'public_agent' || item.inputArtifactIds.length) fail('FORBIDDEN')
+        if (item.allocation.kind === 'invitation' && !memberIds.has(item.allocation.memberId)) fail('FORBIDDEN')
+      }
+      }
+      for (const ref of payload.sharedContext.artifactRefs) {
+        this.checkResource({ kind: 'artifact', ref }, groupId, true)
+        const artifact = this.c.coordination.artifact(ref.id).model
+        if (this.c.task(artifact.taskId).initiatorId !== this.c.actor.id) fail('FORBIDDEN')
+      }
+  }
+  createGroup(payload:RequestFor<'imCreateGroup'>['body'],personalId:string) {
+    this.validateGroupInput(payload,personalId)
+    const taskIds=payload.plan?(this.c.handlers.confirmPlan({params:{id:payload.plan.id},query:{},headers:{},body:{expectedVersion:payload.plan.version}}) as {data:{taskIds:string[]}}).data.taskIds:[]
+    const sharedTaskIds=payload.sharedContext.artifactRefs.map(ref=>this.c.coordination.artifact(ref.id).model.taskId)
+    const group=this.newConversation('group',payload.title,payload.contactIds,null,[...new Set([...taskIds,...sharedTaskIds])])
+    const resources:Resource[]=taskIds.map(id=>({kind:'task',ref:{id,version:this.c.task(id).version}}))
+    for(const taskId of taskIds)for(const assignment of this.db.prepare("SELECT id,version FROM assignments WHERE task_id=? AND status='pending'").all(taskId))resources.push({kind:'assignment',ref:{id:String(assignment.id),version:Number(assignment.version)}})
+    const shared:Resource[]=[...resources,...payload.sharedContext.artifactRefs.map(ref=>({kind:'artifact' as const,ref}))]
+    for(let offset=0;offset<Math.max(shared.length,1);offset+=20)this.message(group.id,{senderContactId:null,origin:'service',text:offset===0?payload.sharedContext.selectedText:null,mentions:[],resources:shared.slice(offset,offset+20),actionIds:[],turnId:null})
+    return {group:this.conversation(group.id),resources}
+  }
+  inviteContact(groupId:string,contactId:string) {
+    const group=this.conversation(groupId,false)
+    this.validatePayload({kind:'invite_contact',contactId},groupId)
+    const contact=this.contact(contactId),existing=group.members.find(m=>m.contactId===contact.id)
+    if(existing?.status==='joined'||existing?.status==='invited')fail('INVALID_STATE')
+    const status=contact.identity.kind==='public_agent'?'joined':'invited'
+    this.db.prepare('INSERT INTO chat_members VALUES (?,?,?,?,?) ON CONFLICT(conversation_id,contact_id) DO UPDATE SET status=excluded.status,version=chat_members.version+1').run(group.id,contact.id,status,1,'member')
+    if(status==='invited')this.inviteDocument(group,contact.id)
+    const raw=this.rawConversation(group.id);raw.version++;this.saveConversation(raw)
+    return this.conversation(group.id)
   }
   addAction(turn: AgentTurn, messageId: string, payload: ChatAction['payload']) {
     this.validatePayload(payload, turn.conversationId)
@@ -296,7 +324,7 @@ export class ChatService {
     if (name === 'chatTurn' || name === 'cancelChatTurn' || name === 'retryChatTurn') this.turn(id!)
     else if (name === 'decideChatAction') this.action(id!)
     else if (name === 'decideChatInvitation') this.invitation(id!)
-    else if (id) this.conversation(id, false)
+    else if (id) {const group=this.conversation(id, false);if(name==='imInviteContact'&&(group.kind!=='group'||group.ownerMemberId!==this.c.actor.id))fail('FORBIDDEN')}
   }
   run(name: ChatCommand, req: Request): unknown {
     this.ensureContacts(); this.authorize(name, req)
@@ -308,7 +336,7 @@ export class ChatService {
       const directoryReplay=this.directory.replay(name,previous);if(directoryReplay)return route.response.parse(directoryReplay)
       if (name === 'sendChatMessage') {const message=this.projectedMessage(previous.data.message.id);return route.response.parse({ data: { message, turn: message.turnId ? this.turn(message.turnId) : null } })}
       if (name === 'personalConversation') return { data: { conversation: this.conversation(previous.data.conversation.id), agent: this.contact(previous.data.agent.id) } }
-      if (name === 'createDirectConversation') return { data: this.conversation(previous.data.id) }
+      if (name === 'createDirectConversation' || name === 'imCreateGroup' || name === 'imInviteContact') return { data: this.conversation(previous.data.id) }
       if (name === 'markChatRead' || name === 'updateChatPreferences') return { data: this.viewerState(this.conversation(req.params.id!, false)) }
       if (name === 'decideChatAction') { this.conversation(previous.data.conversationId); for (const r of previous.data.resources as Resource[]) this.checkResource(r, previous.data.conversationId) }
       if (name === 'retryChatTurn' || name === 'cancelChatTurn') return { data: this.turn(previous.data.id) }
@@ -321,6 +349,14 @@ export class ChatService {
   handle(name: ChatCommand, req: Request): unknown {
     const id = req.params.id!, b = req.body
     if((directoryCommands as readonly string[]).includes(name))return this.directory.handle(name,req)
+    if(name==='imCreateGroup'){
+      const personal=(this.handle('personalConversation',{params:{},query:{},headers:{},body:{}}) as {data:{conversation:Conversation}}).data.conversation
+      return {data:this.createGroup(b as RequestFor<'imCreateGroup'>['body'],personal.id).group}
+    }
+    if(name==='imInviteContact'){
+      const body=b as RequestFor<'imInviteContact'>['body'];this.c.checkVersion(this.conversation(id,false).version,body.expectedConversationVersion)
+      return {data:this.inviteContact(id,body.contactId)}
+    }
     if (name === 'chatContacts') return this.page(name, req.query, this.db.prepare('SELECT id FROM chat_contacts WHERE lab_id=?').all(this.c.actor.labId).map(r => String(r.id)).filter(id => { try { const contact=this.contact(id);return (req.query.view!=='mine'||contact.relationship.status==='own'||contact.relationship.status==='accepted')&&[contact.displayName,contact.profile.introduction,contact.profile.capabilityDescription].join(' ').toLocaleLowerCase().includes((req.query.search ?? '').toLocaleLowerCase()) } catch { return false } }).sort((a, b) => this.contact(a).displayName.localeCompare(this.contact(b).displayName) || a.localeCompare(b)), id => {const contact=this.contact(id);if(req.query.view==='mine'&&!['own','accepted'].includes(contact.relationship.status))fail('NOT_FOUND');return contact})
     if (name === 'personalConversation') {
       const agentId = String(this.db.prepare("SELECT id FROM chat_contacts WHERE lab_id=? AND kind='personal_agent' AND owner_id=? AND principal=owner_id").get(this.c.actor.labId, this.c.actor.id)!.id), agent = this.contact(agentId)
@@ -438,21 +474,10 @@ export class ChatService {
         this.validatePayload(action.payload, group.id)
         const payload = action.payload
         if (payload.kind === 'create_group') {
-          const result = this.c.handlers.confirmPlan({ params: { id: payload.plan.id }, query: {}, headers: {}, body: { expectedVersion: payload.plan.version } }) as { data: { taskIds: string[] } }
-          const sharedTaskIds = payload.sharedContext.artifactRefs.map(ref => this.c.coordination.artifact(ref.id).model.taskId)
-          const created = this.newConversation('group', payload.title, payload.contactIds, null, [...new Set([...result.data.taskIds, ...sharedTaskIds])])
-          conversationId = created.id
-          resources.push(...result.data.taskIds.map(id => ({ kind: 'task' as const, ref: { id, version: this.c.task(id).version } })))
-          for (const taskId of result.data.taskIds) for (const assignment of this.db.prepare("SELECT id,version FROM assignments WHERE task_id=? AND status='pending'").all(taskId)) resources.push({ kind: 'assignment', ref: { id: String(assignment.id), version: Number(assignment.version) } })
-          const shared: Resource[] = [...resources, ...payload.sharedContext.artifactRefs.map(ref => ({ kind: 'artifact' as const, ref }))]
-          for (let offset=0;offset<Math.max(shared.length,1);offset+=20) this.message(created.id, { senderContactId: null, origin: 'service', text: offset===0?payload.sharedContext.selectedText:null, mentions: [], resources: shared.slice(offset,offset+20), actionIds: [], turnId: null })
+          const created=this.createGroup(payload,group.id)
+          conversationId=created.group.id;resources.push(...created.resources)
         } else if (payload.kind === 'invite_contact') {
-          const contact = this.contact(payload.contactId), existing = group.members.find(m => m.contactId === contact.id)
-          if (existing?.status === 'joined' || existing?.status === 'invited') fail('INVALID_STATE')
-          const status = contact.identity.kind === 'public_agent' ? 'joined' : 'invited'
-          this.db.prepare('INSERT INTO chat_members VALUES (?,?,?,?,?) ON CONFLICT(conversation_id,contact_id) DO UPDATE SET status=excluded.status,version=chat_members.version+1').run(group.id, contact.id, status, 1, 'member')
-          if (status === 'invited') this.inviteDocument(group, contact.id)
-          const raw = this.rawConversation(group.id); raw.version++; this.saveConversation(raw)
+          this.inviteContact(group.id,payload.contactId)
         } else if (payload.kind === 'invite_task') {
           const contact = this.contact(payload.contactId); if (contact.identity.kind !== 'human') fail('FORBIDDEN')
           const result = this.c.handlers.invite({ params: { id: payload.task.id }, query: {}, headers: {}, body: { expectedVersion: payload.task.version, memberId: contact.identity.memberId, scope: payload.scope, schedule: payload.schedule } }) as { data: { id: string; version: number } }

@@ -1,0 +1,158 @@
+diff --git a/internal/msggateway/message_handler.go b/internal/msggateway/message_handler.go
+index ca15e1e..2128e6e 100644
+--- a/internal/msggateway/message_handler.go
++++ b/internal/msggateway/message_handler.go
+@@ -24,9 +24,11 @@ import (
+ 	"google.golang.org/protobuf/proto"
+ 
+ 	"github.com/openimsdk/protocol/msg"
++	"github.com/openimsdk/protocol/constant"
+ 	"github.com/openimsdk/protocol/push"
+ 	"github.com/openimsdk/protocol/sdkws"
+ 	"github.com/openimsdk/tools/errs"
++	"github.com/openimsdk/tools/mcontext"
+ 	"github.com/openimsdk/tools/utils/jsonutil"
+ )
+ 
+@@ -157,6 +159,9 @@ func (g *GrpcHandler) SendMessage(ctx context.Context, data *Req) ([]byte, error
+ 	if err := g.validate.Struct(&msgData); err != nil {
+ 		return nil, errs.WrapMsg(err, "SendMessage: message data validation failed", "action", "validate", "dataType", "MsgData")
+ 	}
++	if err := validateRAPMessage(ctx, &msgData); err != nil {
++		return nil, err
++	}
+ 
+ 	req := msg.SendMsgReq{MsgData: &msgData}
+ 	resp, err := g.msgClient.MsgClient.SendMsg(ctx, &req)
+@@ -172,6 +177,18 @@ func (g *GrpcHandler) SendMessage(ctx context.Context, data *Req) ([]byte, error
+ 	return c, nil
+ }
+ 
++// The authenticated connection context, not caller-controlled MsgData, identifies the sender.
++func validateRAPMessage(ctx context.Context, data *sdkws.MsgData) error {
++	userID, platform := mcontext.GetOpUserID(ctx), mcontext.GetOpUserPlatform(ctx)
++	if userID == "" || data.SendID != userID || platform == "" ||
++		constant.PlatformIDToName(int(data.SenderPlatformID)) != platform ||
++		data.SenderPlatformID == constant.AdminPlatformID || data.MsgFrom != constant.UserMsgType ||
++		(data.ContentType >= constant.NotificationBegin && data.ContentType <= constant.NotificationEnd) {
++		return errs.ErrNoPermission.WrapMsg("research IM sender identity required")
++	}
++	return nil
++}
++
+ func (g *GrpcHandler) SendSignalMessage(ctx context.Context, data *Req) ([]byte, error) {
+ 	resp, err := g.msgClient.MsgClient.SendMsg(ctx, nil)
+ 	if err != nil {
+diff --git a/internal/msggateway/rap_auth_test.go b/internal/msggateway/rap_auth_test.go
+new file mode 100644
+index 0000000..b594410
+--- /dev/null
++++ b/internal/msggateway/rap_auth_test.go
+@@ -0,0 +1,24 @@
++// Copyright © 2026 Research Agent Platform contributors.
++// Licensed under the Apache License, Version 2.0.
++package msggateway
++
++import (
++	"testing"
++	"github.com/openimsdk/protocol/sdkws"
++	"github.com/openimsdk/tools/mcontext"
++)
++
++func TestRAPAuthenticatedMessageIdentity(t *testing.T) {
++	ctx := mcontext.WithMustInfoCtx([]string{"synthetic-operation", "user_A", "Web", "synthetic-connection"})
++	valid := sdkws.MsgData{SendID: "user_A", SenderPlatformID: 5, MsgFrom: 100, ContentType: 101}
++	if err := validateRAPMessage(ctx, &valid); err != nil { t.Fatal(err) }
++	cases := []sdkws.MsgData{valid, valid, valid, valid, valid}
++	cases[0].SendID = "user_B"
++	cases[1].SenderPlatformID = 10
++	cases[2].SenderPlatformID = 3
++	cases[3].MsgFrom = 200
++	cases[4].ContentType = 1501
++	for index := range cases { if err := validateRAPMessage(ctx, &cases[index]); err == nil { t.Fatalf("forged case %d accepted", index) } }
++	valid.ContentType = 110
++	if err := validateRAPMessage(ctx, &valid); err != nil { t.Fatal(err) }
++}
+diff --git a/pkg/common/webhook/http_client.go b/pkg/common/webhook/http_client.go
+index e46f088..6d216df 100644
+--- a/pkg/common/webhook/http_client.go
++++ b/pkg/common/webhook/http_client.go
+@@ -69,11 +69,16 @@ func (c *Client) AsyncPost(ctx context.Context, command string, req callbackstru
+ func (c *Client) post(ctx context.Context, command string, input interface{}, output callbackstruct.CallbackResp, timeout int) error {
+ 	ctx = mcontext.WithMustInfoCtx([]string{mcontext.GetOperationID(ctx), mcontext.GetOpUserID(ctx), mcontext.GetOpUserPlatform(ctx), mcontext.GetConnID(ctx)})
+ 	fullURL := c.url + "/" + command
+-	log.ZInfo(ctx, "webhook", "url", fullURL, "input", input, "config", timeout)
++	log.ZInfo(ctx, "webhook", "command", command, "config", timeout)
+ 	operationID, _ := ctx.Value(constant.OperationID).(string)
+-	b, err := c.client.Post(ctx, fullURL, map[string]string{constant.OperationID: operationID}, input, timeout)
++	b, err := c.client.Post(ctx, fullURL, map[string]string{
++		constant.OperationID: operationID,
++		"X-RAP-OpenIM-Operator": mcontext.GetOpUserID(ctx),
++		"X-RAP-OpenIM-Platform": mcontext.GetOpUserPlatform(ctx),
++		"X-RAP-OpenIM-Policy": "rap-auth-v1",
++	}, input, timeout)
+ 	if err != nil {
+-		return servererrs.ErrNetwork.WrapMsg(err.Error(), "post url", fullURL)
++		return servererrs.ErrNetwork.WrapMsg("research webhook unavailable", "command", command)
+ 	}
+ 	if err = json.Unmarshal(b, output); err != nil {
+ 		return servererrs.ErrData.WithDetail(err.Error() + " response format error")
+@@ -81,6 +86,6 @@ func (c *Client) post(ctx context.Context, command string, input interface{}, ou
+ 	if err := output.Parse(); err != nil {
+ 		return err
+ 	}
+-	log.ZInfo(ctx, "webhook success", "url", fullURL, "input", input, "response", string(b))
++	log.ZInfo(ctx, "webhook success", "command", command)
+ 	return nil
+ }
+diff --git a/pkg/common/webhook/rap_auth_test.go b/pkg/common/webhook/rap_auth_test.go
+new file mode 100644
+index 0000000..f375555
+--- /dev/null
++++ b/pkg/common/webhook/rap_auth_test.go
+@@ -0,0 +1,45 @@
++// Copyright © 2026 Research Agent Platform contributors.
++// Licensed under the Apache License, Version 2.0.
++package webhook
++
++import (
++	"net/http"
++	"net/http/httptest"
++	"strings"
++	"testing"
++	"time"
++	"github.com/openimsdk/open-im-server/v3/pkg/callbackstruct"
++	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
++	"github.com/openimsdk/tools/mcontext"
++)
++
++func TestRAPTrustedSyncAndAsyncCallbackHeaders(t *testing.T) {
++	headers := make(chan http.Header, 2)
++	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++		headers <- r.Header.Clone()
++		w.Header().Set("Content-Type", "application/json")
++		w.Write([]byte(`{"actionCode":0,"nextCode":0,"errCode":0}`))
++	}))
++	defer server.Close()
++	ctx := mcontext.WithMustInfoCtx([]string{"synthetic-operation", "imAdmin", "Admin", "synthetic-connection"})
++	client := NewWebhookClient(server.URL)
++	req := &callbackstruct.CallbackBeforeSendSingleMsgReq{CommonCallbackReq:callbackstruct.CommonCallbackReq{CallbackCommand:"callbackBeforeSendSingleMsgCommand"}}
++	if err := client.SyncPost(ctx, req.GetCallbackCommand(), req, &callbackstruct.CallbackBeforeSendSingleMsgResp{}, &config.BeforeConfig{Timeout:2}); err != nil { t.Fatal(err) }
++	client.AsyncPost(ctx, req.GetCallbackCommand(), req, &callbackstruct.CallbackBeforeSendSingleMsgResp{}, &config.AfterConfig{Enable:true,Timeout:2})
++	for i:=0;i<2;i++ { select {
++	case header := <-headers:
++		if header.Get("X-RAP-OpenIM-Operator")!="imAdmin" || header.Get("X-RAP-OpenIM-Platform")!="Admin" || header.Get("X-RAP-OpenIM-Policy")!="rap-auth-v1" { t.Fatal(header) }
++	case <-time.After(3*time.Second): t.Fatal("callback did not arrive")
++	} }
++}
++
++func TestRAPWebhookNetworkFailureRedactsCallbackKey(t *testing.T) {
++	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request) {}))
++	url := server.URL; server.Close()
++	key := strings.Repeat("a",64)
++	client := NewWebhookClient(url+"/callback/"+key)
++	ctx := mcontext.WithMustInfoCtx([]string{"synthetic-operation", "imAdmin", "Admin", "synthetic-connection"})
++	req := &callbackstruct.CallbackBeforeSendSingleMsgReq{CommonCallbackReq:callbackstruct.CommonCallbackReq{CallbackCommand:"callbackBeforeSendSingleMsgCommand"}}
++	err := client.SyncPost(ctx,req.GetCallbackCommand(),req,&callbackstruct.CallbackBeforeSendSingleMsgResp{},&config.BeforeConfig{Timeout:1})
++	if err==nil || strings.Contains(err.Error(),key) || strings.Contains(err.Error(),url) { t.Fatalf("unsafe error %v",err) }
++}

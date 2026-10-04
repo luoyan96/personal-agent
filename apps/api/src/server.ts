@@ -22,8 +22,13 @@ import { labAiRuntime, labAiSettings, updateLabAiSettings } from './lab-ai-setti
 import { ChatService } from './chat.js'
 import type { ChatCommand } from './chat.js'
 import { reconcileChat } from './chat-worker.js'
+import { OpenImBridge } from './openim-bridge.js'
+import { OpenImClient } from './openim-client.js'
+import { OpenImCallbacks } from './openim-callback.js'
 
-export function createServer(config: Config) {
+export function createServer(config: Config, options:{imClient?:OpenImClient}={}) {
+  if(options.imClient&&config.mode!=='test')throw new Error('Injected OpenIM clients are test-only')
+  const imClient=options.imClient??new OpenImClient(config)
   const app = Fastify({ logger: false, bodyLimit: 1048576, genReqId: () => randomUUID(), requestTimeout: 10000 })
   let db: ReturnType<typeof openDatabase> | undefined
   function database() {
@@ -55,6 +60,12 @@ export function createServer(config: Config) {
     reply.code(ok ? 200 : 503)
     return data(Health).parse({ data: { status: ok ? 'ok' : 'unavailable', contractVersion, checks: { database, storage, authentication: database, harness: 'not_verified' } } })
   })
+  app.post('/api/v1/im/callback/:key/:command', async request=>{
+    const params=request.params as {key:string;command:string},connection=database(),callbacks=new OpenImCallbacks(new OpenImBridge(connection,config,imClient))
+    callbacks.authenticate(params.key)
+    const header=(name:string)=>typeof request.headers[name]==='string'?String(request.headers[name]):''
+    return transaction(connection,()=>callbacks.handle(params.command,request.body as Record<string,unknown>,{userID:header('x-rap-openim-operator'),platform:header('x-rap-openim-platform'),policy:header('x-rap-openim-policy'),operationID:header('operationid')}))
+  })
   for (const [name, route] of Object.entries(routes)) {
     if (route.stage === 'B0') continue
     app.route({ method: route.method, url: route.path.replace(/\{(\w+)\}/g, ':$1'), ...(name==='upload'?{bodyLimit:14000000}:name==='register'?{bodyLimit:8192}:{}), handler: async (request, reply) => {
@@ -81,6 +92,18 @@ export function createServer(config: Config) {
           return routes.login.response.parse({ data: new Collaboration(connection, actor).member(loggedIn.memberId) })
         })
       }
+      if(route.stage==='IM1'&&!route.idempotent){
+        const reauthorize=()=>authenticate(connection,token)
+        const actor=transaction(connection,()=>{const value=reauthorize();if(route.method!=='GET')requireCsrf(value,request.headers['x-csrf-token']);return value})
+        const bridge=new OpenImBridge(connection,config,imClient)
+        let result:unknown
+        if(name==='imSession')result={data:await bridge.session(token,(parsed.data as RequestFor<'imSession'>).body.platformID)}
+        else if(name==='imSync')result={data:await bridge.sync(actor,reauthorize)}
+        else if(name==='imSyncConversation')result={data:await bridge.syncConversation(actor,(parsed.data.params as {id:string}).id,reauthorize)}
+        else result=transaction(connection,()=>{const chat=bridge.chat(reauthorize());return {data:name==='imContacts'?bridge.contacts(chat):bridge.conversations(chat,(parsed.data.query as {imConversationID?:string}).imConversationID)}})
+        transaction(connection,reauthorize)
+        return route.response.parse(result)
+      }
       let collaboration: Collaboration | undefined
       try { return transaction(connection, () => {
         const actor = authenticate(connection, token)
@@ -99,7 +122,7 @@ export function createServer(config: Config) {
         collaboration = new Collaboration(connection,actor,config.blobRoot,labAi)
         reconcile(connection,config)
         reconcileChat(connection,config)
-        if(route.stage==='CHAT1'){const result=new ChatService(collaboration,config).run(name as ChatCommand,parsed.data as RequestFor<ChatCommand>);reconcileChat(connection,config);return result}
+        if(route.stage==='CHAT1'||route.stage==='IM1'){const result=new ChatService(collaboration,config).run(name as ChatCommand,parsed.data as RequestFor<ChatCommand>);reconcileChat(connection,config);return result}
         if((reuseCommands as readonly string[]).includes(name)){const result=new ReuseService(collaboration).run(name as ReuseCommand,parsed.data as RequestFor<ReuseCommand>);reconcile(connection,config);return result}
         if((aiCommands as readonly string[]).includes(name))return new AiService(collaboration,labAi.enabled,labAi.model).run(name as AiCommand,parsed.data as RequestFor<AiCommand>)
         if (!(collaborationCommands as readonly string[]).includes(name)) fail('NOT_IMPLEMENTED')
