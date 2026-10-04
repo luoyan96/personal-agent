@@ -47,7 +47,8 @@ async function setup(configured=true){
     // Fixed Go v3.8.3-patch.15 callback.go takes nickname/faceURL pointers but leaves Ex nil.
     if(path==='/user/update_user_info'){if(!skipProfileHook)await before('callbackBeforeUpdateUserInfoCommand',{userID:body.userInfo.userID,nickName:body.userInfo.nickname,faceURL:body.userInfo.faceURL,ex:null},operationID);return {}}
     if(path==='/friend/import_friend'){await before('callbackBeforeImportFriendsCommand',body);friends.set(body.ownerUserID,[...new Set([...(friends.get(body.ownerUserID)??[]),...body.friendUserIDs])]);return {}}
-    if(path==='/friend/get_friend_list'){const result=friendListResult??{friendsInfo:(friends.get(body.userID)??[]).map(userID=>({friendUser:{userID}})),total:(friends.get(body.userID)??[]).length};if(onFriendList)await onFriendList();return result}
+    // Fixed Go FriendsDB2Pb returns nil for an empty list; Gin JSON retains total:0.
+    if(path==='/friend/get_friend_list'){const ids=friends.get(body.userID)??[],result=friendListResult??{friendsInfo:ids.length?ids.map(userID=>({friendUser:{userID}})):null,total:ids.length};if(onFriendList)await onFriendList();return result}
     if(path==='/friend/delete_friend'){friends.set(body.ownerUserID,(friends.get(body.ownerUserID)??[]).filter(id=>id!==body.friendUserID));return {}}
     if(path==='/conversation/set_conversations')return {}
     if(path==='/group/get_groups_info')return {groupInfos:body.groupIDs.flatMap((groupID:string)=>groups.has(groupID)?[{groupID}]:[])}
@@ -163,7 +164,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     s.setOnFriendList(async()=>{s.setOnFriendList(null);expect((await s.request('revokeContact',{expectedVersion:relationship.version},{id:s.human('member_B').id})).status).toBe(200)})
     expect((await s.request('imSync',{})).status).toBe(403)
     expect(s.calls.filter(c=>c.path==='/friend/import_friend')).toEqual([])
-    for(const result of [{friendsInfo:[],total:1001},{friendsInfo:[{friendUser:{}}],total:1}]){
+    for(const result of [{friendsInfo:[],total:1001},{friendsInfo:[{friendUser:{}}],total:1},{friendsInfo:null,total:1},{friendsInfo:[]},{friendsInfo:[{friendUser:{userID:s.identity(s.human('member_B').id)}}]}]){
       s.setFriendListResult(result)
       expect((await s.request('imSession',{platformID:5})).value.data).toMatchObject({status:'unavailable',reason:'provisioning_failed',user:null})
     }

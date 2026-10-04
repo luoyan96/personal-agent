@@ -53,9 +53,11 @@ export class OpenImBridge {
     const remote=await this.client.request('/friend/get_friend_list',{userID:ownerUserID,pagination:{pageNumber:1,showNumber:1000}})
     // Fixed OpenIM ImportFriends emits an approval notification even for existing
     // friends. Only a complete, actual server list can prove an import is needed.
-    if(!Array.isArray(remote.friendsInfo)||!Number.isInteger(remote.total)||Number(remote.total)!==remote.friendsInfo.length)throw new ImUnavailable('provisioning_failed')
+    // Its Go HTTP writer includes total:0 and serializes a nil list as null.
+    const friends=remote.friendsInfo===null&&remote.total===0?[]:remote.friendsInfo
+    if(!Array.isArray(friends)||!Number.isInteger(remote.total)||Number(remote.total)!==friends.length)throw new ImUnavailable('provisioning_failed')
     const present=new Set<string>()
-    for(const friend of remote.friendsInfo as {friendUser?:{userID?:string}}[]){
+    for(const friend of friends as {friendUser?:{userID?:string}}[]){
       const userID=friend.friendUser?.userID;if(typeof userID!=='string'||!userID)throw new ImUnavailable('provisioning_failed');present.add(userID)
     }
     checkLive()
