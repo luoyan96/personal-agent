@@ -2,6 +2,8 @@
 
 全新 ECS 的真实 IFRC 开通与 HTTPS 试运行使用 [生产部署说明](PRODUCTION.md)、独立 production override 和生产入口；以下 synthetic 入口不用于真实成员。
 
+新 ECS 的实际软件版本、镜像来源、线上验收和运维结果见[部署与验收记录](../../docs/deployment/openim-ecs.md)。以下说明的是独立本地联调配置，其历史静态检查不替代线上实测记录。
+
 用于完整 `clients/openim` 客户端的独立合成验收。保留科研 API / worker，替换 OpenIM Demo 自带的账号服务；没有 OpenIM Chat Server。客户端说明见 [完整科研客户端](../../clients/openim/RESEARCH-CLIENT.md)。当前配置文件已生成与静态解析，容器运行、SDK 双账号消息及媒体上传仍需实际 Docker 环境验收。
 
 ## 环境与端口
