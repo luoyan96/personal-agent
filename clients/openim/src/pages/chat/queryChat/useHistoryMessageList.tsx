@@ -1,9 +1,12 @@
 import { MessageItem, MessageViewType } from "@openim/wasm-client-sdk";
 import { useLatest, useRequest } from "ahooks";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { IMSDK } from "@/layout/MainContentWrap";
+import { useResearchStore } from "@/research/store";
+import { useUserStore } from "@/store";
+import { feedbackToast } from "@/utils/common";
 import emitter, { emit } from "@/utils/events";
 
 const START_INDEX = 10000;
@@ -20,38 +23,77 @@ export function useHistoryMessageList() {
   const [loadState, setLoadState] = useState(INITIAL_LOAD_STATE);
   const latestLoadState = useLatest(loadState);
   const latestConversationID = useLatest(conversationID);
+  const mounted = useRef(true);
+  const loadGeneration = useRef(0);
+  const sdkReady = useUserStore(
+    (state) =>
+      !state.isLogining &&
+      state.connectState === "success" &&
+      state.syncState === "success" &&
+      Boolean(state.selfInfo.userID),
+  );
+  const latestSdkReady = useLatest(sdkReady);
+  const actorGeneration = useResearchStore((state) => state.generation);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      loadGeneration.current++;
+    };
+  }, []);
 
   const { loading: moreOldLoading, runAsync: getMoreOldMessages } = useRequest(
     async (loadMore = true) => {
+      if (!conversationID || !latestSdkReady.current) return;
       const reqConversationID = conversationID;
-      const { data } = await IMSDK.getAdvancedHistoryMessageList({
-        count: SPLIT_COUNT,
-        startClientMsgID: loadMore
-          ? latestLoadState.current.messageList[0]?.clientMsgID
-          : "",
-        conversationID: conversationID ?? "",
-        viewType: MessageViewType.History,
-      });
-      if (latestConversationID.current !== reqConversationID) return;
-      setLoadState((preState) => ({
-        ...preState,
-        initLoading: false,
-        hasMoreOld: !data.isEnd,
-        messageList: [...data.messageList, ...(loadMore ? preState.messageList : [])],
-        firstItemIndex: preState.firstItemIndex - data.messageList.length,
-      }));
+      const generation = useResearchStore.getState().generation;
+      const historyGeneration = loadGeneration.current;
+      const userID = useUserStore.getState().selfInfo.userID;
+      const isCurrent = () =>
+        mounted.current &&
+        latestSdkReady.current &&
+        latestConversationID.current === reqConversationID &&
+        historyGeneration === loadGeneration.current &&
+        generation === useResearchStore.getState().generation &&
+        userID === useUserStore.getState().selfInfo.userID;
+      try {
+        const { data } = await IMSDK.getAdvancedHistoryMessageList({
+          count: SPLIT_COUNT,
+          startClientMsgID: loadMore
+            ? latestLoadState.current.messageList[0]?.clientMsgID
+            : "",
+          conversationID: reqConversationID,
+          viewType: MessageViewType.History,
+        });
+        if (!isCurrent()) return;
+        setLoadState((preState) => ({
+          ...preState,
+          initLoading: false,
+          hasMoreOld: !data.isEnd,
+          messageList: [...data.messageList, ...(loadMore ? preState.messageList : [])],
+          firstItemIndex: preState.firstItemIndex - data.messageList.length,
+        }));
+      } catch (error) {
+        // A route reload can mount this hook before SDK login. Also consume
+        // failures of requests that belonged to a closed route or prior actor.
+        if (!isCurrent()) return;
+        setLoadState((previous) => ({ ...previous, initLoading: false }));
+        feedbackToast({ error, msg: "历史消息读取失败，请重新打开会话后重试" });
+      }
     },
     { manual: true },
   );
 
   const loadHistoryMessages = useCallback(() => {
+    loadGeneration.current++;
     setLoadState(INITIAL_LOAD_STATE);
     void getMoreOldMessages(false);
   }, [getMoreOldMessages]);
 
   useEffect(() => {
-    loadHistoryMessages();
-  }, [conversationID, loadHistoryMessages]);
+    if (sdkReady && conversationID) loadHistoryMessages();
+  }, [conversationID, sdkReady, actorGeneration, loadHistoryMessages]);
 
   useEffect(() => {
     const pushNewMessage = (message: MessageItem) => {

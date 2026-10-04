@@ -2,11 +2,20 @@ import { useLatest, useUpdateEffect } from "ahooks";
 import { useCallback, useEffect, useRef } from "react";
 
 import { IMSDK } from "@/layout/MainContentWrap";
+import { useResearchStore } from "@/research/store";
 import { useConversationStore, useUserStore } from "@/store";
+import { feedbackToast } from "@/utils/common";
 
 export default function useConversationState() {
-  const syncState = useUserStore((state) => state.syncState);
-  const latestSyncState = useLatest(syncState);
+  const sdkReady = useUserStore(
+    (state) =>
+      !state.isLogining &&
+      state.connectState === "success" &&
+      state.syncState === "success" &&
+      Boolean(state.selfInfo.userID),
+  );
+  const latestSdkReady = useLatest(sdkReady);
+  const mounted = useRef(true);
   const currentConversation = useConversationStore(
     (state) => state.currentConversation,
   );
@@ -15,12 +24,27 @@ export default function useConversationState() {
 
   const checkConversationState = useCallback(() => {
     const conversation = latestCurrentConversation.current;
-    if (!conversation || latestSyncState.current === "loading") return;
+    if (!conversation || !latestSdkReady.current) return;
 
     if (conversation.unreadCount > 0) {
-      void IMSDK.markConversationMessageAsRead(conversation.conversationID);
+      const generation = useResearchStore.getState().generation;
+      const userID = useUserStore.getState().selfInfo.userID;
+      void IMSDK.markConversationMessageAsRead(conversation.conversationID).catch(
+        (error) => {
+          if (
+            !mounted.current ||
+            !latestSdkReady.current ||
+            latestCurrentConversation.current?.conversationID !==
+              conversation.conversationID ||
+            generation !== useResearchStore.getState().generation ||
+            userID !== useUserStore.getState().selfInfo.userID
+          )
+            return;
+          feedbackToast({ error, msg: "已读状态同步失败，将在会话更新后重试" });
+        },
+      );
     }
-  }, [latestCurrentConversation, latestSyncState]);
+  }, [latestCurrentConversation, latestSdkReady]);
 
   const throttleCheckConversationState = useCallback(() => {
     clearTimeout(throttleTimer.current);
@@ -28,10 +52,10 @@ export default function useConversationState() {
   }, [checkConversationState]);
 
   useUpdateEffect(() => {
-    if (syncState !== "loading") {
+    if (sdkReady) {
       checkConversationState();
     }
-  }, [checkConversationState, syncState]);
+  }, [checkConversationState, sdkReady]);
 
   useUpdateEffect(() => {
     throttleCheckConversationState();
@@ -41,12 +65,13 @@ export default function useConversationState() {
     checkConversationState();
   }, [checkConversationState, currentConversation?.conversationID]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
       clearTimeout(throttleTimer.current);
-    },
-    [],
-  );
+    };
+  }, []);
 
   return {
     currentConversation,
