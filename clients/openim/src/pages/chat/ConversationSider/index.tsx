@@ -77,10 +77,14 @@ const ConversationSider = () => {
   };
 
   return (
-    <div>
+    <div className={clsx("flex min-h-0 flex-col", {
+      "max-[600px]:hidden": Boolean(conversationID),
+      "max-[600px]:w-full": !conversationID,
+    })}>
       <ConnectBar />
       <FlexibleSider
         needHidden={Boolean(conversationID)}
+        siderClassName="min-h-0 flex-1"
         wrapClassName="left-2 right-2 top-1.5 flex flex-col"
       >
         <Virtuoso

@@ -7,14 +7,17 @@ const FlexibleSider = ({
   needHidden,
   children,
   wrapClassName,
+  siderClassName,
 }: {
   needHidden: boolean;
   wrapClassName?: string;
+  siderClassName?: string;
   children: React.ReactNode;
 }) => (
   <aside
     className={clsx(
       "relative bg-white dark:text-white",
+      siderClassName,
       { "max-[600px]:hidden": needHidden },
       { "max-[600px]:!max-w-none max-[600px]:!basis-full": !needHidden },
     )}
