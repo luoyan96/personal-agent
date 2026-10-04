@@ -44,7 +44,8 @@ async function setup(configured=true){
     if(path==='/auth/get_user_token'){if(onToken)await onToken();return {token:`synthetic-user-token-${randomUUID()}`,expireTimeSeconds:3600}}
     if(path==='/user/get_users_info')return {usersInfo:body.userIDs.flatMap((id:string)=>users.has(id)?[users.get(id)]:[])}
     if(path==='/user/user_register'){await before('callbackBeforeUserRegisterCommand',body);for(const u of body.users)users.set(u.userID,u);return {}}
-    if(path==='/user/update_user_info'){if(!skipProfileHook)await before('callbackBeforeUpdateUserInfoCommand',{userID:body.userInfo.userID,nickName:body.userInfo.nickname,faceURL:'',ex:''},operationID);return {}}
+    // Fixed Go v3.8.3-patch.15 callback.go takes nickname/faceURL pointers but leaves Ex nil.
+    if(path==='/user/update_user_info'){if(!skipProfileHook)await before('callbackBeforeUpdateUserInfoCommand',{userID:body.userInfo.userID,nickName:body.userInfo.nickname,faceURL:body.userInfo.faceURL,ex:null},operationID);return {}}
     if(path==='/friend/import_friend'){await before('callbackBeforeImportFriendsCommand',body);friends.set(body.ownerUserID,[...new Set([...(friends.get(body.ownerUserID)??[]),...body.friendUserIDs])]);return {}}
     if(path==='/friend/get_friend_list')return {friendsInfo:(friends.get(body.userID)??[]).map(userID=>({friendUser:{userID}})),total:(friends.get(body.userID)??[]).length}
     if(path==='/friend/delete_friend'){friends.set(body.ownerUserID,(friends.get(body.ownerUserID)??[]).filter(id=>id!==body.friendUserID));return {}}
@@ -217,6 +218,23 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     s.setSkipProfileHook(true)
     const response=await s.request('imSession',{platformID:5});expect(response.value.data).toMatchObject({status:'unavailable',reason:'policy_not_configured',user:null})
     expect(s.calls.filter(c=>c.path==='/auth/get_user_token')).toHaveLength(1)
+  })
+  it('accepts fixed Go nil profile fields without permitting metadata injection or forged operators',async()=>{
+    const s=await setup(),session=(await s.request('imSession',{platformID:5})).value.data
+    expect(session.status).toBe('available') // Real Go-shaped ex:null also passes the policy proof.
+    const userID=session.user.userID,name=s.human('member_A').displayName,operator={userID,platform:'Web'}
+    for(const command of ['callbackBeforeUpdateUserInfoCommand','callbackBeforeUpdateUserInfoExCommand']){
+      const nil={userID,nickName:null,faceURL:null,ex:null}
+      expect((await s.callback(command,nil,undefined,operator)).value).toMatchObject({nextCode:0,errCode:0})
+      const supplied={userID,nickName:command.endsWith('ExCommand')?{value:name}:name,faceURL:'',ex:''}
+      expect((await s.callback(command,supplied,undefined,operator)).value.nextCode).toBe(0)
+      for(const change of [{ex:'injected-private-metadata'},{ex:{value:'injected-private-metadata'}},{faceURL:'https://unapproved.example/avatar'},{nickName:'forged-name'},{nickName:{value:'forged-name'}},{ex:{value:null}},{userID:'unmapped-user'}]){
+        expect((await s.callback(command,{...nil,...change},undefined,operator)).value).toMatchObject({nextCode:1,errCode:1002})
+      }
+      expect((await s.callback(command,nil,undefined,{userID:s.identity(s.human('member_B').id),platform:'Web'})).value.nextCode).toBe(1)
+      expect((await s.callback(command,nil,undefined,{userID,platform:'Linux'})).value.nextCode).toBe(1)
+      expect((await s.callback(command,nil,undefined,{userID:'',platform:''})).value.nextCode).toBe(1)
+    }
   })
   it('keeps stable IM identities and mapping projections isolated by laboratory',async()=>{
     const s=await setup();s.db.prepare("INSERT INTO labs VALUES ('other_lab','Other synthetic lab')").run();s.db.prepare("UPDATE members SET lab_id='other_lab' WHERE id='member_C'").run()

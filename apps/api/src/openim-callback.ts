@@ -84,8 +84,11 @@ export class OpenImCallbacks {
       if(!Array.isArray(users)||!users.length)fail('FORBIDDEN')
       for(const value of users as Body[]){const contact=this.contact(value.userID)
         if(!operator.admin&&(command==='callbackBeforeUserRegisterCommand'||operator.userID!==value.userID))fail('FORBIDDEN')
-        if(unwrap(value.nickName??value.nickname)!==undefined&&unwrap(value.nickName??value.nickname)!==contact.displayName)fail('FORBIDDEN')
-        for(const field of ['faceURL','ex'])if(unwrap(value[field])!==undefined&&unwrap(value[field])!=='')fail('FORBIDDEN')
+        // Go callbackstruct's optional pointers serialize nil as null (no omitempty).
+        // Ignore only an absent/nil field; supplied scalar/wrapper values still need to match.
+        const nickname=value.nickName??value.nickname
+        if(nickname!==undefined&&nickname!==null&&unwrap(nickname)!==contact.displayName)fail('FORBIDDEN')
+        for(const field of ['faceURL','ex'])if(value[field]!==undefined&&value[field]!==null&&unwrap(value[field])!=='')fail('FORBIDDEN')
         if(value.appMangerLevel!==undefined&&value.appMangerLevel!==0)fail('FORBIDDEN')
       };return
     }
