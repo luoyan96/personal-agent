@@ -32,7 +32,7 @@ async function setup(configured=true){
   db.prepare("INSERT INTO public_capabilities VALUES ('lab_synthetic','text-evidence-checklist',1,1,'member_A')").run()
   type B=Record<string,any>
   const calls:{path:string;body:B;operationID?:string}[]=[],users=new Map<string,B>(),groups=new Map<string,B[]>(),friends=new Map<string,string[]>(),sent:B[]=[]
-  let failSend=false,afterSend=true,failManagement=false,skipProfileHook=false,onToken:(()=>Promise<void>)|null=null
+  let failSend=false,afterSend=true,failManagement=false,skipProfileHook=false,onToken:(()=>Promise<void>)|null=null,onFriendList:(()=>Promise<void>)|null=null,friendListResult:Record<string,unknown>|null=null
   let app:ReturnType<typeof createServer>
   async function callback(command:string,body:B,keyValue=callbackKey,operator=body.msgFrom===100?{userID:String(body.sendID),platform:body.senderPlatformID===3?'Windows':'Web'}:{userID:'imAdmin',platform:'Admin'},operationID=String(body.operationID??'')){const response=await app.inject({method:'POST',url:`/api/v1/im/callback/${keyValue}/${command}`,headers:{'x-rap-openim-operator':operator.userID,'x-rap-openim-platform':operator.platform,'x-rap-openim-policy':'rap-auth-v1',operationID},payload:{...body,callbackCommand:command}});return {status:response.statusCode,value:response.json()}}
   async function before(command:string,body:B,operationID?:string){const response=await callback(command,body,callbackKey,undefined,operationID);if(response.status!==200||response.value.nextCode!==0)throw new ImUnavailable('provisioning_failed')}
@@ -47,7 +47,7 @@ async function setup(configured=true){
     // Fixed Go v3.8.3-patch.15 callback.go takes nickname/faceURL pointers but leaves Ex nil.
     if(path==='/user/update_user_info'){if(!skipProfileHook)await before('callbackBeforeUpdateUserInfoCommand',{userID:body.userInfo.userID,nickName:body.userInfo.nickname,faceURL:body.userInfo.faceURL,ex:null},operationID);return {}}
     if(path==='/friend/import_friend'){await before('callbackBeforeImportFriendsCommand',body);friends.set(body.ownerUserID,[...new Set([...(friends.get(body.ownerUserID)??[]),...body.friendUserIDs])]);return {}}
-    if(path==='/friend/get_friend_list')return {friendsInfo:(friends.get(body.userID)??[]).map(userID=>({friendUser:{userID}})),total:(friends.get(body.userID)??[]).length}
+    if(path==='/friend/get_friend_list'){const result=friendListResult??{friendsInfo:(friends.get(body.userID)??[]).map(userID=>({friendUser:{userID}})),total:(friends.get(body.userID)??[]).length};if(onFriendList)await onFriendList();return result}
     if(path==='/friend/delete_friend'){friends.set(body.ownerUserID,(friends.get(body.ownerUserID)??[]).filter(id=>id!==body.friendUserID));return {}}
     if(path==='/conversation/set_conversations')return {}
     if(path==='/group/get_groups_info')return {groupInfos:body.groupIDs.flatMap((groupID:string)=>groups.has(groupID)?[{groupID}]:[])}
@@ -81,7 +81,7 @@ async function setup(configured=true){
   const bridge=new OpenImBridge(db,config,client),actor=(index=0)=>authenticate(db,clients[index]!.token)
   const identity=(id:string,index=0)=>transaction(db,()=>bridge.identity(bridge.chat(actor(index)),id).userID)
   async function connect(id:string,index=0){const relation=(await request('requestContact',{}, {id},index)).value.data.relationship;if(relation.status==='pending_outbound'){const contact=contacts.find(c=>c.id===id)!,owner=contact.identity.kind==='human'?contact.identity.memberId:contact.identity.ownerMemberId;expect((await request('decideContactRequest',{expectedVersion:relation.version,decision:'accept'},{id:relation.requestId},['member_A','member_B','member_C'].indexOf(owner))).status).toBe(200)}}
-  return {dir,db,config,app,clients,accounts,request,callback,bridge,client,calls,groups,friends,sent,contacts,human,agent,publicAgent,actor,identity,connect,setFailSend:(v:boolean)=>{failSend=v},setFailManagement:(v:boolean)=>{failManagement=v},setSkipProfileHook:(v:boolean)=>{skipProfileHook=v},setAfterSend:(v:boolean)=>{afterSend=v},setOnToken:(v:(()=>Promise<void>)|null)=>{onToken=v}}
+  return {dir,db,config,app,clients,accounts,request,callback,bridge,client,calls,groups,friends,sent,contacts,human,agent,publicAgent,actor,identity,connect,setFailSend:(v:boolean)=>{failSend=v},setFailManagement:(v:boolean)=>{failManagement=v},setSkipProfileHook:(v:boolean)=>{skipProfileHook=v},setAfterSend:(v:boolean)=>{afterSend=v},setOnToken:(v:(()=>Promise<void>)|null)=>{onToken=v},setOnFriendList:(v:(()=>Promise<void>)|null)=>{onFriendList=v},setFriendListResult:(v:Record<string,unknown>|null)=>{friendListResult=v}}
 }
 
 describe('OpenIM bridge with explicit synthetic management adapter, not live server verification',{timeout:20000},()=>{
@@ -132,6 +132,43 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     expect((await s.callback('callbackBeforeSendSingleMsgCommand',msg)).value.nextCode).toBe(1)
     await s.request('imSession',{platformID:5});s.db.prepare("UPDATE auth_accounts SET disabled=1 WHERE member_id='member_A'").run()
     expect((await s.callback('callbackBeforeSendSingleMsgCommand',msg)).value.nextCode).toBe(1)
+  })
+  it('reads actual friends before importing across sessions, sync and worker sends, and heals missing remote relationships',async()=>{
+    const s=await setup();await s.connect(s.human('member_B').id)
+    const direct=(await s.request('createDirectConversation',{contactId:s.human('member_B').id})).value.data
+    expect((await s.request('imSession',{platformID:5})).value.data.status).toBe('available')
+    expect((await s.request('imSync',{})).value.data.status).toBe('available')
+    const imports=()=>s.calls.filter(c=>c.path==='/friend/import_friend'),count=imports().length
+    expect(count).toBeGreaterThan(0)
+    const personal=(await s.request('personalConversation',{})).value.data.conversation
+    for(let i=0;i<2;i++){
+      expect((await s.request('imSession',{platformID:5})).value.data.status).toBe('available')
+      expect((await s.request('imSyncConversation',{}, {id:direct.id})).value.data.transportStatus).toBe('ready')
+      expect((await s.request('imSync',{})).value.data.status).toBe('available')
+    }
+    await s.request('sendChatMessage',{text:'科研记录并不重复添加好友',intent:'chat',agentContactId:null,budget:null,context:[]},{id:personal.id})
+    expect(await new OpenImWorker(s.db,s.config,s.client).tick()).toBe(true)
+    expect(imports()).toHaveLength(count)
+    const self=s.identity(s.human('member_A').id),coordinator=s.identity(s.agent('member_A').id)
+    s.friends.set(self,s.friends.get(self)!.filter(id=>id!==coordinator))
+    expect((await s.request('imSession',{platformID:5})).value.data.status).toBe('available')
+    expect(imports()).toHaveLength(count+1);expect(imports().at(-1)!.body.friendUserIDs).toEqual([coordinator])
+    s.friends.get(self)!.push('unauthorized_remote_friend')
+    expect((await s.request('imSync',{})).value.data.status).toBe('available')
+    expect(s.friends.get(self)).not.toContain('unauthorized_remote_friend');expect(imports()).toHaveLength(count+1)
+  })
+  it('rechecks contact authority after an asynchronous friend-list read and fails closed on incomplete lists',async()=>{
+    const s=await setup();await s.connect(s.human('member_B').id)
+    const relationship=(await s.request('chatContact',null,{id:s.human('member_B').id})).value.data.relationship
+    s.setOnFriendList(async()=>{s.setOnFriendList(null);expect((await s.request('revokeContact',{expectedVersion:relationship.version},{id:s.human('member_B').id})).status).toBe(200)})
+    expect((await s.request('imSync',{})).status).toBe(403)
+    expect(s.calls.filter(c=>c.path==='/friend/import_friend')).toEqual([])
+    for(const result of [{friendsInfo:[],total:1001},{friendsInfo:[{friendUser:{}}],total:1}]){
+      s.setFriendListResult(result)
+      expect((await s.request('imSession',{platformID:5})).value.data).toMatchObject({status:'unavailable',reason:'provisioning_failed',user:null})
+    }
+    expect(s.calls.filter(c=>c.path==='/friend/import_friend')).toEqual([])
+    expect(s.calls.filter(c=>c.path==='/auth/get_user_token')).toEqual([])
   })
   it('creates and invites without AI, with authorized idempotent replay and separate joined authority',async()=>{
     const s=await setup(false),body={title:'真实讨论群',contactIds:[s.human('member_B').id,s.agent('member_C').id],sharedContext:context,plan:null},key=randomUUID()
