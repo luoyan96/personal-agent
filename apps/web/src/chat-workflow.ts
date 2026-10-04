@@ -55,17 +55,22 @@ export function projectConversationWorkflow(
     let actionLabel: string;
     switch (task.status) {
       case 'unassigned':
-        nextStep = '确认任务范围和验收要求，邀请成员承接或自行认领。'; actionLabel = '安排与承接'; break;
+        nextStep = '确认任务范围和验收要求，邀请成员承接或自行认领。';
+        actionLabel = task.allowedActions.some(a => a === 'invite' || a === 'claim') ? '安排与承接' : '查看分工安排'; break;
       case 'awaiting_acceptance':
         nextStep = '等待受邀成员接受具体范围与时间；加入群不代表接单。'; actionLabel = '查看承接情况'; break;
       case 'ready':
-        nextStep = '已有任务承诺，核对材料与依赖后开始；AI 执行仍需确认能力、输入和预算。'; actionLabel = '开始任务'; break;
+        nextStep = '已有任务承诺，核对材料与依赖后开始；AI 执行仍需确认能力、输入和预算。';
+        actionLabel = task.allowedActions.includes('start') ? '开始任务' : '查看开始安排'; break;
       case 'blocked':
         nextStep = `处理卡点：${task.blocker?.reason ?? '请查看当前阻塞记录'}。${task.blocker?.requestedAction ?? ''}`; actionLabel = '处理卡点'; break;
       case 'changes_requested':
         nextStep = '按验收意见修改后重新提交新交付版本，再由验收人审核。'; actionLabel = '查看意见与重新交付'; break;
       case 'in_review':
-        nextStep = '由验收人核对指定交付版本，决定通过或要求修改。'; actionLabel = '查看交付与验收'; break;
+        nextStep = task.allowedActions.includes('review')
+          ? '核对指定交付版本，决定通过或要求修改。'
+          : '等待验收人核对指定交付版本，决定通过或要求修改。';
+        actionLabel = '查看交付与验收'; break;
       case 'completed':
         nextStep = '任务已完成，可查看交付与指定版本的验收记录。'; actionLabel = '查看成果与验收'; break;
       case 'cancelled':
@@ -74,8 +79,8 @@ export function projectConversationWorkflow(
         nextStep = latestRun?.status === 'succeeded' && !latestRun.candidateDeliverableId
           ? 'AI 已产生候选成果，核对并提交为交付后，再由验收人审核。'
           : '完成约定工作并提交交付；聊天回复和运行成功不代表已验收。';
-        actionLabel = latestRun?.status === 'succeeded' && !latestRun.candidateDeliverableId
-          ? '核对候选成果并交付' : '查看执行与提交交付';
+        actionLabel = latestRun?.status === 'succeeded' && !latestRun.candidateDeliverableId && latestRun.allowedActions.includes('submit_candidate')
+          ? '核对候选成果并交付' : task.allowedActions.includes('submit') ? '查看执行与提交交付' : '查看执行与交付';
     }
     return {
       id, title: task.title, status: labels[task.status], stage: stageFor[task.status],
