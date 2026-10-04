@@ -1,7 +1,12 @@
 import {describe,it,expect} from 'vitest';
-import {renderContactProfile} from '../src/contact-panel';
+import {renderContactProfile,contactErrorText} from '../src/contact-panel';
+import {ApiError} from '../src/api';
 
 describe('unified contact profile presentation',()=>{
+  it('explains version conflicts using the server code and keeps exact transport retry instructions',()=>{
+    expect(contactErrorText(new ApiError('VERSION_CONFLICT','Request could not be completed.'))).toContain('填写内容已保留');
+    expect(contactErrorText(new ApiError('NETWORK_ERROR','重试同一请求'))).toBe('重试同一请求');
+  });
   const contact={id:'agent_<unsafe>',name:'<script>name</script>',identity:'个人 AI',owner:'主人',availability:'服务配置可用',icon:'robot' as const,role:'专属 Agent',profileVersion:4,introduction:'',capabilityDescription:'',personality:'',relationship:'等待同意',canOpenDirect:false,canManagePrivateMemory:false};
   it('escapes public profile text and does not invent empty specialties or expose private controls',()=>{
     const html=renderContactProfile(contact);

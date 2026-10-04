@@ -1,7 +1,11 @@
 import {escapeHtml as e} from './view-model';
+import {ApiError} from './api';
 import type {ChatSnapshot,ChatSource,ContactView,ProfileInput,MemoryView,MemoryScope} from './chat-view';
 
-const errorText=(error:unknown)=>error instanceof Error?error.message:'保存失败，请重试。';
+export const contactErrorText=(error:unknown)=>{
+  if(error instanceof ApiError){const messages:Record<string,string>={VERSION_CONFLICT:'版本已变化。填写内容已保留，请读取新版本、核对后重新保存。',INVALID_STATE:'当前状态已变化，请刷新核对后重新操作。',RATE_LIMITED:'已达到数量或操作频率限制，请核对已有记录。',CAPABILITY_UNAVAILABLE:'此 Agent 的能力当前不可用，请联系实验室负责人。'};const message=messages[error.code];if(message)return message;}
+  return error instanceof Error?error.message:'保存失败，请重试。';
+};
 const button=(attr:string,label:string)=>`<button type="button" ${attr}>${e(label)}</button>`;
 const profileFields=(contact?:ContactView)=>`<label>名字<input name="displayName" required maxlength="200" value="${e(contact?.name??'')}"></label><label>介绍<textarea name="introduction" maxlength="2000" rows="3">${e(contact?.introduction??'')}</textarea></label><label>能力介绍<textarea name="capabilityDescription" maxlength="4000" rows="3">${e(contact?.capabilityDescription??'')}</textarea></label>${contact?.icon==='user'?'<input type="hidden" name="personality" value="">':`<label>性格与工作方式<textarea name="personality" maxlength="2000" rows="3">${e(contact?.personality??'')}</textarea></label>`}`;
 export const readProfileInput=(form:HTMLFormElement):ProfileInput=>{
@@ -72,11 +76,11 @@ export class ContactPanel {
       review.querySelector<HTMLButtonElement>('[data-confirm-revoke-contact]')!.onclick=()=>void this.perform(()=>this.source.revokeContactRequest!(request.id,request.version,this.signal));
     });
   }
-  private async perform(action:()=>Promise<void>,reload=true) {
+  private async perform(action:()=>Promise<void>,reload=true,success='已保存。') {
     if(this.busy||!this.valid())return;
     this.busy=true;this.root.querySelectorAll<HTMLButtonElement>('button:not(.chat-back)').forEach(b=>b.disabled=true);
-    try{await action();if(!this.valid())return;if(reload){await this.refresh();if(this.valid()&&!this.editing)this.render();}if(this.valid())this.status('已保存。');}
-    catch(error){if(this.valid())this.status(errorText(error));}
+    try{await action();if(!this.valid())return;if(reload){await this.refresh();if(this.valid()&&!this.editing)this.render();}if(this.valid())this.status(success);}
+    catch(error){if(this.valid())this.status(contactErrorText(error));}
     finally{this.busy=false;if(this.valid()){this.root.querySelectorAll<HTMLButtonElement>('button').forEach(b=>b.disabled=false);this.pendingControl();}}
   }
   private edit(contact?:ContactView) {
@@ -88,7 +92,7 @@ export class ContactPanel {
     this.root.querySelector<HTMLButtonElement>('[data-profile-rebase]')?.addEventListener('click',()=>void this.perform(async()=>{
       this.source.discardPending?.();await this.refresh();const current=this.snapshot.contacts.find(c=>c.id===contact!.id);if(!current?.canEdit)throw new Error('当前不能编辑此档案。');version=current.profileVersion;
       this.root.querySelector<HTMLElement>('[data-profile-version]')!.textContent=`最新档案 v${version}：${current.name}；介绍：${current.introduction||'尚未填写'}；能力：${current.capabilityDescription||'尚未填写'}；方式：${current.personality||'尚未填写'}。核对后再次保存将使用此版本。`;
-    },false));
+    },false,'已读取最新版本。填写尚未保存，核对后再次保存。'));
     const form=this.root.querySelector<HTMLFormElement>('[data-profile-form]')!;protectComposition(form);
     form.onsubmit=event=>{
       event.preventDefault();const input=readProfileInput(event.currentTarget as HTMLFormElement);
@@ -107,7 +111,7 @@ export function openMemoryPanel(host:HTMLElement,source:ChatSource,scope:MemoryS
   const close=()=>{alive=false;dialog.close();dialog.remove();signal.removeEventListener('abort',close);};signal.addEventListener('abort',close,{once:true});dialog.oncancel=close;
   const pending=()=>{const discard=dialog.querySelector<HTMLButtonElement>('[data-memory-discard]')!;discard.hidden=!source.hasPending?.();discard.disabled=busy;};
   const status=(text:string)=>{if(valid()){dialog.querySelector<HTMLElement>('[data-memory-status]')!.textContent=text;pending();}};
-  const run=async(action:()=>Promise<void>)=>{if(busy||!valid())return;busy=true;dialog.querySelectorAll<HTMLButtonElement>('button:not([data-memory-close])').forEach(b=>b.disabled=true);try{await action();}catch(error){status(errorText(error));}finally{busy=false;if(valid()){dialog.querySelectorAll<HTMLButtonElement>('button').forEach(b=>b.disabled=false);pending();}}};
+  const run=async(action:()=>Promise<void>)=>{if(busy||!valid())return;busy=true;dialog.querySelectorAll<HTMLButtonElement>('button:not([data-memory-close])').forEach(b=>b.disabled=true);try{await action();}catch(error){status(contactErrorText(error));}finally{busy=false;if(valid()){dialog.querySelectorAll<HTMLButtonElement>('button').forEach(b=>b.disabled=false);pending();}}};
   const load=async()=>{
     const next=await source.readMemories!(scope,signal);if(!valid())return;memories=next;
     const list=dialog.querySelector<HTMLElement>('[data-memory-list]')!;

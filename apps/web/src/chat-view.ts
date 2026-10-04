@@ -249,7 +249,7 @@ export class ChatView {
     if (this.source.openContact && contact.canOpenDirect!==false && !this.pending) {
       this.pending = true;
       try { const conversationId = await this.source.openContact(id,this.controller.signal); if(this.disposed)return; await this.refresh(); this.tab = 'chats'; this.select(conversationId); }
-      catch(error) {if(!this.disposed){const status=this.root.querySelector<HTMLElement>('[data-profile-status]');if(status)status.textContent=error instanceof Error?error.message:'私聊打开失败。';throw error;}} finally {this.pending=false;}
+      catch(error) {if(!this.disposed){const status=this.root.querySelector<HTMLElement>('[data-profile-status]');if(status)status.textContent=error instanceof Error?error.message:'私聊打开失败。';throw error;}} finally {this.pending=false;if(!this.disposed){const input=this.root.querySelector<HTMLTextAreaElement>('#chat-input');if(input){input.disabled=false;this.updateSendButton();}}}
     } else {
       const info = this.root.querySelector<HTMLElement>('[data-contact-info]')!;
       info.hidden = false; info.textContent = `${contact.name} · ${contact.identity} · ${contact.owner} · ${contact.availability}。${contact.directHint??'私聊入口待接通。'}`;
