@@ -229,8 +229,14 @@ export class ChatView {
   private renderInvitations() {
     const panel=this.root.querySelector<HTMLElement>('.chat-invitations');
     if(!panel)return;
-    panel.innerHTML=(this.snapshot.invitations??[]).map(i=>renderCard({kind:'invitation',title:i.title,detail:i.detail,status:i.status,actions:i.actions},`invitation:${i.id}`)).join('');
+    const content=(this.snapshot.invitations??[]).map(i=>renderCard({kind:'invitation',title:i.title,detail:i.detail,status:i.status,actions:i.actions},`invitation:${i.id}`)).join('');
+    if(panel.dataset.content!==content){
+      const opened=[...panel.querySelectorAll<HTMLDetailsElement>('details[open]')].map(d=>d.dataset.cardDetail);
+      panel.innerHTML=content;panel.dataset.content=content;
+      panel.querySelectorAll<HTMLDetailsElement>('details').forEach(d=>d.open=opened.includes(d.dataset.cardDetail));
+    }
     panel.hidden=!(this.snapshot.invitations?.length);
+    this.bindCards();
   }
   private renderLive() {
     if(this.tab==='contacts'){this.renderList();this.contactPanel?.sync(this.snapshot);this.renderInvitations();return;}
