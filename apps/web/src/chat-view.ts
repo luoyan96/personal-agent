@@ -3,6 +3,7 @@
 import { escapeHtml as e } from './view-model';
 import { bytesToSize, getFileType, formatConversationTime, formatMessageTime } from './openim/common';
 import { ContactPanel, openMemoryPanel } from './contact-panel';
+import { ChatReadQueue } from './chat-read-queue';
 
 export interface ContactView {
   id: string; name: string; identity: string; owner: string; availability: string;
@@ -116,7 +117,7 @@ export class ChatView {
   private controller = new AbortController();
   private disposed = false;
   private readVersion = 0;
-  private reading=false;
+  private readQueue=new ChatReadQueue();
   private timer?:ReturnType<typeof setInterval>;
   private sendTarget='';
   private sendMode='chat';
@@ -140,8 +141,11 @@ export class ChatView {
   dispose() { this.disposed = true; this.contactPanel?.dispose();clearInterval(this.timer); this.controller.abort(); this.source.dispose?.(); this.draftMap.clear(); this.draft = ''; this.mentions = []; this.snapshot = {contacts:[],conversations:[],notice:''}; }
   private active() { return this.snapshot.conversations.find(c => c.id === this.activeId); }
   private async refresh(background=false) {
-    if(this.disposed||this.reading||this.pending&&background)return;
-    this.reading=true;
+    if(this.disposed||this.pending&&background)return;
+    await this.readQueue.run(background,()=>this.readSnapshot(background));
+  }
+  private async readSnapshot(background=false) {
+    if(this.disposed)return;
     const version=++this.readVersion;
     try {
       const next = await this.source.read(this.controller.signal);
@@ -156,7 +160,6 @@ export class ChatView {
       void this.markActiveRead();
       if(!this.timer&&this.source.pollIntervalMs&&this.snapshot.conversations.length)this.timer=setInterval(()=>{if(!document.hidden&&!this.composing&&!this.pending)void this.refresh(true);},this.source.pollIntervalMs);
     } catch (error) { if(version===this.readVersion)this.fail(error); }
-    finally {this.reading=false;}
   }
   private fail(error: unknown) {
     if (this.disposed) return;
