@@ -16,4 +16,8 @@
 
 [Dockerfile](Dockerfile) 拉取并核对固定源码 SHA，严格应用补丁、格式化并测试受影响 package，使用固定 Mage 1.15.0 构建全部服务。运行阶段沿用固定官方镜像布局，用派生构建替换全部二进制，防止某些回调仍使用未修改实现。
 
+启动器也在构建阶段通过 `mage -compile` 编译，容器使用该固定启动器运行原 `start` 任务。启动时无需再次编译 Mage 或访问 Go 模块源；原组件检查和服务启动逻辑继续执行。
+
+默认模块源是 `https://proxy.golang.org`。需要区域代理时可执行 `docker build --build-arg GOPROXY=https://goproxy.cn -t research-openim-server:3.8.3-patch.15-rap1 deploy/openim/server`；Go checksum database 保持启用，下载后执行 `go mod verify`，不使用 `GOSUMDB=off`。代理支持校验数据库的说明见 [Goproxy.cn 官方说明](https://github.com/goproxy/goproxy.cn#is-it-safe-to-use-goproxycn)。
+
 通过 [本地联调 Compose](../README.md) 构建运行。身份补丁的 Go package 测试已经在实际官方源码上运行通过；13 个服务程序与 11 个工具均通过 Linux amd64 编译。容器镜像构建、服务启动、真实 SDK 恶意帧拒绝和媒体互通仍需 Docker 环境验收。测试通过、编译通过与镜像运行分别记录。

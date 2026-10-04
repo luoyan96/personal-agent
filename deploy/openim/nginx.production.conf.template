@@ -28,6 +28,21 @@ server {
     error_log /var/log/nginx/research-openim.error.log warn;
     add_header X-Content-Type-Options nosniff always;
     add_header Cache-Control no-store always;
+    gzip on;
+    gzip_min_length 1024;
+    gzip_types text/css application/javascript application/wasm;
+
+    # Ubuntu 22.04 nginx does not include WASM in its default MIME table.
+    # Streaming compilation requires application/wasm, not octet-stream.
+    location = /openIM.wasm {
+        types { application/wasm wasm; }
+        try_files $uri =404;
+    }
+    location = /sql-wasm.wasm {
+        types { application/wasm wasm; }
+        try_files $uri =404;
+    }
+    location = /wasm_exec.js { try_files $uri =404; }
 
     location ~ /\. { return 404; }
     # Authenticated OpenIM server callbacks use the Docker network directly.
