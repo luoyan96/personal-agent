@@ -3,6 +3,9 @@
 import { builtinModules, createRequire } from "node:module";
 import {
   copyFileSync,
+  cpSync,
+  mkdirSync,
+  rmSync,
   existsSync,
   readFileSync,
   readdirSync,
@@ -17,6 +20,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const packagePath = path.join(repoRoot, "package.json");
 const backupPath = path.join(repoRoot, ".electron-package.backup.json");
 const electronOutputPath = path.join(repoRoot, "dist-electron");
+const stagingRoot = path.resolve(repoRoot, ".electron-runtime");
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 const electronBuilderCommand = path.join(
   repoRoot,
@@ -38,7 +42,11 @@ const run = (command, args) => {
     stdio: "inherit",
   });
   if (result.status !== 0) {
-    throw new Error(`${path.basename(command)} exited with code ${result.status ?? 1}: ${result.error?.message || ""}`);
+    throw new Error(
+      `${path.basename(command)} exited with code ${result.status ?? 1}: ${
+        result.error?.message || ""
+      }`,
+    );
   }
 };
 
@@ -235,12 +243,78 @@ restoreStaleBackup();
 const builderCommands = getBuilderCommands();
 
 if (!dryRun) {
-  run(process.execPath, [path.join(repoRoot, "node_modules", "vite", "bin", "vite.js"), "build"]);
+  run(process.execPath, [
+    path.join(repoRoot, "node_modules", "vite", "bin", "vite.js"),
+    "build",
+  ]);
 }
 
 const originalPackageText = readFileSync(packagePath, "utf8");
 const rootPackage = JSON.parse(originalPackageText);
 const runtimeManifest = createRuntimeManifest(rootPackage);
+
+const prepareRuntimeDirectory = () => {
+  // electron-builder 23 does not reliably follow pnpm's virtual-store tree.
+  // Materialize the installed runtime closure and preserve conflicting versions
+  // as nested dependencies. Never package the development node_modules tree.
+  if (
+    path.dirname(stagingRoot) !== repoRoot ||
+    path.basename(stagingRoot) !== ".electron-runtime"
+  )
+    throw new Error("Unexpected Electron staging path");
+  rmSync(stagingRoot, { recursive: true, force: true });
+  mkdirSync(path.join(stagingRoot, "node_modules"), { recursive: true });
+  cpSync(path.join(repoRoot, "dist"), path.join(stagingRoot, "dist"), {
+    recursive: true,
+  });
+  cpSync(electronOutputPath, path.join(stagingRoot, "dist-electron"), {
+    recursive: true,
+  });
+  writeFileSync(
+    path.join(stagingRoot, "package.json"),
+    JSON.stringify(runtimeManifest, null, 2),
+  );
+  const roots = new Map(),
+    copied = new Set();
+  const copyPackage = (name, fromManifest, parent = stagingRoot, optional = false) => {
+    let sourceManifest;
+    try {
+      sourceManifest = resolvePackageManifestPath(name, fromManifest);
+    } catch (error) {
+      if (optional) return;
+      throw error;
+    }
+    const manifest = JSON.parse(readFileSync(sourceManifest, "utf8"));
+    const root = roots.get(name);
+    const destination =
+      root && root.version !== manifest.version
+        ? path.join(parent, "node_modules", name)
+        : path.join(stagingRoot, "node_modules", name);
+    if (!root) roots.set(name, { version: manifest.version });
+    if (copied.has(destination)) return;
+    copied.add(destination);
+    mkdirSync(path.dirname(destination), { recursive: true });
+    cpSync(path.dirname(sourceManifest), destination, {
+      recursive: true,
+      dereference: true,
+      filter: (entry) => path.basename(entry) !== "node_modules",
+    });
+    for (const dependency of Object.keys(manifest.dependencies || {}))
+      copyPackage(dependency, sourceManifest, destination);
+    for (const dependency of Object.keys(manifest.optionalDependencies || {}))
+      copyPackage(dependency, sourceManifest, destination, true);
+  };
+  // Reserve direct dependency versions before resolving transitive dependencies.
+  for (const name of Object.keys(runtimeManifest.dependencies)) {
+    const manifest = JSON.parse(
+      readFileSync(resolvePackageManifestPath(name, packagePath), "utf8"),
+    );
+    roots.set(name, { version: manifest.version });
+  }
+  for (const name of Object.keys(runtimeManifest.dependencies))
+    copyPackage(name, packagePath);
+  console.log(`Materialized ${copied.size} installed runtime packages for Electron`);
+};
 
 console.log(
   `Electron runtime dependencies: ${Object.keys(runtimeManifest.dependencies).join(
@@ -255,20 +329,31 @@ if (dryRun) {
   process.exit(0);
 }
 
-writeFileSync(backupPath, originalPackageText);
 let exitCode = 0;
 try {
-  writeFileSync(packagePath, `${JSON.stringify(runtimeManifest, null, 2)}\n`);
+  prepareRuntimeDirectory();
+  const electronVersion = JSON.parse(
+    readFileSync(resolvePackageManifestPath("electron", packagePath), "utf8"),
+  ).version;
   for (const args of builderCommands) {
-    run(process.execPath, [path.join(repoRoot, "node_modules", "electron-builder", "out", "cli", "cli.js"), ...args]);
+    run(process.execPath, [
+      path.join(repoRoot, "node_modules", "electron-builder", "out", "cli", "cli.js"),
+      "--projectDir",
+      stagingRoot,
+      "--config",
+      path.join(repoRoot, "electron-builder.json5"),
+      "--config.electronVersion",
+      electronVersion,
+      "--config.directories.output",
+      path.join(repoRoot, "release", "Base", rootPackage.version),
+      ...args,
+    ]);
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   exitCode = 1;
 } finally {
-  copyFileSync(backupPath, packagePath);
-  unlinkSync(backupPath);
-  console.log("Restored development package.json");
+  console.log("Development package.json remains unchanged");
 }
 
 process.exit(exitCode);

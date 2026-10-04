@@ -30,6 +30,7 @@ const DraggableModalWrap: FC<IDraggableModalWrapProps> = (props) => {
       {...props}
       modalRender={(modal) => (
         <Draggable
+          nodeRef={draggleRef}
           allowAnyClick
           cancel={props.ignoreClasses}
           bounds={bounds}

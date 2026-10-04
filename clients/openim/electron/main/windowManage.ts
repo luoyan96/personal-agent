@@ -6,12 +6,16 @@ import { getIsForceQuit } from "./appManage";
 import { registerShortcuts, unregisterShortcuts } from "./shortcutManage";
 import { initIMSDK } from "../utils/imsdk";
 import OpenIMSDKMain from "@openim/electron-client-sdk";
-import { smokeResult } from "../utils/smoke";
+import { smokeResult, smokeProgress } from "../utils/smoke";
+import { getStore } from "./storeManage";
+import { validateResearchServiceUrl } from "../utils/researchService";
 
 const url = process.env.VITE_DEV_SERVER_URL;
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
 let sdkInstance: OpenIMSDKMain | null = null;
+let attemptedServiceAddress = "";
+let serviceConnectionError = "";
 
 function createSplashWindow() {
   splashWindow = new BrowserWindow({
@@ -29,7 +33,7 @@ function createSplashWindow() {
 
 export function createMainWindow() {
   const smoke = process.env.OPENIM_SMOKE_TEST === "1";
-  if (!smoke) createSplashWindow();
+  if (!smoke && process.env.OPENIM_HIDE_WINDOW !== "1") createSplashWindow();
   mainWindow = new BrowserWindow({
     title: "科研微信",
     icon: join(global.pathConfig.publicPath, "favicon.ico"),
@@ -53,29 +57,50 @@ export function createMainWindow() {
     },
   });
 
+  smokeProgress("native-sdk-loading");
   sdkInstance = initIMSDK(mainWindow.webContents);
+  smokeProgress("native-sdk-created");
   if (smoke) {
     mainWindow.webContents.once("did-finish-load", async () => {
+      smokeProgress("renderer-loaded");
       try {
         let ready = false;
         for (let attempt = 0; attempt < 40 && !ready; attempt++) {
-          ready = await mainWindow!.webContents.executeJavaScript("Boolean((document.querySelector('input') || document.querySelector('#chat-container') || document.querySelector('.ant-alert')) && window.electronAPI && typeof window.electronAPI.getPlatform === 'function')");
-          if (!ready) await new Promise(resolve => setTimeout(resolve, 100));
+          ready = await mainWindow!.webContents.executeJavaScript(
+            "Boolean((document.querySelector('input') || document.querySelector('#chat-container') || document.querySelector('.ant-alert')) && window.electronAPI && typeof window.electronAPI.getPlatform === 'function')",
+          );
+          if (!ready) await new Promise((resolve) => setTimeout(resolve, 100));
         }
-        if (!ready || !sdkInstance) throw new Error("Renderer or native SDK bridge did not initialize");
+        if (!ready || !sdkInstance)
+          throw new Error("Renderer or native SDK bridge did not initialize");
         smokeResult("ready");
-      } catch (error) { smokeResult("failed",String(error)); process.exitCode = 1; mainWindow?.destroy(); }
+      } catch (error) {
+        smokeResult("failed", String(error));
+        process.exitCode = 1;
+        mainWindow?.destroy();
+      }
     });
-    mainWindow.webContents.on("did-fail-load", (_event, code, description) => { smokeResult("failed",`${code} ${description}`); process.exitCode = 1; mainWindow?.destroy(); });
-    mainWindow.webContents.on("render-process-gone", (_event, details) => smokeResult("failed",`renderer ${details.reason}`));
-    mainWindow.webContents.on("console-message", (_event, level, text) => { if (level >= 3) smokeResult("failed",`renderer: ${text}`); });
+    mainWindow.webContents.on("did-fail-load", (_event, code, description) => {
+      smokeResult("failed", `${code} ${description}`);
+      process.exitCode = 1;
+      mainWindow?.destroy();
+    });
+    mainWindow.webContents.on("render-process-gone", (_event, details) =>
+      smokeResult("failed", `renderer ${details.reason}`),
+    );
+    mainWindow.webContents.on("console-message", (_event, level, text) => {
+      if (level >= 3) smokeResult("failed", `renderer: ${text}`);
+    });
   }
 
-  const researchUrl = process.env.RESEARCH_APP_URL;
+  const researchUrl =
+    process.env.RESEARCH_APP_URL ||
+    (getStore().get("researchServiceUrl") as string | undefined);
   if (researchUrl) {
-    const target = new URL(researchUrl);
-    if (target.protocol !== "https:" && !(target.protocol === "http:" && ["127.0.0.1", "localhost", "[::1]"].includes(target.hostname))) throw new Error("RESEARCH_APP_URL 必须是 HTTPS 或本机开发地址");
-    mainWindow.loadURL(target.href);
+    void connectResearchService(researchUrl).catch(() => {
+      if (mainWindow && !mainWindow.webContents.getURL().startsWith("file:"))
+        void mainWindow.loadFile(global.pathConfig.indexHtml);
+    });
   } else if (process.env.VITE_DEV_SERVER_URL) {
     // Open devTool if the app is not packaged
     mainWindow.loadURL(url);
@@ -95,7 +120,11 @@ export function createMainWindow() {
   });
   mainWindow.webContents.on("will-navigate", (event, target) => {
     const current = mainWindow?.webContents.getURL();
-    if (current && new URL(target).origin !== new URL(current).origin) { event.preventDefault(); if (target.startsWith("https:") || target.startsWith("http:")) void shell.openExternal(target); }
+    if (current && new URL(target).origin !== new URL(current).origin) {
+      event.preventDefault();
+      if (target.startsWith("https:") || target.startsWith("http:"))
+        void shell.openExternal(target);
+    }
   });
 
   mainWindow.on("focus", () => {
@@ -122,9 +151,32 @@ export function createMainWindow() {
   return mainWindow;
 }
 
+export async function connectResearchService(address: unknown) {
+  const target = validateResearchServiceUrl(address);
+  attemptedServiceAddress = target;
+  if (!mainWindow) throw new Error("桌面窗口尚未就绪");
+  try {
+    await mainWindow.loadURL(target);
+    getStore().set("researchServiceUrl", target);
+    serviceConnectionError = "";
+  } catch {
+    serviceConnectionError = "连接失败，请核对地址和网络，再重新连接。";
+    await mainWindow.loadFile(global.pathConfig.indexHtml);
+    throw new Error("连接失败，请核对服务地址和网络");
+  }
+}
+export function getResearchServiceStatus() {
+  return {
+    address:
+      attemptedServiceAddress || String(getStore().get("researchServiceUrl", "")),
+    error: serviceConnectionError,
+  };
+}
+
 export function splashEnd() {
   splashWindow?.close();
-  if (process.env.OPENIM_SMOKE_TEST !== "1") mainWindow?.show();
+  if (process.env.OPENIM_SMOKE_TEST !== "1" && process.env.OPENIM_HIDE_WINDOW !== "1")
+    mainWindow?.show();
 }
 
 // utils

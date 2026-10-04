@@ -38,7 +38,9 @@ function App() {
             <RouterProvider router={router} />
           </AntdApp>
         </Suspense>
-        <ReactQueryDevtools initialIsOpen={false} />
+        {import.meta.env.DEV && import.meta.env.VITE_RESEARCH_DEVTOOLS === "true" && (
+          <ReactQueryDevtools initialIsOpen={false} />
+        )}
       </QueryClientProvider>
     </ConfigProvider>
   );

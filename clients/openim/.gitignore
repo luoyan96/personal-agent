@@ -14,6 +14,7 @@ dist-electron
 package
 release
 .electron-package.backup.json
+.electron-runtime/
 *.local
 
 # Editor directories and files

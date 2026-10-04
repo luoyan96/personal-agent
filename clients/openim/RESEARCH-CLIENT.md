@@ -11,7 +11,9 @@
 5. `pnpm --ignore-workspace typecheck`、`pnpm --ignore-workspace build`。
 6. Windows x64：`pnpm --ignore-workspace build:win`。输出 `release/Base/3.8.3/ResearchWeChat_3.8.3.exe`，不自动安装或发布。`electron:smoke` 对实际打包程序做隐藏窗口启动、真实 renderer/native SDK 桥检查。
 
-桌面科研模式加载获准的同源服务页面，启动时配置 `RESEARCH_APP_URL`（HTTPS，或本机开发 `http://127.0.0.1:4317`）。未配置时显示明确的服务入口提示，不以 file origin 放宽 cookie/CSRF。配置页面必须提供此客户端构建与科研 API 同源代理。原生窗口、preload、平台 SDK 和安装脚本保留。
+双击桌面程序，首次显示“连接科研微信”，填写实验室提供的可信 HTTPS 服务地址，点击“保存并连接”；入口保存到当前桌面用户配置，下次启动自动连接。本机开发允许 `http://127.0.0.1:4317`。服务必须提供此客户端页面与科研 API 同源代理，cookie/Origin/CSRF 规则保持。运维可用 `RESEARCH_APP_URL` 覆盖入口，但普通用户无需设置环境变量；不默认连接旧生产站。原生窗口、preload、平台 SDK 和安装脚本保留。
+
+开发工具仅 `VITE_RESEARCH_DEVTOOLS=true` 时显示。服务地址验证测试使用 Node.js 24：`pnpm --ignore-workspace test:service`。打包脚本从已安装的精确依赖构建独立 `.electron-runtime` 目录，补齐 pnpm 传递依赖并保留版本，不临时重写开发 package.json。
 
 ## 操作入口
 
@@ -30,3 +32,7 @@
 ## 验证边界
 
 源码构建、安装包生成、桌面启动、实际科研 HTTP/SQLite、真实双账号 OpenIM 文件/语音互通分别验证。没有实际 IM Server 时，登录 session 的 `unavailable` 不得改成成功，不填充演示联系人或消息作为连通证据。浏览器脚本、截图、测试账号及打包输出均留在 Git 外 `.runtime/openim-client-rebuild` 或忽略的 `release`；不提交密钥、密码、会话或生成产物。
+
+2026-10-04 本地验证：客户端类型检查、Vite 构建、Windows x64 NSIS 生成、实际安装包隐藏启动（页面/preload/原生 SDK constructor）通过；服务地址验证 2 项通过。真实科研 API/SQLite/Edge 的 10 条检查记录覆盖登录、重连的真实未连接状态、320/390px、资料保存/轮询/刷新、模型停用、创建邀请码、注册与成员权限、退出和服务端会话失效。安装包额外 6 条检查覆盖首次连接表单、地址限制、离线重试、坏地址不持久化、成功地址跨进程保存、远程页面无法通过 IPC 改写或读取受保护的服务设置。
+
+证据在 Git 外 `.runtime/openim-client-rebuild`：`browser-review.mjs` / `browser-review.json` 与页面截图、`desktop-review.mjs` / `desktop-review.json`、`build-win-final-release.log`、`electron-smoke-final-release.log`。没有 Docker/OpenIM 服务，普通 IM、任意文件和语音的双账号真实传输仍待服务运行后验收；本批没有真实模型调用、安装到用户环境、推送或部署。浏览器记录含 Antd WaveEffect 的 findDOMNode 弃用提示、React Router future 警告和未登录/失效检查产生的 401 资源日志；没有未捕获页面异常。Windows 沙盒启动有 os_crypt_win 加密诊断，但真实页面和原生 SDK 桥接启动通过，正式运行时的桌面会话持久化仍需核验。

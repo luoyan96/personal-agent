@@ -39,7 +39,7 @@ if (!existsSync(executablePath)) {
 }
 
 const userDataPath = mkdtempSync(path.join(os.tmpdir(), "openim-electron-smoke-"));
-const resultPath = path.join(userDataPath,"startup-result.json");
+const resultPath = path.join(userDataPath, "startup-result.json");
 const child = spawn(
   executablePath,
   [`--user-data-dir=${userDataPath}`, "--no-sandbox"],
@@ -84,10 +84,16 @@ const readyPromise = new Promise((resolve) => {
   child.stderr.on("data", inspect);
   const poll = setInterval(() => {
     if (!existsSync(resultPath)) return;
-    const value=JSON.parse(readFileSync(resultPath,"utf8"));
-    clearInterval(poll); if(value.phase==='ready')resolve({type:'ready'}); else {output+=value.error;resolve({type:'failed'});}
-  },100);
-  child.once('exit',()=>clearInterval(poll));
+    const value = JSON.parse(readFileSync(resultPath, "utf8"));
+    if (value.phase === "loading") return;
+    clearInterval(poll);
+    if (value.phase === "ready") resolve({ type: "ready" });
+    else {
+      output += value.error;
+      resolve({ type: "failed" });
+    }
+  }, 100);
+  child.once("exit", () => clearInterval(poll));
 });
 
 const stopChild = async () => {
@@ -109,7 +115,11 @@ try {
   ]);
   if (startupResult.type !== "ready") {
     throw new Error(
-      `Packaged Electron app failed startup smoke test (${startupResult.type})\n${output}`,
+      `Packaged Electron app failed startup smoke test (${startupResult.type})\n${
+        existsSync(resultPath)
+          ? readFileSync(resultPath, "utf8")
+          : "No bootstrap receipt"
+      }\n${output}`,
     );
   }
 
@@ -124,14 +134,26 @@ try {
     );
   }
   if (
-    /Uncaught Exception|Cannot find module|A JavaScript error occurred|OPENIM_ELECTRON_FAILED|RENDERER_ERROR/i.test(output)
+    /Uncaught Exception|Cannot find module|A JavaScript error occurred|OPENIM_ELECTRON_FAILED|RENDERER_ERROR/i.test(
+      output,
+    )
   ) {
     throw new Error(`Packaged Electron app reported a startup error\n${output}`);
   }
-  if (existsSync(resultPath) && JSON.parse(readFileSync(resultPath,"utf8")).phase !== 'ready') throw new Error(`Renderer/native bridge failed: ${readFileSync(resultPath,"utf8")}`);
+  if (
+    existsSync(resultPath) &&
+    JSON.parse(readFileSync(resultPath, "utf8")).phase !== "ready"
+  )
+    throw new Error(
+      `Renderer/native bridge failed: ${readFileSync(resultPath, "utf8")}`,
+    );
   console.log("Packaged Electron startup smoke test passed");
 } finally {
   await stopChild();
-  if (path.dirname(path.resolve(userDataPath)) !== path.resolve(os.tmpdir()) || !path.basename(userDataPath).startsWith("openim-electron-smoke-")) throw new Error("Refusing to remove an unexpected smoke directory");
+  if (
+    path.dirname(path.resolve(userDataPath)) !== path.resolve(os.tmpdir()) ||
+    !path.basename(userDataPath).startsWith("openim-electron-smoke-")
+  )
+    throw new Error("Refusing to remove an unexpected smoke directory");
   rmSync(userDataPath, { recursive: true, force: true });
 }

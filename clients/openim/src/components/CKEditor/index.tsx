@@ -45,7 +45,8 @@ const Index: ForwardRefRenderFunction<CKEditorRef, CKEditorProps> = (
   ref,
 ) => {
   const ckEditor = useRef<ClassicEditor | null>(null);
-  const enter = useRef(onEnter); enter.current = onEnter;
+  const enter = useRef(onEnter);
+  enter.current = onEnter;
 
   const focus = (moveToEnd = false) => {
     const editor = ckEditor.current;
@@ -69,7 +70,13 @@ const Index: ForwardRefRenderFunction<CKEditorRef, CKEditorProps> = (
     editor.editing.view.document.on(
       "keydown",
       (evt, data: KeyDownData) => {
-        if (data.keyCode === 13 && !data.shiftKey && !data.isComposing && !data.domEvent?.isComposing && !editor.editing.view.document.isComposing) {
+        if (
+          data.keyCode === 13 &&
+          !data.shiftKey &&
+          !data.isComposing &&
+          !data.domEvent?.isComposing &&
+          !editor.editing.view.document.isComposing
+        ) {
           data.preventDefault();
           evt.stop();
           enter.current?.();

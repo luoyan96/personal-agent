@@ -2,7 +2,6 @@ import fs from "fs";
 import path from "path";
 import { DataPath, IElectronAPI } from "./../../src/types/globalExpose.d";
 import { contextBridge, ipcRenderer } from "electron";
-import { isProd } from "../utils";
 import "@openim/electron-client-sdk/lib/preload";
 import { Platform } from "@openim/wasm-client-sdk";
 
@@ -19,11 +18,11 @@ const getPlatform = () => {
 const getDataPath = (key: DataPath) => {
   switch (key) {
     case "public":
-      return isProd ? ipcRenderer.sendSync("getDataPath", "public") : "";
+      return ipcRenderer.sendSync("getDataPath", "public");
     case "sdkResources":
-      return isProd ? ipcRenderer.sendSync("getDataPath", "sdkResources") : "";
+      return ipcRenderer.sendSync("getDataPath", "sdkResources");
     case "logsPath":
-      return isProd ? ipcRenderer.sendSync("getDataPath", "logsPath") : "";
+      return ipcRenderer.sendSync("getDataPath", "logsPath");
     default:
       return "";
   }
@@ -88,7 +87,7 @@ const saveFileToDisk = async ({
 }): Promise<string> => {
   const arrayBuffer = await file.arrayBuffer();
   const saveDir = ipcRenderer.sendSync("getDataPath", "sdkResources");
-  const savePath = path.join(saveDir, file.name);
+  const savePath = path.join(saveDir, path.basename(file.name));
   const uniqueSavePath = getUniqueSavePath(savePath);
   if (!fs.existsSync(saveDir)) {
     fs.mkdirSync(saveDir, { recursive: true });
@@ -102,6 +101,9 @@ const saveFileToDisk = async ({
 };
 
 const Api: IElectronAPI = {
+  getResearchServiceStatus: () => ipcRenderer.invoke("research-service-status"),
+  configureResearchService: (address) =>
+    ipcRenderer.invoke("configure-research-service", address),
   getDataPath,
   getVersion: () => process.version,
   getPlatform,

@@ -28,23 +28,30 @@ i18n.on("languageChanged", () => {
 });
 
 const ChatFooter = () => {
-  const imID = useConversationStore(s => s.currentConversation?.conversationID || "");
-  const actor = useResearchStore(s => s.actor?.member.id);
-  const drafts = useRef(new Map<string,string>());
+  const imID = useConversationStore((s) => s.currentConversation?.conversationID || "");
+  const actor = useResearchStore((s) => s.actor?.member.id);
+  const drafts = useRef(new Map<string, string>());
   const [html, setHtml] = useState("");
   const latestHtml = useLatest(html);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
-  const retry = useRef<{key:string;message:MessageItem}>();
+  const retry = useRef<{ key: string; message: MessageItem }>();
   const composer = useResearchComposer();
-  useEffect(() => { setHtml(drafts.current.get(imID) || ""); retry.current = undefined; }, [imID]);
-  useEffect(() => { drafts.current.clear(); setHtml(""); retry.current = undefined; }, [actor]);
+  useEffect(() => {
+    setHtml(drafts.current.get(imID) || "");
+    retry.current = undefined;
+  }, [imID]);
+  useEffect(() => {
+    drafts.current.clear();
+    setHtml("");
+    retry.current = undefined;
+  }, [actor]);
 
   const { getImageMessage, getFileMessage, getSoundMessage } = useFileMessage();
   const { sendMessage } = useSendMessage();
 
   const onChange = (value: string) => {
-    drafts.current.set(imID,value);
+    drafts.current.set(imID, value);
     setHtml(value);
   };
 
@@ -55,41 +62,107 @@ const ChatFooter = () => {
     const conversation = useConversationStore.getState().currentConversation;
     if (!conversation) return;
     const original = latestHtml.current;
-    busy.current = true; setPending(true);
+    busy.current = true;
+    setPending(true);
     try {
       if (!(await composer.sendResearch(cleanText))) {
-        const key = JSON.stringify([conversation.conversationID,cleanText]);
-        const message = retry.current?.key === key ? retry.current.message : (await IMSDK.createTextMessage(cleanText)).data;
-        retry.current = {key,message};
-        await sendMessage({ message, recvID: conversation.userID, groupID: conversation.groupID });
+        const key = JSON.stringify([conversation.conversationID, cleanText]);
+        const message =
+          retry.current?.key === key
+            ? retry.current.message
+            : (await IMSDK.createTextMessage(cleanText)).data;
+        retry.current = { key, message };
+        await sendMessage({
+          message,
+          recvID: conversation.userID,
+          groupID: conversation.groupID,
+        });
         retry.current = undefined;
       }
-      if (drafts.current.get(conversation.conversationID) === original) drafts.current.delete(conversation.conversationID);
-      if (latestHtml.current === original && useConversationStore.getState().currentConversation?.conversationID === conversation.conversationID) setHtml("");
-    } catch (error) { feedbackToast({ error, msg: "发送失败，输入已保留" }); }
-    finally { busy.current = false; setPending(false); }
+      if (drafts.current.get(conversation.conversationID) === original)
+        drafts.current.delete(conversation.conversationID);
+      if (
+        latestHtml.current === original &&
+        useConversationStore.getState().currentConversation?.conversationID ===
+          conversation.conversationID
+      )
+        setHtml("");
+    } catch (error) {
+      feedbackToast({ error, msg: "发送失败，输入已保留" });
+    } finally {
+      busy.current = false;
+      setPending(false);
+    }
   };
 
   const droppedFiles = async (files: File[]) => {
     const conversation = useConversationStore.getState().currentConversation;
     if (!conversation) return;
-    for (const file of files) try {
-      const message = await (file.type.startsWith("image/") ? getImageMessage(file) : getFileMessage(file));
-      await sendMessage({ message, recvID: conversation.userID, groupID: conversation.groupID });
-    } catch (error) { feedbackToast({ error, msg: `文件 ${file.name} 发送失败` }); }
+    for (const file of files)
+      try {
+        const message = await (file.type.startsWith("image/")
+          ? getImageMessage(file)
+          : getFileMessage(file));
+        await sendMessage({
+          message,
+          recvID: conversation.userID,
+          groupID: conversation.groupID,
+        });
+      } catch (error) {
+        feedbackToast({ error, msg: `文件 ${file.name} 发送失败` });
+      }
   };
 
   return (
-    <footer className="relative h-full bg-white py-px" onDragOver={event => { if (event.dataTransfer.types.includes("Files")) event.preventDefault(); }} onDropCapture={event => { if (event.dataTransfer.files.length) { event.preventDefault(); event.stopPropagation(); void droppedFiles(Array.from(event.dataTransfer.files)); } }}>
+    <footer
+      className="relative h-full bg-white py-px"
+      onDragOver={(event) => {
+        if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+      }}
+      onDropCapture={(event) => {
+        if (event.dataTransfer.files.length) {
+          event.preventDefault();
+          event.stopPropagation();
+          void droppedFiles(Array.from(event.dataTransfer.files));
+        }
+      }}
+    >
       <div className="flex h-full flex-col border-t border-t-[var(--gap-text)]">
-        <SendActionBar sendMessage={sendMessage} getImageMessage={getImageMessage} getFileMessage={getFileMessage} getSoundMessage={getSoundMessage} />
+        <SendActionBar
+          sendMessage={sendMessage}
+          getImageMessage={getImageMessage}
+          getFileMessage={getFileMessage}
+          getSoundMessage={getSoundMessage}
+        />
         {composer.controls}
-        {composer.isCoordinator && !getCleanText(html) && <div className="px-3 py-1 text-xs flex gap-2 flex-wrap">{["文献梳理", "数据分析", "论文修改"].map(label => <Button size="small" key={label} disabled={pending} onClick={() => { if (!getCleanText(latestHtml.current)) onChange(`我想完成${label}。请先向我确认目标、已有材料、交付形式与验收要求，再提出协作安排。`); }}>{label}</Button>)}</div>}
+        {composer.isCoordinator && !getCleanText(html) && (
+          <div className="flex flex-wrap gap-2 px-3 py-1 text-xs">
+            {["文献梳理", "数据分析", "论文修改"].map((label) => (
+              <Button
+                size="small"
+                key={label}
+                disabled={pending}
+                onClick={() => {
+                  if (!getCleanText(latestHtml.current))
+                    onChange(
+                      `我想完成${label}。请先向我确认目标、已有材料、交付形式与验收要求，再提出协作安排。`,
+                    );
+                }}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        )}
         <div className="relative flex flex-1 flex-col overflow-hidden">
           <CKEditor
             key={imID}
             value={html}
-            placeholder={composer.isCoordinator ? "告诉你的需求协调 Agent，你想完成什么…" : "发送消息…"}
+            placeholder={
+              composer.isCoordinator
+                ? "告诉你的需求协调 Agent，你想完成什么…"
+                : "发送消息…"
+            }
             onEnter={() => void enterToSend()}
             onChange={onChange}
           />

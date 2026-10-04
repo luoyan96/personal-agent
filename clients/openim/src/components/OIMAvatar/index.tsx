@@ -17,7 +17,7 @@ interface IOIMAvatarProps extends AvatarProps {
   size?: number;
 }
 
-const OIMAvatar: React.FC<IOIMAvatarProps> = (props) => {
+const OIMAvatar = React.forwardRef<HTMLSpanElement, IOIMAvatarProps>((props, ref) => {
   const {
     src,
     text,
@@ -55,6 +55,7 @@ const OIMAvatar: React.FC<IOIMAvatarProps> = (props) => {
 
   return (
     <AntdAvatar
+      ref={ref}
       style={{
         backgroundColor: bgColor,
         minWidth: `${size}px`,
@@ -76,6 +77,6 @@ const OIMAvatar: React.FC<IOIMAvatarProps> = (props) => {
       {text}
     </AntdAvatar>
   );
-};
+});
 
 export default OIMAvatar;

@@ -15,7 +15,8 @@ export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const clientRoot = path.resolve(__dirname);
   const electronOutput = path.resolve(clientRoot, "dist-electron");
-  if (path.dirname(electronOutput) !== clientRoot) throw new Error("Electron output must remain inside the client directory");
+  if (path.dirname(electronOutput) !== clientRoot)
+    throw new Error("Electron output must remain inside the client directory");
   rmSync(electronOutput, { recursive: true, force: true });
 
   const sourcemap = command === "serve" || !!process.env.VSCODE_DEBUG;
@@ -43,13 +44,13 @@ export default defineConfig(({ command, mode }) => {
         plugins: [
           ...(!!process.env.VSCODE_DEBUG
             ? [
-              // Will start Electron via VSCode Debug
-              customStart(() =>
-                console.log(
+                // Will start Electron via VSCode Debug
+                customStart(() =>
+                  console.log(
                     /* For `.vscode/.debug.script.mjs` */ "[startup] Electron App",
+                  ),
                 ),
-              ),
-            ]
+              ]
             : []),
           // Allow use `import.meta.env.VITE_SOME_KEY` in Electron-Main
           loadViteEnv(),
@@ -60,7 +61,13 @@ export default defineConfig(({ command, mode }) => {
       // }),
       // visualizer({ open: true }),
     ],
-    server: { host: "127.0.0.1", port: 4317, strictPort: true, proxy: { "/api": { target: env.VITE_RESEARCH_PROXY || "http://127.0.0.1:3217" } } },
+    server: {
+      host: "127.0.0.1",
+      port: 4317,
+      strictPort: true,
+      watch: { ignored: ["**/release/**", "**/.electron-runtime/**"] },
+      proxy: { "/api": { target: env.VITE_RESEARCH_PROXY || "http://127.0.0.1:3217" } },
+    },
     clearScreen: false,
     build: {
       sourcemap: false,
@@ -73,8 +80,7 @@ export default defineConfig(({ command, mode }) => {
         },
       },
       rollupOptions: {
-        output: {
-        },
+        output: {},
       },
     },
   };

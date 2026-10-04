@@ -13,5 +13,6 @@
 - `ChatFooter/SendActionBar`：任意文件选择与 SDK 文件消息；真实麦克风录制、取消、试听和 SDK 语音消息。拖放接入原编辑区。
 - `MessageItem/FileMessageRender` 与 `SoundMessageRender`：实际文件下载和语音播放/真实错误反馈。
 - `electron/`：保留原窗口、native SDK 和打包；使用同源部署页面维持科研会话保护。验证状态单独记录，不能以源码保留替代实际验收。
+- `scripts/electron-build.mjs`：Windows 通过真实 Node JS 入口运行构建器，独立 staging materialize 已安装的完整运行依赖闭包，修复上游 pnpm 传递依赖遗漏；`electron/preload` 用真实 IPC 取得目录，避免 renderer 引入主进程专用 app 对象。连接服务表单和白名单桌面设置属新增科研接线，不改变 IM SDK 协议。
 
 构建、媒体互通、服务连接和科研闭环各自记录实际结果。没有 IM Server 时必须显示真实不可用，禁止填充演示用户或假消息作为成功验收。

@@ -3,6 +3,8 @@ import { Platform } from "@openim/wasm-client-sdk";
 export type DataPath = "public" | "emojiData" | "sdkResources" | "logsPath";
 
 export interface IElectronAPI {
+  getResearchServiceStatus: () => Promise<{ address: string; error: string }>;
+  configureResearchService: (address: string) => Promise<void>;
   getDataPath: (key: DataPath) => string;
   getVersion: () => string;
   getPlatform: () => Platform;
