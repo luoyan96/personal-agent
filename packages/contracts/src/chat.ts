@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { Id, Title, Text, Version, Instant, ObjectRef, PublicCapabilityRef, Budget, Schedule, ModelUsage, ErrorResponse, errorStatus, data, page } from './models.js'
 
-export const chatProtocolVersion = '1.0.0' as const
+export const chatProtocolVersion = '1.1.0' as const
 export const ChatAvailability = z.strictObject({ status: z.enum(['available', 'unavailable', 'disabled']), reason: z.enum(['platform_disabled', 'lab_disabled', 'missing_credentials', 'capability_unavailable', 'owner_authorization_required', 'not_connected']).nullable() })
 export const Contact = z.strictObject({ id: Id, labId: Id, displayName: Title, identity: z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('human'), memberId: Id }),
@@ -9,7 +9,8 @@ export const Contact = z.strictObject({ id: Id, labId: Id, displayName: Title, i
   z.strictObject({ kind: z.literal('public_agent'), ownerMemberId: Id, capability: PublicCapabilityRef }),
 ]), availability: ChatAvailability, version: Version })
 export const ConversationMember = z.strictObject({ contactId: Id, role: z.enum(['owner', 'member']), status: z.enum(['invited', 'joined', 'declined', 'revoked']), version: Version })
-export const Conversation = z.strictObject({ id: Id, labId: Id, kind: z.enum(['personal', 'direct', 'group']), title: Title, ownerMemberId: Id, version: Version, members: z.array(ConversationMember).max(100), taskIds: z.array(Id).max(100), lastSequence: z.number().int().nonnegative(), createdAt: Instant, updatedAt: Instant, allowedActions: z.array(z.enum(['send', 'invite', 'manage'])).max(3) })
+export const ConversationViewerState = z.strictObject({ readSequence: z.number().int().nonnegative(), unreadCount: z.number().int().nonnegative(), pinned: z.boolean(), version: Version })
+export const Conversation = z.strictObject({ id: Id, labId: Id, kind: z.enum(['personal', 'direct', 'group']), title: Title, ownerMemberId: Id, version: Version, members: z.array(ConversationMember).max(100), taskIds: z.array(Id).max(100), lastSequence: z.number().int().nonnegative(), createdAt: Instant, updatedAt: Instant, allowedActions: z.array(z.enum(['send', 'invite', 'manage'])).max(3), viewerState: ConversationViewerState.default({ readSequence: 0, unreadCount: 0, pinned: false, version: 1 }) })
 export const Mention = z.strictObject({ contactId: Id, start: z.number().int().nonnegative(), end: z.number().int().positive() })
 export const ChatResource = z.strictObject({ kind: z.enum(['plan', 'task', 'assignment', 'run', 'deliverable', 'artifact']), ref: ObjectRef })
 export const SharedContext = z.strictObject({ selectedText: Text.nullable(), artifactRefs: z.array(ObjectRef).max(10) })
@@ -34,6 +35,7 @@ export const SendChatMessage = z.strictObject({ text: Text, mentions: z.array(Me
 })
 export type Contact = z.infer<typeof Contact>
 export type Conversation = z.infer<typeof Conversation>
+export type ConversationViewerState = z.infer<typeof ConversationViewerState>
 export type ChatMessage = z.infer<typeof ChatMessage>
 export type ChatAction = z.infer<typeof ChatAction>
 export type AgentTurn = z.infer<typeof AgentTurn>
@@ -49,8 +51,10 @@ function route<P extends z.ZodType, Q extends z.ZodType, B extends z.ZodType, R 
 export const chatRoutes = {
   chatContacts: route('GET', '/chat/contacts', empty, pagination.extend({ search: z.string().max(200).optional() }), z.null(), page(Contact), 200, 'Current lab public humans, member personal agent identity and ownership metadata, and configured public capabilities; private history remains owner-only, other agents require group-specific owner approval; ACL before search/page.'),
   personalConversation: route('POST', '/chat/personal-conversation', empty, empty, empty, data(z.strictObject({ conversation: Conversation, agent: Contact })), 200, 'Ensure unique personal agent and conversation for current member; never exposes another owner history.'),
-  chatConversations: route('GET', '/chat/conversations', empty, pagination, z.null(), page(Conversation), 200, 'Joined member only; pinned personal first then updatedAt/id descending.'),
-  chatConversation: route('GET', '/chat/conversations/{id}', id, empty, z.null(), data(Conversation), 200, 'Joined member only; invitation is not group read authority.'),
+  chatConversations: route('GET', '/chat/conversations', empty, pagination, z.null(), page(Conversation), 200, 'Joined human only; own personal assistant first, then viewer-pinned conversations, then updatedAt/id descending. Includes server-persisted actor viewerState; direct title is the opposite human display name. Agent owner authorization alone does not grant browser history.'),
+  chatConversation: route('GET', '/chat/conversations/{id}', id, empty, z.null(), data(Conversation), 200, 'Joined human only; invitation or owned joined agent is not browser group history authority. Viewer state and direct title are current actor projections, never shared authority records.'),
+  markChatRead: route('POST', '/chat/conversations/{id}/read', id, empty, z.strictObject({ throughSequence: z.number().int().nonnegative() }), data(ConversationViewerState), 200, 'Joined human only; monotonic server-persisted cursor, bounded by current lastSequence. Mark only through messages actually displayed. Exact idempotent replay returns current state and cannot rewind a newer browser cursor. Read progress does not increase preference version; unread counts visible incoming human/model/service messages, excluding own human messages.'),
+  updateChatPreferences: route('POST', '/chat/conversations/{id}/preferences', id, empty, z.strictObject({ expectedVersion: Version, pinned: z.boolean() }), data(ConversationViewerState), 200, 'Joined human only; actor-scoped persisted pin preference with optimistic version. Personal assistant is always pinned and cannot be unpinned. Exact replay returns current authorized state; changing pin changes only viewerState.version, never Conversation.version or message ordering.'),
   createDirectConversation: route('POST', '/chat/direct-conversations', empty, empty, z.strictObject({ contactId: Id }), data(Conversation), 200, 'Unique same-lab human pair; own agent resolves personal conversation. Other personal agents and public agents cannot be opened as direct chats in CHAT1.'),
   chatMessages: route('GET', '/chat/conversations/{id}/messages', id, pagination.extend({ afterSequence: z.number().int().nonnegative().optional() }), z.null(), page(ChatMessage), 200, 'Authorized immutable messages ordered by sequence; cursor and afterSequence mutually exclusive.'),
   sendChatMessage: route('POST', '/chat/conversations/{id}/messages', id, empty, SendChatMessage, data(z.strictObject({ message: ChatMessage, turn: AgentTurn.nullable() })), 201, 'Persist human message first; explicit ask_agent queues durable turn or returns persisted unavailable turn; ordinary mentions never execute tasks.'),
@@ -60,6 +64,6 @@ export const chatRoutes = {
   chatActions: route('GET', '/chat/conversations/{id}/actions', id, pagination, z.null(), page(ChatAction), 200, 'Visible proposal and receipt history; allowedDecisions from current business authority, never model assertions.'),
   decideChatAction: route('POST', '/chat/actions/{id}/decision', id, empty, z.strictObject({ expectedVersion: Version, expectedConversationVersion: Version, decision: z.enum(['confirm', 'dismiss']) }), data(z.strictObject({ action: ChatAction, conversationId: Id, resources: z.array(ChatResource).max(100) })), 200, 'Confirm exact immutable proposal only; transaction rechecks ACL/versions and invokes canonical task commands; receipt links authority objects.'),
   chatInvitations: route('GET', '/chat/invitations', empty, pagination, z.null(), page(z.strictObject({ id: Id, conversationId: Id, title: Title, invitedContactId: Id, invitedByMemberId: Id, status: z.enum(['pending', 'accepted', 'declined', 'revoked']), version: Version })), 200, 'Current invitee or invited agent owner; summary only before acceptance.'),
-  decideChatInvitation: route('POST', '/chat/invitations/{id}/decision', id, empty, z.strictObject({ expectedVersion: Version, decision: z.enum(['accept', 'decline']) }), data(ConversationMember), 200, 'Human invitee or personal agent owner only; acceptance authorizes that agent only within this group, never owner private history or task commitment.'),
+  decideChatInvitation: route('POST', '/chat/invitations/{id}/decision', id, empty, z.strictObject({ expectedVersion: Version, decision: z.enum(['accept', 'decline']) }), data(ConversationMember), 200, 'Human invitee or personal agent owner only; accepting an agent invitation authorizes only that agent in this group. The owner browser requires a separate joined human membership to read history. Neither acceptance shares owner private history or accepts task commitment.'),
   revokeChatMember: route('POST', '/chat/conversations/{id}/members/{contactId}/revoke', z.strictObject({ id: Id, contactId: Id }), empty, z.strictObject({ expectedVersion: Version, expectedConversationVersion: Version, reason: Text }), data(ConversationMember), 200, 'Group owner; revoke membership, fence turns, invalidate group projections. Canonical task permissions remain independently enforced; no silent withdrawal of accepted commitments.'),
 } as const

@@ -1,4 +1,6 @@
-# HTTP 协议 0.10.0
+# HTTP 协议 0.11.0
+
+聊天协议 1.1.0 的 per-member 会话状态、幂等单调已读与浏览器权限变更见[会话状态接口](../../docs/development/research-chat-viewer-state.md)。
 
 CHAT1 新增聊天接口已实现；精确类型、分页、版本、动作确认及异步状态见[聊天接口契约](../../docs/development/research-chat-contract.md)。下方既有协议继续适用。
 

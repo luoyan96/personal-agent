@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.10.0"
+    "version": "0.11.0"
   },
   "paths": {
     "/api/v1/chat/contacts": {
@@ -515,6 +515,42 @@
                                   "manage"
                                 ]
                               }
+                            },
+                            "viewerState": {
+                              "default": {
+                                "readSequence": 0,
+                                "unreadCount": 0,
+                                "pinned": false,
+                                "version": 1
+                              },
+                              "type": "object",
+                              "properties": {
+                                "readSequence": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "unreadCount": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "pinned": {
+                                  "type": "boolean"
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "readSequence",
+                                "unreadCount",
+                                "pinned",
+                                "version"
+                              ],
+                              "additionalProperties": false
                             }
                           },
                           "required": [
@@ -529,7 +565,8 @@
                             "lastSequence",
                             "createdAt",
                             "updatedAt",
-                            "allowedActions"
+                            "allowedActions",
+                            "viewerState"
                           ],
                           "additionalProperties": false
                         },
@@ -711,7 +748,13 @@
                       "lastSequence": 0,
                       "createdAt": "2026-09-21T08:00:00+08:00",
                       "updatedAt": "2026-09-21T08:00:00+08:00",
-                      "allowedActions": []
+                      "allowedActions": [],
+                      "viewerState": {
+                        "readSequence": 0,
+                        "unreadCount": 0,
+                        "pinned": false,
+                        "version": 1
+                      }
                     },
                     "agent": {
                       "id": "synthetic",
@@ -848,7 +891,7 @@
     "/api/v1/chat/conversations": {
       "get": {
         "operationId": "chatConversations",
-        "description": "Joined member only; pinned personal first then updatedAt/id descending.",
+        "description": "Joined human only; own personal assistant first, then viewer-pinned conversations, then updatedAt/id descending. Includes server-persisted actor viewerState; direct title is the opposite human display name. Agent owner authorization alone does not grant browser history.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -999,6 +1042,42 @@
                                 "manage"
                               ]
                             }
+                          },
+                          "viewerState": {
+                            "default": {
+                              "readSequence": 0,
+                              "unreadCount": 0,
+                              "pinned": false,
+                              "version": 1
+                            },
+                            "type": "object",
+                            "properties": {
+                              "readSequence": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "unreadCount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "pinned": {
+                                "type": "boolean"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "readSequence",
+                              "unreadCount",
+                              "pinned",
+                              "version"
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -1013,7 +1092,8 @@
                           "lastSequence",
                           "createdAt",
                           "updatedAt",
-                          "allowedActions"
+                          "allowedActions",
+                          "viewerState"
                         ],
                         "additionalProperties": false
                       }
@@ -1159,7 +1239,7 @@
     "/api/v1/chat/conversations/{id}": {
       "get": {
         "operationId": "chatConversation",
-        "description": "Joined member only; invitation is not group read authority.",
+        "description": "Joined human only; invitation or owned joined agent is not browser group history authority. Viewer state and direct title are current actor projections, never shared authority records.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -1295,6 +1375,42 @@
                               "manage"
                             ]
                           }
+                        },
+                        "viewerState": {
+                          "default": {
+                            "readSequence": 0,
+                            "unreadCount": 0,
+                            "pinned": false,
+                            "version": 1
+                          },
+                          "type": "object",
+                          "properties": {
+                            "readSequence": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "unreadCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "pinned": {
+                              "type": "boolean"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "readSequence",
+                            "unreadCount",
+                            "pinned",
+                            "version"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
@@ -1309,7 +1425,8 @@
                         "lastSequence",
                         "createdAt",
                         "updatedAt",
-                        "allowedActions"
+                        "allowedActions",
+                        "viewerState"
                       ],
                       "additionalProperties": false
                     }
@@ -1332,7 +1449,486 @@
                     "lastSequence": 0,
                     "createdAt": "2026-09-21T08:00:00+08:00",
                     "updatedAt": "2026-09-21T08:00:00+08:00",
-                    "allowedActions": []
+                    "allowedActions": [],
+                    "viewerState": {
+                      "readSequence": 0,
+                      "unreadCount": 0,
+                      "pinned": false,
+                      "version": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/conversations/{id}/read": {
+      "post": {
+        "operationId": "markChatRead",
+        "description": "Joined human only; monotonic server-persisted cursor, bounded by current lastSequence. Mark only through messages actually displayed. Exact idempotent replay returns current state and cannot rewind a newer browser cursor. Read progress does not increase preference version; unread counts visible incoming human/model/service messages, excluding own human messages.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "throughSequence": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "throughSequence"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "throughSequence": 0
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "readSequence": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "unreadCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "pinned": {
+                          "type": "boolean"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "readSequence",
+                        "unreadCount",
+                        "pinned",
+                        "version"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "readSequence": 0,
+                    "unreadCount": 0,
+                    "pinned": false,
+                    "version": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/conversations/{id}/preferences": {
+      "post": {
+        "operationId": "updateChatPreferences",
+        "description": "Joined human only; actor-scoped persisted pin preference with optimistic version. Personal assistant is always pinned and cannot be unpinned. Exact replay returns current authorized state; changing pin changes only viewerState.version, never Conversation.version or message ordering.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  },
+                  "pinned": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "pinned"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "expectedVersion": 1,
+                "pinned": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "readSequence": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "unreadCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "pinned": {
+                          "type": "boolean"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "readSequence",
+                        "unreadCount",
+                        "pinned",
+                        "version"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "readSequence": 0,
+                    "unreadCount": 0,
+                    "pinned": false,
+                    "version": 1
                   }
                 }
               }
@@ -1623,6 +2219,42 @@
                               "manage"
                             ]
                           }
+                        },
+                        "viewerState": {
+                          "default": {
+                            "readSequence": 0,
+                            "unreadCount": 0,
+                            "pinned": false,
+                            "version": 1
+                          },
+                          "type": "object",
+                          "properties": {
+                            "readSequence": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "unreadCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "pinned": {
+                              "type": "boolean"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "readSequence",
+                            "unreadCount",
+                            "pinned",
+                            "version"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
@@ -1637,7 +2269,8 @@
                         "lastSequence",
                         "createdAt",
                         "updatedAt",
-                        "allowedActions"
+                        "allowedActions",
+                        "viewerState"
                       ],
                       "additionalProperties": false
                     }
@@ -1660,7 +2293,13 @@
                     "lastSequence": 0,
                     "createdAt": "2026-09-21T08:00:00+08:00",
                     "updatedAt": "2026-09-21T08:00:00+08:00",
-                    "allowedActions": []
+                    "allowedActions": [],
+                    "viewerState": {
+                      "readSequence": 0,
+                      "unreadCount": 0,
+                      "pinned": false,
+                      "version": 1
+                    }
                   }
                 }
               }
@@ -6384,7 +7023,7 @@
     "/api/v1/chat/invitations/{id}/decision": {
       "post": {
         "operationId": "decideChatInvitation",
-        "description": "Human invitee or personal agent owner only; acceptance authorizes that agent only within this group, never owner private history or task commitment.",
+        "description": "Human invitee or personal agent owner only; accepting an agent invitation authorizes only that agent in this group. The owner browser requires a separate joined human membership to read history. Neither acceptance shares owner private history or accepts task commitment.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -6924,7 +7563,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.10.0"
+                          "const": "0.11.0"
                         },
                         "checks": {
                           "type": "object",
@@ -6983,7 +7622,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.10.0",
+                    "contractVersion": "0.11.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -7137,7 +7776,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.10.0"
+                          "const": "0.11.0"
                         },
                         "checks": {
                           "type": "object",
@@ -7196,7 +7835,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.10.0",
+                    "contractVersion": "0.11.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -7328,7 +7967,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.10.0"
+                          "const": "0.11.0"
                         },
                         "checks": {
                           "type": "object",
@@ -7387,7 +8026,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.10.0",
+                    "contractVersion": "0.11.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
