@@ -33,17 +33,55 @@ export async function ensureResearchConversation(
     throw new Error("OpenIM 返回的会话与科研映射不一致");
   return conversation;
 }
-export async function initializeCoordinator() {
+let coordinatorInitialization: { generation: number; promise: Promise<void> } | undefined;
+
+export function initializeCoordinator() {
+  const generation = useResearchStore.getState().generation;
+  if (coordinatorInitialization?.generation === generation)
+    return coordinatorInitialization.promise;
+  const promise: Promise<void> = initializeCoordinatorForGeneration(generation).finally(() => {
+    if (coordinatorInitialization?.promise === promise) coordinatorInitialization = undefined;
+  });
+  coordinatorInitialization = { generation, promise };
+  return promise;
+}
+
+async function initializeCoordinatorForGeneration(generation: number) {
   const state = useResearchStore.getState(),
-    generation = state.generation;
+    actorGeneration = state.generation;
+  if (generation !== actorGeneration) return;
   const mapping = state.session?.coordinator;
   if (!mapping) return;
   const conversation = await ensureResearchConversation(mapping);
   if (generation !== useResearchStore.getState().generation) return;
-  if (!conversation.isPinned)
-    await IMSDK.setConversation({
-      conversationID: conversation.conversationID,
-      isPinned: true,
-    });
+  useResearchStore.setState({ coordinatorConversation: conversation });
   await useConversationStore.getState().getConversationListByReq();
+  if (generation !== useResearchStore.getState().generation) return;
+  const local = useConversationStore.getState().conversationList.find(
+    item => item.conversationID === conversation.conversationID,
+  );
+  // RAP already fixes this entry first and the backend synchronizes server pin.
+  // A freshly returned SDK conversation may not yet exist in its local SQL DB.
+  // Native pin is auxiliary synchronization: a failure must not log out a user
+  // whose real SDK login succeeded or trigger another token exchange.
+  if (!local) {
+    useResearchStore.setState({ coordinatorPinPending: true });
+    return;
+  }
+  useResearchStore.setState({ coordinatorConversation: local });
+  if (!local.isPinned) {
+    try {
+      await IMSDK.setConversation({
+        conversationID: local.conversationID,
+        isPinned: true,
+      });
+      if (generation !== useResearchStore.getState().generation) return;
+      useResearchStore.setState({ coordinatorPinPending: false });
+    } catch (error) {
+      if (generation !== useResearchStore.getState().generation) return;
+      useResearchStore.setState({ coordinatorPinPending: true });
+      console.warn("需求入口的即时通信置顶同步尚未完成", error);
+    }
+  } else useResearchStore.setState({ coordinatorPinPending: false });
+  if (!local.isPinned) await useConversationStore.getState().getConversationListByReq();
 }

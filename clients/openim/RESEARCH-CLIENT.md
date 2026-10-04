@@ -38,3 +38,10 @@
 2026-10-04 本地验证：客户端类型检查、Vite 构建、Windows x64 NSIS 生成、实际安装包隐藏启动（页面/preload/原生 SDK constructor）通过；服务地址验证 2 项通过。真实科研 API/SQLite/Edge 的 10 条检查记录覆盖登录、重连的真实未连接状态、320/390px、资料保存/轮询/刷新、模型停用、创建邀请码、注册与成员权限、退出和服务端会话失效。安装包额外 6 条检查覆盖首次连接表单、地址限制、离线重试、坏地址不持久化、成功地址跨进程保存、远程页面无法通过 IPC 改写或读取受保护的服务设置。
 
 证据在 Git 外 `.runtime/openim-client-rebuild`：`browser-review.mjs` / `browser-review.json` 与页面截图、`desktop-review.mjs` / `desktop-review.json`、`build-win-final-release.log`、`electron-smoke-final-release.log`。没有 Docker/OpenIM 服务，普通 IM、任意文件和语音的双账号真实传输仍待服务运行后验收；本批没有真实模型调用、安装到用户环境、推送或部署。浏览器记录含 Antd WaveEffect 的 findDOMNode 弃用提示、React Router future 警告和未登录/失效检查产生的 401 资源日志；没有未捕获页面异常。Windows 沙盒启动有 os_crypt_win 加密诊断，但真实页面和原生 SDK 桥接启动通过，正式运行时的桌面会话持久化仍需核验。
+## 首次会话与连接失败
+
+真实线上平台 5 首次验收发现：协调 Agent 的 SDK 本地会话尚未建好时，提前 `setConversation` 返回 `1004 RecordNotFoundError`；把它作为登录失败处理又触发自动换 Token，产生反复踢线。
+
+固定需求入口现在缓存并展示实际 `getOneConversation` 返回的会话，严格核对后端映射 ID，并随账号切换/退出清除。只有 SDK 实际会话列表包含该记录时才尝试原生置顶；失败保留待同步状态，在真实同步完成或会话新增/变更事件后重试，不把辅助置顶同步作为重新登录原因。原生 `isPinned` 来自 SDK 数据，不人工填成功状态。科研权威固定入口仍保持第一项。
+
+SDK 连接失败后保留科研账号和明确重连入口，停止登录页挂载时自动换 Token；正常首次登录仍可自动连接。首次失败报告与截图保留在 Git 外，完整消息与媒体验收以修复版本的实际运行结果为准。

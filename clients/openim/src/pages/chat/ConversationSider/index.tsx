@@ -58,6 +58,10 @@ const ConversationSider = () => {
   const { conversationID } = useParams();
   const conversationList = useConversationStore((state) => state.conversationList);
   const coordinator = useResearchStore(state => state.session?.coordinator?.imConversationID);
+  const nativeCoordinator = useResearchStore(state => state.coordinatorConversation);
+  const visibleConversations = nativeCoordinator && nativeCoordinator.conversationID === coordinator &&
+    !conversationList.some(item => item.conversationID === coordinator)
+    ? [nativeCoordinator, ...conversationList] : conversationList;
   const getConversationListByReq = useConversationStore(
     (state) => state.getConversationListByReq,
   );
@@ -81,7 +85,7 @@ const ConversationSider = () => {
       >
         <Virtuoso
           className="flex-1"
-          data={coordinator ? [...conversationList].sort((a,b) => Number(b.conversationID === coordinator)-Number(a.conversationID === coordinator)) : conversationList}
+          data={coordinator ? [...visibleConversations].sort((a,b) => Number(b.conversationID === coordinator)-Number(a.conversationID === coordinator)) : visibleConversations}
           ref={virtuoso}
           endReached={() => void endReached()}
           computeItemKey={(_, item) => item.conversationID}

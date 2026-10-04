@@ -1,6 +1,6 @@
 import { Alert, Button, Form, Input, Space } from "antd";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { clearIMProfile, setIMProfile } from "@/utils/storage";
 import { clearResearchSession, researchApi } from "./api";
@@ -16,6 +16,7 @@ export default function ResearchLogin() {
   const [registered, setRegistered] = useState(false);
   const [serviceAddress, setServiceAddress] = useState("");
   const navigate = useNavigate();
+  const routeLocation = useLocation();
   const connectionError = useResearchStore((s) => s.error);
   const actor = useResearchStore((s) => s.actor);
   const imReason = useResearchStore((s) => s.session?.reason);
@@ -68,6 +69,11 @@ export default function ResearchLogin() {
       profile.current?.closeOverlay();
     };
     window.addEventListener("research-session-expired", expired);
+    // A failed SDK attempt returns here with the authenticated RAP actor intact.
+    // Wait for an explicit reconnect instead of exchanging another token on
+    // every mount and repeatedly kicking the previous socket offline.
+    if (routeLocation.state?.imConnectionFailed)
+      return () => window.removeEventListener("research-session-expired", expired);
     const generation = useResearchStore.getState().generation;
     void researchApi("session")
       .then(async (result) => {

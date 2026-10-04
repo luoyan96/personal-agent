@@ -1,5 +1,6 @@
 import type { ResponseFor } from "@research-agent-platform/contracts";
 import { create } from "zustand";
+import type { ConversationItem } from "@openim/wasm-client-sdk/lib/types/entity";
 import { researchApi } from "./api";
 
 type State = {
@@ -9,6 +10,10 @@ type State = {
   actor?: ResponseFor<"session">["data"];
   contacts: ResponseFor<"imContacts">["data"]["contacts"];
   mappings: ResponseFor<"imConversations">["data"]["conversations"];
+  // A real SDK GetOneConversation result keeps the fixed entry available before
+  // the SDK's initial local conversation list has finished synchronizing.
+  coordinatorConversation?: ConversationItem;
+  coordinatorPinPending: boolean;
   error: string;
   setSession: (
     session: ResponseFor<"imSession">["data"],
@@ -22,9 +27,11 @@ export const useResearchStore = create<State>((set) => ({
   refreshSequence: 0,
   contacts: [],
   mappings: [],
+  coordinatorPinPending: false,
   error: "",
   setSession: (session, actor) =>
-    set((state) => ({ session, actor, error: "", generation: state.generation + 1 })),
+    set((state) => ({ session, actor, error: "", coordinatorConversation: undefined,
+      coordinatorPinPending: false, generation: state.generation + 1 })),
   refresh: async () => {
     const generation = useResearchStore.getState().generation;
     const sequence = useResearchStore.getState().refreshSequence + 1;
@@ -65,6 +72,8 @@ export const useResearchStore = create<State>((set) => ({
       actor: undefined,
       contacts: [],
       mappings: [],
+      coordinatorConversation: undefined,
+      coordinatorPinPending: false,
       error: "",
     })),
 }));

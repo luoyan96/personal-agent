@@ -38,6 +38,7 @@ import { initializeCoordinator } from "@/research/bridge";
 export function useGlobalEvent() {
   const navigate = useNavigate();
   const resume = useRef(false);
+  const loginAttempt = useRef(false);
 
   // user
   const updateSyncState = useUserStore((state) => state.updateSyncState);
@@ -131,6 +132,8 @@ export function useGlobalEvent() {
   };
 
   const tryLogin = async () => {
+    if (loginAttempt.current) return;
+    loginAttempt.current = true;
     updateIsLogining(true);
     const IMToken = (await getIMToken()) as string;
     const IMUserID = (await getIMUserID()) as string;
@@ -179,10 +182,14 @@ export function useGlobalEvent() {
       console.error(error);
       if (researchMode) useResearchStore.setState({ error: error instanceof Error ? error.message : "即时通信连接失败" });
       if ((error as SdkResponse).errCode !== 10102) {
-        navigate("/login");
+        await IMSDK.logout().catch(() => {});
+        await clearIMProfile();
+        navigate("/login", { state: { imConnectionFailed: true } });
       }
+    } finally {
+      loginAttempt.current = false;
+      updateIsLogining(false);
     }
-    updateIsLogining(false);
   };
 
   const setIMListener = () => {
@@ -275,6 +282,10 @@ export function useGlobalEvent() {
     getGroupListByReq();
     getConversationListByReq(false);
     getUnReadCountByReq();
+    if (researchMode && useResearchStore.getState().session?.coordinator)
+      void initializeCoordinator().catch(error =>
+        console.warn("需求入口的会话同步尚未完成", error),
+      );
   };
   const syncFailedHandler = () => {
     updateSyncState("failed");
@@ -351,13 +362,28 @@ export function useGlobalEvent() {
   };
 
   // conversation
+  const refreshCoordinatorPin = (data: ConversationItem[]) => {
+    const state = useResearchStore.getState();
+    const coordinator = data.find(item =>
+      item.conversationID === state.session?.coordinator?.imConversationID,
+    );
+    if (!coordinator) return;
+    useResearchStore.setState({ coordinatorConversation: coordinator,
+      coordinatorPinPending: !coordinator.isPinned });
+    if (state.coordinatorPinPending && !coordinator.isPinned)
+      void initializeCoordinator().catch(error =>
+        console.warn("需求入口的会话同步尚未完成", error),
+      );
+  };
   const conversationChnageHandler = ({
     data,
   }: SdkEventEnvelope<ConversationItem[]>) => {
     updateConversationList(data, "filter");
+    refreshCoordinatorPin(data);
   };
   const newConversationHandler = ({ data }: SdkEventEnvelope<ConversationItem[]>) => {
     updateConversationList(data, "push");
+    refreshCoordinatorPin(data);
   };
   const totalUnreadChangeHandler = ({ data }: SdkEventEnvelope<number>) => {
     if (data === useConversationStore.getState().unReadCount) return;
