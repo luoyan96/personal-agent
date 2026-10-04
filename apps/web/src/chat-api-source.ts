@@ -3,6 +3,7 @@ import {ApiClient,ApiError,CommandSlot,Intent} from './api';
 import type {ChatSource,ChatSnapshot,ContactView,ConversationView,MessageView,ChatCardView,MentionSelection,ProfileInput,MemoryView,MemoryScope} from './chat-view';
 import {labels} from './contract-projection';
 import {runLabels} from './ai-view';
+import {projectConversationWorkflow} from './chat-workflow';
 
 export const chatBudget={maxTokens:12000,maxSeconds:120};
 const identityLabels:Record<Contact['identity']['kind'],string>={human:'真人',personal_agent:'个人 AI',public_agent:'公共 AI'};
@@ -109,7 +110,7 @@ export class ChatApiSource implements ChatSource {
       signal.throwIfAborted();if(this.disposed)throw new DOMException('Disposed','AbortError');
       this.contacts=contacts;
       const nextConversations=new Map<string,Conversation>(),nextActions=new Map<string,ChatAction>(),nextTaskRefs=new Map<string,{kind:'task';ref:{id:string;version:number}}[]>();
-      const views:ConversationView[]=[];
+      const views:(ConversationView & {workflow?:ReturnType<typeof projectConversationWorkflow>})[]=[];
       for(const listed of conversations) {
         const [detail,messages,actions]=await Promise.all([
           this.api.read('chatConversation',{id:listed.id},{},signal),
@@ -142,7 +143,7 @@ export class ChatApiSource implements ChatSource {
         const latestCards=projected.at(-1)?.cards;
         const peer=joined.find(c=>c.identity.kind!=='human')??joined.find(c=>c.identity.kind==='human'&&c.identity.memberId!==this.ownerId);
         const fixed=conversation.kind==='personal'&&conversation.ownerMemberId===this.ownerId;
-        views.push({id:conversation.id,title:fixed?'需求与协作':conversation.kind==='direct'?peer?.displayName??conversation.title:conversation.title,subtitle:fixed?`${peer?.displayName??conversation.title} · 需求协调 Agent`:conversation.kind==='group'?`任务群 · ${joined.length} 位已加入成员`:peer?`${identityLabels[peer.identity.kind]} · ${peer.displayName}`:'私聊',profileContactId:conversation.kind==='group'?undefined:peer?.id,canManageMemory:conversation.allowedActions.includes('manage_memory'),preview:latest?.text||latestCards?.map(c=>`[${c.title}] ${c.status}`).join(' · ')||'暂无消息',pinned:conversation.viewerState.pinned,fixed,unreadCount:conversation.viewerState.unreadCount,displayedThroughSequence:latest?.sequence??0,lastMessageAt:latest?.createdAt,icon:peer?.identity.kind==='human'?'user':'robot',group:conversation.kind==='group',canSend:conversation.allowedActions.includes('send'),messages:projected,members:conversation.members.map(m=>{const contact=contacts.find(c=>c.id===m.contactId);return {...(contact?contactProjection(contact,contacts,this.members,this.ownerId):{id:m.contactId,name:m.contactId,identity:'身份待确认',owner:'归属待确认',icon:'user' as const,availability:''}),availability:memberLabels[m.status],canMention:m.status==='joined'};}),sendTargets:joined.filter(c=>c.identity.kind!=='human').map(c=>({id:c.id,label:c.displayName})),contextChoices:contexts,uploadTasks});
+        views.push({id:conversation.id,title:fixed?'需求与协作':conversation.kind==='direct'?peer?.displayName??conversation.title:conversation.title,subtitle:fixed?`${peer?.displayName??conversation.title} · 需求协调 Agent`:conversation.kind==='group'?`任务群 · ${joined.length} 位已加入成员`:peer?`${identityLabels[peer.identity.kind]} · ${peer.displayName}`:'私聊',profileContactId:conversation.kind==='group'?undefined:peer?.id,canManageMemory:conversation.allowedActions.includes('manage_memory'),preview:latest?.text||latestCards?.map(c=>`[${c.title}] ${c.status}`).join(' · ')||'暂无消息',pinned:conversation.viewerState.pinned,fixed,unreadCount:conversation.viewerState.unreadCount,displayedThroughSequence:latest?.sequence??0,lastMessageAt:latest?.createdAt,icon:peer?.identity.kind==='human'?'user':'robot',group:conversation.kind==='group',canSend:conversation.allowedActions.includes('send'),messages:projected,members:conversation.members.map(m=>{const contact=contacts.find(c=>c.id===m.contactId);return {...(contact?contactProjection(contact,contacts,this.members,this.ownerId):{id:m.contactId,name:m.contactId,identity:'身份待确认',owner:'归属待确认',icon:'user' as const,availability:''}),availability:memberLabels[m.status],canMention:m.status==='joined'};}),sendTargets:joined.filter(c=>c.identity.kind!=='human').map(c=>({id:c.id,label:c.displayName})),contextChoices:contexts,uploadTasks,workflow:projectConversationWorkflow(conversation,taskDetails,contacts,this.members)});
       }
       signal.throwIfAborted();if(this.disposed)throw new DOMException('Disposed','AbortError');
       this.conversations=nextConversations;this.actions=nextActions;this.taskRefs=nextTaskRefs;this.invitations=new Map(invitations.map(i=>[i.id,i]));
