@@ -32,6 +32,8 @@ build:web 显式固定科研模式、关闭开发工具，并在构建后核对 
 
 [Nginx 示例](nginx.example.conf)放在 http context 下，替换证书与发行目录再执行 nginx -t。80→443 的跳转仅用于页面入口；签名文件 URL 和 WS 必须一开始就是 HTTPS/WSS。MinIO 不挂网页 `/media` 前缀，以免 S3 签名或对象路径被改写。CORS 由对象存储配置并通过真实上传/下载验证，不在 Nginx 重复叠加 Access-Control-Allow-Origin。反代规则依据 [Nginx WebSocket 文档](https://nginx.org/en/docs/http/websocket.html)与 [proxy_pass URI 规则](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_pass)。
 
+OpenIM 官方 `internal/api/third.go` 的 `setURLPrefix` 使用 `X-Request-Api` 生成对象下载定位地址；缺少该字段时，它依据内部 HTTP 请求与 Host 生成 `http://chat.acceptcat.com/object/...`，不会采用 `X-Forwarded-Proto`。因此 `/im-api/` 反代必须固定覆盖 `X-Request-Api: https://chat.acceptcat.com/im-api`，不能透传调用方值。正确的 SDK `sourceUrl` 是 HTTPS 的 `/im-api/object/...`，由 OpenIM 重定向到媒体域的真实签名 GET；私有桶和访问鉴权保持。真实浏览器发现此问题后应重新上传测试文件验证，旧消息的 HTTP 地址不能算下载成功。
+
 科研 API/worker 配置必须一致：
 
 ```dotenv
