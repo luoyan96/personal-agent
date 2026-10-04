@@ -110,7 +110,7 @@ export class ChatApiSource implements ChatSource {
       signal.throwIfAborted();if(this.disposed)throw new DOMException('Disposed','AbortError');
       this.contacts=contacts;
       const nextConversations=new Map<string,Conversation>(),nextActions=new Map<string,ChatAction>(),nextTaskRefs=new Map<string,{kind:'task';ref:{id:string;version:number}}[]>();
-      const views:(ConversationView & {workflow?:ReturnType<typeof projectConversationWorkflow>})[]=[];
+      const views:ConversationView[]=[];
       for(const listed of conversations) {
         const [detail,messages,actions]=await Promise.all([
           this.api.read('chatConversation',{id:listed.id},{},signal),
