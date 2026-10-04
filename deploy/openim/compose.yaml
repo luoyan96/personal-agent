@@ -1,0 +1,187 @@
+# Adapted from openimsdk/openim-docker @55a2d29, Apache-2.0.
+# Local synthetic integration only. Run prepare-local.mjs before starting.
+name: research-openim-local
+services:
+  mongo:
+    image: mongo:7.0.28
+    command: ["mongod", "--wiredTigerCacheSizeGB", "0.25", "--auth"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: research
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?Run prepare-local.mjs}
+    volumes:
+      - mongo-data:/data/db
+    mem_limit: 512m
+    networks: [im]
+    restart: unless-stopped
+  redis:
+    image: redis:7.0.0
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?Run prepare-local.mjs}", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    mem_limit: 128m
+    networks: [im]
+    restart: unless-stopped
+  etcd:
+    image: bitnamilegacy/etcd:3.5.13
+    environment:
+      ETCD_NAME: im-local
+      ETCD_DATA_DIR: /bitnami/etcd/data
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd:2379
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd:2380
+      ETCD_INITIAL_CLUSTER: im-local=http://etcd:2380
+      ETCD_INITIAL_CLUSTER_STATE: new
+      ALLOW_NONE_AUTHENTICATION: "yes"
+    volumes:
+      - etcd-data:/bitnami/etcd
+    mem_limit: 128m
+    networks: [im]
+    restart: unless-stopped
+  kafka:
+    image: bitnamilegacy/kafka:3.5.1
+    environment:
+      KAFKA_HEAP_OPTS: -Xms128m -Xmx256m
+      KAFKA_CFG_NODE_ID: "0"
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: INTERNAL://kafka:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    volumes:
+      - kafka-data:/bitnami/kafka
+    mem_limit: 512m
+    networks: [im]
+    restart: unless-stopped
+  minio:
+    image: minio/minio:RELEASE.2024-01-11T07-46-16Z
+    command: ["server", "/data", "--console-address", ":9090"]
+    environment:
+      MINIO_ROOT_USER: research
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:?Run prepare-local.mjs}
+    ports:
+      - "127.0.0.1:15005:9000"
+      - "127.0.0.1:15004:9090"
+    volumes:
+      - minio-data:/data
+    mem_limit: 256m
+    networks: [im]
+    restart: unless-stopped
+  openim-server:
+    image: openim/openim-server:v3.8.3-patch.15
+    init: true
+    ports:
+      - "127.0.0.1:15001:10001"
+      - "127.0.0.1:15002:10002"
+    environment:
+      IMENV_MONGODB_ADDRESS: mongo:27017
+      IMENV_MONGODB_DATABASE: openim_v3
+      IMENV_MONGODB_USERNAME: research
+      IMENV_MONGODB_PASSWORD: ${MONGO_PASSWORD:?Run prepare-local.mjs}
+      IMENV_MONGODB_AUTHSOURCE: admin
+      IMENV_REDIS_ADDRESS: redis:6379
+      IMENV_REDIS_PASSWORD: ${REDIS_PASSWORD:?Run prepare-local.mjs}
+      IMENV_KAFKA_ADDRESS: kafka:9092
+      IMENV_DISCOVERY_ETCD_ADDRESS: etcd:2379
+      IMENV_MINIO_INTERNALADDRESS: minio:9000
+      IMENV_MINIO_EXTERNALADDRESS: http://127.0.0.1:15005
+      IMENV_MINIO_ACCESSKEYID: research
+      IMENV_MINIO_SECRETACCESSKEY: ${MINIO_PASSWORD:?Run prepare-local.mjs}
+      IMENV_SHARE_SECRET: ${OPENIM_SECRET:?Run prepare-local.mjs}
+      IMENV_LOG_ISSTDOUT: "true"
+      IMENV_LOG_REMAINLOGLEVEL: "3"
+      GOMEMLIMIT: 128MiB
+    volumes:
+      - type: bind
+        source: "${RAP_OPENIM_RUNTIME:?Run prepare-local.mjs}/webhooks.yml"
+        target: /openim-server/config/webhooks.yml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: "${RAP_OPENIM_RUNTIME:?Run prepare-local.mjs}/start-config.yml"
+        target: /openim-server/start-config.yml
+        read_only: true
+        bind:
+          create_host_path: false
+    mem_limit: 1536m
+    networks: [im]
+    depends_on: [mongo, redis, etcd, kafka, minio]
+    restart: unless-stopped
+  research-api:
+    build:
+      context: ../..
+      dockerfile: deploy/openim/Dockerfile
+    image: research-openim-api:local
+    init: true
+    environment: &research-env
+      NODE_ENV: test
+      HOST: 0.0.0.0
+      PORT: "3217"
+      APP_ORIGIN: http://127.0.0.1:4317
+      DATABASE_PATH: /data/platform.sqlite
+      BLOB_ROOT: /data/blobs
+      LAB_CREDENTIAL_KEY_FILE: /run/secrets/lab-key
+      B3_AI_ENABLED: "1"
+      OPENIM_API_URL: http://openim-server:10002
+      OPENIM_PUBLIC_API_URL: http://127.0.0.1:15002
+      OPENIM_PUBLIC_WS_URL: ws://127.0.0.1:15001
+      OPENIM_ADMIN_ID: imAdmin
+      OPENIM_SECRET_FILE: /run/secrets/im-admin
+      OPENIM_CALLBACK_KEY_FILE: /run/secrets/im-callback
+      OPENIM_POLICY_ENFORCED: "1"
+    ports:
+      - "127.0.0.1:3217:3217"
+    secrets: &research-secrets
+      - source: im-admin
+        target: im-admin
+      - source: im-callback
+        target: im-callback
+      - source: lab-key
+        target: lab-key
+    volumes: &research-volumes
+      - "${RAP_OPENIM_RUNTIME:?Run prepare-local.mjs}/research:/data"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3217/api/v1/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 256m
+    networks: [im]
+    restart: unless-stopped
+  research-worker:
+    image: research-openim-api:local
+    init: true
+    command: ["node", "deploy/openim/run-test.mjs", "worker"]
+    environment: *research-env
+    secrets: *research-secrets
+    volumes: *research-volumes
+    depends_on:
+      research-api:
+        condition: service_healthy
+    mem_limit: 384m
+    networks: [im]
+    restart: unless-stopped
+networks:
+  im:
+    driver: bridge
+volumes:
+  mongo-data:
+  redis-data:
+  etcd-data:
+  kafka-data:
+  minio-data:
+secrets:
+  im-admin:
+    file: ${RAP_OPENIM_RUNTIME:?Run prepare-local.mjs}/im-admin.secret
+  im-callback:
+    file: ${RAP_OPENIM_RUNTIME:?Run prepare-local.mjs}/im-callback.key
+  lab-key:
+    file: ${RAP_OPENIM_RUNTIME:?Run prepare-local.mjs}/lab-credentials.key
