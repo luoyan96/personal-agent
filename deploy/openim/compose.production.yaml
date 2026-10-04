@@ -1,0 +1,21 @@
+# Apply after compose.yaml. Separate project name means fresh component volumes.
+name: research-openim-production
+services:
+  openim-server:
+    environment:
+      IMENV_MINIO_EXTERNALADDRESS: ${OPENIM_PUBLIC_FILE_URL:?Run prepare-production.mjs}
+      IMENV_MINIO_PUBLICREAD: "false"
+  research-api:
+    image: research-openim-api:production
+    command: ["node", "deploy/openim/run-production.mjs", "api"]
+    environment: &production-env
+      NODE_ENV: production
+      APP_ORIGIN: ${APP_ORIGIN:?Run prepare-production.mjs}
+      OPENIM_PUBLIC_API_URL: ${OPENIM_PUBLIC_API_URL:?Run prepare-production.mjs}
+      OPENIM_PUBLIC_WS_URL: ${OPENIM_PUBLIC_WS_URL:?Run prepare-production.mjs}
+    mem_limit: 384m
+  research-worker:
+    image: research-openim-api:production
+    command: ["node", "deploy/openim/run-production.mjs", "worker"]
+    environment: *production-env
+    mem_limit: 512m

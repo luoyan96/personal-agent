@@ -1,0 +1,112 @@
+# Render __APP_DOMAIN__, __FILE_DOMAIN__, __CLIENT_DIST__, __WEB_DIST__,
+# __CERT_FULLCHAIN__, __CERT_PRIVATE_KEY__. Certificate must cover both domains.
+map $http_upgrade $rap_im_connection {
+    default upgrade;
+    '' close;
+}
+
+server {
+    listen 80;
+    server_name __APP_DOMAIN__ __FILE_DOMAIN__;
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/research-agent-acme;
+        default_type text/plain;
+    }
+    location / { return 308 https://$host$request_uri; }
+}
+
+server {
+    listen 443 ssl;
+    server_name __APP_DOMAIN__;
+    ssl_certificate __CERT_FULLCHAIN__;
+    ssl_certificate_key __CERT_PRIVATE_KEY__;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    root __CLIENT_DIST__;
+    index index.html;
+    autoindex off;
+    access_log off;
+    error_log /var/log/nginx/research-openim.error.log warn;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Cache-Control no-store always;
+
+    location ~ /\. { return 404; }
+    # Authenticated OpenIM server callbacks use the Docker network directly.
+    # Do not let browsers hit this path, even with a guessed/copied callback key.
+    location ^~ /api/v1/im/callback/ { return 404; }
+    location /api/ {
+        client_max_body_size 14m;
+        proxy_pass http://127.0.0.1:3217;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Origin $http_origin;
+        proxy_set_header Connection "";
+        proxy_set_header Forwarded "";
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header X-Forwarded-Proto "";
+        proxy_set_header X-Real-IP "";
+        proxy_set_header X-RAP-OpenIM-Operator "";
+        proxy_set_header X-RAP-OpenIM-Platform "";
+        proxy_set_header X-RAP-OpenIM-Policy "";
+        proxy_next_upstream off;
+        proxy_intercept_errors off;
+        proxy_read_timeout 60s;
+        proxy_buffering off;
+    }
+    # IM tokens are issued by RAP after current-session authorization.
+    location = /im-api/auth/get_admin_token { return 404; }
+    location = /im-api/auth/get_user_token { return 404; }
+    location /im-api/ {
+        proxy_pass http://127.0.0.1:15002/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Origin $http_origin;
+        proxy_set_header Connection "";
+        proxy_set_header Forwarded "";
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header X-Forwarded-Proto "";
+        proxy_next_upstream off;
+        proxy_read_timeout 60s;
+        proxy_buffering off;
+    }
+    location = /im-ws {
+        proxy_pass http://127.0.0.1:15001/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Origin $http_origin;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $rap_im_connection;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+    }
+    # Existing task detail, invitation and lab settings operate on the same API
+    # and cookie. Build apps/web with vite build --base=/research/ for this mount.
+    location = /research { return 308 /research/; }
+    location /research/ {
+        alias __WEB_DIST__/;
+    }
+    location / { try_files $uri $uri/ /index.html; }
+}
+
+server {
+    listen 443 ssl;
+    server_name __FILE_DOMAIN__;
+    ssl_certificate __CERT_FULLCHAIN__;
+    ssl_certificate_key __CERT_PRIVATE_KEY__;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    access_log off; # Presigned URLs contain temporary credentials.
+    error_log /var/log/nginx/research-openim-files.error.log crit;
+    # Trial file limit; tune together with proxy/disk limits for real usage.
+    client_max_body_size 100m;
+    location / {
+        proxy_pass http://127.0.0.1:15005;
+        proxy_http_version 1.1;
+        proxy_set_header Host $http_host;
+        proxy_set_header Connection "";
+        proxy_next_upstream off;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_request_buffering off;
+        proxy_buffering off;
+    }
+}

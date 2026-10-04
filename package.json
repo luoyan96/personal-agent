@@ -12,7 +12,7 @@
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "check:content": "node scripts/check-content.mjs",
-    "ci": "pnpm check:content && pnpm check:operations && pnpm build && pnpm typecheck && node scripts/export-contracts.mjs --check && pnpm test && node scripts/check-b0-process.mjs && pnpm --filter @research-agent/web check:production",
+    "ci": "pnpm check:content && pnpm check:operations && pnpm build && pnpm typecheck && node scripts/export-contracts.mjs --check && pnpm test && pnpm check:openim-production && node scripts/check-b0-process.mjs && pnpm --filter @research-agent/web check:production",
     "demo": "node scripts/demo.mjs",
     "contracts:export": "node scripts/export-contracts.mjs",
     "check:b0": "node scripts/export-contracts.mjs --check && vitest run packages/contracts/tests apps/api/tests && node scripts/check-b0-process.mjs",
@@ -41,7 +41,8 @@
     "pilot:web": "node scripts/serve-pilot.mjs",
     "check:b5a": "vitest run apps/api/tests integrations/deepseek-harness/runtime/tests",
     "check:b5a-production": "node scripts/check-b5a-production.mjs",
-    "check:operations": "node --check scripts/serve-pilot.mjs && node --check scripts/check-b5a-production.mjs"
+    "check:operations": "node --check scripts/serve-pilot.mjs && node --check scripts/check-b5a-production.mjs && node --check deploy/openim/run-production.mjs && node --check deploy/openim/prepare-production.mjs && node --check deploy/openim/bootstrap-lab.mjs && node --check deploy/openim/check-production.mjs",
+    "check:openim-production": "node --test deploy/openim/tests/production.test.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.0",
