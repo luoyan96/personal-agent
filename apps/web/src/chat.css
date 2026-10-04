@@ -230,7 +230,7 @@ body.chat-route .feedback:empty { display:none; }
   .chat-heading {gap:3px;}
   .chat-workflow-summary {padding:8px 12px;gap:7px;font-size:11px;}
   .chat-workflow-summary button {font-size:11px;}
-  .chat-workflow-panel {max-height:26dvh;padding:0 12px 10px;}
+  .chat-workflow-panel {max-height:min(24dvh,200px);padding:0 12px 10px;}
   .chat-workflow-tasks {grid-template-columns:minmax(0,1fr);}
   .chat-demand-start {padding:30px 4px;}
   .chat-demand-start h3 {font-size:19px;}
@@ -242,11 +242,12 @@ body.chat-route .feedback:empty { display:none; }
   .chat-send-options {flex-direction:column;align-items:stretch;}
   .chat-send-options label {justify-content:space-between;}
   .chat-send-options select {max-width:none;flex:1;}
-  .chat-history { padding:10px 12px; }
+  .chat-history { padding:10px 12px; min-height:0; }
+  .chat-members {max-height:12dvh;flex-shrink:0;}
   .chat-message-copy { max-width:calc(100% - 48px); }
   .chat-card { min-width:0; }
   .chat-notice { padding:6px 12px; }
-  .chat-composer { padding:9px 12px; min-height:155px; }
+  .chat-composer { padding:9px 12px; min-height:155px; flex-shrink:0; }
   .chat-window [data-chat-send] { padding:6px 20px; }
   .chat-mention-list { left:12px; right:12px; }
   .chat-send-options { gap:6px; font-size:11px; }
