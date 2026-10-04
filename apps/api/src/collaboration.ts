@@ -313,6 +313,14 @@ export class Collaboration {
     this.grant(task.id, memberId, accepted ? 'full' : 'summary')
     return assignment
   }
+  validateInvitation(task: TaskModel, memberId: string, schedule: ScheduleModel) {
+    if (task.initiatorId !== this.actor.id) fail('FORBIDDEN')
+    if (!['unassigned', 'awaiting_acceptance'].includes(task.status) || task.leadId || this.db.prepare("SELECT id FROM assignments WHERE task_id=? AND status IN ('pending','accepted')").get(task.id)) fail('INVALID_STATE')
+    if (Number(this.db.prepare('SELECT count(*) n FROM assignments WHERE task_id=?').get(task.id)?.n) >= 100) fail('VALIDATION_ERROR')
+    this.member(memberId); this.validateSchedule(schedule)
+    if (memberId === this.actor.id) fail('VALIDATION_ERROR')
+    if (this.db.prepare("SELECT 1 FROM task_access WHERE task_id=? AND member_id=? AND access='revoked'").get(task.id, memberId)) fail('FORBIDDEN')
+  }
   readonly handlers: Handlers = {
     availability: ({ body }) => {
       const member = this.member(this.actor.id)
@@ -441,11 +449,7 @@ export class Collaboration {
     task: ({ params }) => ({ data: this.projection(params.id, true) }),
     invite: ({ params, body }) => {
       const task = this.task(params.id); this.checkVersion(task.version, body.expectedVersion)
-      if (!['unassigned', 'awaiting_acceptance'].includes(task.status) || task.leadId || this.db.prepare("SELECT id FROM assignments WHERE task_id=? AND status IN ('pending','accepted')").get(task.id)) fail('INVALID_STATE')
-      if (Number(this.db.prepare('SELECT count(*) n FROM assignments WHERE task_id=?').get(task.id)?.n) >= 100) fail('VALIDATION_ERROR')
-      this.member(body.memberId); this.validateSchedule(body.schedule)
-      if (body.memberId === this.actor.id) fail('VALIDATION_ERROR')
-      if (this.db.prepare("SELECT 1 FROM task_access WHERE task_id=? AND member_id=? AND access='revoked'").get(task.id, body.memberId)) fail('FORBIDDEN')
+      this.validateInvitation(task, body.memberId, body.schedule)
       const assignment = this.createAssignment(task, 'invitation', body.memberId, body.scope, body.schedule)
       task.status = 'awaiting_acceptance'; task.version++; task.updatedAt = now(); this.saveTask(task)
       // Switch off open claims while a specific invitation is pending.

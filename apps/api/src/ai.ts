@@ -95,6 +95,19 @@ export class AiService {
     if(!account||account.disabled!==0)fail('FORBIDDEN')
     return t
   }
+  validateNewRun(id:string,b:RequestFor<'run'>['body']){
+    const task=this.c.task(id)
+    if(task.leadId!==this.c.actor.id)fail('FORBIDDEN')
+    this.c.checkVersion(task.version,b.expectedVersion);this.available(b.capability)
+    if(!['ready','in_progress','changes_requested'].includes(task.status))fail('INVALID_STATE')
+    if(this.db.prepare("SELECT 1 FROM execution_jobs WHERE task_id=? AND status IN ('queued','running','waiting_input')").get(id))fail('INVALID_STATE')
+    if(Number(this.db.prepare('SELECT count(*) n FROM execution_jobs WHERE task_id=?').get(id)!.n)>=100)fail('INVALID_STATE')
+    const inputs=this.inputRefs(b.inputArtifactIds,id)
+    new ReuseService(this.c).selected(b.conclusionRefs??[],{kind:'task',id})
+    // Proposals perform the same read-only gate; execution alone binds dependency revisions.
+    if(inputs.length||(b.conclusionRefs??[]).length)this.c.coordination.runnable(task)
+    return {task,inputs}
+  }
   run(name:AiCommand,req:RequestFor<AiCommand>):unknown{
     const resource=(req.params as {id?:string}).id??this.c.actor.labId
     // Authorization is performed before looking up any successful response.
@@ -131,13 +144,10 @@ export class AiService {
       p.status='cancelled';p.reply=null;p.failure='Cancelled by owner.';this.fence(id);this.save(id,p);return {data:p}
     }
     if(name==='run'){
-      const b=req.body as RequestFor<'run'>['body'],t=this.c.task(id);this.c.checkVersion(t.version,b.expectedVersion);this.available(b.capability)
-      if(!['ready','in_progress','changes_requested'].includes(t.status))fail('INVALID_STATE')
-      if(this.db.prepare("SELECT 1 FROM execution_jobs WHERE task_id=? AND status IN ('queued','running','waiting_input')").get(id))fail('INVALID_STATE')
-      if(Number(this.db.prepare('SELECT count(*) n FROM execution_jobs WHERE task_id=?').get(id)!.n)>=100)fail('INVALID_STATE')
-      const reuse=new ReuseService(this.c);reuse.selected(b.conclusionRefs??[],{kind:'task',id});
+      const b=req.body as RequestFor<'run'>['body'],{task:t,inputs}=this.validateNewRun(id,b)
+      const reuse=new ReuseService(this.c)
       if(b.inputArtifactIds.length||(b.conclusionRefs??[]).length)this.c.coordination.runnable(t,true)
-      const r:Run={methodVersion:Number(this.db.prepare('SELECT active_version FROM public_method_state WHERE lab_id=?').get(this.c.actor.labId)!.active_version),configurationGeneration:b.capability.version,methodTrial:false,conclusionRefs:b.conclusionRefs??[],id:randomUUID(),taskId:id,capability:b.capability,status:b.inputArtifactIds.length||(b.conclusionRefs??[]).length?'queued':'waiting_input',attempt:0,usage:null,failure:b.inputArtifactIds.length||(b.conclusionRefs??[]).length?null:'Authorized text input required.',resultRefs:[],createdAt:instant(),startedAt:null,endedAt:null,version:1,requestedBy:this.c.actor.id,taskVersion:t.version,plan:{id:t.planId,version:t.planVersion},permissionVersion:this.permission(t.id),inputs:this.inputRefs(b.inputArtifactIds,id),budget:b.budget,maxAttempts:3,nextAttemptAt:null,candidate:null,candidateDeliverableId:null,allowedActions:[],provider:'deepseek-official',model:this.model,harnessVersion:'0.2.0-rc.1',updatedAt:instant(),usageDetail:null}
+      const r:Run={methodVersion:Number(this.db.prepare('SELECT active_version FROM public_method_state WHERE lab_id=?').get(this.c.actor.labId)!.active_version),configurationGeneration:b.capability.version,methodTrial:false,conclusionRefs:b.conclusionRefs??[],id:randomUUID(),taskId:id,capability:b.capability,status:b.inputArtifactIds.length||(b.conclusionRefs??[]).length?'queued':'waiting_input',attempt:0,usage:null,failure:b.inputArtifactIds.length||(b.conclusionRefs??[]).length?null:'Authorized text input required.',resultRefs:[],createdAt:instant(),startedAt:null,endedAt:null,version:1,requestedBy:this.c.actor.id,taskVersion:t.version,plan:{id:t.planId,version:t.planVersion},permissionVersion:this.permission(t.id),inputs,budget:b.budget,maxAttempts:3,nextAttemptAt:null,candidate:null,candidateDeliverableId:null,allowedActions:[],provider:'deepseek-official',model:this.model,harnessVersion:'0.2.0-rc.1',updatedAt:instant(),usageDetail:null}
       this.insert('capability',r,b);reuse.bind('job',r.id,r.conclusionRefs??[]);reuse.bind('task',id,r.conclusionRefs??[]);this.c.event(t,'execution_updated','Public capability execution authorized.');return {data:this.projectedRun(r.id)}
     }
     const {r,t}=this.runAccess(id,true),b=req.body as RequestFor<'retryRun'>['body'];this.c.checkVersion(r.version,b.expectedVersion)

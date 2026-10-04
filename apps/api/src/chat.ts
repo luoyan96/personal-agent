@@ -246,13 +246,12 @@ export class ChatService {
     const task = this.c.task(payload.task.id)
     if (payload.kind === 'invite_task') {
       if (contact.identity.kind !== 'human' || task.initiatorId !== this.c.actor.id) fail('FORBIDDEN')
-      if (task.leadId || !['unassigned', 'awaiting_acceptance'].includes(task.status)) fail('INVALID_STATE')
-      this.c.validateSchedule(payload.schedule)
+      this.c.validateInvitation(task, contact.identity.memberId, payload.schedule)
     } else {
       if (contact.identity.kind !== 'public_agent' || task.leadId !== this.c.actor.id) fail('FORBIDDEN')
       if (canonical(contact.identity.capability) !== canonical(payload.capability)) fail('CAPABILITY_UNAVAILABLE')
-      this.ai.available(payload.capability)
       for (const ref of payload.inputArtifactRefs) this.checkResource({ kind: 'artifact', ref }, groupId, true)
+      this.ai.validateNewRun(task.id, { expectedVersion: payload.task.version, capability: payload.capability, budget: payload.budget, inputArtifactIds: payload.inputArtifactRefs.map(ref => ref.id), conclusionRefs: [] })
     }
   }
   addAction(turn: AgentTurn, messageId: string, payload: ChatAction['payload']) {

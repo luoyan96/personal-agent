@@ -371,7 +371,7 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     expect((await s.call('chatTurn', null, { id: invalid.turn.id })).value.data).toMatchObject({ status: 'failed', failure: 'INVALID_MODEL_OUTPUT', outputMessageId: null })
   })
 
-  it('atomically creates a group, separates human join from commitment, and executes canonical public text through candidate delivery', async () => {
+  it('atomically creates a group, separates commitment, and completes public work only after reviewing its current delivery revision', async () => {
     const s = await setup(); await s.call('sendChatMessage', { text: '私聊敏感合成片段不进群' }, { id: s.personal.id })
     const created = await s.groupProposal(), groupId = created.group.id
     expect((await s.call('decideChatAction', created.command, { id: created.action.id }, 0, '', created.key)).value.data.conversationId).toBe(groupId)
@@ -416,10 +416,127 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     const execution = (await s.call('getRun', null, { id: runId })).value.data
     expect(execution.status, JSON.stringify(execution)).toBe('succeeded')
     expect(execution.candidateDeliverableId).toBeNull()
+    expect((await s.call('task', null, { id: aiTask.id })).value.data.task.status).toBe('in_progress')
     const delivered = await s.call('submitCandidate', { expectedVersion: execution.version, expectedTaskVersion: execution.taskVersion }, { id: runId })
     expect(delivered.status, delivered.raw).toBe(201)
     expect(delivered.value.data.review).toBeNull()
     expect((await s.call('chatMessages', null, { id: groupId })).raw).toContain(runId)
+    let detail = (await s.call('task', null, { id: aiTask.id })).value.data
+    expect(detail.task.status).toBe('in_review')
+    const reviewBody = { expectedVersion: delivered.value.data.version, expectedTaskVersion: detail.task.version, revision: delivered.value.data.revision, decision: 'accepted', comment: '合成指定版本验收' }
+    expect((await s.call('review', { ...reviewBody, revision: reviewBody.revision + 1 }, { id: delivered.value.data.id })).value.error.code).toBe('VERSION_CONFLICT')
+    expect((await s.call('review', { ...reviewBody, expectedTaskVersion: detail.task.version - 1 }, { id: delivered.value.data.id })).value.error.code).toBe('VERSION_CONFLICT')
+    expect((await s.call('review', { ...reviewBody, decision: 'changes_requested' }, { id: delivered.value.data.id })).status).toBe(200)
+    detail = (await s.call('task', null, { id: aiTask.id })).value.data
+    expect(detail.task.status).toBe('changes_requested')
+    const revised = await s.call('submit', { expectedVersion: detail.task.version, summary: '合成修订交付', artifactRefs: [artifact.id], sources: [] }, { id: aiTask.id })
+    expect(revised.status, revised.raw).toBe(201); expect(revised.value.data.revision).toBe(delivered.value.data.revision + 1)
+    detail = (await s.call('task', null, { id: aiTask.id })).value.data
+    const oldDelivery = detail.deliverables.find((d:{id:string}) => d.id === delivered.value.data.id)
+    expect((await s.call('review', { ...reviewBody, expectedVersion: oldDelivery.version, expectedTaskVersion: detail.task.version }, { id: oldDelivery.id })).value.error.code).toBe('INVALID_STATE')
+    expect((await s.call('review', { ...reviewBody, expectedVersion: revised.value.data.version, expectedTaskVersion: detail.task.version, revision: revised.value.data.revision }, { id: revised.value.data.id })).status).toBe(200)
+    detail = (await s.call('task', null, { id: aiTask.id })).value.data
+    expect(detail.task.status).toBe('completed')
+    expect(detail.deliverables.map((d:{review:{decision:string;revision:number}}) => d.review)).toEqual([expect.objectContaining({decision:'changes_requested',revision:1}),expect.objectContaining({decision:'accepted',revision:2})])
+    expect((await s.call('getRun', null, { id: runId })).value.data.status).toBe('succeeded')
+  })
+
+  it('keeps joined members chatting without task/material grants and filters historical resources after task revocation', async () => {
+    const s = await setup(), created = await s.groupProposal(), groupId = created.group.id
+    const invitation = (await s.call('chatInvitations', null, {}, 1)).value.data[0]
+    expect((await s.call('decideChatInvitation', { expectedVersion: invitation.version, decision: 'accept' }, { id: invitation.id }, 1)).status).toBe(200)
+    const privateTask = (await s.call('task', null, { id: created.tasks[1]! })).value.data.task
+    const uploaded = await s.call('upload', { taskId: privateTask.id, expectedVersion: privateTask.version, filename: 'synthetic-private.txt', mediaType: 'text/plain', contentBase64: Buffer.from('PRIVATE_TASK_MATERIAL_SENTINEL').toString('base64') })
+    expect(uploaded.status, uploaded.raw).toBe(201)
+    const artifact = uploaded.value.data
+    expect((await s.call('chatConversation', null, { id: groupId }, 1)).value.data.taskIds).toEqual([created.tasks[0]])
+    expect((await s.call('task', null, { id: privateTask.id }, 1)).status).toBe(404)
+    expect((await s.call('artifact', null, { id: artifact.id }, 1)).status).toBe(404)
+    expect((await s.call('content', null, { id: artifact.id }, 1)).status).toBe(404)
+    expect((await s.call('sendChatMessage', { text: '入群未承接也能聊天' }, { id: groupId }, 1)).status).toBe(201)
+    const ordinaryAi = await s.ask(groupId, s.publicAgent.id, [], '入群未承接也能问 AI', 1)
+    await new ChatWorker(s.db, s.config, async (input, signal, credential) => {
+      const prompt = JSON.parse(input.prompt)
+      expect(prompt.context).toEqual([]); expect(prompt.conversation.taskIds).toEqual([created.tasks[0]])
+      expect(input.prompt).not.toContain('PRIVATE_TASK_MATERIAL_SENTINEL'); expect(input.prompt).not.toContain(artifact.id)
+      return model(reply('群内一般回答'))(input, signal, credential)
+    }).tick()
+    expect((await s.call('chatTurn', null, { id: ordinaryAi.turn.id }, 1)).value.data.status).toBe('succeeded')
+    const before = Number(s.db.prepare('SELECT count(*) n FROM chat_messages WHERE conversation_id=?').get(groupId)!.n)
+    for (const context of [[{kind:'task',ref:{id:created.tasks[0],version:1}}],[{kind:'artifact',ref:{id:artifact.id,version:artifact.version}}]]) {
+      const denied = await s.call('sendChatMessage', { text: '不能把摘要或他人的材料当授权输入', intent: 'ask_agent', agentContactId: s.publicAgent.id, budget, context }, { id: groupId }, 1)
+      expect([403,404]).toContain(denied.status)
+    }
+    expect(Number(s.db.prepare('SELECT count(*) n FROM chat_messages WHERE conversation_id=?').get(groupId)!.n)).toBe(before)
+    const unrelated = await s.groupProposal([s.publicAgent.id])
+    expect((await s.call('sendChatMessage', { text: '跨群任务不能混入', context: [{kind:'task',ref:{id:unrelated.tasks[1],version:1}}] }, { id: groupId })).value.error.code).toBe('FORBIDDEN')
+    const summary = (await s.call('task', null, { id: created.tasks[0]! }, 1)).value.data
+    expect((await s.call('claim', { expectedVersion: summary.version }, { id: summary.id }, 1)).status).toBe(200)
+    const accepted = (await s.call('task', null, { id: summary.id }, 1)).value.data.task
+    const taskAi = await s.ask(groupId, s.publicAgent.id, [{kind:'task',ref:{id:accepted.id,version:accepted.version}}], '承接后读本人任务', 1)
+    await new ChatWorker(s.db, s.config, model(reply('B_TASK_DERIVED_SENTINEL'))).tick()
+    expect((await s.call('chatTurn', null, { id: taskAi.turn.id }, 1)).value.data.status).toBe('succeeded')
+    expect((await s.call('chatMessages', null, { id: groupId }, 1)).raw).toContain('B_TASK_DERIVED_SENTINEL')
+    expect((await s.call('revokeAccess', { expectedVersion: accepted.version, memberId: 'member_B', reason: '合成任务撤权，不撤群关系' }, { id: accepted.id })).status).toBe(200)
+    expect((await s.call('chatConversation', null, { id: groupId }, 1)).value.data.taskIds).toEqual([])
+    const after = await s.call('chatMessages', null, { id: groupId }, 1)
+    expect(after.status, after.raw).toBe(200); expect(after.raw).not.toContain('B_TASK_DERIVED_SENTINEL')
+    expect(after.value.data.flatMap((m:{resources:unknown[]}) => m.resources)).toEqual([])
+    expect((await s.call('sendChatMessage', { text: '失去任务权限后仍在群内聊天' }, { id: groupId }, 1)).status).toBe(201)
+  })
+
+  it('rejects known-invalid invitation/run proposals and rechecks active execution when confirming and publishing late model output', async () => {
+    const s = await setup(), created = await s.groupProposal(), groupId = created.group.id
+    const invitation = (await s.call('chatInvitations', null, {}, 1)).value.data[0]
+    await s.call('decideChatInvitation', { expectedVersion: invitation.version, decision: 'accept' }, { id: invitation.id }, 1)
+    let group = (await s.call('chatConversation', null, { id: groupId })).value.data as Conversation
+    const task = (await s.call('task', null, { id: created.tasks[0]! })).value.data.task
+    expect((await s.call('invite', { expectedVersion: task.version, memberId: 'member_B', scope: '合成承接', schedule }, { id: task.id })).status).toBe(201)
+    const pendingTask = (await s.call('task', null, { id: task.id })).value.data.task
+    async function rejectedProposal(payload:unknown, context:unknown[]) {
+      const sent = await s.ask(groupId, s.publicAgent.id, context)
+      const before = Number(s.db.prepare('SELECT count(*) n FROM chat_actions WHERE conversation_id=?').get(groupId)!.n)
+      await new ChatWorker(s.db, s.config, model(reply('不应发布的建议', [payload]))).tick()
+      expect((await s.call('chatTurn', null, { id: sent.turn.id })).value.data).toMatchObject({status:'failed',failure:'INVALID_MODEL_OUTPUT',outputMessageId:null,usage:{inputTokens:100,outputTokens:200}})
+      expect(Number(s.db.prepare('SELECT count(*) n FROM chat_actions WHERE conversation_id=?').get(groupId)!.n)).toBe(before)
+    }
+    await rejectedProposal({kind:'invite_task',contactId:s.human('member_B').id,task:{id:pendingTask.id,version:pendingTask.version},scope:'重复邀请',schedule},[{kind:'task',ref:{id:pendingTask.id,version:pendingTask.version}}])
+    expect(s.db.prepare("SELECT count(*) n FROM assignments WHERE task_id=? AND status='pending'").get(task.id)!.n).toBe(1)
+    const aiTask = (await s.call('task', null, { id: created.tasks[1]! })).value.data.task
+    const uploaded = await s.call('upload', { taskId: aiTask.id, expectedVersion: aiTask.version, filename: 'same-task.txt', mediaType: 'text/plain', contentBase64: Buffer.from('Synthetic same task.').toString('base64') })
+    const otherUpload = await s.call('upload', { taskId: pendingTask.id, expectedVersion: pendingTask.version, filename: 'other-task.txt', mediaType: 'text/plain', contentBase64: Buffer.from('Synthetic other task.').toString('base64') })
+    expect(uploaded.status, uploaded.raw).toBe(201); expect(otherUpload.status, otherUpload.raw).toBe(201)
+    const artifact = uploaded.value.data, otherArtifact = otherUpload.value.data
+    let current = (await s.call('task', null, { id: aiTask.id })).value.data.task
+    const capability = s.publicAgent.identity.kind === 'public_agent' ? s.publicAgent.identity.capability : null
+    const payload = {kind:'run_task',contactId:s.publicAgent.id,task:{id:current.id,version:current.version},capability,budget,inputArtifactRefs:[{id:artifact.id,version:artifact.version}]}
+    const context = [{kind:'task',ref:payload.task},{kind:'artifact',ref:payload.inputArtifactRefs[0]}]
+    await rejectedProposal({...payload,inputArtifactRefs:[{id:otherArtifact.id,version:otherArtifact.version}]},[{kind:'task',ref:payload.task},{kind:'artifact',ref:{id:otherArtifact.id,version:otherArtifact.version}}])
+    await rejectedProposal({...payload,inputArtifactRefs:[...payload.inputArtifactRefs,...payload.inputArtifactRefs]},context)
+    group = (await s.call('chatConversation', null, { id: groupId })).value.data
+    const action = await s.proposeAction(group, payload, context)
+    expect(action.allowedDecisions).toContain('confirm')
+    const late = await s.ask(groupId, s.publicAgent.id, context)
+    let started!:()=>void, finish!:(result:Awaited<ReturnType<ModelCall>>)=>void
+    const began = new Promise<void>(resolve=>{started=resolve}), pending = new Promise<Awaited<ReturnType<ModelCall>>>(resolve=>{finish=resolve})
+    const working = new ChatWorker(s.db, s.config, async()=>{started();return pending}).tick(); await began
+    const competing = await s.call('run', {expectedVersion:current.version,capability,budget,inputArtifactIds:[],conclusionRefs:[]}, {id:current.id})
+    expect(competing.status, competing.raw).toBe(202); expect(competing.value.data.status).toBe('waiting_input')
+    const projected = (await s.call('chatActions', null, {id:groupId})).value.data.find((value:ChatAction)=>value.id===action.id)
+    expect(projected).toMatchObject({status:'stale',allowedDecisions:[]})
+    expect((await s.call('decideChatAction', {expectedVersion:action.version,expectedConversationVersion:group.version,decision:'confirm'}, {id:action.id})).value.error.code).toBe('INVALID_STATE')
+    finish({text:JSON.stringify(reply('ACTIVE_RUN_LATE_SENTINEL',[payload])),failure:null,inputTokens:11,outputTokens:12,elapsedMs:20}); await working
+    expect((await s.call('chatTurn', null, {id:late.turn.id})).value.data).toMatchObject({status:'failed',failure:'INVALID_MODEL_OUTPUT',outputMessageId:null,usage:{inputTokens:11,outputTokens:12}})
+    expect((await s.call('chatMessages', null, {id:groupId})).raw).not.toContain('ACTIVE_RUN_LATE_SENTINEL')
+    expect(s.db.prepare('SELECT count(*) n FROM execution_jobs WHERE task_id=?').get(current.id)!.n).toBe(1)
+    expect((await s.call('cancelRun', {expectedVersion:competing.value.data.version,reason:'合成取消后检查依赖'}, {id:competing.value.data.id})).status).toBe(200)
+    const change = await s.call('proposeChange', {expectedVersion:current.version,scope:'合成依赖修改',dependencies:[{taskId:task.id,kind:'accepted_deliverable',requiredRevision:null}],goal:current.goal,acceptanceCriteria:current.acceptanceCriteria,schedule:current.schedule,proposedLeadId:current.leadId,reason:'依赖未验收'}, {id:current.id})
+    expect(change.status, change.raw).toBe(201); expect(change.value.data.status).toBe('accepted')
+    current = (await s.call('task', null, {id:current.id})).value.data.task
+    const blockedPayload = {...payload,task:{id:current.id,version:current.version}}
+    await rejectedProposal(blockedPayload,[{kind:'task',ref:blockedPayload.task},{kind:'artifact',ref:payload.inputArtifactRefs[0]}])
+    expect((await s.call('run', {expectedVersion:current.version,capability,budget,inputArtifactIds:[artifact.id],conclusionRefs:[]}, {id:current.id})).value.error.code).toBe('DEPENDENCY_BLOCKED')
+    expect(s.db.prepare('SELECT count(*) n FROM dependency_bindings WHERE task_id=?').get(current.id)!.n).toBe(0)
   })
 
   it('requires agent-owner acceptance, excludes private owner history, and fences revoked agents late output', async () => {
