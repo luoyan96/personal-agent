@@ -1,10 +1,12 @@
 # 科研个人智能体与任务群接口里程碑
 
+2026-10-04 当前修订：契约 **0.11.0**、聊天协议 **1.1.0**，共 17 条路由。新增 viewerState、已读及置顶偏好；当前字段、操作及兼容影响见[会话状态接口](research-chat-viewer-state.md)。下面原接口里程碑的验收数字保留历史记录。
+
 2026-10-04，共享契约 0.10.0，聊天协议 1.0.0（CHAT1）。接口冻结后的服务里程碑将 15 条新路由标记为 `implemented: true`，实现和验收证据见 research-chat-backend.md。现有 0.9.1 路由保持语义，新聊天字段不进入现有任务状态对象。无新增依赖，无真实模型调用。
 
 本次未发布契约的必要修订：AgentTurn 新增必填 `budget:Budget`（原始整条尝试链总预算）、`remainingBudget:Budget|null` 和 `allowedActions:('cancel'|'retry')[]`。未知用量或预算耗尽时 remainingBudget=null，不能重试；前端只按 allowedActions 显示按钮，重试用服务器 remainingBudget。retry 创建新 turn 并在同事务更新原输入消息 turnId；GET turn 始终返回请求的 ID。原 turn 与所有尝试记录保留，同一 root 最多一个 queued/running/waiting_input，最大三次模型尝试。全部使用量从持久 attempts 计算。
 
-总控按用户核心需求修订目录与授权：同实验室所有已注册成员个人 agent 显示公开名字、稳定 ID 和 ownerMemberId；其他 owner 的私人聊天仍完全不可见。目录 availability 在无授权群时为 owner_authorization_required，在当前用户有共同 joined 群时可显示模型配置状态，但实际调用每次检查指定群 joined。被邀请的个人 agent 必须由 owner 独立接受；授权只在此 group 生效，问答只读取该群和请求者有权使用的 context，不读取 owner 私聊/私人工具。human 和 personal_agent 的邀请分别确认。owner 仅授权 agent 加入而 human 未加入时可为该 agent 查看已授权群，allowedActions 不显示 send，真人发送仍拒绝；run_task 仍只允许 lab_public 文本能力。
+总控按用户核心需求修订目录与授权：同实验室所有已注册成员个人 agent 显示公开名字、稳定 ID 和 ownerMemberId；其他 owner 的私人聊天仍完全不可见。目录 availability 在无授权群时为 owner_authorization_required，在当前用户有共同 joined 群时可显示模型配置状态，但实际调用每次检查指定群 joined。被邀请的个人 agent 必须由 owner 独立接受；授权只在此 group 生效，问答只读取该群和请求者有权使用的 context，不读取 owner 私聊/私人工具。human 和 personal_agent 的邀请分别确认。0.10.0 曾允许 owner 仅授权 agent 加入而 human 未加入时查看群；1.1.0 取消该浏览器历史 grant，owner 仅能管理自己的 agent 邀请授权，真人须单独 joined 后才可查看群历史/状态或发送；run_task 仍只允许 lab_public 文本能力。
 
 ## 可执行类型与前端接线
 
@@ -21,7 +23,7 @@ type Sent = ResponseFor<'sendChatMessage'>
 
 Contact 的 `identity.kind` 是 human / personal_agent / public_agent；分别包含 memberId / ownerMemberId / ownerMemberId+PublicCapabilityRef。`id` 是稳定联系人 ID，不是名字。真人 availability 表示服务连接可用性，不表示空闲或已经承诺；成员可用时间仍读既有 Member。Agent availability 使用 available/unavailable/disabled 与明确原因，available 只是配置，不证明模型调用成功。目录呈现同实验室真人、注册成员个人 agent 和已配置公共能力。其他个人 agent 仅公开身份与归属，必须由 owner 接受指定群邀请后才能在该群问答；不开放私人能力托管。
 
-Conversation 包含 personal/direct/group、ownerMemberId、version、成员、关联 taskIds、lastSequence、时间和当前 allowedActions。成员是 invited/joined/declined/revoked；pending 不授予群消息权限。通讯录归属不授予私人历史权限。私人助理只允许本人读取，实验室管理者没有越权入口。Direct 仅同实验室真人双方，个人 agent 入口归一到本人固定私聊，公共 agent 本批在群内工作。
+Conversation 包含 personal/direct/group、ownerMemberId、version、成员、关联 taskIds、lastSequence、时间和当前 allowedActions，以及当前真人用户的 viewerState。成员是 invited/joined/declined/revoked；pending 不授予群消息权限。通讯录归属不授予私人历史权限。私人助理只允许本人读取，实验室管理者没有越权入口。Direct 仅同实验室真人双方，标题按当前用户投影为对端 displayName，个人 agent 入口归一到本人固定私聊，公共 agent 本批在群内工作。
 
 ChatMessage 是服务分配 ID、单会话递增 sequence、服务推导 senderContactId、human/model/service origin、可空 text、mentions、resources、actionIds、turnId、createdAt。没有客户端 sender、status、actor 参数。Mention start/end 是 text 的 UTF-16 半开区间，必须有序、不重叠且联系人唯一；服务校验范围内确为选中联系人的显示文本、当前联系人版本与群内 joined 状态，名字不能作为身份。群里邀请联系人通过动作确认完成，不能 @未加入对象直接派发。
 
@@ -37,6 +39,8 @@ ChatResource `{kind,ref:{id,version}}` 只引用 plan/task/assignment/run/delive
 | personalConversation POST /chat/personal-conversation | {} | 200 data {conversation,agent}，确保唯一 |
 | chatConversations GET /chat/conversations | cursor?, limit | 200 page Conversation |
 | chatConversation GET /chat/conversations/{id} | 无 | 200 data Conversation |
+| markChatRead POST /chat/conversations/{id}/read | {throughSequence} | 200 data ConversationViewerState |
+| updateChatPreferences POST /chat/conversations/{id}/preferences | {expectedVersion,pinned} | 200 data ConversationViewerState |
 | createDirectConversation POST /chat/direct-conversations | {contactId} | 200 data Conversation，确保唯一人对 |
 | chatMessages GET /chat/conversations/{id}/messages | cursor?, limit, afterSequence? | 200 page ChatMessage |
 | sendChatMessage POST /chat/conversations/{id}/messages | SendChatMessage | 201 data {message,turn:null或AgentTurn} |
@@ -55,7 +59,7 @@ SendChatMessage 为 `{text,mentions:[],intent:'chat'|'ask_agent',agentContactId:
 
 每个用户唯一 personal agent 和 personal conversation，有数据库唯一约束；并发确保也返回同一对象。真人 direct 按 labId 和排序后的成员对唯一。ChatMessage 不编辑，sequence 在同一事务中递增，消息提交和 turn/outbox 入队原子；缺配置仍提交消息和 unavailable turn，不制造 model 消息。普通 chat 返回 turn:null。数据库写失败则整体失败，不宣称消息已保存。
 
-limit 为 1—100，默认 30。通讯录按 displayName/id；会话 personal 置顶再 updatedAt/id 降序；动作和邀请按 createdAt/id 降序；消息按 sequence 升序。消息首次 GET 无 cursor 从最早消息开始，afterSequence 用于增量。cursor 与 afterSequence 互斥，返回 `VALIDATION_ERROR`。cursor 是签名 opaque token，绑定 actor/lab/filter/order/会话、高水位和 15 分钟有效期；下页只取初页高水位内数据，更新消息从新的 afterSequence 查询。会话高水位绑定排序键快照；列表重新读取可发现新会话。ACL 在 count/page 前过滤，每页实时复查，撤权立即生效；过期或查询不匹配 cursor 返回 CURSOR_EXPIRED。前端不解析 cursor。
+limit 为 1—100，默认 30。通讯录按 displayName/id；会话本人 personal 永远第一，再本人 pinned，再 updatedAt/id 降序；动作和邀请按 createdAt/id 降序；消息按 sequence 升序。消息首次 GET 无 cursor 从最早消息开始，afterSequence 用于增量。cursor 与 afterSequence 互斥，返回 `VALIDATION_ERROR`。cursor 是签名 opaque token，绑定 actor/lab/filter/order/会话、高水位和 15 分钟有效期；下页只取初页高水位内数据，更新消息从新的 afterSequence 查询。会话高水位绑定排序键快照；列表重新读取可发现新会话。ACL 在 count/page 前过滤，每页实时复查，撤权立即生效；过期或查询不匹配 cursor 返回 CURSOR_EXPIRED。前端不解析 cursor。
 
 Conversation.version 用于成员/目标/关联变化，不因普通新消息递增；lastSequence 独立递增。AgentTurn、成员、邀请和 ChatAction 各自 version；动作 payload 不可修改，新建议产生新 action ID。expectedConversationVersion 检查 action 来源会话；create_group 在私人来源会话内确认，回执 conversationId 是新群。确认前必须展示完整 payload（成员、Plan、目标、选中分享片段、文件版本、预算）。更改方案或分享范围需先重新向助理提出需求，旧建议标 stale。create_group 只引用本人 draft Plan，确认时锁定精确版本，复用 confirmPlan 产生 Task 与 Assignment；群中不公开完整私人 Plan，只公布任务授权投影。模型不能创建 receipt。
 
@@ -84,7 +88,7 @@ ChatAction.payload 的四种严格联合如下，完整 Zod 见 chat.ts：
 
 沿用 `{error:{code,message,requestId}}` 与 errorStatus，不新增含敏感解释的字段。401 UNAUTHENTICATED；404 NOT_FOUND 用于不可见会话/turn/邀请/动作/跨 lab 联系人；403 FORBIDDEN 用于已知可见资源的禁止命令、CSRF/Origin 不满足；400 VALIDATION_ERROR 用于范围、参数、mention/上下文错误；409 VERSION_CONFLICT、IDEMPOTENCY_CONFLICT、INVALID_STATE、DEPENDENCY_BLOCKED、ALREADY_CLAIMED；410 CURSOR_EXPIRED；413 PAYLOAD_TOO_LARGE；429 RATE_LIMITED；503 SERVICE_UNAVAILABLE、CAPABILITY_UNAVAILABLE、MODEL_UNAVAILABLE；500 INTERNAL_ERROR；接口里程碑 501 NOT_IMPLEMENTED。MODEL_UNAVAILABLE 对既有 run 仍是 503；聊天发送的缺模型状态在已持久化响应 turn 中表达，避免客户端误判消息未发送。
 
-读取会话和消息只允许 joined 成员且实验室成员资格有效，管理身份不能越权。群读取消息仍复查附件、交付及 task 权限；私聊来源的群建议本身只有本人可读，群只看到确认后选定范围。权限失效取消排队和运行工作，撤销成员后不能查询群页、旧 cursor 或幂等私密回执。所有注册、模型设置、密码和现有任务边界沿用基线。
+读取会话和消息只允许 joined 真人成员且实验室成员资格有效，管理身份不能越权。群读取消息仍复查附件、交付及 task 权限；私聊来源的群建议本身只有本人可读，群只看到确认后选定范围。权限失效取消排队和运行工作，撤销成员后不能查询群页、旧 cursor 或幂等私密回执。所有注册、模型设置、密码和现有任务边界沿用基线。
 
 ## 接口阶段复用调查（实施结果见后端报告）
 

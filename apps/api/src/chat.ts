@@ -1,6 +1,6 @@
 import { randomUUID, createHmac } from 'node:crypto'
 import { z } from 'zod'
-import { Contact, Conversation, ConversationMember, ChatMessage, ChatAction, ChatActionPayload, AgentTurn, SendChatMessage, ChatResource, routes, chatRoutes } from '@research-agent-platform/contracts'
+import { Contact, Conversation, ConversationMember, ConversationViewerState, ChatMessage, ChatAction, ChatActionPayload, AgentTurn, SendChatMessage, ChatResource, routes, chatRoutes } from '@research-agent-platform/contracts'
 import type { RequestFor } from '@research-agent-platform/contracts'
 import { Collaboration } from './collaboration.js'
 import { AiService, canonical, instant } from './ai.js'
@@ -54,25 +54,54 @@ export class ChatService {
     const cap = this.ai.capability(); if (!cap || cap.id !== row.principal || cap.ownerId !== row.owner_id) fail('NOT_FOUND')
     return Contact.parse({ ...base, version: cap.version, displayName: cap.name, identity: { kind: 'public_agent', ownerMemberId: cap.ownerId, capability: { id: cap.id, version: cap.version, visibility: 'lab_public' } }, availability: cap.status === 'available' ? this.availability() : { status: 'unavailable', reason: 'capability_unavailable' } })
   }
-  conversation(id: string): Conversation {
+  conversation(id: string, withViewerState = true): Conversation {
     const row = this.db.prepare('SELECT * FROM chat_conversations WHERE id=? AND lab_id=?').get(id, this.c.actor.labId)
     if (!row || (row.kind === 'personal' && row.owner_id !== this.c.actor.id)) fail('NOT_FOUND')
     const self = this.human().id
-    const joined = this.db.prepare("SELECT 1 FROM chat_members cm JOIN chat_contacts cc ON cc.id=cm.contact_id WHERE cm.conversation_id=? AND cm.status='joined' AND (cm.contact_id=? OR (cc.kind='personal_agent' AND cc.owner_id=?))").get(id, self, this.c.actor.id)
+    // Authorizing an owned AI to participate is independent from the owner's
+    // human browser membership. Agent-only acceptance must not reveal history.
+    const joined = this.db.prepare("SELECT 1 FROM chat_members WHERE conversation_id=? AND status='joined' AND contact_id=?").get(id, self)
     if (!joined) fail('NOT_FOUND')
     const value = Conversation.parse(decode(row.document))
     value.members = this.db.prepare('SELECT contact_id,role,status,version FROM chat_members WHERE conversation_id=? ORDER BY contact_id').all(id).map(r => ConversationMember.parse({ contactId: r.contact_id, role: r.role, status: r.status, version: r.version }))
     value.allowedActions = value.kind === 'group' && value.ownerMemberId === this.c.actor.id ? ['send', 'invite', 'manage'] : value.members.some(m => m.contactId === self && m.status === 'joined') ? ['send'] : []
     // Task association is an ACL-filtered directory, not a grant.
     value.taskIds = value.taskIds.filter(taskId => { try { this.c.taskRow(taskId); return true } catch { return false } })
+    if (value.kind === 'direct') {
+      const other = value.members.find(member => member.contactId !== self)
+      if (other) {
+        try { value.title = this.contact(other.contactId).displayName }
+        catch { value.title = '已停用成员' }
+      }
+    }
+    if (withViewerState) value.viewerState = this.viewerState(value)
     return value
   }
-  saveConversation(value: Conversation) { this.db.prepare('UPDATE chat_conversations SET document=? WHERE id=?').run(encode(value), value.id) }
+  viewerState(group: Conversation): ConversationViewerState {
+    const stored = this.db.prepare('SELECT * FROM chat_viewer_states WHERE conversation_id=? AND member_id=?').get(group.id, this.c.actor.id)
+    const readSequence = Number(stored?.read_sequence ?? 0), self = this.human().id
+    // Use the same live message projection as chatMessages; sequence gaps caused
+    // by hidden model output never turn into observable unread counts.
+    const unreadCount = this.db.prepare('SELECT id,document FROM chat_messages WHERE conversation_id=? AND sequence>? ORDER BY sequence').all(group.id, readSequence).filter(row => {
+      const message = ChatMessage.parse(decode(row.document))
+      if (message.origin === 'human' && message.senderContactId === self) return false
+      try { this.projectedMessage(String(row.id)); return true } catch { return false }
+    }).length
+    return ConversationViewerState.parse({ readSequence, unreadCount, pinned: group.kind === 'personal' || stored?.pinned === 1, version: Number(stored?.version ?? 1) })
+  }
+  ensureViewerState(id: string) {
+    this.db.prepare('INSERT INTO chat_viewer_states (conversation_id,member_id) VALUES (?,?) ON CONFLICT(conversation_id,member_id) DO NOTHING').run(id, this.c.actor.id)
+  }
+  saveConversation(value: Conversation) {
+    const { viewerState: _viewerState, ...document } = value
+    this.db.prepare('UPDATE chat_conversations SET document=? WHERE id=?').run(encode(document), value.id)
+  }
   rawConversation(id: string): Conversation { return Conversation.parse(decode(this.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(id)!.document)) }
   newConversation(kind: Conversation['kind'], title: string, contactIds: string[], scope: string | null, taskIds: string[] = []) {
     if (scope) { const old = this.db.prepare('SELECT id FROM chat_conversations WHERE scope_key=?').get(scope); if (old) return this.conversation(String(old.id)) }
     const value = Conversation.parse({ id: randomUUID(), labId: this.c.actor.labId, kind, title, ownerMemberId: this.c.actor.id, version: 1, members: [], taskIds, lastSequence: 0, createdAt: instant(), updatedAt: instant(), allowedActions: [] })
-    this.db.prepare('INSERT INTO chat_conversations VALUES (?,?,?,?,?,?)').run(value.id, value.labId, value.ownerMemberId, kind, scope, encode(value))
+    const { viewerState: _viewerState, ...document } = value
+    this.db.prepare('INSERT INTO chat_conversations VALUES (?,?,?,?,?,?)').run(value.id, value.labId, value.ownerMemberId, kind, scope, encode(document))
     const self = this.human().id
     for (const contactId of new Set([self, ...contactIds])) {
       const contact = this.contact(contactId)
@@ -103,7 +132,7 @@ export class ChatService {
     return contact
   }
   checkResource(ref: Resource, conversationId: string, exact = false, full = false) {
-    const group = this.conversation(conversationId)
+    const group = this.conversation(conversationId, false)
     let taskId: string | undefined, version: number
     switch (ref.kind) {
       case 'plan': { if (group.kind !== 'personal') fail('FORBIDDEN'); version = this.c.plan(ref.ref.id).version; break }
@@ -123,7 +152,7 @@ export class ChatService {
   checkTurnInput(turnId: string, exact = true) {
     const row = this.db.prepare('SELECT * FROM chat_turns WHERE id=?').get(turnId); if (!row) fail('NOT_FOUND')
     const turn = AgentTurn.parse(decode(row.document)), input = decode(row.request_json) as TurnInput
-    const group = this.conversation(turn.conversationId); this.joinedAgent(group, turn.agentContactId)
+    const group = this.conversation(turn.conversationId, false); this.joinedAgent(group, turn.agentContactId)
     if (exact) this.c.checkVersion(group.version, input.conversationVersion)
     for (const ref of input.context) this.checkResource(ref, group.id, exact, true)
     return { row, turn, input, group }
@@ -131,7 +160,7 @@ export class ChatService {
   turn(id: string) {
     const row=this.db.prepare('SELECT * FROM chat_turns WHERE id=? AND owner_id=?').get(id,this.c.actor.id)
     if(!row)fail('NOT_FOUND')
-    const turn=AgentTurn.parse(decode(row.document));this.conversation(turn.conversationId)
+    const turn=AgentTurn.parse(decode(row.document));this.conversation(turn.conversationId, false)
     const root=decode(this.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(row.root_id!)!.request_json) as TurnInput
     const attempts=this.db.prepare('SELECT turn_id,usage_json FROM chat_attempts WHERE root_id=?').all(row.root_id!)
     turn.budget=root.budget;turn.remainingBudget=null;turn.allowedActions=[]
@@ -162,7 +191,7 @@ export class ChatService {
   }
   projectedMessage(id: string): ChatMessage {
     const row = this.db.prepare('SELECT document FROM chat_messages WHERE id=?').get(id); if (!row) fail('NOT_FOUND')
-    const m = ChatMessage.parse(decode(row.document)); this.conversation(m.conversationId)
+    const m = ChatMessage.parse(decode(row.document)); this.conversation(m.conversationId, false)
     if (m.origin === 'model' && m.turnId) this.checkTurnInput(m.turnId, false)
     m.resources = m.resources.filter(ref => { try { this.checkResource(ref, m.conversationId); return true } catch { return false } })
     m.actionIds = m.actionIds.filter(actionId => { try { this.action(actionId); return true } catch { return false } })
@@ -171,7 +200,7 @@ export class ChatService {
   action(id: string) {
     const row = this.db.prepare('SELECT * FROM chat_actions WHERE id=?').get(id); if (!row) fail('NOT_FOUND')
     this.checkTurnInput(String(row.turn_id), false)
-    const action = ChatAction.parse(decode(row.document)); this.conversation(action.conversationId)
+    const action = ChatAction.parse(decode(row.document)); this.conversation(action.conversationId, false)
     // Owner-only proposals prevent sharing a private plan or model-derived source text.
     if (row.owner_id !== this.c.actor.id) fail('NOT_FOUND')
     action.allowedDecisions = []
@@ -181,7 +210,7 @@ export class ChatService {
     return action
   }
   validatePayload(payload: ChatAction['payload'], groupId: string) {
-    const group = this.conversation(groupId)
+    const group = this.conversation(groupId, false)
     if (payload.kind === 'create_group') {
       if (group.kind !== 'personal') fail('FORBIDDEN')
       const plan = this.c.plan(payload.plan.id); this.c.checkVersion(plan.version, payload.plan.version)
@@ -258,7 +287,7 @@ export class ChatService {
     if (name === 'chatTurn' || name === 'cancelChatTurn' || name === 'retryChatTurn') this.turn(id!)
     else if (name === 'decideChatAction') this.action(id!)
     else if (name === 'decideChatInvitation') this.invitation(id!)
-    else if (id) this.conversation(id)
+    else if (id) this.conversation(id, false)
   }
   run(name: ChatCommand, req: Request): unknown {
     this.ensureContacts(); this.authorize(name, req)
@@ -268,7 +297,9 @@ export class ChatService {
       if (cached.request_hash !== fingerprint) fail('IDEMPOTENCY_CONFLICT')
       const previous = decode(cached.response_json)
       if (name === 'sendChatMessage') {const message=this.projectedMessage(previous.data.message.id);return route.response.parse({ data: { message, turn: message.turnId ? this.turn(message.turnId) : null } })}
-      if (name === 'personalConversation' || name === 'createDirectConversation') this.conversation(previous.data.conversation?.id ?? previous.data.id)
+      if (name === 'personalConversation') return { data: { conversation: this.conversation(previous.data.conversation.id), agent: this.contact(previous.data.agent.id) } }
+      if (name === 'createDirectConversation') return { data: this.conversation(previous.data.id) }
+      if (name === 'markChatRead' || name === 'updateChatPreferences') return { data: this.viewerState(this.conversation(req.params.id!, false)) }
       if (name === 'decideChatAction') { this.conversation(previous.data.conversationId); for (const r of previous.data.resources as Resource[]) this.checkResource(r, previous.data.conversationId) }
       if (name === 'retryChatTurn' || name === 'cancelChatTurn') return { data: this.turn(previous.data.id) }
       return route.response.parse(previous)
@@ -294,8 +325,28 @@ export class ChatService {
       return { data: this.newConversation('direct', contact.displayName, [contact.id], `direct:${this.c.actor.labId}:${[this.c.actor.id, contact.identity.memberId].sort().join(':')}`) }
     }
     if (name === 'chatConversation') return { data: this.conversation(id) }
+    if (name === 'markChatRead') {
+      const group = this.conversation(id, false), body = b as RequestFor<'markChatRead'>['body']
+      if (body.throughSequence > group.lastSequence) fail('VALIDATION_ERROR')
+      this.ensureViewerState(id)
+      this.db.prepare('UPDATE chat_viewer_states SET read_sequence=max(read_sequence,?) WHERE conversation_id=? AND member_id=?').run(body.throughSequence, id, this.c.actor.id)
+      return { data: this.viewerState(group) }
+    }
+    if (name === 'updateChatPreferences') {
+      const group = this.conversation(id, false), body = b as RequestFor<'updateChatPreferences'>['body']
+      if (group.kind === 'personal' && !body.pinned) fail('INVALID_STATE')
+      this.ensureViewerState(id)
+      const state = this.db.prepare('SELECT pinned,version FROM chat_viewer_states WHERE conversation_id=? AND member_id=?').get(id, this.c.actor.id)!
+      this.c.checkVersion(Number(state.version), body.expectedVersion)
+      if ((state.pinned === 1) !== body.pinned && group.kind !== 'personal') this.db.prepare('UPDATE chat_viewer_states SET pinned=?,version=version+1 WHERE conversation_id=? AND member_id=?').run(body.pinned ? 1 : 0, id, this.c.actor.id)
+      return { data: this.viewerState(group) }
+    }
     if (name === 'chatConversations') {
-      const candidates = this.db.prepare('SELECT id,document FROM chat_conversations WHERE lab_id=?').all(this.c.actor.labId).map(r => Conversation.parse(decode(r.document))).sort((a, b) => Number(b.kind === 'personal') - Number(a.kind === 'personal') || b.updatedAt.localeCompare(a.updatedAt) || b.id.localeCompare(a.id)).map(v => v.id)
+      // ACL before personalized sorting and page snapshots. State joins are scoped
+      // to this actor and never reveal another member's read/pin preferences.
+      const candidates = this.db.prepare('SELECT c.id,c.document,s.pinned FROM chat_conversations c LEFT JOIN chat_viewer_states s ON s.conversation_id=c.id AND s.member_id=? WHERE c.lab_id=?').all(this.c.actor.id, this.c.actor.labId).flatMap(row => {
+        try { return [{ value: this.conversation(String(row.id), false), pinned: row.pinned === 1 }] } catch { return [] }
+      }).sort((a, b) => Number(b.value.kind === 'personal') - Number(a.value.kind === 'personal') || Number(b.pinned) - Number(a.pinned) || b.value.updatedAt.localeCompare(a.value.updatedAt) || b.value.id.localeCompare(a.value.id)).map(entry => entry.value.id)
       return this.page(name, req.query, candidates, id => this.conversation(id))
     }
     if (name === 'chatMessages') {

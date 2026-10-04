@@ -71,10 +71,126 @@ async function setup(enabled = true) {
     expect(value?.payload, actions.raw).toEqual(action)
     return value
   }
-  return { dir, db, config, app, clients, call, contacts, human, agent, publicAgent, personal, ask, groupProposal, proposeAction }
+  return { dir, db, config, app, clients, accounts, call, contacts, human, agent, publicAgent, personal, ask, groupProposal, proposeAction }
 }
 
 describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
+  it('upgrades a populated migration 012 chat database without rewriting existing conversations or messages', async () => {
+    const s = await setup(false)
+    await s.call('sendChatMessage', { text: '保留旧聊天记录' }, { id: s.personal.id })
+    const previous = s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(s.personal.id)!.document
+    const message = s.db.prepare('SELECT document FROM chat_messages WHERE conversation_id=?').get(s.personal.id)!.document
+    // Reconstruct the exact 012 shape by removing only the new 013 table/history.
+    // Existing applied checksums and all chat rows remain untouched.
+    s.db.exec('DROP TABLE chat_viewer_states; DELETE FROM schema_migrations WHERE version=13')
+    migrate(s.db); migrate(s.db)
+    expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(13)
+    expect(s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(s.personal.id)!.document).toBe(previous)
+    expect(s.db.prepare('SELECT document FROM chat_messages WHERE conversation_id=?').get(s.personal.id)!.document).toBe(message)
+    expect((await s.call('chatConversation', null, { id: s.personal.id })).value.data.viewerState).toEqual({ readSequence: 0, unreadCount: 0, pinned: true, version: 1 })
+  })
+
+  it('persists actor read and pin state over two real HTTP browser sessions, logout and server restart', async () => {
+    const s = await setup(false), direct = (await s.call('createDirectConversation', { contactId: s.human('member_B').id })).value.data as Conversation
+    const url = await s.app.listen({ port: 0, host: '127.0.0.1' })
+    async function loginHttp(actor = 1, base = url) {
+      const account = s.accounts[actor]!, login = await fetch(`${base}/api/v1/auth/login`, { method: 'POST', headers: { origin: s.config.origin, 'content-type': 'application/json' }, body: JSON.stringify({ username: account.username, password: account.password }) })
+      expect(login.status).toBe(200)
+      const cookie = login.headers.get('set-cookie')!.split(';')[0]!, session = await fetch(`${base}/api/v1/auth/session`, { headers: { cookie } })
+      return { cookie, csrf: (await session.json()).data.csrfToken as string }
+    }
+    async function http(client: {cookie:string;csrf:string}, operation: 'read' | 'preferences', body: unknown, key = randomUUID(), base = url) {
+      const response = await fetch(`${base}/api/v1/chat/conversations/${direct.id}/${operation}`, { method: 'POST', headers: { origin: s.config.origin, cookie: client.cookie, 'x-csrf-token': client.csrf, 'idempotency-key': key, 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      return { status: response.status, value: await response.json() }
+    }
+    const browserOne = await loginHttp(), browserTwo = await loginHttp(), readKey = randomUUID()
+    await s.call('sendChatMessage', { text: '发给 B 的第一条' }, { id: direct.id })
+    await s.call('sendChatMessage', { text: 'B 自己发出的消息' }, { id: direct.id }, 1)
+    await s.call('sendChatMessage', { text: '发给 B 的第二条' }, { id: direct.id })
+    expect((await s.call('chatConversation', null, { id: direct.id }, 1)).value.data.viewerState).toEqual({ readSequence: 0, unreadCount: 2, pinned: false, version: 1 })
+    // HTTP read does not itself mark history seen, and the viewer state is isolated.
+    expect((await s.call('chatMessages', null, { id: direct.id }, 1)).value.data).toHaveLength(3)
+    expect((await http(browserOne, 'read', { throughSequence: 1 }, readKey)).value.data).toMatchObject({ readSequence: 1, unreadCount: 1, version: 1 })
+    const pin = await http(browserOne, 'preferences', { expectedVersion: 1, pinned: true })
+    expect(pin.value.data).toMatchObject({ pinned: true, version: 2 })
+    const reads = await Promise.all([http(browserTwo, 'read', { throughSequence: 3 }), http(browserOne, 'read', { throughSequence: 2 })])
+    expect(reads.every(response => response.status === 200)).toBe(true)
+    const replay = await http(browserOne, 'read', { throughSequence: 1 }, readKey)
+    expect(replay.value.data).toEqual({ readSequence: 3, unreadCount: 0, pinned: true, version: 2 })
+    expect((await http(browserOne, 'read', { throughSequence: 2 }, readKey)).value.error.code).toBe('IDEMPOTENCY_CONFLICT')
+    expect((await http(browserTwo, 'read', { throughSequence: 4 })).value.error.code).toBe('VALIDATION_ERROR')
+    expect((await s.call('chatConversation', null, { id: direct.id })).value.data.viewerState).toEqual({ readSequence: 0, unreadCount: 1, pinned: false, version: 1 })
+    const logout = await fetch(`${url}/api/v1/auth/logout`, { method: 'POST', headers: { origin: s.config.origin, cookie: browserOne.cookie, 'x-csrf-token': browserOne.csrf, 'content-type': 'application/json' }, body: '{}' })
+    expect(logout.status).toBe(200)
+    expect((await http(browserOne, 'read', { throughSequence: 3 })).status).toBe(401)
+    await s.app.close()
+    const restarted = createServer(s.config); cleanup.push(() => restarted.close()); const nextUrl = await restarted.listen({ port: 0, host: '127.0.0.1' })
+    const relogged = await loginHttp(1, nextUrl), restored = await fetch(`${nextUrl}/api/v1/chat/conversations/${direct.id}`, { headers: { cookie: relogged.cookie } })
+    expect(restored.status).toBe(200)
+    expect((await restored.json()).data.viewerState).toEqual({ readSequence: 3, unreadCount: 0, pinned: true, version: 2 })
+    expect(s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(direct.id)!.document).not.toContain('viewerState')
+  })
+
+  it('projects the opposite direct participant, preserves personal-first sorting and rejects stale pin changes', async () => {
+    const s = await setup(false), pinKey = randomUUID(), aDirect = (await s.call('createDirectConversation', { contactId: s.human('member_B').id })).value.data as Conversation
+    const bDirect = (await s.call('createDirectConversation', { contactId: s.human('member_A').id }, {}, 1)).value.data as Conversation
+    expect(aDirect.id).toBe(bDirect.id); expect(aDirect.title).toBe('Synthetic B'); expect(bDirect.title).toBe('Synthetic A')
+    s.db.prepare("UPDATE members SET display_name='Synthetic A updated',version=version+1 WHERE id='member_A'").run()
+    expect((await s.call('chatConversation', null, { id: aDirect.id }, 1)).value.data.title).toBe('Synthetic A updated')
+    expect(JSON.parse(String(s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(aDirect.id)!.document)).title).toBe('Synthetic B')
+    const cDirect = (await s.call('createDirectConversation', { contactId: s.human('member_C').id })).value.data as Conversation
+    await s.call('sendChatMessage', { text: '更新较新的会话' }, { id: cDirect.id })
+    expect((await s.call('updateChatPreferences', { expectedVersion: 1, pinned: true }, { id: aDirect.id }, 0, '', pinKey)).value.data).toMatchObject({ pinned: true, version: 2 })
+    expect((await s.call('chatConversations')).value.data.map((conversation:Conversation)=>conversation.id)).toEqual([s.personal.id, aDirect.id, cDirect.id])
+    expect((await s.call('updateChatPreferences', { expectedVersion: 1, pinned: false }, { id: aDirect.id })).value.error.code).toBe('VERSION_CONFLICT')
+    expect((await s.call('updateChatPreferences', { expectedVersion: 2, pinned: false }, { id: aDirect.id })).value.data).toMatchObject({ pinned: false, version: 3 })
+    // Exact retry cannot restore an old preference after a newer user decision.
+    expect((await s.call('updateChatPreferences', { expectedVersion: 1, pinned: true }, { id: aDirect.id }, 0, '', pinKey)).value.data).toMatchObject({ pinned: false, version: 3 })
+    expect((await s.call('updateChatPreferences', { expectedVersion: 3, pinned: true }, { id: aDirect.id }, 0, '', pinKey)).value.error.code).toBe('IDEMPOTENCY_CONFLICT')
+    expect((await s.call('updateChatPreferences', { expectedVersion: 1, pinned: false }, { id: s.personal.id })).value.error.code).toBe('INVALID_STATE')
+    expect((await s.call('updateChatPreferences', { expectedVersion: 1, pinned: true }, { id: s.personal.id })).value.data).toMatchObject({ pinned: true, version: 1 })
+    expect((await s.call('chatConversation', null, { id: aDirect.id })).value.data.version).toBe(aDirect.version)
+    expect((await s.call('chatConversation', null, { id: aDirect.id }, 2)).status).toBe(404)
+  })
+
+  it('counts only authorized incoming group messages and hides state/cached receipts immediately after revoke', async () => {
+    const s = await setup(), created = await s.groupProposal(), groupId = created.group.id
+    const invitation = (await s.call('chatInvitations', null, {}, 1)).value.data[0]
+    expect((await s.call('markChatRead', { throughSequence: 0 }, { id: groupId }, 1)).status).toBe(404)
+    await s.call('decideChatInvitation', { expectedVersion: invitation.version, decision: 'accept' }, { id: invitation.id }, 1)
+    const joined = (await s.call('chatConversation', null, { id: groupId }, 1)).value.data as Conversation
+    await s.call('markChatRead', { throughSequence: joined.lastSequence }, { id: groupId }, 1)
+    await s.call('sendChatMessage', { text: 'B 自己的群消息' }, { id: groupId }, 1)
+    expect((await s.call('chatConversation', null, { id: groupId }, 1)).value.data.viewerState.unreadCount).toBe(0)
+    const task = (await s.call('task', null, { id: created.tasks[1]! })).value.data.task
+    await s.ask(groupId, s.publicAgent.id, [{ kind: 'task', ref: { id: task.id, version: task.version } }], '本人任务的合成问答')
+    await new ChatWorker(s.db, s.config, model(reply('MODEL_PRIVATE_CONTEXT_SENTINEL'))).tick()
+    const messages = (await s.call('chatMessages', null, { id: groupId }, 1)).value.data
+    expect(messages.some((message:{text:string})=>message.text === 'MODEL_PRIVATE_CONTEXT_SENTINEL')).toBe(false)
+    // The authorized human prompt is incoming, but its hidden model reply is not.
+    expect((await s.call('chatConversation', null, { id: groupId }, 1)).value.data.viewerState.unreadCount).toBe(1)
+    const readKey = randomUUID(), pinKey = randomUUID(), current = (await s.call('chatConversation', null, { id: groupId }, 1)).value.data as Conversation
+    const readBody = { throughSequence: current.lastSequence }, pinBody = { expectedVersion: 1, pinned: true }
+    await s.call('markChatRead', readBody, { id: groupId }, 1, '', readKey)
+    await s.call('updateChatPreferences', pinBody, { id: groupId }, 1, '', pinKey)
+    const group = (await s.call('chatConversation', null, { id: groupId })).value.data as Conversation, member = group.members.find(member=>member.contactId===s.human('member_B').id)!
+    await s.call('revokeChatMember', { expectedVersion: member.version, expectedConversationVersion: group.version, reason: '合成退出' }, { id: groupId, contactId: member.contactId })
+    expect((await s.call('markChatRead', readBody, { id: groupId }, 1, '', readKey)).status).toBe(404)
+    expect((await s.call('updateChatPreferences', pinBody, { id: groupId }, 1, '', pinKey)).status).toBe(404)
+    expect((await s.call('chatConversations', null, {}, 1)).value.data.some((conversation:Conversation)=>conversation.id===groupId)).toBe(false)
+  })
+
+  it('counts personal model replies without counting user prompts or unavailable turns', async () => {
+    const s = await setup(), sent = await s.ask()
+    expect((await s.call('chatConversation', null, { id: s.personal.id })).value.data.viewerState).toMatchObject({ unreadCount: 0, pinned: true })
+    await new ChatWorker(s.db, s.config, model(reply())).tick()
+    const state = (await s.call('chatConversation', null, { id: s.personal.id })).value.data
+    expect(state.viewerState.unreadCount).toBe(1)
+    expect((await s.call('markChatRead', { throughSequence: sent.message.sequence }, { id: s.personal.id })).value.data.unreadCount).toBe(1)
+    expect((await s.call('markChatRead', { throughSequence: state.lastSequence }, { id: s.personal.id })).value.data.unreadCount).toBe(0)
+    expect(s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(s.personal.id)!.document).not.toContain('viewerState')
+  })
+
   it('persists missing-config messages, deduplicates, isolates private histories and leaves ordinary chat undispatched', async () => {
     const s = await setup(false), key = randomUUID()
     const body = { text: '保留这条消息', intent: 'ask_agent', agentContactId: s.agent('member_A').id, budget }
@@ -168,8 +284,12 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     const agentInvite = invitations.find((v: { invitedContactId: string }) => v.invitedContactId === s.agent('member_B').id)
     expect((await s.call('decideChatInvitation', { expectedVersion: agentInvite.version, decision: 'accept' }, { id: agentInvite.id })).status).toBe(404)
     expect((await s.call('decideChatInvitation', { expectedVersion: agentInvite.version, decision: 'accept' }, { id: agentInvite.id }, 1)).status).toBe(200)
-    expect((await s.call('chatConversation',null,{id:groupId},1)).value.data.allowedActions).toEqual([])
-    expect((await s.call('sendChatMessage',{text:'仅agent加入不能真人发送'},{id:groupId},1)).status).toBe(403)
+    expect((await s.call('chatConversation',null,{id:groupId},1)).status).toBe(404)
+    expect((await s.call('chatMessages',null,{id:groupId},1)).status).toBe(404)
+    expect((await s.call('markChatRead',{throughSequence:0},{id:groupId},1)).status).toBe(404)
+    expect((await s.call('updateChatPreferences',{expectedVersion:1,pinned:true},{id:groupId},1)).status).toBe(404)
+    expect((await s.call('chatConversations',null,{},1)).value.data.some((group:Conversation)=>group.id===groupId)).toBe(false)
+    expect((await s.call('sendChatMessage',{text:'仅agent加入不能真人发送'},{id:groupId},1)).status).toBe(404)
     const asked = await s.ask(groupId, s.agent('member_B').id)
     let inspected = false
     await new ChatWorker(s.db, s.config, async (input, signal, credential) => { inspected = true; expect(input.prompt).not.toContain('B_OWNER_PRIVATE_SENTINEL'); expect(input.prompt).not.toContain(bPersonal.id); return model(reply('群内受限回答'))(input, signal, credential) }).tick()
