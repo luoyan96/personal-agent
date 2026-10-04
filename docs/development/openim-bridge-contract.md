@@ -37,3 +37,10 @@ Mapping 是 `{researchConversationId,imConversationID,kind,peerUserID,groupID,pi
 `OPENIM_API_URL` 后端管理地址，`OPENIM_PUBLIC_API_URL` 和 `OPENIM_PUBLIC_WS_URL` 客户端地址，`OPENIM_ADMIN_ID` 管理者ID，`OPENIM_SECRET_FILE` 绝对路径管理secret，`OPENIM_CALLBACK_KEY_FILE` 绝对路径独立随机64hex key，`OPENIM_POLICY_ENFORCED=1` 仅在强制before callbacks正确配置后启用。未配置任一必须项返回真实 unavailable。OpenIM Chat Server 不需要部署，手机号登录/业务profile由科研API替代。
 
 回调基址 `/api/v1/im/callback/<独立key>`，OpenIM 将具体 callbackCommand 追加到路径。管理网络和回调应由受信服务访问；浏览器仅获取本人user token。同步网络调用安排在 SQLite transaction 之外，并在返回前重新核验当前 session/ACL；失败可重试，不伪造远端成功。回调及 outbox 实施配置详见后端交接报告。
+
+## 手动群组操作（无模型依赖）
+
+- `imCreateGroup` POST `/api/v1/im/groups`，body 为 `{title,contactIds,sharedContext:{selectedText,artifactRefs},plan:null或{id,version}}`，返回 `data:Conversation`。contactIds 为1至20个。null plan 创建讨论群，不产生任务；非null计划按原受控建群规则版本确认。选择的资料按当前权限检查。
+- `imInviteContact` POST `/api/v1/im/conversations/{科研id}/invite`，body 为 `{contactId,expectedConversationVersion}`，返回 `data:Conversation`。仅科研群负责人操作。真人和私有AI产生独立邀请，接受联系人、接受入群和承接任务继续分开。
+
+这两个命令必须提供 `Idempotency-Key`，并沿用Origin/CSRF保护与授权后幂等回执；完成后另调用 `imSyncConversation`。模型关闭也可以使用。OpenIM群主固定为服务器 `OPENIM_ADMIN_ID`，所有科研joined联系人为普通成员；科研负责人通过RAP接口管理成员，不获得原生群主或管理员权限。

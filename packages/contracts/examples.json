@@ -695,6 +695,97 @@
         }
       }
     },
+    "imCreateGroup": {
+      "contractVersion": "0.13.0",
+      "synthetic": true,
+      "method": "POST",
+      "path": "/api/v1/im/groups",
+      "stage": "IM1",
+      "status": 200,
+      "request": {
+        "params": {},
+        "query": {},
+        "headers": {
+          "Idempotency-Key": "synthetic_command_0001"
+        },
+        "body": {
+          "title": "synthetic",
+          "contactIds": [
+            "synthetic"
+          ],
+          "sharedContext": {
+            "selectedText": null,
+            "artifactRefs": []
+          },
+          "plan": null
+        }
+      },
+      "response": {
+        "data": {
+          "id": "synthetic",
+          "labId": "synthetic",
+          "kind": "personal",
+          "title": "synthetic",
+          "ownerMemberId": "synthetic",
+          "version": 1,
+          "members": [],
+          "taskIds": [],
+          "lastSequence": 0,
+          "createdAt": "2026-09-21T08:00:00+08:00",
+          "updatedAt": "2026-09-21T08:00:00+08:00",
+          "allowedActions": [],
+          "viewerState": {
+            "readSequence": 0,
+            "unreadCount": 0,
+            "pinned": false,
+            "version": 1
+          }
+        }
+      }
+    },
+    "imInviteContact": {
+      "contractVersion": "0.13.0",
+      "synthetic": true,
+      "method": "POST",
+      "path": "/api/v1/im/conversations/{id}/invite",
+      "stage": "IM1",
+      "status": 200,
+      "request": {
+        "params": {
+          "id": "synthetic"
+        },
+        "query": {},
+        "headers": {
+          "Idempotency-Key": "synthetic_command_0001"
+        },
+        "body": {
+          "contactId": "synthetic",
+          "expectedConversationVersion": 1
+        }
+      },
+      "response": {
+        "data": {
+          "id": "synthetic",
+          "labId": "synthetic",
+          "kind": "personal",
+          "title": "synthetic",
+          "ownerMemberId": "synthetic",
+          "version": 1,
+          "members": [],
+          "taskIds": [],
+          "lastSequence": 0,
+          "createdAt": "2026-09-21T08:00:00+08:00",
+          "updatedAt": "2026-09-21T08:00:00+08:00",
+          "allowedActions": [],
+          "viewerState": {
+            "readSequence": 0,
+            "unreadCount": 0,
+            "pinned": false,
+            "version": 1
+          }
+        }
+      }
+    },
     "chatContacts": {
       "contractVersion": "0.13.0",
       "synthetic": true,
