@@ -61,12 +61,17 @@ describe('authorized conversation workflow facts', () => {
   it('limits facts to linked authorized tasks and preserves restricted summaries', () => {
     const summary = fixtures.invitationSummary.value.data;
     const limitedGroup = Conversation.parse({ ...group, taskIds: [summary.id, 'task_not_authorized'] });
-    const data = new Map<string, ResponseFor<'task'>['data']>([[summary.id, { ...summary, visibleStatus: 'completed' }],
+    const data = new Map<string, ResponseFor<'task'>['data']>([[summary.id, summary],
       ['unrelated_private_task', detail('completed', 'unrelated_private_task')]]);
     const projected = projectConversationWorkflow(limitedGroup, data, [], members)!;
     expect(projected.totalTasks).toBe(2); expect(projected.completedTasks).toBe(0); expect(projected.restrictedTasks).toBe(2);
     expect(projected.tasks[0]?.assignees).toEqual([]); expect(projected.tasks[0]?.actionLabel).toBe('查看并回应邀请');
     expect(projected.tasks[1]?.href).toBe(''); expect(JSON.stringify(projected)).not.toContain('unrelated_private_task');
+    data.set(summary.id, { ...summary, visibleStatus: 'completed', pendingInvitation: null, allowedActions: [] });
+    const completedSummary = projectConversationWorkflow(limitedGroup, data, [], members)!;
+    expect(completedSummary.completedTasks).toBe(1);
+    expect(completedSummary.tasks[0]?.status).toBe('已完成 · 仅摘要');
+    expect(completedSummary.tasks[0]?.stage).toBe('restricted');
   });
 
   it('counts completed and cancelled tasks separately in mixed-progress groups', () => {

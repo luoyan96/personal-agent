@@ -30,7 +30,8 @@ export function projectConversationWorkflow(
     };
     const href = `#/tasks/${encodeURIComponent(id)}`;
     if (!('task' in data)) return {
-      id, title: data.title, status: data.pendingInvitation ? '待你承接' : '可查看任务摘要',
+      id, title: data.title, status: data.pendingInvitation ? '待你承接'
+        : data.visibleStatus ? `${labels[data.visibleStatus]} · 仅摘要` : '可查看任务摘要',
       stage: 'restricted', goal: data.summary, acceptanceCriteria: data.acceptanceCriteria,
       assignees: [], nextStep: data.pendingInvitation
         ? '先核对邀请的范围与时间，再决定是否接受任务。'
@@ -99,7 +100,10 @@ export function projectConversationWorkflow(
     joinedMembers: conversation.members.filter(m => m.status === 'joined').length,
     invitedMembers: conversation.members.filter(m => m.status === 'invited').length,
     totalTasks: tasks.length,
-    completedTasks: tasks.filter(t => t.stage === 'done').length,
+    completedTasks: tasks.filter(t => {
+      const data = taskDetails.get(t.id);
+      return data && ('task' in data ? data.task.status === 'completed' : data.visibleStatus === 'completed');
+    }).length,
     restrictedTasks: tasks.filter(t => t.stage === 'restricted').length,
     tasks,
   };
