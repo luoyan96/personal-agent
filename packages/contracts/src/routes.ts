@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import * as m from './models.js'
 import { chatRoutes } from './chat.js'
+import { openImRoutes } from './openim.js'
 
 const empty = z.strictObject({})
 const id = z.strictObject({ id: m.Id })
@@ -21,6 +22,7 @@ function route<P extends z.ZodType, Q extends z.ZodType, B extends z.ZodType, R 
     errors: m.ErrorResponse, errorStatuses: m.errorStatus, idempotent: keyed }
 }
 export const routes = {
+  ...openImRoutes,
   ...chatRoutes,
   live: route('GET', '/health/live', 'B0', empty, empty, z.null(), m.data(m.Health), 200, 'Process liveness only.', 'public'),
   ready: route('GET', '/health/ready', 'B0', empty, empty, z.null(), m.data(m.Health), 200, '503 with same health schema if database migration/write probe or blob read/write probe fails.', 'public'),
