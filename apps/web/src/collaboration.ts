@@ -103,7 +103,7 @@ function schedule(s: Schedule) {
 function shell() {
   detachChat();
   document.body.classList.toggle('chat-route', route()==='/');
-  app.innerHTML = `<button class="skip" data-skip>跳到主要内容</button><header>${link('/', '<img src="/brand.png" width="38" height="38" alt=""><span>Research Agent Platform</span>', 'brand')}<nav aria-label="主导航">${link('/', '需求入口')}${link('/lab', '实验室任务')}${session?.isLabManager ? link('/lab/settings','实验室设置') : ''}${session ? `<span class="session-name">${e(session.member.displayName)}</span>${button('logout','退出登录')}` : link('/login','登录')}</nav></header><main id="main" tabindex="-1"><section class="state-panel" role="status">正在从服务读取…</section></main><footer>建议需确认 · 运行需验收 · 契约 ${contractVersion}</footer>`;
+  app.innerHTML = `<button class="skip" data-skip>跳到主要内容</button><header>${link('/', `<img src="/brand.png" width="38" height="38" alt=""><span>${route()==='/'?'研伴 · 科研微信':'Research Agent Platform'}</span>`, 'brand')}<nav aria-label="主导航">${link('/', '需求入口')}${link('/lab', '实验室任务')}${session?.isLabManager ? link('/lab/settings','实验室设置') : ''}${session ? `<span class="session-name">${e(session.member.displayName)}</span>${button('logout','退出登录')}` : link('/login','登录')}</nav></header><main id="main" tabindex="-1"><section class="state-panel" role="status">正在从服务读取…</section></main><footer>建议需确认 · 运行需验收 · 契约 ${contractVersion}</footer>`;
   document.querySelector<HTMLButtonElement>('[data-skip]')!.onclick = () => document.querySelector<HTMLElement>('main')!.focus();
   action('logout', async () => {
     await api.call('logout', {params:{},query:{},headers:{},body:{}});
@@ -120,7 +120,7 @@ function content(html: string, title: string) {
 }
 function feedback(error: unknown) {
   const err = error instanceof ApiError ? error : new ApiError('ERROR', '操作未完成，请重试。');
-  if(err.code==='UNAUTHENTICATED'){controller?.abort();session=undefined;issuedInvite=undefined;api.csrfToken='';members=[];activeSnapshot=undefined;resetPages();shell();login();}
+  if(err.code==='UNAUTHENTICATED'){controller?.abort();clearOwnedContext();session=undefined;issuedInvite=undefined;api.csrfToken='';members=[];activeSnapshot=undefined;resetPages();shell();login();}
   if(['FORBIDDEN','NOT_FOUND'].includes(err.code)) {controller?.abort();reuse.clear();if(route().startsWith('/tasks/'))coordination.reset(route().slice(7));if(route().startsWith('/plans/'))resetEditor();for(const key of drafts.keys())if(key.startsWith(route()+':'))drafts.delete(key);command.discard();retryCommand=undefined;members=[];activeSnapshot=undefined;resetPages();content('<section class="state-panel"><h1>无法访问此内容</h1><p>资源不存在或当前账号无权访问。旧内容已清除。</p></section>','无法访问');}
   const target = document.querySelector<HTMLElement>('#feedback') ?? document.querySelector<HTMLElement>('main')!;
   if(route()==='/' && target.id==='feedback') document.querySelector('form[data-form=entry]')?.insertAdjacentElement('afterend',target);
@@ -476,7 +476,7 @@ async function load() {
       // or invalidate the live conversation after a message or action mutation.
       activeSnapshot=undefined;
       content('<div id="chat-root"></div>','科研聊天');
-      chatView=new ChatView(document.querySelector<HTMLElement>('#chat-root')!,new ChatApiSource(api,session.member.id,members,error=>{clearStoredChatDrafts(session?.member.id);if(error.code!=='UNAUTHENTICATED'){chatDrafts=[];chatCommand=new CommandSlot();}feedback(error);},chatCommand),chatDrafts,session.member.id);
+      chatView=new ChatView(document.querySelector<HTMLElement>('#chat-root')!,new ChatApiSource(api,session.member.id,members,error=>{chatView?.dispose();chatView=undefined;clearStoredChatDrafts(session?.member.id);chatDrafts=[];chatCommand=new CommandSlot();feedback(error);},chatCommand),chatDrafts,session.member.id);
       await chatView.mount();
     }
     else if(path==='/work')await dailyEntry(signal);
@@ -505,7 +505,7 @@ async function load() {
     } else content(`<section class="state-panel"><h1>页面不存在</h1>${link('/','回到入口')}</section>`,'页面不存在');
   }catch(error){
     if(signal.aborted)return;
-    if(error instanceof ApiError&&error.code==='UNAUTHENTICATED'){session=undefined;issuedInvite=undefined;api.csrfToken='';members=[];shell();login();if(path!=='/'||draftOwner)feedback(error);}
+    if(error instanceof ApiError&&error.code==='UNAUTHENTICATED'){clearOwnedContext();session=undefined;issuedInvite=undefined;api.csrfToken='';members=[];shell();login();if(path!=='/'||draftOwner)feedback(error);}
     else {members=[];activeSnapshot=undefined;content('<section class="state-panel"><h1>暂时无法读取</h1><p>旧的受限内容已清除，没有使用演示数据替代服务响应。尚未提交的输入仍保留。</p></section>','读取失败');feedback(error);}
   }
 }

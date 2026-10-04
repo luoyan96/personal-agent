@@ -35,7 +35,7 @@
 .chat-heading { display:flex; align-items:center; gap:8px; padding:14px 22px; min-height:74px; border-bottom:1px solid var(--chat-line); }
 .chat-heading>div { flex:1; min-width:0; }
 .chat-heading h2 { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.chat-heading p { font-size:11px; color:var(--chat-sub); margin-top:2px; }
+.chat-heading p { font-size:11px; color:var(--chat-sub); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .chat-heading button { flex-shrink:0; border:0; background:transparent; padding:8px; min-width:36px; min-height:36px; color:#6e7d92; }
 .chat-window .chat-back { display:none; }
 .chat-members { display:flex; gap:8px 18px; flex-wrap:wrap; padding:12px 22px; font-size:12px; border-bottom:1px solid var(--chat-line); max-height:150px; overflow:auto; }
@@ -127,10 +127,10 @@ body.chat-route .feedback:empty { display:none; }
 @media(max-width:1050px) { .chat-window { grid-template-columns:60px 250px minmax(0,1fr); } .chat-history { padding:12px 20px; } }
 @media(max-width:760px) { .chat-window { grid-template-columns:52px 216px minmax(0,1fr); } .chat-history { padding:12px 14px; } .chat-composer { padding:10px 14px; } .chat-message-copy { max-width:calc(100% - 48px); } .chat-heading { padding:14px; } }
 @media(max-width:600px) {
-  body.chat-route>#app>header { height:48px; min-height:48px; padding:0 10px; }
+  body.chat-route>#app>header { height:48px; min-height:48px; padding:0 10px; flex-wrap:nowrap; align-items:center; }
   body.chat-route>#app>header .brand span { font-size:12px; }
   body.chat-route>#app>header .brand img { width:24px; height:24px; }
-  body.chat-route>#app>header nav { gap:9px; }
+  body.chat-route>#app>header nav { gap:9px; width:auto; flex-wrap:nowrap; flex-shrink:0; }
   body.chat-route>#app>header nav>a,body.chat-route>#app>header .session-name { display:none; }
   body.chat-route>#app>header nav>a[href="#/lab/settings"] { display:block; }
   .chat-window { height:calc(100dvh - 48px); min-height:0; grid-template-columns:52px minmax(0,1fr); }

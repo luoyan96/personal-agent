@@ -134,6 +134,9 @@ describe('frozen CHAT1 API wiring (synthetic transport)',()=>{
   const h=harness(),signal=new AbortController().signal,snapshot=await h.source.read(signal);
   expect(snapshot.conversations.find(c=>c.id===group.id)?.unreadCount).toBe(1);
   expect(h.calls.filter(c=>c.name==='markChatRead')).toHaveLength(0);
+  // A still-rendered older snapshot must not inherit a newer background load.
+  expect(await h.source.markRead(group.id,0,signal)).toBe(1);
+  expect(h.calls.filter(c=>c.name==='markChatRead')).toHaveLength(0);
   h.failRead(true);await expect(h.source.markRead(group.id,1,signal)).rejects.toMatchObject({code:'NETWORK_ERROR'});
   h.failRead(false);expect(await h.source.markRead(group.id,1,signal)).toBe(0);
   const reads=h.calls.filter(c=>c.name==='markChatRead');expect(reads).toHaveLength(2);expect(reads[0]?.body).toEqual({throughSequence:1});expect(reads[0]?.headers).toEqual(reads[1]?.headers);
