@@ -2,7 +2,7 @@
 
 0.11.0 新增每成员每会话的持久已读游标、当前授权未读计数与置顶偏好，以及 direct 对端标题投影。聊天协议 1.1.0 明确真人群成员与个人 agent 授权的独立浏览器历史边界。字段、操作及兼容影响见[会话状态接口](../../docs/development/research-chat-viewer-state.md)。
 
-新增 CHAT1 联系人、个人/双人/群会话、消息与明确 @、后台模型状态、受控动作、群邀请及撤权类型与 15 条已实现路由；现有业务服务继续使用原权限与状态。AgentTurn 增补原预算、剩余预算与可执行操作；其他成员个人 agent 需 owner 分别授权后在指定群问答。见[聊天契约及修订](../../docs/development/research-chat-contract.md)。
+新增 CHAT1 联系人、个人/双人/群会话、消息与明确 @、后台模型状态、受控动作、群邀请及撤权类型与 17 条已实现路由；现有业务服务继续使用原权限与状态。AgentTurn 增补原预算、剩余预算与可执行操作；其他成员个人 agent 需 owner 分别授权后在指定群问答。见[聊天契约及修订](../../docs/development/research-chat-contract.md)。
 
 ## 契约 0.9.1
 

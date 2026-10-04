@@ -180,7 +180,7 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     expect((await s.call('chatConversations', null, {}, 1)).value.data.some((conversation:Conversation)=>conversation.id===groupId)).toBe(false)
   })
 
-  it('counts personal model replies without counting user prompts or unavailable turns', async () => {
+  it('counts personal model replies without counting user prompts', async () => {
     const s = await setup(), sent = await s.ask()
     expect((await s.call('chatConversation', null, { id: s.personal.id })).value.data.viewerState).toMatchObject({ unreadCount: 0, pinned: true })
     await new ChatWorker(s.db, s.config, model(reply())).tick()
