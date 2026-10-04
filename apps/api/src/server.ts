@@ -16,6 +16,7 @@ import type { CollaborationCommand } from './collaboration.js'
 import type { RequestFor } from '@research-agent-platform/contracts'
 import { cleanBlobs } from './coordination.js'
 import { ApiError, fail } from './errors.js'
+import type { AuthValidationField } from './errors.js'
 import { register } from './registration.js'
 import { isLabManager, managerInvites, createManagerInvite, revokeManagerInvite } from './invite-management.js'
 import { labAiRuntime, labAiSettings, updateLabAiSettings } from './lab-ai-settings.js'
@@ -43,8 +44,10 @@ export function createServer(config: Config, options:{imClient?:OpenImClient}={}
   }
   app.addHook('onClose', async () => { db?.close() })
   app.addHook('onSend', async (_request, reply) => { reply.header('Cache-Control', 'no-store'); reply.header('X-Contract-Version', contractVersion); reply.header('X-Content-Type-Options', 'nosniff') })
-  function error(code: keyof typeof errorStatus, requestId: string) {
-    return ErrorResponse.parse({ error: { code, message: code === 'NOT_IMPLEMENTED' ? 'Endpoint is not implemented in B3.' : 'Request could not be completed.', requestId } })
+  const authValidationMessages={username:'用户名只能使用字母、数字、下划线或短横线，长度为 1 到 100 个字符。',password:'密码至少需要 8 个字符。',inviteCode:'请输入有效的邀请码。',displayName:'请输入 1 到 200 个字符的显示名称。'} satisfies Record<AuthValidationField,string>
+  function error(code: keyof typeof errorStatus, requestId: string, field?:AuthValidationField) {
+    const message=code==='VALIDATION_ERROR'?(field?authValidationMessages[field]:'请检查填写内容和请求格式。'):code==='NOT_IMPLEMENTED'?'Endpoint is not implemented in B3.':'Request could not be completed.'
+    return ErrorResponse.parse({ error: { code, message, requestId } })
   }
   app.get('/api/v1/health/live', async () => data(Health).parse({ data: { status: 'ok', contractVersion, checks: { database: 'not_checked', storage: 'not_checked', authentication: 'not_checked', harness: 'not_verified' } } }))
   app.get('/api/v1/health/ready', async (_request, reply) => {
@@ -79,7 +82,10 @@ export function createServer(config: Config, options:{imClient?:OpenImClient}={}
       if ('afterSequence' in query && typeof query.afterSequence === 'string' && /^\d+$/.test(query.afterSequence)) query.afterSequence = Number(query.afterSequence)
       if(name==='upload' && typeof (request.body as {contentBase64?:unknown})?.contentBase64==='string' && (request.body as {contentBase64:string}).contentBase64.length>13981016) fail('PAYLOAD_TOO_LARGE')
       const parsed = route.request.safeParse({ params: request.params, query, headers: route.idempotent ? { 'Idempotency-Key': request.headers['idempotency-key'] } : {}, body: route.method === 'GET' ? null : request.body })
-      if (!parsed.success) fail('VALIDATION_ERROR')
+      if (!parsed.success) {
+        const field=['login','register'].includes(name)?parsed.error.issues.find(issue=>issue.path[0]==='body'&&typeof issue.path[1]==='string'&&Object.hasOwn(authValidationMessages,issue.path[1]))?.path[1] as AuthValidationField|undefined:undefined
+        fail('VALIDATION_ERROR',field)
+      }
       reply.code(route.status)
       if (name === 'register') return routes.register.response.parse(await register(connection,parsed.data as RequestFor<'register'>,request.ip))
       const cookie = (value: string, maxAge: number) => `rap_session=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${config.mode === 'production' ? '; Secure' : ''}`
@@ -139,7 +145,7 @@ export function createServer(config: Config, options:{imClient?:OpenImClient}={}
     const status = (err as { statusCode?: number }).statusCode
     const code = err instanceof ApiError ? err.code : status === 413 ? 'PAYLOAD_TOO_LARGE' : status === 400 || status === 415 ? 'VALIDATION_ERROR' : (err as { code?: string }).code === 'ERR_SQLITE_ERROR' && /locked|busy/i.test(String(err)) ? 'SERVICE_UNAVAILABLE' : 'INTERNAL_ERROR'
     if (code === 'RATE_LIMITED') reply.header('Retry-After', '900')
-    reply.code(errorStatus[code]).send(error(code, request.id))
+    reply.code(errorStatus[code]).send(error(code, request.id,err instanceof ApiError?err.validationField:undefined))
   })
   return app
 }

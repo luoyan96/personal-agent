@@ -38,21 +38,49 @@ describe('invitation registration',()=>{
   expect(persisted).not.toContain(s.inviteCode);expect(persisted).not.toContain(s.payload().password)
   const auth=await s.login();expect(auth.statusCode).toBe(200);expect(auth.headers['set-cookie']).toContain('Secure');expect(auth.headers['set-cookie']).toContain('HttpOnly')
  })
- it('accepts a nine-character password for registration and login, but rejects eight',async()=>{
-  const s=await setup()
-  expect((await s.register({...s.payload(),password:'Abcdefg8'})).statusCode).toBe(400)
-  expect((await s.register({...s.payload(),password:'NinePass9'})).statusCode).toBe(201)
-  const login=await s.app.inject({method:'POST',url:'/api/v1/auth/login',headers:{origin:s.config.origin},payload:{username:'new_member',password:'NinePass9'}})
-  expect(login.statusCode).toBe(200)
+ it('uses real HTTP for eight-character passwords and whitespace-normalized identities without exposing schema internals',async()=>{
+  const s=await setup(),url=await s.app.listen({host:'127.0.0.1',port:0})
+  const http=(path:string,body:object,key=randomUUID())=>fetch(url+path,{method:'POST',headers:{origin:s.config.origin,'content-type':'application/json','idempotency-key':key},body:JSON.stringify(body)})
+  const short=await http('/api/v1/auth/register',{...s.payload(),password:'1234567'})
+  expect(short.status).toBe(400);expect((await short.json()).error).toMatchObject({code:'VALIDATION_ERROR',message:'密码至少需要 8 个字符。'})
+  expect(s.db.prepare('SELECT used_count FROM registration_invites').get()!.used_count).toBe(0)
+  const key=randomUUID(),body={...s.payload(' \tluoyan\u3000'),inviteCode:` \n${s.inviteCode}\t`,password:'12345678'}
+  const registered=await http('/api/v1/auth/register',body,key)
+  expect(registered.status).toBe(201);expect(await registered.json()).toEqual({data:{registered:true,username:'luoyan'}})
+  expect(s.db.prepare('SELECT username FROM auth_accounts').get()!.username).toBe('luoyan')
+  expect((await http('/api/v1/auth/register',{...body,username:'luoyan',inviteCode:s.inviteCode},key)).status).toBe(201)
+  expect(s.db.prepare('SELECT used_count FROM registration_invites').get()!.used_count).toBe(1)
+  const login=await http('/api/v1/auth/login',{username:'\t luoyan \n',password:'12345678'})
+  expect(login.status).toBe(200)
+  const member=(await login.json()).data;expect(member.labId).toBe('lab_one')
+  expect((await http('/api/v1/auth/register',{...s.payload('luoyan '),password:'12345678'})).status).toBe(409)
+  for(const username of ['bad name','luoyan\u200b','ｌｕｏｙａｎ']){
+   for(const path of ['/api/v1/auth/register','/api/v1/auth/login']){
+    const invalid=await http(path,path.endsWith('register')?s.payload(username):{username,password:'12345678'}),text=await invalid.text()
+    expect(invalid.status).toBe(400);expect(JSON.parse(text).error.message).toContain('用户名只能使用')
+    for(const internal of ['invalid_format','pattern','Zod','regex','issues',username])expect(text).not.toContain(internal)
+   }
+  }
+  const paddedPassword=' 12345678 ',longPassword='x'.repeat(300)
+  for(const [username,password] of [['padded_password',paddedPassword],['long_password',longPassword]]){
+   expect((await http('/api/v1/auth/register',{...s.payload(username),password})).status).toBe(201)
+   expect((await http('/api/v1/auth/login',{username,password})).status).toBe(200)
+  }
+  expect((await http('/api/v1/auth/login',{username:'padded_password',password:paddedPassword.trim()})).status).toBe(401)
+  expect((await http('/api/v1/auth/register',{...s.payload('oversized'),password:'x'.repeat(9000)})).status).toBe(413)
  })
- it('uses the same nine-character minimum for maintained accounts and password resets',async()=>{
+ it('uses the same normalized identity and eight-character minimum for maintained accounts and password resets',async()=>{
   const s=await setup()
-  await expect(s.op({action:'create-account',memberId:'manual',username:'manual',displayName:'Synthetic member',password:'Abcdefg8'})).rejects.toThrow()
-  await s.op({action:'create-account',memberId:'manual',username:'manual',displayName:'Synthetic member',password:'NinePass9'})
-  await expect(s.op({action:'reset-password',memberId:'manual',expectedVersion:1,password:'Abcdefg8'})).rejects.toThrow()
-  await s.op({action:'reset-password',memberId:'manual',expectedVersion:1,password:'NextPass9'})
-  const login=await s.app.inject({method:'POST',url:'/api/v1/auth/login',headers:{origin:s.config.origin},payload:{username:'manual',password:'NextPass9'}})
+  await expect(s.op({action:'create-account',memberId:'manual',username:'manual',displayName:'Synthetic member',password:'1234567'})).rejects.toThrow('INVALID_INPUT')
+  await s.op({action:'create-account',memberId:'manual',username:' manual ',displayName:'Synthetic member',password:'12345678'})
+  expect(s.db.prepare('SELECT username FROM auth_accounts').get()!.username).toBe('manual')
+  await expect(s.op({action:'create-account',memberId:'duplicate',username:'manual',displayName:'Synthetic member',password:'12345678'})).rejects.toThrow('ACCOUNT_EXISTS')
+  await expect(s.op({action:'reset-password',memberId:'manual',expectedVersion:1,password:'1234567'})).rejects.toThrow('INVALID_INPUT')
+  await s.op({action:'reset-password',memberId:'manual',expectedVersion:1,password:'87654321'})
+  const login=await s.app.inject({method:'POST',url:'/api/v1/auth/login',headers:{origin:s.config.origin},payload:{username:' manual ',password:'87654321'}})
   expect(login.statusCode).toBe(200)
+  const long='z'.repeat(300);await s.op({action:'reset-password',memberId:'manual',expectedVersion:2,password:long})
+  expect((await s.app.inject({method:'POST',url:'/api/v1/auth/login',headers:{origin:s.config.origin},payload:{username:'manual',password:long}})).statusCode).toBe(200)
  })
  it('replays an acknowledged or lost success after expiry without consuming another seat; changed request conflicts',async()=>{
   const s=await setup(1),key=randomUUID();const first=await s.register(s.payload(),key)
@@ -85,7 +113,7 @@ describe('invitation registration',()=>{
   expect((await s.register({...s.payload(),inviteCode:'x'.repeat(24)})).json().error.code).toBe('INVITE_UNAVAILABLE')
   expect(s.db.prepare('SELECT used_count FROM registration_invites').get()!.used_count).toBe(1)
  })
- it('requires same Origin, strict fields, strong password and idempotency key',async()=>{
+ it('requires same Origin, strict fields, minimum password length and idempotency key',async()=>{
   const s=await setup()
   for(const origin of [undefined,'https://evil.test']){
    const r=await s.app.inject({method:'POST',url:'/api/v1/auth/register',headers:{...(origin?{origin}:{}),'idempotency-key':randomUUID()},payload:s.payload()});expect(r.statusCode).toBe(403)

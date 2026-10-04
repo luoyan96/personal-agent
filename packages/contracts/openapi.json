@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.13.0"
+    "version": "0.13.1"
   },
   "paths": {
     "/api/v1/im/session": {
@@ -15189,7 +15189,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.13.0"
+                          "const": "0.13.1"
                         },
                         "checks": {
                           "type": "object",
@@ -15248,7 +15248,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.13.0",
+                    "contractVersion": "0.13.1",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -15402,7 +15402,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.13.0"
+                          "const": "0.13.1"
                         },
                         "checks": {
                           "type": "object",
@@ -15461,7 +15461,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.13.0",
+                    "contractVersion": "0.13.1",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -15593,7 +15593,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.13.0"
+                          "const": "0.13.1"
                         },
                         "checks": {
                           "type": "object",
@@ -15652,7 +15652,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.13.0",
+                    "contractVersion": "0.13.1",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -15670,7 +15670,7 @@
     "/api/v1/auth/login": {
       "post": {
         "operationId": "login",
-        "description": "Verify provisioned password hash; rotate session; issue HttpOnly cookie. Invitation registration is a separate endpoint.",
+        "description": "Trim surrounding username whitespace only; case-sensitive ASCII account identity. Password at least 8 characters, preserved exactly, no complexity or field-length cap; HTTP body limit applies. Verify provisioned hash, rotate session and issue HttpOnly cookie.",
         "x-stage": "B1",
         "x-implemented": true,
         "security": [],
@@ -15685,12 +15685,12 @@
                   "username": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 100
+                    "maxLength": 100,
+                    "pattern": "^[A-Za-z0-9_-]+$"
                   },
                   "password": {
                     "type": "string",
-                    "minLength": 9,
-                    "maxLength": 256
+                    "minLength": 8
                   }
                 },
                 "required": [
@@ -16304,7 +16304,7 @@
     "/api/v1/auth/register": {
       "post": {
         "operationId": "register",
-        "description": "Same-origin invitation-only account creation. No client lab/role/member ID; valid non-revoked invitation required. Account, membership, use count and retry receipt are atomic. No session issued; sign in afterwards. Never persists raw code or password.",
+        "description": "Same-origin invitation-only account creation. Trim surrounding username/invite-code whitespace only. Password at least 8 characters, preserved exactly, no complexity or field-length cap; HTTP body limit applies. No client lab/role/member ID; current valid invitation required. Account, membership, use count and retry receipt are atomic. No session or raw code/password persisted.",
         "x-stage": "B5b",
         "x-implemented": true,
         "security": [],
@@ -16345,8 +16345,7 @@
                   },
                   "password": {
                     "type": "string",
-                    "minLength": 9,
-                    "maxLength": 256
+                    "minLength": 8
                   }
                 },
                 "required": [
@@ -16385,7 +16384,8 @@
                         "username": {
                           "type": "string",
                           "minLength": 1,
-                          "maxLength": 100
+                          "maxLength": 100,
+                          "pattern": "^[A-Za-z0-9_-]+$"
                         }
                       },
                       "required": [

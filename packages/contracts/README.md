@@ -1,4 +1,8 @@
-# 当前契约 0.12.0
+# 当前契约 0.13.1
+
+0.13.1 统一账号输入：导出 `AccountUsername`、`AccountPassword`、`RegistrationCode`。用户名和注册邀请码只去除首尾空白；用户名仍是区分大小写的 1–100 个 ASCII 字母、数字、下划线或短横线，不折叠 Unicode 身份。密码至少 8 个字符、无复杂度或字段长度上限，原样保存用于密码散列；HTTP/维护入口的整体请求上限保留。注册、登录及维护建号/重置密码使用同一规则，错误只返回安全的提示。没有新增路由、权限或数据库迁移；IM 桥协议仍为 1.0.0，迁移仍为 015。
+
+0.13.0 新增真实 OpenIM 身份、会话和群映射、受控手动组群/邀请及授权科研消息指针。普通聊天与媒体不默认派发 AI；科研会话、联系人同意、群加入与任务承接仍由科研 API 授权。见[后端桥接报告](../../docs/development/openim-bridge-backend-report.md)。
 
 0.12.0 新增人/Agent 公开档案、真实添加关系、专属 Agent、AI 私聊和版本化记忆；聊天协议 1.2.0，30 条 CHAT1 路由。接线及范围见[联系人接口](../../docs/development/agent-contacts-contract.md)，服务结果见[后端实施](../../docs/development/agent-contacts-backend.md)。
 

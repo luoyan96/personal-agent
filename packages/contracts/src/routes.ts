@@ -2,6 +2,7 @@ import { z } from 'zod'
 import * as m from './models.js'
 import { chatRoutes } from './chat.js'
 import { openImRoutes } from './openim.js'
+import { AccountUsername, AccountPassword, RegistrationCode } from './authentication.js'
 
 const empty = z.strictObject({})
 const id = z.strictObject({ id: m.Id })
@@ -26,8 +27,8 @@ export const routes = {
   ...chatRoutes,
   live: route('GET', '/health/live', 'B0', empty, empty, z.null(), m.data(m.Health), 200, 'Process liveness only.', 'public'),
   ready: route('GET', '/health/ready', 'B0', empty, empty, z.null(), m.data(m.Health), 200, '503 with same health schema if database migration/write probe or blob read/write probe fails.', 'public'),
-  login: route('POST', '/auth/login', 'B1', empty, empty, z.strictObject({ username: z.string().min(1).max(100), password: z.string().min(9).max(256) }), m.data(m.Member), 200, 'Verify provisioned password hash; rotate session; issue HttpOnly cookie. Invitation registration is a separate endpoint.', 'public', false),
-  register: route('POST', '/auth/register', 'B5b', empty, empty, z.strictObject({ inviteCode:z.string().min(20).max(128).regex(/^[A-Za-z0-9_-]+$/), username:z.string().min(1).max(100).regex(/^[A-Za-z0-9_-]+$/), displayName:z.string().trim().min(1).max(200), password:z.string().min(9).max(256) }), m.data(z.strictObject({registered:z.literal(true),username:z.string().min(1).max(100)})), 201, 'Same-origin invitation-only account creation. No client lab/role/member ID; valid non-revoked invitation required. Account, membership, use count and retry receipt are atomic. No session issued; sign in afterwards. Never persists raw code or password.', 'public'),
+  login: route('POST', '/auth/login', 'B1', empty, empty, z.strictObject({ username: AccountUsername, password: AccountPassword }), m.data(m.Member), 200, 'Trim surrounding username whitespace only; case-sensitive ASCII account identity. Password at least 8 characters, preserved exactly, no complexity or field-length cap; HTTP body limit applies. Verify provisioned hash, rotate session and issue HttpOnly cookie.', 'public', false),
+  register: route('POST', '/auth/register', 'B5b', empty, empty, z.strictObject({ inviteCode:RegistrationCode, username:AccountUsername, displayName:z.string().trim().min(1).max(200), password:AccountPassword }), m.data(z.strictObject({registered:z.literal(true),username:AccountUsername})), 201, 'Same-origin invitation-only account creation. Trim surrounding username/invite-code whitespace only. Password at least 8 characters, preserved exactly, no complexity or field-length cap; HTTP body limit applies. No client lab/role/member ID; current valid invitation required. Account, membership, use count and retry receipt are atomic. No session or raw code/password persisted.', 'public'),
   session: route('GET', '/auth/session', 'B1', empty, empty, z.null(), m.data(z.strictObject({ member: m.Member, csrfToken: m.Id, expiresAt: m.Instant, isLabManager: z.boolean() })), 200, 'Session DB lookup; expiry and revocation checked; manager flag is server-authoritative.'),
   logout: route('POST', '/auth/logout', 'B1', empty, empty, empty, m.data(z.strictObject({ loggedOut: z.literal(true) })), 200, 'Revoke current session and clear cookie; Origin and CSRF required.', 'session', false),
   managerInvites: route('GET', '/labs/{id}/registration-invites', 'B5b', id, empty, z.null(), m.data(z.strictObject({ invites:z.array(m.RegistrationInvite).max(50), truncated:z.boolean() })), 200, 'Current lab manager only; metadata for 50 latest invites, never raw codes or hashes.'),

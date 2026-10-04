@@ -5,6 +5,7 @@ import { passwordHash, signingKey } from './auth.js'
 import { transaction } from './database.js'
 import { reconcile } from './execution-worker.js'
 import type { Config } from './config.js'
+import { AccountUsername, AccountPassword } from '@research-agent-platform/contracts'
 
 const id = z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/)
 const base = { requestId: id, labId: id }
@@ -15,14 +16,16 @@ export const MaintenanceCommand = z.discriminatedUnion('action', [
  z.object({ ...base, action: z.literal('inspect-registration-invite'), inviteId:id }).strict(),
  z.object({ ...base, action: z.literal('designate-manager-invite'), inviteId:id }).strict(),
  z.object({ ...base, action: z.literal('assign-lab-manager'), memberId:id }).strict(),
- z.object({ ...base, action: z.literal('create-account'), memberId: id, username: id, displayName: z.string().min(1).max(200), password: z.string().min(9).max(256) }).strict(),
- z.object({ ...base, action: z.literal('reset-password'), memberId: id, expectedVersion: z.number().int().positive(), password: z.string().min(9).max(256) }).strict(),
+ z.object({ ...base, action: z.literal('create-account'), memberId: id, username: AccountUsername, displayName: z.string().min(1).max(200), password: AccountPassword }).strict(),
+ z.object({ ...base, action: z.literal('reset-password'), memberId: id, expectedVersion: z.number().int().positive(), password: AccountPassword }).strict(),
  z.object({ ...base, action: z.literal('disable-account'), memberId: id, expectedVersion: z.number().int().positive() }).strict(),
  z.object({ ...base, action: z.literal('inspect-account'), memberId: id }).strict()
 ])
 export async function maintain(db: DatabaseSync, config: Config, operator: string, input: unknown) {
  if (!/^[a-zA-Z0-9_.@-]{1,100}$/.test(operator)) throw new Error('OPERATOR_REQUIRED')
- const command = MaintenanceCommand.parse(input)
+ const parsed = MaintenanceCommand.safeParse(input)
+ if(!parsed.success)throw new Error('INVALID_INPUT')
+ const command = parsed.data
  // Keyed digest allows exact retry checks without retaining a password or offline dictionary hash.
  const digest = createHmac('sha256', signingKey(db)).update(JSON.stringify(command)).digest('hex')
  const encoded = 'password' in command ? await passwordHash(command.password) : null

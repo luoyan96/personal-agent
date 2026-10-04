@@ -2,6 +2,7 @@ import { createHash, createHmac, randomBytes, scrypt, timingSafeEqual } from 'no
 import type { DatabaseSync } from 'node:sqlite'
 import { transaction } from './database.js'
 import { fail } from './errors.js'
+import { AccountUsername, AccountPassword } from '@research-agent-platform/contracts'
 
 export const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 const options = { N: 32768, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }
@@ -72,8 +73,10 @@ export async function login(db: DatabaseSync, username: string, password: string
 }
 export async function provisionTestAccounts(db: DatabaseSync, mode: string, credentials: { memberId: string; username: string; password: string }[]) {
   if (!['development', 'test'].includes(mode)) throw new Error('Test credentials forbidden in production')
-  for (const account of credentials) {
-    if (!['member_A', 'member_B', 'member_C'].includes(account.memberId) || account.password.length < 9 || account.password.length > 256 || !/^[a-zA-Z0-9_-]{1,100}$/.test(account.username)) throw new Error('Invalid synthetic account')
+  for (const raw of credentials) {
+    const username=AccountUsername.safeParse(raw.username),password=AccountPassword.safeParse(raw.password)
+    if (!['member_A', 'member_B', 'member_C'].includes(raw.memberId) || !username.success || !password.success) throw new Error('Invalid synthetic account')
+    const account={...raw,username:username.data,password:password.data}
     const member = db.prepare("SELECT id FROM members WHERE id=? AND lab_id='lab_synthetic' AND is_synthetic=1").get(account.memberId)
     if (!member) throw new Error('Run synthetic seed first')
     const prior = db.prepare('SELECT * FROM auth_accounts WHERE member_id=?').get(account.memberId)
