@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Check Electron package manifest
+        run: pnpm electron:package:check
+
+      - name: Package Linux application
+        run: pnpm electron:build -- --linux --x64 --dir
+
+      - name: Install virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes xvfb
+
+      - name: Smoke-test packaged application
+        run: xvfb-run --auto-servernum pnpm electron:smoke
