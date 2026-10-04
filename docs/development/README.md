@@ -4,6 +4,8 @@
 
 ## 现在怎么继续
 
+当前用户已授权继续[联系人、Agent 档案与持续记忆](agent-contacts-brief.md)。前后端使用同一总控基线分工；[0.12.0 接口](agent-contacts-contract.md)已冻结，服务与前端正在实现，尚未整合验收。固定置顶“需求与协作”协调需求和任务群；专属 Agent 以自己的稳定身份、公开设定和获准记忆参与聊天。以下保留前批完成记录。
+
 2026-10-04 最新的 [OpenIM 客户端采用批次](openim-adoption-brief.md)已完成前后端分工与总控整合，契约 0.11.0、聊天协议 1.1.0、迁移 013。本地构建、类型、全量 CI、真实 HTTP/SQLite、Edge 协作与 IAB 发送/布局检查通过；先展示本地版本，尚未推 GitHub 或部署。后端 [会话状态接口](research-chat-viewer-state.md)、[验证记录](research-chat-openim-backend.md)和前端[来源及验收](../../apps/web/third-party/openim/FRONTEND-REVIEW.md)供维护交接。此前科研聊天 0.10.0 批次已[部署 ECS](../deployment/ecs.md#2026-10-04-科研聊天升级已部署)，线上与本地版本分别记录。
 
 以下 G5b 步骤保留真实小组试用要求，待新聊天闭环共同通过后按当前部署版本执行；不从历史 SHA 重新开始新批次。
