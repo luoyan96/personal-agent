@@ -244,6 +244,7 @@ export class ChatView {
   }
   private updateSendButton() {
     this.root.querySelector<HTMLButtonElement>('[data-chat-send]')!.disabled=!this.active()?.canSend||!this.source.send||this.pending||!this.draft.trim()||(this.active()?.group&&this.sendMode!=='chat'&&!this.sendTarget)||false;
+    this.root.querySelector<HTMLButtonElement>('[data-chat-send]')!.textContent=this.pending?'发送中…':'发送';
     const discard=this.root.querySelector<HTMLButtonElement>('[data-discard-pending]');if(discard){discard.hidden=!this.source.hasPending?.();discard.disabled=this.pending;}
   }
   private async openContact(id: string) {
