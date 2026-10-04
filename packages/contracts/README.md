@@ -1,4 +1,6 @@
-# 当前契约 0.11.0
+# 当前契约 0.12.0
+
+0.12.0 新增人/Agent 公开档案、真实添加关系、专属 Agent、AI 私聊和版本化记忆；聊天协议 1.2.0，30 条 CHAT1 路由。接线及范围见[联系人接口](../../docs/development/agent-contacts-contract.md)，服务结果见[后端实施](../../docs/development/agent-contacts-backend.md)。
 
 0.11.0 新增每成员每会话的持久已读游标、当前授权未读计数与置顶偏好，以及 direct 对端标题投影。聊天协议 1.1.0 明确真人群成员与个人 agent 授权的独立浏览器历史边界。字段、操作及兼容影响见[会话状态接口](../../docs/development/research-chat-viewer-state.md)。
 

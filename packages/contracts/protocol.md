@@ -1,4 +1,6 @@
-# HTTP 协议 0.11.0
+# HTTP 协议 0.12.0
+
+聊天协议 1.2.0 的联系人关系、持续档案与显式保存记忆见[联系人接口](../../docs/development/agent-contacts-contract.md)。
 
 聊天协议 1.1.0 的 per-member 会话状态、幂等单调已读与浏览器权限变更见[会话状态接口](../../docs/development/research-chat-viewer-state.md)。
 
