@@ -74,6 +74,9 @@ server {
         proxy_pass http://127.0.0.1:15002/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
+        # Fixed OpenIM uses this trusted public API base to generate object URLs.
+        # TLS ends here; overwrite the client header with the HTTPS proxy path.
+        proxy_set_header X-Request-Api https://__APP_DOMAIN__/im-api;
         proxy_set_header Origin $http_origin;
         proxy_set_header Connection "";
         proxy_set_header Forwarded "";
