@@ -1,4 +1,4 @@
-import type { getSDK, MessageItem } from "@openim/wasm-client-sdk";
+import { getSDK, type MessageItem } from "@openim/wasm-client-sdk";
 import { v4 as uuidV4 } from "uuid";
 
 import { IMSDK } from "@/layout/MainContentWrap";
@@ -6,14 +6,6 @@ import { IMSDK } from "@/layout/MainContentWrap";
 export interface FileWithPath extends File {
   path?: string;
 }
-
-type WasmFileMessageSdk = Pick<
-  ReturnType<typeof getSDK>,
-  "createImageMessageByFile" | "createFileMessageByFile" | "createSoundMessageByFile"
->;
-
-const supportsWasmFileMessage = (sdk: unknown): sdk is WasmFileMessageSdk =>
-  typeof (sdk as Partial<WasmFileMessageSdk>)?.createImageMessageByFile === "function";
 
 const assertMessage = (message: MessageItem | ""): MessageItem => {
   if (!message) {
@@ -52,10 +44,10 @@ export function useFileMessage() {
       file,
     };
 
-    if (!supportsWasmFileMessage(IMSDK)) {
-      throw new Error("The WASM image file API is unavailable");
-    }
-    return (await IMSDK.createImageMessageByFile(options)).data;
+    // The official Electron render proxy excludes ByFile methods even when it
+    // delegates login/send to WASM. getSDK returns that same official singleton,
+    // so its browser File map and authenticated send/upload state stay shared.
+    return (await getSDK().createImageMessageByFile(options)).data;
   };
 
   const getPicInfo = (file: File): Promise<HTMLImageElement> =>
@@ -83,13 +75,8 @@ export function useFileMessage() {
           .data,
       );
     }
-    if (
-      !supportsWasmFileMessage(IMSDK) ||
-      typeof IMSDK.createFileMessageByFile !== "function"
-    )
-      throw new Error("OpenIM 文件上传接口不可用");
     return (
-      await IMSDK.createFileMessageByFile({
+      await getSDK().createFileMessageByFile({
         file,
         filePath: "",
         fileName: file.name,
@@ -110,13 +97,8 @@ export function useFileMessage() {
           .data,
       );
     }
-    if (
-      !supportsWasmFileMessage(IMSDK) ||
-      typeof IMSDK.createSoundMessageByFile !== "function"
-    )
-      throw new Error("OpenIM 语音上传接口不可用");
     return (
-      await IMSDK.createSoundMessageByFile({
+      await getSDK().createSoundMessageByFile({
         file,
         uuid: uuidV4(),
         soundPath: "",
