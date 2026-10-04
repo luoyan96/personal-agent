@@ -11,7 +11,7 @@ import { getIMToken, getIMUserID } from "@/utils/storage";
 
 const { instance } = getWithRenderProcess({
   wasmConfig: {
-    coreWasmPath: "./openIM.wasm",
+    coreWasmPath: "/openIM.wasm",
     sqlWasmPath: `/sql-wasm.wasm`,
   },
 });

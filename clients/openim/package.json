@@ -14,6 +14,7 @@
   "scripts": {
     "dev": "vite --force --host",
     "build": "vite build",
+    "build:web": "node scripts/build-web.mjs",
     "electron:build": "node scripts/electron-build.mjs",
     "electron:package:check": "node scripts/electron-build.mjs --dry-run",
     "electron:smoke": "node scripts/electron-smoke.mjs",
