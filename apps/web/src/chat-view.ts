@@ -4,6 +4,7 @@ import { escapeHtml as e } from './view-model';
 import { bytesToSize, getFileType, formatConversationTime, formatMessageTime } from './openim/common';
 import { ContactPanel, openMemoryPanel } from './contact-panel';
 import { ChatReadQueue } from './chat-read-queue';
+import type { ConversationWorkflowView } from './chat-workflow-types';
 
 export interface ContactView {
   id: string; name: string; identity: string; owner: string; availability: string;
@@ -37,6 +38,7 @@ export interface ConversationView {
   contextChoices?: {key:string;label:string;requiresKey?:string}[];
   uploadTasks?: {id:string;label:string;version:number}[];
   profileContactId?:string; canManageMemory?:boolean;
+  workflow?:ConversationWorkflowView;
 }
 export interface ChatSnapshot {
   contacts: ContactView[]; conversations: ConversationView[];
@@ -94,6 +96,26 @@ export function renderHistory(messages:MessageView[]):string {
   }).join('');
 }
 
+export const demandTemplates=[
+  {id:'literature',label:'文献梳理',text:'我想梳理【研究问题】相关的文献。\n已有资料与来源：【填写】\n希望交付：【文献清单 / 对比表 / 研究缺口】\n验收要求：【覆盖范围、引用与核对方式】\n希望参与的人或 Agent：【填写或请建议】\n时间要求：【填写，未知可留空】\n请先澄清缺少的信息，再提出可确认的协作安排。'},
+  {id:'analysis',label:'数据分析',text:'我想围绕【研究问题】分析一组数据。\n数据、来源与可分享范围：【填写】\n分析目标与方法：【填写或请建议】\n希望交付：【图表 / 分析报告 / 可复现步骤】\n验收要求：【填写】\n希望参与的人或 Agent：【填写或请建议】\n时间要求：【填写，未知可留空】\n请先核对资料和实际可用能力，再提出可确认的协作安排。'},
+  {id:'writing',label:'论文修改',text:'我想修改【论文 / 章节名称】。\n已有稿件与可分享范围：【填写】\n本次修改重点：【论证 / 结构 / 表达 / 引用】\n希望交付：【修订稿与修改说明】\n验收要求：【填写】\n希望参与的人或 Agent：【填写或请建议】\n时间要求：【填写，未知可留空】\n请先澄清修改要求，再提出可确认的协作安排。'},
+] as const;
+export function applyDemandTemplate(current:string,id:string):string|undefined {return current.length?undefined:demandTemplates.find(t=>t.id===id)?.text;}
+const templateButtons=()=>`<div class="chat-template-buttons">${demandTemplates.map(t=>`<button type="button" data-demand-template="${t.id}">${icon(({literature:'books',analysis:'chart-line',writing:'note-pencil'})[t.id])}${t.label}</button>`).join('')}</div>`;
+export function renderConversationHistory(conversation?:ConversationView):string {
+  if(conversation?.messages.length)return renderHistory(conversation.messages);
+  if(conversation?.fixed)return `<section class="chat-demand-start"><span class="chat-start-avatar">${icon('robot')}</span><span class="chat-start-label">需求与协作</span><h3>从一个具体需求开始</h3><p>说清楚要完成什么、希望交付什么，以及怎样验收。${e(conversation.subtitle.split(' · ')[0]??'')}可以帮助你澄清需求、核对人和 AI 的协作建议。</p>${templateButtons()}<small>选择模板后，在输入框里补充和修改，再发送。</small><div class="chat-start-steps"><span>表达需求</span>${icon('caret-right')}<span>核对安排</span>${icon('caret-right')}<span>承接与交付</span>${icon('caret-right')}<span>人工验收</span></div></section>`;
+  return `<div class="chat-empty">${icon(conversation?.group?'users':'chat-circle-dots')}<h3>${conversation?.group?'在群里沟通与协作':conversation?'开始这段对话':'正在读取会话'}</h3><p>${conversation?.group?'成员加入、任务承接和 AI 执行分别确认。':conversation?'发送消息，说明需要讨论或帮助的事情。':'会话读取成功后显示真实记录。'}</p></div>`;
+}
+export interface WorkflowPanelState {open:boolean;taskIds:Set<string>}
+export function renderWorkflow(workflow:ConversationWorkflowView|undefined,state:WorkflowPanelState):string {
+  if(!workflow)return '';
+  const labels={accept:'确认与承接',work:'执行与交付',review:'人工验收',done:'已完成',cancelled:'已取消',restricted:'授权摘要'};
+  const tasks=workflow.tasks.map(task=>`<details class="chat-workflow-task" data-workflow-task="${e(task.id)}" ${state.taskIds.has(task.id)?'open':''}><summary><span><strong>${e(task.title)}</strong><small>${e(labels[task.stage])}</small></span><span class="chat-workflow-status stage-${task.stage}">${e(task.status)}</span></summary><div class="chat-workflow-task-body">${task.goal?`<p><span>目标</span>${e(task.goal)}</p>`:''}<p><span>已接受承接者</span>${e(task.assignees.join('、')||(task.stage==='restricted'?'按当前授权查看':'尚无已接受的承接记录'))}</p>${task.acceptanceCriteria?`<p><span>验收要求</span>${e(task.acceptanceCriteria)}</p>`:''}${task.runStatus?`<p><span>AI 运行</span>${e(task.runStatus)}</p>`:''}${task.latestDelivery?`<div class="chat-workflow-delivery"><strong>交付 v${task.latestDelivery.revision} · ${e(task.latestDelivery.status)}</strong><p>${e(task.latestDelivery.summary)}</p></div>`:''}<div class="chat-workflow-next"><span>下一步</span><p>${e(task.nextStep)}</p>${task.actionLabel&&/^#\/tasks\/[^?#\s]+$/u.test(task.href)?`<a href="${e(task.href)}">${e(task.actionLabel)} ${icon('arrow-up-right')}</a>`:''}</div></div></details>`).join('');
+  return `<div class="chat-workflow-summary"><div>${icon('list-checks')}<strong>${workflow.totalTasks?`已完成 ${workflow.completedTasks} / 可查看 ${workflow.totalTasks} 项`:'暂无可读取的关联任务'}</strong></div><button type="button" data-workflow-toggle aria-expanded="${state.open}">${state.open?'收起协作':'查看协作'} ${icon(state.open?'caret-up':'caret-down')}</button></div><section class="chat-workflow-panel" aria-label="群协作进展" ${state.open?'':'hidden'}><div class="chat-workflow-members"><span>已加入 ${workflow.joinedMembers}</span><span>待加入 ${workflow.invitedMembers}</span>${workflow.restrictedTasks?`<span>授权摘要 ${workflow.restrictedTasks} 项</span>`:''}<small>加入群不代表接受任务。AI 候选成果提交后仍需验收。</small></div><div class="chat-workflow-tasks">${tasks||'<p class="chat-workflow-empty">接受任务邀请后，可查看获准的任务详情。群成员加入与任务承接分别确认。</p>'}</div></section>`;
+}
+
 const draftKey=(ownerId:string)=>`research-chat-drafts:v1:${ownerId}`;
 export function clearStoredChatDrafts(ownerId?:string) {if(ownerId)try{sessionStorage.removeItem(draftKey(ownerId));}catch{ /* storage unavailable */ }}
 
@@ -121,6 +143,8 @@ export class ChatView {
   private timer?:ReturnType<typeof setInterval>;
   private sendTarget='';
   private sendMode='chat';
+  private workflowPanels=new Map<string,WorkflowPanelState>();
+  private demandTemplatesOpen=false;
   private selectedContext=new Set<string>();
   private markingRead=false;
   private editRange?:{start:number;end:number};
@@ -138,7 +162,7 @@ export class ChatView {
   }
   private persistDrafts() {if(this.ownerId)try{this.draftMap.set(this.activeId??'',{text:this.draft,mentions:this.mentions});sessionStorage.setItem(draftKey(this.ownerId),JSON.stringify([...this.draftMap].filter(([,d])=>d.text)));}catch{/* typing stays usable without storage */}}
   async mount() { this.render(); await this.refresh(); }
-  dispose() { this.disposed = true; this.contactPanel?.dispose();clearInterval(this.timer); this.controller.abort(); this.source.dispose?.(); this.draftMap.clear(); this.draft = ''; this.mentions = []; this.snapshot = {contacts:[],conversations:[],notice:''}; }
+  dispose() { this.disposed = true; this.contactPanel?.dispose();clearInterval(this.timer); this.controller.abort(); this.source.dispose?.(); this.draftMap.clear();this.workflowPanels.clear(); this.draft = ''; this.mentions = []; this.snapshot = {contacts:[],conversations:[],notice:''}; }
   private active() { return this.snapshot.conversations.find(c => c.id === this.activeId); }
   private async refresh(background=false) {
     if(this.disposed||this.pending&&background)return;
@@ -218,9 +242,9 @@ export class ChatView {
     const notice=this.root.querySelector('.chat-notice')!;
     notice.querySelector('span')!.textContent=this.snapshot.notice; (notice as HTMLElement).hidden=!this.snapshot.notice;
     const history=this.root.querySelector<HTMLElement>('.chat-history')!,scroll=history.scrollTop,atBottom=history.scrollHeight-scroll-history.clientHeight<30;
-    const content=renderHistory(active.messages);
+    const content=renderConversationHistory(active);
     if(history.dataset.content!==content){const opened=[...history.querySelectorAll<HTMLDetailsElement>('details[open]')].map(d=>d.dataset.cardDetail);history.innerHTML=content;history.dataset.content=content;history.querySelectorAll<HTMLDetailsElement>('details').forEach(d=>d.open=opened.includes(d.dataset.cardDetail));history.scrollTop=atBottom?history.scrollHeight:scroll;}
-    this.renderMemberLinks();
+    this.renderMemberLinks();this.renderWorkflowPanel();this.bindDemandTemplates();
     if(this.sendTarget&&!active.sendTargets?.some(c=>c.id===this.sendTarget)){this.sendTarget='';const target=this.root.querySelector<HTMLSelectElement>('[data-send-target]');if(target)target.value='';}
     const target=this.root.querySelector<HTMLSelectElement>('[data-send-target]');
     if(target){const options=`<option value="">请选择已加入的 AI</option>${(active.sendTargets??[]).map(c=>`<option value="${e(c.id)}">${e(c.label)}</option>`).join('')}`;if(target.innerHTML!==options){target.innerHTML=options;target.value=this.sendTarget;}}
@@ -245,6 +269,8 @@ export class ChatView {
   private updateSendButton() {
     this.root.querySelector<HTMLButtonElement>('[data-chat-send]')!.disabled=!this.active()?.canSend||!this.source.send||this.pending||!this.draft.trim()||(this.active()?.group&&this.sendMode!=='chat'&&!this.sendTarget)||false;
     this.root.querySelector<HTMLButtonElement>('[data-chat-send]')!.textContent=this.pending?'发送中…':'发送';
+    this.root.querySelectorAll<HTMLButtonElement>('[data-demand-template]').forEach(button=>button.disabled=!!this.draft.length||this.pending||this.composing);
+    const hint=this.root.querySelector<HTMLElement>('[data-template-hint]');if(hint)hint.textContent=this.draft.length?'已有草稿；清空后可选择模板。':'仅填入输入框，补充后再发送。';
     const discard=this.root.querySelector<HTMLButtonElement>('[data-discard-pending]');if(discard){discard.hidden=!this.source.hasPending?.();discard.disabled=this.pending;}
   }
   private async openContact(id: string) {
@@ -269,6 +295,24 @@ export class ChatView {
     this.contactPanel=new ContactPanel(this.root.querySelector<HTMLElement>('.chat-main')!,this.source,this.controller.signal,this.snapshot,this.contactId,()=>this.refresh(),id=>this.openContact(id),()=>{this.mobileDetail=false;this.render();});
   }
   private renderMemberLinks(){const panel=this.root.querySelector<HTMLElement>('.chat-members');if(!panel)return;panel.innerHTML=(this.active()?.members??[]).map(c=>`<button type="button" data-member-profile="${e(c.id)}">${e(c.name)} · ${e(c.identity)} · ${e(c.availability)}</button>`).join('');panel.querySelectorAll<HTMLButtonElement>('[data-member-profile]').forEach(b=>b.onclick=()=>this.showContact(b.dataset.memberProfile!));}
+  private renderWorkflowPanel(){
+    const active=this.active(),host=this.root.querySelector<HTMLElement>('.chat-workflow');if(!host)return;
+    host.hidden=!active?.group||!active.workflow;if(host.hidden){host.innerHTML='';return;}
+    let state=this.workflowPanels.get(active!.id);if(!state){state={open:false,taskIds:new Set()};this.workflowPanels.set(active!.id,state);}
+    const scroll=host.querySelector<HTMLElement>('.chat-workflow-panel')?.scrollTop??0,html=renderWorkflow(active!.workflow,state);
+    if(host.dataset.content!==html){host.innerHTML=html;host.dataset.content=html;const panel=host.querySelector<HTMLElement>('.chat-workflow-panel');if(panel)panel.scrollTop=scroll;}
+    const current=state;
+    host.querySelector<HTMLButtonElement>('[data-workflow-toggle]')!.onclick=()=>{current.open=!current.open;this.renderWorkflowPanel();};
+    host.querySelectorAll<HTMLDetailsElement>('[data-workflow-task]').forEach(details=>details.ontoggle=()=>{if(details.open)current.taskIds.add(details.dataset.workflowTask!);else current.taskIds.delete(details.dataset.workflowTask!);});
+  }
+  private bindDemandTemplates(){
+    this.root.querySelectorAll<HTMLButtonElement>('[data-demand-template]').forEach(button=>button.onclick=()=>{
+      if(this.pending||this.composing||!this.active()?.fixed)return;
+      const template=applyDemandTemplate(this.draft,button.dataset.demandTemplate!);if(template===undefined)return;
+      const input=this.root.querySelector<HTMLTextAreaElement>('#chat-input')!;input.value=template;this.updateInput(input);input.focus();input.setSelectionRange(0,0);
+    });
+    const templates=this.root.querySelector<HTMLDetailsElement>('[data-demand-options]');if(templates)templates.ontoggle=()=>this.demandTemplatesOpen=templates.open;
+  }
   private render() {
     if (this.disposed) return;
     this.contactPanel?.dispose();this.contactPanel=undefined;
@@ -278,7 +322,7 @@ export class ChatView {
     const previousScroll=sameHistory?previousHistory!.scrollTop:undefined;
     const wasAtBottom=sameHistory&&previousHistory!.scrollHeight-previousHistory!.scrollTop-previousHistory!.clientHeight<30;
     const opened=sameHistory?[...previousHistory!.querySelectorAll<HTMLDetailsElement>('details[open]')].map(d=>d.dataset.cardDetail):[];
-    this.root.innerHTML = `<section class="chat-window ${this.mobileDetail ? 'chat-detail-open' : ''}" aria-label="科研聊天"><nav class="chat-rail" aria-label="聊天导航"><button type="button" data-my-profile aria-label="我的资料" class="chat-self-avatar">${avatar('user')}</button><button type="button" data-tab="chats" aria-label="会话" aria-pressed="${this.tab === 'chats'}"><img src="/openim/nav_bar_message${this.tab==='chats'?'_active':''}.png" alt=""><span>聊天</span></button><button type="button" data-tab="contacts" aria-label="通讯录" aria-pressed="${this.tab === 'contacts'}"><img src="/openim/nav_bar_contact${this.tab==='contacts'?'_active':''}.png" alt=""><span>通讯录</span></button><a href="#/work" aria-label="任务与协作">${icon('squares-four')}<span>任务</span></a></nav><aside class="chat-list" aria-label="${this.tab === 'chats' ? '会话列表' : '通讯录'}"><div class="chat-list-top"><h1>${this.tab === 'chats' ? '会话' : '通讯录'}</h1><label class="chat-search">${icon('magnifying-glass')}<input aria-label="搜索会话或联系人" placeholder="搜索" value="${e(this.search)}"></label></div><div class="chat-list-content"></div><p data-contact-info class="chat-contact-info" role="status" hidden></p></aside><section class="chat-main" aria-label="聊天区域"><div class="chat-heading"><button type="button" class="chat-back" aria-label="返回会话列表">${icon('arrow-left')}</button><div><h2 data-chat-profile ${active?.profileContactId?'role="button" tabindex="0" title="查看联系人资料"':''}>${e(active?.title ?? '我的科研助理')}</h2><p>${e(active?.subtitle ?? '你的个人智能体 · AI 身份与归属待服务确认')}</p></div>${active&&!active.fixed&&this.source.setPinned?`<button type="button" data-chat-pin aria-label="${active.pinned?'取消置顶':'置顶会话'}" title="${active.pinned?'取消置顶':'置顶会话'}">${icon('push-pin')}</button>`:''}<button type="button" data-chat-refresh aria-label="刷新会话" title="刷新会话">${icon('arrow-clockwise')}</button>${active?.group ? `<button type="button" data-members aria-label="查看群成员" aria-expanded="${this.showMembers}">${icon('users')}</button>` : ''}</div><div class="chat-members" ${this.showMembers ? '' : 'hidden'}>${(active?.members ?? []).map(c => `<span>${e(c.name)} · ${e(c.identity)} · ${e(c.owner)} · ${e(c.availability)}</span>`).join('')}</div><div class="chat-notice" role="status" ${this.snapshot.notice?'':'hidden'}><span>${e(this.snapshot.notice)}</span></div><div class="chat-history" role="log" aria-label="聊天消息">${active?.messages.length ? renderHistory(active.messages) : `<div class="chat-empty">${icon('chat-circle-dots')}<h3>${active ? '从这里开始对话' : '会话服务待接通'}</h3><p>${active ? '提出你的需求，协作安排会在聊天中确认。' : '暂无可读取的聊天记录。你可以先写下需求，接通后再发送。'}</p></div>`}</div><div class="chat-composer"><div class="chat-mention-list" role="listbox" aria-label="选择 @联系人" hidden></div><label for="chat-input" class="chat-input-label">消息</label><textarea id="chat-input" rows="3" placeholder="${active?.group?'发送消息，输入 @ 选择成员':active?.fixed?'告诉助理你想完成什么…':'发送消息…'}" aria-describedby="chat-hint" aria-controls="chat-mentions">${e(this.draft)}</textarea><div class="chat-composer-bottom"><small id="chat-hint">Enter 发送 · Shift + Enter 换行</small><button type="button" data-chat-send ${!active?.canSend || !this.source.send || this.pending || !this.draft.trim() ? 'disabled' : ''}>${this.pending ? '发送中…' : '发送'}</button></div><p class="chat-input-status" role="status">${!active?.canSend || !this.source.send ? '发送待接通 · 输入不会触发执行' : ''}</p></div></section></section>`;
+    this.root.innerHTML = `<section class="chat-window ${this.mobileDetail ? 'chat-detail-open' : ''}" aria-label="科研聊天"><nav class="chat-rail" aria-label="聊天导航"><button type="button" data-my-profile aria-label="我的资料" class="chat-self-avatar">${avatar('user',this.snapshot.contacts.find(c=>c.icon==='user'&&c.canEdit)?.name)}</button><button type="button" data-tab="chats" aria-label="会话" aria-pressed="${this.tab === 'chats'}"><img src="/openim/nav_bar_message${this.tab==='chats'?'_active':''}.png" alt=""><span>聊天</span></button><button type="button" data-tab="contacts" aria-label="通讯录" aria-pressed="${this.tab === 'contacts'}"><img src="/openim/nav_bar_contact${this.tab==='contacts'?'_active':''}.png" alt=""><span>通讯录</span></button><a href="#/work" aria-label="任务与协作">${icon('squares-four')}<span>任务</span></a></nav><aside class="chat-list" aria-label="${this.tab === 'chats' ? '会话列表' : '通讯录'}"><div class="chat-list-top"><h1>${this.tab === 'chats' ? '会话' : '通讯录'}</h1><label class="chat-search">${icon('magnifying-glass')}<input aria-label="搜索会话或联系人" placeholder="搜索" value="${e(this.search)}"></label></div><div class="chat-list-content"></div><p data-contact-info class="chat-contact-info" role="status" hidden></p></aside><section class="chat-main" aria-label="聊天区域"><div class="chat-heading"><button type="button" class="chat-back" aria-label="返回会话列表">${icon('arrow-left')}</button><div><h2 data-chat-profile ${active?.profileContactId?'role="button" tabindex="0" title="查看联系人资料"':''}>${e(active?.title ?? '我的科研助理')}</h2><p>${e(active?.subtitle ?? '你的个人智能体 · AI 身份与归属待服务确认')}</p></div>${active&&!active.fixed&&this.source.setPinned?`<button type="button" data-chat-pin aria-label="${active.pinned?'取消置顶':'置顶会话'}" title="${active.pinned?'取消置顶':'置顶会话'}">${icon('push-pin')}</button>`:''}<button type="button" data-chat-refresh aria-label="刷新会话" title="刷新会话">${icon('arrow-clockwise')}</button>${active?.group ? `<button type="button" data-members aria-label="查看群成员" aria-expanded="${this.showMembers}">${icon('users')}</button>` : ''}</div><div class="chat-workflow" hidden></div><div class="chat-members" ${this.showMembers ? '' : 'hidden'}>${(active?.members ?? []).map(c => `<span>${e(c.name)} · ${e(c.identity)} · ${e(c.owner)} · ${e(c.availability)}</span>`).join('')}</div><div class="chat-notice" role="status" ${this.snapshot.notice?'':'hidden'}><span>${e(this.snapshot.notice)}</span></div><div class="chat-history" role="log" aria-label="聊天消息">${renderConversationHistory(active)}</div><div class="chat-composer"><div class="chat-mention-list" role="listbox" aria-label="选择 @联系人" hidden></div><label for="chat-input" class="chat-input-label">消息</label><textarea id="chat-input" rows="3" placeholder="${active?.group?'发送消息，输入 @ 选择成员':active?.fixed?'告诉助理你想完成什么…':'发送消息…'}" aria-describedby="chat-hint" aria-controls="chat-mentions">${e(this.draft)}</textarea><div class="chat-composer-bottom"><small id="chat-hint">Enter 发送 · Shift + Enter 换行</small><button type="button" data-chat-send ${!active?.canSend || !this.source.send || this.pending || !this.draft.trim() ? 'disabled' : ''}>${this.pending ? '发送中…' : '发送'}</button></div><p class="chat-input-status" role="status">${!active?.canSend || !this.source.send ? '发送待接通 · 输入不会触发执行' : ''}</p></div></section></section>`;
     this.renderList();
     this.bindNavigation();
     this.root.querySelector<HTMLButtonElement>('[data-my-profile]')!.onclick=()=>{const own=this.snapshot.contacts.find(c=>c.icon==='user'&&c.canEdit);if(own)this.showContact(own.id);};
@@ -298,7 +342,7 @@ export class ChatView {
       this.root.querySelector<HTMLButtonElement>('[data-upload-open]')!.onclick=()=>{dialog.querySelector<HTMLSelectElement>('[name=upload-task]')!.innerHTML=(this.active()?.uploadTasks??[]).map(t=>`<option value="${e(t.id)}@${t.version}">${e(t.label)} · v${t.version}</option>`).join('');dialog.showModal();};
       this.root.querySelector<HTMLButtonElement>('[data-upload-close]')!.onclick=()=>dialog.close();
       this.root.querySelector<HTMLFormElement>('[data-chat-upload]')!.onsubmit=event=>{event.preventDefault();void this.upload(dialog);};
-      this.root.querySelector('.chat-composer')!.insertAdjacentHTML('afterbegin',`<div class="chat-send-options"><label>发送方式<select data-send-mode aria-label="发送方式"><option value="chat">普通聊天</option><option value="ask">问 AI</option><option value="arrange">让助理安排</option></select></label><label>群内 AI<select data-send-target aria-label="群内 AI"><option value="">请选择已加入的 AI</option>${(active.sendTargets??[]).map(c=>`<option value="${e(c.id)}">${e(c.label)}</option>`).join('')}</select></label><details class="chat-send-explanation"><summary>发送说明</summary><p>普通聊天与 @不会执行任务。“让助理安排”将请求所选 AI 提出分工卡，确认后才邀请或执行。每次 AI 回复上限 12000 tokens / 120 秒。</p></details></div>`);
+      this.root.querySelector('.chat-composer')!.insertAdjacentHTML('afterbegin',`<div class="chat-send-options"><label>发送方式<select data-send-mode aria-label="发送方式"><option value="chat">普通聊天</option><option value="ask">请 AI 回复 / 提出安排</option></select></label><label>群内 AI<select data-send-target aria-label="群内 AI"><option value="">请选择已加入的 AI</option>${(active.sendTargets??[]).map(c=>`<option value="${e(c.id)}">${e(c.label)}</option>`).join('')}</select></label><details class="chat-send-explanation"><summary>发送说明</summary><p>普通聊天与 @不会执行任务。请求所选 AI 回复或提出安排；核对具体范围并确认后，才邀请、派发或执行。每次 AI 回复上限 12000 tokens / 120 秒。</p></details></div>`);
       const mode=this.root.querySelector<HTMLSelectElement>('[data-send-mode]')!,target=this.root.querySelector<HTMLSelectElement>('[data-send-target]')!;
       mode.value=this.sendMode;target.value=this.sendTarget;target.disabled=this.sendMode==='chat';
       mode.onchange=()=>{this.sendMode=mode.value;target.disabled=this.sendMode==='chat';this.updateSendButton();};
@@ -310,14 +354,16 @@ export class ChatView {
     this.root.querySelector<HTMLButtonElement>('.chat-back')!.onclick=()=>{this.mobileDetail=false;this.render();};
     this.root.querySelector<HTMLButtonElement>('[data-members]')?.addEventListener('click',()=>{this.showMembers=!this.showMembers;this.render();});
     const profile=this.root.querySelector<HTMLElement>('[data-chat-profile]');if(active?.profileContactId&&profile){profile.onclick=()=>this.showContact(active.profileContactId!);profile.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();this.showContact(active.profileContactId!);}};}
-    this.renderMemberLinks();
+    this.renderMemberLinks();this.renderWorkflowPanel();
+    if(active?.fixed)this.root.querySelector('.chat-composer')!.insertAdjacentHTML('afterbegin',`<details class="chat-demand-tools" data-demand-options ${this.demandTemplatesOpen?'open':''}><summary>需求模板</summary>${templateButtons()}<small data-template-hint>仅填入输入框，补充后再发送。</small></details>`);
+    this.bindDemandTemplates();
     if(active&&this.source.readMemories){this.root.querySelector('.chat-heading')!.insertAdjacentHTML('beforeend','<button type="button" data-conversation-memory title="会话共同记忆" aria-label="会话共同记忆"><i class="ph ph-notebook" aria-hidden="true"></i></button>');this.root.querySelector<HTMLButtonElement>('[data-conversation-memory]')!.onclick=()=>openMemoryPanel(this.root,this.source,{kind:'conversation',id:active.id,label:active.title,canManage:active.canManageMemory??false},this.controller.signal);}
     this.root.querySelector<HTMLButtonElement>('[data-chat-refresh]')!.onclick=()=>void this.refresh();
     this.root.querySelector<HTMLButtonElement>('[data-chat-pin]')?.addEventListener('click',()=>void this.pinActive());
     this.root.querySelector<HTMLButtonElement>('[data-chat-send]')!.onclick=()=>void this.send();
     const input=this.root.querySelector<HTMLTextAreaElement>('#chat-input')!;
     input.disabled=this.pending;
-    input.addEventListener('compositionstart',()=>{this.composing=true;});
+    input.addEventListener('compositionstart',()=>{this.composing=true;this.updateSendButton();});
     input.addEventListener('compositionend',()=>{this.composing=false;this.updateInput(input);});
     input.addEventListener('beforeinput',event=>{
       let start=input.selectionStart,end=input.selectionEnd;
