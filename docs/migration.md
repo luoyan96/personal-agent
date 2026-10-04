@@ -60,3 +60,11 @@
 模型上下文按当前身份和会话权限读取档案与有效记忆，使用上下文指纹阻止版本过时或撤权后的输出落库。创建 Agent 仅设定现有实验室模型上的身份、性格和记忆，不导入任意私人工具或整套 OpenIM Server/SDK。接口、权限和后端证据见[联系人接口](development/agent-contacts-contract.md)及[后端交付](development/agent-contacts-backend.md)。
 
 总控以旧合成预览库创建独立 SQLite 快照后重复迁移两次，原有 59 张表逐表行数和内容散列均保持一致，旧真人私聊关系兼容保留；另用真实 HTTP 和文件 SQLite 核对进程重启后的身份、关系、会话和记忆持久性。数据库、账号与运行日志留在 `.runtime`，不提交到 Git。该升级目前仅在本地整合和预览执行；生产仍为迁移 012，未自动升级。
+
+## 2026-10-04：完整 OpenIM 客户端与 015 身份桥
+
+根据用户新的重建要求，同一固定上游提交的完整 React/Electron 源码进入 `clients/openim`，保留原许可、资源及构建结构，[来源](../clients/openim/ORIGIN.md)和 [科研修改说明](../clients/openim/RESEARCH-CLIENT.md)独立记录。客户端使用 pnpm 10.28.0，科研平台保持 pnpm 11 workspace；依赖、安装包、运行数据和验收账号不迁入版本库。
+
+追加 `015-openim-bridge.sql`，不改 001—014。契约 0.13.0、IM 桥 1.0.0。新增稳定 IM 身份、会话映射、Token lease、回调去重与持久消息 outbox；既有科研成员、同意、材料、任务、运行、交付和验收仍是权威事实。科研消息只同步可重新授权的定位指针，旧私人消息不回填 outbox。升级和撤销细节见 [后端交接](development/openim-bridge-backend-report.md)。
+
+服务配置改编自固定 `openim-docker`；固定 OpenIM Server 源码提交增加发送身份与可信回调上下文补丁，源码来源和原许可见 [服务构建说明](../deploy/openim/server/README.md)。本地实际 HTTP/SQLite 验收包含重启持久化与独立入群授权；真实 IM Server/SDK 消息和媒体须在实际服务环境另外验收。生产当前未迁移到 015。

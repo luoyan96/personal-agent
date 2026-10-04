@@ -42,7 +42,7 @@ const before = [
 ];
 const after = ['afterSendSingleMsg', 'afterSendGroupMsg', 'afterQuitGroup',
   'afterKickGroupMember', 'afterDismissGroup', 'afterTransferGroupOwner',
-  'afterSetGroupMemberInfo'];
+  'afterSetGroupMemberInfo', 'afterSetGroupInfo', 'afterSetGroupInfoEx'];
 const url = `http://research-api:3217/api/v1/im/callback/${callbackKey}`;
 const webhooks = [`url: ${JSON.stringify(url)}`,
   ...before.map(name => `${name}:\n  enable: true\n  timeout: 5\n  failedContinue: false`),

@@ -75,7 +75,10 @@ services:
     networks: [im]
     restart: unless-stopped
   openim-server:
-    image: openim/openim-server:v3.8.3-patch.15
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    image: research-openim-server:3.8.3-patch.15-rap1
     init: true
     ports:
       - "127.0.0.1:15001:10001"

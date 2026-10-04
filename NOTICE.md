@@ -18,3 +18,7 @@ B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `
 上游 README 声明 AGPL-3.0 及禁止商业使用的额外条款，而 LICENSE 为标准 AGPL 文本。本批保留原文及来源；用户已授权本地采用与开发，并决定后续直接沟通商业授权。该决定不构成 OpenIM 授予额外许可的证明。整个客户端、SDK、服务端和音视频模块的许可应分别确认；实际采用 UI 不表示 OpenIM Server 已部署或 SDK 已接通。
 
 完整客户端重建的独立联调 Compose 改编自 `openimsdk/openim-docker` 固定提交 `55a2d29a813388bf6ad9ae7c2715636724c1400d`（Apache-2.0）。[服务来源与镜像版本](deploy/openim/UPSTREAM.md)及[上游原许可证](deploy/openim/OPENIM-DOCKER-LICENSE.txt)保留在仓库；本地准备不代表服务已运行或媒体已验收。
+
+后续完整重建采用同一固定提交的整个 React/Electron 客户端，保存在 `clients/openim`，完整原许可与 [来源记录](clients/openim/ORIGIN.md)随源码保留。它独立使用 pnpm 10，科研平台继续使用 pnpm 11；本批不以较早的 UI 子集代表完整客户端。
+
+派生 OpenIM Server 基于官方源码 `865bb89517b48493ef9b1b5d9fde87fe0cb05cc7`（`v3.8.3-patch.15`），增加发送人/平台绑定与可信回调上下文校验，原 Apache-2.0 许可及 [构建和修改说明](deploy/openim/server/README.md)保留；该补丁不变更客户端的原许可。

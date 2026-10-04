@@ -1,6 +1,6 @@
 # OpenIM 本地联调服务
 
-用于完整 `clients/openim` 客户端的独立合成验收。保留科研 API / worker，替换 OpenIM Demo 自带的账号服务；没有 OpenIM Chat Server。当前配置文件已生成与静态解析，容器运行、SDK 双账号消息及媒体上传仍需实际 Docker 环境验收。
+用于完整 `clients/openim` 客户端的独立合成验收。保留科研 API / worker，替换 OpenIM Demo 自带的账号服务；没有 OpenIM Chat Server。客户端说明见 [完整科研客户端](../../clients/openim/RESEARCH-CLIENT.md)。当前配置文件已生成与静态解析，容器运行、SDK 双账号消息及媒体上传仍需实际 Docker 环境验收。
 
 ## 环境与端口
 
@@ -31,6 +31,8 @@ docker compose --env-file .runtime/openim-local/compose.env -f deploy/openim/com
 准备脚本产生独立随机密钥及组件密码，只写入被 Git 忽略的 `.runtime/openim-local`。重复运行复用密钥，不更换数据库凭据。也可传入单个绝对路径指定运行目录，并在后续命令中使用该目录的 `compose.env`。不要打印完整 Compose 配置或提交运行目录。
 
 服务镜像的配置目录与字段依据固定 `open-im-server v3.8.3-patch.15` 核实。生成的 `webhooks.yml` 和 `start-config.yml` 必须实际存在；Compose 拒绝自动创建缺失挂载文件。修改 callback key 后须重新准备配置并重启两侧服务。完整回调列表见 [桥接接口](../../docs/development/openim-bridge-contract.md)，不得在回调不可用时把 `failedContinue` 改成 `true`。
+
+Compose 构建 [派生 OpenIM Server](server/README.md)：固定官方源码、应用发送人/平台校验和可信回调上下文补丁、运行 Go 测试，再替换官方镜像的全部服务二进制。原版镜像不满足本产品的身份校验条件。科研 API 通过真实服务回调探针确认策略生效，单独设置环境标记不会返回就绪。
 
 API 容器仅允许 `NODE_ENV=test`，创建三个真实密码会话支持的合成账号，账户文件为运行目录 `research/accounts.json`；重复启动保留账号、聊天与科研数据库。负责人为 member_A，其他成员为 member_B / member_C。该入口拒绝生产模式，不能用于 IFRC 真实成员注册。文件权限适配入口把 Windows 挂载密钥复制到容器私有目录，保持科研服务已有密钥格式与权限检查。
 
