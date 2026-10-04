@@ -156,3 +156,121 @@ index 0000000..f375555
 +	err := client.SyncPost(ctx,req.GetCallbackCommand(),req,&callbackstruct.CallbackBeforeSendSingleMsgResp{},&config.BeforeConfig{Timeout:1})
 +	if err==nil || strings.Contains(err.Error(),key) || strings.Contains(err.Error(),url) { t.Fatalf("unsafe error %v",err) }
 +}
+diff --git a/internal/rpc/user/callback.go b/internal/rpc/user/callback.go
+index b58053c..416004b 100644
+--- a/internal/rpc/user/callback.go
++++ b/internal/rpc/user/callback.go
+@@ -32,6 +32,7 @@ func (s *userServer) webhookBeforeUpdateUserInfo(ctx context.Context, before *co
+ 			UserID:          req.UserInfo.UserID,
+ 			FaceURL:         &req.UserInfo.FaceURL,
+ 			Nickname:        &req.UserInfo.Nickname,
++			Ex:              &req.UserInfo.Ex,
+ 		}
+ 		resp := &cbapi.CallbackBeforeUpdateUserInfoResp{}
+ 		if err := s.webhookClient.SyncPost(ctx, cbReq.GetCallbackCommand(), cbReq, resp, before); err != nil {
+@@ -62,6 +63,7 @@ func (s *userServer) webhookBeforeUpdateUserInfoEx(ctx context.Context, before *
+ 			UserID:          req.UserInfo.UserID,
+ 			FaceURL:         req.UserInfo.FaceURL,
+ 			Nickname:        req.UserInfo.Nickname,
++			Ex:              req.UserInfo.Ex,
+ 		}
+ 		resp := &cbapi.CallbackBeforeUpdateUserInfoExResp{}
+ 		if err := s.webhookClient.SyncPost(ctx, cbReq.GetCallbackCommand(), cbReq, resp, before); err != nil {
+diff --git a/internal/rpc/user/rap_profile_callback_test.go b/internal/rpc/user/rap_profile_callback_test.go
+new file mode 100644
+index 0000000..8bd765d
+--- /dev/null
++++ b/internal/rpc/user/rap_profile_callback_test.go
+@@ -0,0 +1,92 @@
++// Copyright © 2026 Research Agent Platform contributors.
++// Licensed under the Apache License, Version 2.0.
++package user
++
++import (
++	"encoding/json"
++	"net/http"
++	"net/http/httptest"
++	"testing"
++
++	"github.com/openimsdk/open-im-server/v3/pkg/common/config"
++	"github.com/openimsdk/open-im-server/v3/pkg/common/webhook"
++	"github.com/openimsdk/protocol/sdkws"
++	pbuser "github.com/openimsdk/protocol/user"
++	"github.com/openimsdk/protocol/wrapperspb"
++	"github.com/openimsdk/tools/mcontext"
++)
++
++// Exercise the actual RPC callback builders and HTTP serialization, not a hand-
++// constructed CallbackReq. Missing Ex in either builder would bypass this gate.
++func TestRAPProfileCallbackForwardsExAndPreservesNil(t *testing.T) {
++	ctx := mcontext.WithMustInfoCtx([]string{"synthetic-profile-operation", "imAdmin", "Admin", "synthetic-connection"})
++	before := &config.BeforeConfig{Enable: true, Timeout: 2, FailedContinue: false}
++	for _, tc := range []struct {
++		name     string
++		extended bool
++		ex       string
++		nilEx    bool
++	}{
++		{name: "plain-nonempty-ex-denied", ex: "synthetic-unapproved-metadata"},
++		{name: "plain-empty-ex-allowed"},
++		{name: "extended-nonempty-ex-denied", extended: true, ex: "synthetic-unapproved-metadata"},
++		{name: "extended-empty-ex-allowed", extended: true},
++		{name: "extended-nil-fields-no-change", extended: true, nilEx: true},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			seen := make(chan map[string]any, 1)
++			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++				var body map[string]any
++				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
++					t.Error(err)
++					w.WriteHeader(400)
++					return
++				}
++				seen <- body
++				w.Header().Set("Content-Type", "application/json")
++				if tc.ex != "" {
++					w.Write([]byte(`{"actionCode":0,"nextCode":1,"errCode":1002,"errMsg":"Research authorization required"}`))
++				} else {
++					w.Write([]byte(`{"actionCode":0,"nextCode":0,"errCode":0}`))
++				}
++			}))
++			defer server.Close()
++			s := &userServer{webhookClient: webhook.NewWebhookClient(server.URL)}
++			var err error
++			if tc.extended {
++				var ex *wrapperspb.StringValue
++				if !tc.nilEx {
++					ex = &wrapperspb.StringValue{Value: tc.ex}
++				}
++				err = s.webhookBeforeUpdateUserInfoEx(ctx, before, &pbuser.UpdateUserInfoExReq{UserInfo: &sdkws.UserInfoWithEx{UserID: "synthetic-profile-user", Ex: ex}})
++			} else {
++				err = s.webhookBeforeUpdateUserInfo(ctx, before, &pbuser.UpdateUserInfoReq{UserInfo: &sdkws.UserInfo{UserID: "synthetic-profile-user", Nickname: "Synthetic user", Ex: tc.ex}})
++			}
++			if (err != nil) != (tc.ex != "") {
++				t.Fatalf("callback denial mismatch: %v", err)
++			}
++			body := <-seen
++			if body["userID"] != "synthetic-profile-user" {
++				t.Fatal("callback subject changed")
++			}
++			ex, exists := body["ex"]
++			if !exists {
++				t.Fatal("callback omitted Ex")
++			}
++			if tc.extended {
++				if tc.nilEx {
++					if ex != nil || body["nickName"] != nil || body["faceURL"] != nil {
++						t.Fatal("nil profile fields no longer serialize as null")
++					}
++				} else {
++					// protocol/wrapperspb.StringValue.MarshalJSON emits a scalar string.
++					if ex != tc.ex {
++						t.Fatal("extended callback dropped Ex content")
++					}
++				}
++			} else if ex != tc.ex {
++				t.Fatal("plain callback dropped Ex content")
++			}
++		})
++	}
++}
