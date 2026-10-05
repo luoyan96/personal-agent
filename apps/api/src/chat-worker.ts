@@ -62,14 +62,24 @@ export class ChatWorker {
       }) } catch {
         turn.status='failed';turn.failure='INPUT_CHANGED';turn.version++;turn.updatedAt=instant();s.saveTurn(turn);return null
       }
-      const publicContact = (contact:ReturnType<typeof s.contact>) => ({id:contact.id,displayName:contact.displayName,identity:contact.identity,availability:contact.availability,profile:Object.fromEntries(Object.entries(contact.profile).filter(([,value])=>value!==''))})
+      // Human-authored profile facts stay intact. Versions remain in the server
+      // fingerprint, not repeated as readonly metadata in the model directory.
+      const publicContact = (contact:ReturnType<typeof s.contact>) => ({id:contact.id,displayName:contact.displayName,identity:contact.identity,availability:{status:contact.availability.status,...(contact.availability.reason?{reason:contact.availability.reason}:{})},profile:Object.fromEntries(Object.entries(contact.profile).filter(([key,value])=>key!=='version'&&value!==''))})
       const contacts = this.db.prepare('SELECT id FROM chat_contacts WHERE lab_id=? AND id<>? ORDER BY id').all(s.c.actor.labId,turn.agentContactId).flatMap(r => { try { return [publicContact(s.contact(String(r.id)))] } catch { return [] } }).slice(0, 100)
       const agentContext=s.directory.modelContext(turn.agentContactId,group.id),requestedAgent=publicContact(agentContext.agent)
       input.agentContextFingerprint=agentContext.fingerprint
       this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(JSON.stringify(input),turn.id)
-      const conversation={id:group.id,kind:group.kind,version:group.version,title:group.title,members:group.members,taskIds:group.taskIds}
-      const prompt = JSON.stringify({ ownerId: s.c.actor.id, labId: s.c.actor.labId, requestedAgent, conversation, contacts, memories:agentContext.memories, messages, context })
-      const system=chatModelSystem,remainingOutput=input.budget.maxTokens-chatInputTokenBound(system,prompt)
+      // Column tables and the sender dictionary losslessly encode the existing
+      // authorized 20-message window; text is never shortened to fit the budget.
+      const senderIds=[...new Set([...group.members.map(m=>m.contactId),...messages.map(m=>m.senderContactId).filter((id):id is string=>id!==null)])]
+      const conversation={kind:group.kind,title:group.title,memberColumns:['sender','role','status'],members:group.members.map(m=>[senderIds.indexOf(m.contactId),m.role,m.status]),...(group.taskIds.length?{taskIds:group.taskIds}:{})}
+      const contactColumns=['id','displayName','identity','availability','profile']
+      const messageColumns=['origin','sender','text',...(messages.some(m=>m.mentions.length)?['mentions']:[]),...(messages.some(m=>m.resources.length)?['resources']:[])]
+      const messageRows=messages.map(m=>messageColumns.map(key=>key==='sender'?m.senderContactId===null?null:senderIds.indexOf(m.senderContactId):m[key as keyof typeof m]))
+      const selectedTasks=input.context.filter(ref=>ref.kind==='task').map(ref=>s.c.task(ref.ref.id))
+      const system=chatModelSystem({group:group.kind==='personal'&&agentContext.agent.profile.role==='coordinator',inviteContact:group.kind==='group'&&group.ownerMemberId===s.c.actor.id,inviteTask:group.kind==='group'&&group.ownerMemberId===s.c.actor.id&&selectedTasks.some(task=>task.initiatorId===s.c.actor.id),runTask:group.kind==='group'&&selectedTasks.some(task=>task.leadId===s.c.actor.id)})
+      const prompt=JSON.stringify({ownerId:s.c.actor.id,labId:s.c.actor.labId,requestedAgent,conversation,contactColumns,contacts:contacts.map(c=>contactColumns.map(key=>c[key as keyof typeof c])),senderIds,messageColumns,messages:messageRows,...(agentContext.memories.length?{memories:agentContext.memories}:{}),...(context.length?{context}:{})})
+      const remainingOutput=input.budget.maxTokens-chatInputTokenBound(system,prompt)
       if (prompt.length > 100000 || remainingOutput<64) {
         turn.status = 'failed'; turn.failure = 'BUDGET_EXCEEDED'; turn.version++; turn.updatedAt = instant(); s.saveTurn(turn); return null
       }

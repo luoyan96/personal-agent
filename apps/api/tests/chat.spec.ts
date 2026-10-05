@@ -21,6 +21,12 @@ const schedule = { suggested: null, hardDeadline: null, committed: null, estimat
 const budget = { maxTokens: 25000, maxSeconds: 30 }
 const model = (value: unknown): ModelCall => async () => ({ text: JSON.stringify(value), failure: null, inputTokens: 100, outputTokens: 200, elapsedMs: 20 })
 const reply = (answer = '这是合成模型的普通问答。', actions: unknown[] = []) => ({ answer, waitingInput: false, group: null, actions })
+function modelMessages(prompt:{messageColumns:string[];senderIds:string[];messages:unknown[][]}) {
+  return prompt.messages.map(row=>{
+    const value=Object.fromEntries(prompt.messageColumns.map((key,i)=>[key,row[i]]))
+    return {...value,text:value.text as string|null,senderContactId:value.sender===null?null:prompt.senderIds[value.sender as number],mentions:value.mentions??[],resources:value.resources??[]}
+  })
+}
 async function setup(enabled = true, representativeMembers = 0) {
   const dir = mkdtempSync(join(tmpdir(), 'rap-chat-')); cleanup.push(() => rmSync(dir, { recursive: true, force: true }))
   const credential = join(dir, 'synthetic.key'); writeFileSync(credential, randomBytes(32).toString('hex'), { mode: 0o600 })
@@ -124,6 +130,40 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     else expect(turn.usage).toMatchObject(actual!)
     if(kind==='unknown_usage'||kind==='total_overflow'){expect(turn.remainingBudget).toBeNull();expect(turn.allowedActions).not.toContain('retry')}
   })
+  it('keeps eight short historical messages and dispatches two successive UUID/Chinese-name chats within the default total budget',async()=>{
+    const s=await setup(true,2),agent=s.agent(s.accounts[0]!.memberId),human=s.human(s.accounts[0]!.memberId),history:string[]=[],total={maxTokens:4000,maxSeconds:90}
+    for(let i=0;i<4;i++){
+      const question=`历史问题${i}：在吗？`,answer=`历史回复${i}：我在。`
+      const old=await s.call('sendChatMessage',{text:question,intent:'ask_agent',agentContactId:agent.id,budget},{id:s.personal.id})
+      expect(old.status,old.raw).toBe(201);await new ChatWorker(s.db,s.config,model(reply(answer))).tick()
+      expect((await s.call('chatTurn',null,{id:old.value.data.turn.id})).value.data.status).toBe('succeeded');history.push(question,answer)
+    }
+    for(let i=0;i<2;i++){
+      const text=`连续测试${i}：只回复可以继续。`,answer='可以继续。',json=JSON.stringify(reply(answer))
+      const sent=await s.call('sendChatMessage',{text,intent:'ask_agent',agentContactId:agent.id,budget:total},{id:s.personal.id})
+      expect(sent.status,sent.raw).toBe(201);let called=false,inspectionError:unknown
+      await new ChatWorker(s.db,s.config,async input=>{
+        called=true;const prompt=JSON.parse(input.prompt),messages=modelMessages(prompt),reserve=chatInputTokenBound(input.system,input.prompt)
+        try {
+        expect(messages.map(m=>m.text)).toEqual([...history,text])
+        expect(messages[0]!.senderContactId).toBe(human.id);expect(messages[1]!.senderContactId).toBe(agent.id)
+        expect(messages.at(-1)!.senderContactId).toBe(human.id)
+        expect(input.system).not.toContain('invite_task');expect(input.system).not.toContain('run_task')
+        expect(input.system).toContain('Group=');expect(input.system).toContain('expanded stable IDs')
+        expect(input.maxTokens).toBeGreaterThanOrEqual(300);expect(Buffer.byteLength(json,'utf8')).toBeLessThanOrEqual(input.maxTokens)
+        expect(reserve+input.maxTokens).toBeLessThanOrEqual(4000)
+        } catch(error){inspectionError=error;throw error}
+        // Synthetic provider usage includes reasoning allowance, not just the
+        // visible JSON bytes. This is not a live-provider success assertion.
+        return {text:json,failure:null,inputTokens:800,outputTokens:245,elapsedMs:10}
+      }).tick()
+      if(inspectionError)throw inspectionError
+      const turn=(await s.call('chatTurn',null,{id:sent.value.data.turn.id})).value.data
+      expect(called,JSON.stringify(turn.failure)).toBe(true)
+      expect(turn).toMatchObject({status:'succeeded',budget:total,usage:{inputTokens:800,outputTokens:245},remainingBudget:{maxTokens:2955,maxSeconds:89}})
+      history.push(text,answer)
+    }
+  })
   it('persists owned agent profiles and requires independent human/private-agent contact acceptance',async()=>{
     const s=await setup(),body={displayName:'合成文献助理',introduction:'整理合成文献',capabilityDescription:'方法介绍，不是已验证工具',personality:'先列证据再给结论'},key=randomUUID()
     const created=await s.call('createPersonalAgent',body,{},0,'',key);expect(created.status,created.raw).toBe(201)
@@ -203,7 +243,7 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     await new ChatWorker(s.db,s.config,async(input,signal,credential)=>{
       const prompt=JSON.parse(input.prompt);expect(prompt.requestedAgent.profile).toMatchObject({role:'specialist',personality:profile.personality,capabilityDescription:profile.capabilityDescription})
       expect(prompt.memories.map((memory:{content:string})=>memory.content)).toEqual(expect.arrayContaining(['OWNER_PRIVATE_MEMORY_SENTINEL','OWNER_DIRECT_MEMORY_SENTINEL']))
-      expect(input.prompt).not.toContain('TRUNCATED_OWNER_HISTORY_SENTINEL');expect(prompt.requestedAgent.relationship).toBeUndefined();expect(prompt.contacts.every((contact:Contact)=>!('relationship' in contact)&&!('allowedActions' in contact))).toBe(true)
+      expect(input.prompt).not.toContain('TRUNCATED_OWNER_HISTORY_SENTINEL');expect(prompt.requestedAgent.relationship).toBeUndefined();expect(prompt.contactColumns).not.toContain('relationship');expect(prompt.contactColumns).not.toContain('allowedActions')
       return model(reply())(input,signal,credential)
     }).tick()
     const request=(await s.call('requestContact',{}, {id:specialist.id},1)).value.data.relationship
@@ -498,7 +538,7 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     const ordinaryAi = await s.ask(groupId, s.publicAgent.id, [], '入群未承接也能问 AI', 1)
     await new ChatWorker(s.db, s.config, async (input, signal, credential) => {
       const prompt = JSON.parse(input.prompt)
-      expect(prompt.context).toEqual([]); expect(prompt.conversation.taskIds).toEqual([created.tasks[0]])
+      expect(prompt.context??[]).toEqual([]); expect(prompt.conversation.taskIds).toEqual([created.tasks[0]])
       expect(input.prompt).not.toContain('PRIVATE_TASK_MATERIAL_SENTINEL'); expect(input.prompt).not.toContain(artifact.id)
       return model(reply('群内一般回答'))(input, signal, credential)
     }).tick()
@@ -706,8 +746,9 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     await new ChatWorker(s.db,s.config,async(input,signal,credential)=>{
       const prompt=JSON.parse(input.prompt)
       expect(prompt.requestedAgent).toMatchObject({id:s.agent('member_B').id,identity:{kind:'personal_agent',ownerMemberId:'member_B'}})
-      expect(prompt.messages.at(-1).mentions).toEqual([mention])
-      expect(prompt.messages.at(-1).resources).toEqual([])
+      const messages=modelMessages(prompt)
+      expect(messages.at(-1)!.mentions).toEqual([mention])
+      expect(messages.at(-1)!.resources).toEqual([])
       expect(prompt.requestedAgent.id).not.toBe(s.publicAgent.id)
       return model(reply())(input,signal,credential)
     }).tick()
