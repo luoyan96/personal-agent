@@ -1,5 +1,17 @@
 # 新 ECS：OpenIM 科研微信（2026-10-05）
 
+## 最新更新：注册修复已上线
+
+2026-10-05 08:26 北京时间发布固定软件 `d7cbe97abdd6271f459918727bf00f7c2bab154c`，`/opt/research-openim/current` 已指向该 release。当前科研契约 **0.13.1**、IM 桥 **1.0.0**、迁移 **015**。后续本地交接文档提交不改变软件归档。下文初次部署 / SDK 媒体结果保留受测基线 `c3f58a4`，本轮未重新做整套媒体或真实模型验收。
+
+- 密码统一为至少 8 个字符，无复杂度组合或独立密码长度上限，不 trim 密码；整体请求大小限制保持。用户名 / 邀请码只 trim 首尾，非法用户名改为中文提示，不显示 Zod issue JSON。
+- 根 CI 31 文件 / 400 项和 2 项生产入口测试通过，构建 / 类型 / 导出 / B0 通过；独立客户端 typecheck、3 项 auth 测试、build:web 和四个 SDK 资源通过。两个前端入口真实本地 API 浏览器分组 18 项及稳定错误布局 2 项通过。
+- 源码归档 SHA256 `dd7a1af5b3367dce1ff51c3f1b386ff87e112db61dced084f6943abceacc9e13`；客户端归档 SHA256 `fbf7f9bdc688f1c97936da0e061c24708d4657c9ba49cf406e18948f3dcccac8`。云端核验后构建，API / worker 实际镜像为 `sha256:b2f1edf0ee51480720f0b3f7e1deef08ccd133184a9307c38d4e87cad62730b0`；四个变更源文件实际容器 hash 和归档一致，公网 HTML 与本次 dist 完全一致。
+- 更新前一致备份 `/srv/research-openim-backups/20261005T002607Z` 的 12 个 checksum / 9 个 gzip 完整流通过；独立恢复 SQLite integrity ok / 迁移 015。旧 release 和 `research-openim-api:before-registration-c3f58a4` 保留供回退。备份仍在同 ECS，未验收异地 / 完整组件恢复。
+- 独立合成实验室真实 HTTPS 7 项通过：7 位拒绝、非法用户名中文与不回显内部信息、8 位注册、首尾空白规范化、8 位登录、负责人角色及退出后旧 cookie 401。随后审计 CLI 撤销该测试邀请码、停用账号；测试活跃会话 0。IFRC 开通码 / 真实账号未用未改，没有新增 SSH 授权。
+- 最终八个服务实际运行，API healthy / HTTPS ready / 无 OOM；OpenIM 实际镜像仍为 `sha256:1a96f6bc780d672db845e30a9e7496aecb9083d84ee5bf1acfa0757a3fa33b59`。云端非秘密回执 `/opt/research-openim/ops/registration-closure.json`，本机父工作目录 `.runtime/openim-cloud-20261004/registration-closure.json` 和新站截图 `registration-public-min8.png`。
+- 初次校验误用根目录包名导入，在备份 / 激活前失败；修正为固定 dist 路径并核验脚本后重跑退出 0，失败和成功日志保留。Workbench 旧上传会话过期经重新登录解决。未推 GitHub。
+
 ## 实际部署范围
 
 用户授权在新 ECS 独立部署，入口为 `https://chat.acceptcat.com`，文件入口为 `https://files.chat.acceptcat.com`。旧 `research.acceptcat.com`、旧 ECS、原账号和模型配置继续保留。新 IFRC 实验室使用独立数据库、凭据和首个负责人邀请码；旧站账号不自动迁移。
@@ -7,12 +19,12 @@
 - 新主机：阿里云广州，Ubuntu 22.04.5、x86_64、4 vCPU / 8 GiB / 50 GiB、5 Mbps。
 - Docker Engine 29.8.2、Compose 5.6.0；科研 API / worker、OpenIM Server、MongoDB、Redis、etcd、Kafka、MinIO 分别运行。
 - 业务公网入口为 Nginx HTTP / HTTPS；组件、IM API / WebSocket、科研 API 和 MinIO 均在 Docker 网络或宿主机 loopback 上。
-- 科研契约 0.13.0、IM 桥 1.0.0、SQLite 迁移 015。生产入口不运行 seed、不自动创建测试账号、不隐式迁移。
+- 当前科研契约 0.13.1、IM 桥 1.0.0、SQLite 迁移 015。生产入口不运行 seed、不自动创建测试账号、不隐式迁移。
 - 测试在独立 `lab_sdk_qa_20261004_46c65a73` 完成，使用用户批准的虚构账号、随机密码、合成文件和合成录音。IFRC 开通码未用于测试。
 
-## 来源和构建
+## 来源和构建（初次部署基线）
 
-当前固定软件源码为 `c3f58a4a88a3b0c0efdf2c868a556cc9d29f25ac`，源码归档 SHA256 `623eb87693bef1841d6bebe3a77879c2592f3474930ce7a95f17fdd000218ebc`，完整客户端归档 SHA256 `27b53c20386fad272fddf3475d904cdcc62fb64219375703e4dd5cfa6e0df1b0`。云端验证归档后解包至对应完整 SHA 目录，`/opt/research-openim/current` 指向该版本。公网首页与精确构建文件的 SHA256 一致（`8adfd087d42158deed7c470081835cd188596a8811f73025038f9e6c6ed7d636`）。后续本地验收说明提交不改变这份固定软件归档。
+初次部署固定软件源码为 `c3f58a4a88a3b0c0efdf2c868a556cc9d29f25ac`，源码归档 SHA256 `623eb87693bef1841d6bebe3a77879c2592f3474930ce7a95f17fdd000218ebc`，完整客户端归档 SHA256 `27b53c20386fad272fddf3475d904cdcc62fb64219375703e4dd5cfa6e0df1b0`。云端验证归档后解包至对应完整 SHA 目录，当时 `/opt/research-openim/current` 指向该版本。该批公网首页与精确构建文件的 SHA256 一致（`8adfd087d42158deed7c470081835cd188596a8811f73025038f9e6c6ed7d636`）。当前指针与软件归档见本文开头的注册修复记录。
 
 完整客户端来自仓库 `clients/openim`，Web 构建包含实际 OpenIM WASM / SQLite WASM、字体和媒体组件。Nginx 明确为 WASM 返回 `application/wasm`，并启用压缩。
 
@@ -63,7 +75,7 @@ MinIO 实际签名 PUT / GET 校验通过：服务器 loopback 与公网 HTTPS �
 
 ## 运维和首次使用
 
-运行目录 `/srv/research-openim` 和密钥文件限 root 访问，不提交 Git。首次负责人邀请码和注册说明通过私有本地文件交接，用户自行设置账号及至少 9 个字符的密码。负责人登录后可在客户端“实验室设置”创建成员邀请码并设置自己的模型 Key。
+运行目录 `/srv/research-openim` 和密钥文件限 root 访问，不提交 Git。首次负责人邀请码和注册说明通过私有本地文件交接，用户自行设置账号及至少 8 个字符的密码。负责人登录后可在客户端“实验室设置”创建成员邀请码并设置自己的模型 Key。
 
 这台试用 ECS 当前到期日为 2026-11-04，续费设置未变更。容量数字只是本次小规模合成验收的主机观测，不代表更多真实成员或大附件的压力测试。
 
