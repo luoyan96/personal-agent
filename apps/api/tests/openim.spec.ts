@@ -226,7 +226,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     const s=await setup();await s.request('imSession',{platformID:5})
     await s.request('updateLabAiSettings',{expectedVersion:0,enabled:true,model:'deepseek-flash',apiKey:'sk-synthetic-only'}, {id:'lab_synthetic'})
     const personal=(await s.request('personalConversation',{})).value.data.conversation
-    await s.request('sendChatMessage',{text:'显式科研请求',intent:'ask_agent',agentContactId:s.agent('member_A').id,budget:{maxTokens:1000,maxSeconds:10},context:[]},{id:personal.id})
+    await s.request('sendChatMessage',{text:'显式科研请求',intent:'ask_agent',agentContactId:s.agent('member_A').id,budget:{maxTokens:25000,maxSeconds:10},context:[]},{id:personal.id})
     await new ChatWorker(s.db,s.config,async()=>({text:JSON.stringify({answer:'PRIVATE SYNTHETIC ANSWER',waitingInput:false,group:null,actions:[]}),failure:null,inputTokens:4,outputTokens:6,elapsedMs:10})).tick()
     const worker=new OpenImWorker(s.db,s.config,s.client);expect(await worker.tick()).toBe(true);expect(await worker.tick()).toBe(true)
     expect(s.sent).toHaveLength(2);expect(JSON.stringify(s.sent)).not.toContain('PRIVATE SYNTHETIC ANSWER')

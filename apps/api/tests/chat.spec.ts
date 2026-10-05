@@ -7,27 +7,32 @@ import { routes } from '@research-agent-platform/contracts'
 import type { RouteName, Contact, ChatAction, Conversation } from '@research-agent-platform/contracts'
 import { readConfig } from '../src/config.js'
 import { openDatabase, migrate, seed, transaction } from '../src/database.js'
-import { provisionTestAccounts } from '../src/auth.js'
+import { provisionTestAccounts, passwordHash } from '../src/auth.js'
 import { createServer } from '../src/server.js'
 import { ChatWorker, reconcileChat } from '../src/chat-worker.js'
 import { ExecutionWorker } from '../src/execution-worker.js'
 import type { ModelCall } from '../src/execution-worker.js'
+import { chatInputTokenBound } from '../src/chat-model-input.js'
 
 const cleanup: (() => unknown | Promise<unknown>)[] = []
 afterEach(async () => { for (const fn of cleanup.splice(0).reverse()) await fn() })
 const schedule = { suggested: null, hardDeadline: null, committed: null, estimatedHumanHours: null, checkpoint: null }
-const budget = { maxTokens: 5000, maxSeconds: 30 }
+// Business/ACL cases include multi-member groups and full authorized resources.
+const budget = { maxTokens: 25000, maxSeconds: 30 }
 const model = (value: unknown): ModelCall => async () => ({ text: JSON.stringify(value), failure: null, inputTokens: 100, outputTokens: 200, elapsedMs: 20 })
 const reply = (answer = '这是合成模型的普通问答。', actions: unknown[] = []) => ({ answer, waitingInput: false, group: null, actions })
-async function setup(enabled = true) {
+async function setup(enabled = true, representativeMembers = 0) {
   const dir = mkdtempSync(join(tmpdir(), 'rap-chat-')); cleanup.push(() => rmSync(dir, { recursive: true, force: true }))
   const credential = join(dir, 'synthetic.key'); writeFileSync(credential, randomBytes(32).toString('hex'), { mode: 0o600 })
   const config = readConfig({ NODE_ENV: 'test', DATABASE_PATH: join(dir, 'chat.sqlite'), BLOB_ROOT: join(dir, 'blobs'), APP_ORIGIN: 'http://127.0.0.1:4173', B3_AI_ENABLED: '1', LAB_CREDENTIAL_KEY_FILE: credential })
   mkdirSync(config.blobRoot); const db = openDatabase(config.databasePath, true); cleanup.push(() => db.close()); migrate(db); seed(db, 'test')
-  const accounts = ['A', 'B', 'C'].map(letter => ({ memberId: `member_${letter}`, username: `chat_${letter}`, password: randomBytes(24).toString('hex') }))
-  await provisionTestAccounts(db, 'test', accounts)
-  db.prepare('INSERT INTO lab_managers(lab_id,member_id,granted_at) VALUES (?,?,?)').run('lab_synthetic', 'member_A', new Date().toISOString())
-  db.prepare("INSERT INTO public_capabilities VALUES (?,?,1,1,'member_A')").run('lab_synthetic', 'text-evidence-checklist')
+  const accounts = (representativeMembers?['A','B'].slice(0,representativeMembers):['A', 'B', 'C']).map(letter => ({ memberId: representativeMembers?randomUUID():`member_${letter}`, username: `chat_${letter}`, password: randomBytes(24).toString('hex') }))
+  if(representativeMembers) for(const [i,a] of accounts.entries()){
+    db.prepare('INSERT INTO members(id,lab_id,display_name,is_synthetic) VALUES (?,?,?,1)').run(a.memberId,'lab_synthetic',i===0?'合成研究员甲':'合成研究员乙')
+    db.prepare('INSERT INTO auth_accounts VALUES (?,?,?,0)').run(a.memberId,a.username,await passwordHash(a.password))
+  } else await provisionTestAccounts(db, 'test', accounts)
+  db.prepare('INSERT INTO lab_managers(lab_id,member_id,granted_at) VALUES (?,?,?)').run('lab_synthetic', accounts[0]!.memberId, new Date().toISOString())
+  if(!representativeMembers)db.prepare("INSERT INTO public_capabilities VALUES (?,?,1,1,'member_A')").run('lab_synthetic', 'text-evidence-checklist')
   const app = createServer(config); cleanup.push(() => app.close())
   const clients: { cookie: string; csrf: string }[] = []
   for (const a of accounts) {
@@ -83,6 +88,42 @@ async function setup(enabled = true) {
 }
 
 describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
+  it.each([1,2])('reserves total budget for short chat with %i UUID members and keeps measured usage',async memberCount=>{
+    const s=await setup(true,memberCount),total={maxTokens:4000,maxSeconds:30}
+    const sent=(await s.call('sendChatMessage',{text:'hello 在吗',intent:'ask_agent',agentContactId:s.agent(s.accounts[0]!.memberId).id,budget:total},{id:s.personal.id})).value.data
+    // Even the conservative byte upper bound for this complete JSON fits the
+    // provider cap: the fixture cannot pretend a truncated response succeeded.
+    const text=JSON.stringify(reply('Here.')),outputTokens=Buffer.byteLength(text,'utf8')
+    let called=false
+    await new ChatWorker(s.db,s.config,async input=>{
+      called=true;const bound=chatInputTokenBound(input.system,input.prompt)
+      expect(bound+input.maxTokens).toBeLessThanOrEqual(total.maxTokens);expect(input.maxTokens).toBeGreaterThanOrEqual(64)
+      expect(input.maxTokens).toBeLessThan(total.maxTokens);expect(input.system.length).toBeLessThan(3000);expect(outputTokens).toBeLessThanOrEqual(input.maxTokens)
+      return {text,failure:null,inputTokens:500,outputTokens,elapsedMs:10}
+    }).tick()
+    const turn=(await s.call('chatTurn',null,{id:sent.turn.id})).value.data
+    expect(called,JSON.stringify({failure:turn.failure})).toBe(true)
+    expect(turn).toMatchObject({status:'succeeded',budget:total,usage:{inputTokens:500,outputTokens},remainingBudget:{maxTokens:total.maxTokens-500-outputTokens,maxSeconds:29}})
+  })
+  it.each(['tight','total_overflow','output_cap_overflow','unknown_usage'] as const)('fails closed for %s without saving an AI answer and retains actual usage',async kind=>{
+    const s=await setup(true,1),total={maxTokens:kind==='tight'?1000:4000,maxSeconds:30}
+    const sent=await s.call('sendChatMessage',{text:'hello 在吗',intent:'ask_agent',agentContactId:s.agent(s.accounts[0]!.memberId).id,budget:total},{id:s.personal.id})
+    expect(sent.status,sent.raw).toBe(201)
+    let called=false,actual:{inputTokens:number|null;outputTokens:number;elapsedMs:number}|null=null
+    await new ChatWorker(s.db,s.config,async input=>{
+      called=true;actual={inputTokens:kind==='unknown_usage'?null:kind==='total_overflow'?7360:10,outputTokens:kind==='total_overflow'?763:kind==='output_cap_overflow'?input.maxTokens+1:40,elapsedMs:10}
+      return {text:JSON.stringify(reply('UNACCEPTED_SYNTHETIC_ANSWER')),failure:null,...actual}
+    }).tick()
+    const turn=(await s.call('chatTurn',null,{id:sent.value.data.turn.id})).value.data
+    expect(called).toBe(kind!=='tight');expect(turn.status).toBe('failed')
+    expect(turn.failure).toBe(kind==='unknown_usage'?'MODEL_FAILED':'BUDGET_EXCEEDED');expect(turn.outputMessageId).toBeNull()
+    expect(turn.budget).toEqual(total)
+    expect((await s.call('chatMessages',null,{id:s.personal.id})).raw).not.toContain('UNACCEPTED_SYNTHETIC_ANSWER')
+    expect(s.db.prepare('SELECT count(*) n FROM chat_attempts').get()!.n).toBe(kind==='tight'?0:1)
+    if(kind==='tight')expect(turn.usage).toBeNull()
+    else expect(turn.usage).toMatchObject(actual!)
+    if(kind==='unknown_usage'||kind==='total_overflow'){expect(turn.remainingBudget).toBeNull();expect(turn.allowedActions).not.toContain('retry')}
+  })
   it('persists owned agent profiles and requires independent human/private-agent contact acceptance',async()=>{
     const s=await setup(),body={displayName:'合成文献助理',introduction:'整理合成文献',capabilityDescription:'方法介绍，不是已验证工具',personality:'先列证据再给结论'},key=randomUUID()
     const created=await s.call('createPersonalAgent',body,{},0,'',key);expect(created.status,created.raw).toBe(201)
@@ -633,7 +674,7 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     const s=await setup(),sent=await s.ask()
     await new ChatWorker(s.db,s.config,async()=>({text:'',failure:'synthetic_failure',inputTokens:100,outputTokens:200,elapsedMs:20})).tick()
     const old=(await s.call('chatTurn',null,{id:sent.turn.id})).value.data
-    expect(old).toMatchObject({status:'failed',budget,remainingBudget:{maxTokens:4700,maxSeconds:29},allowedActions:['retry']})
+    expect(old).toMatchObject({status:'failed',budget,remainingBudget:{maxTokens:budget.maxTokens-300,maxSeconds:29},allowedActions:['retry']})
     const key=randomUUID(),body={expectedVersion:old.version,budget:old.remainingBudget}
     const retry=await s.call('retryChatTurn',body,{id:old.id},0,'',key);expect(retry.status,retry.raw).toBe(202)
     expect(retry.value.data.id).not.toBe(old.id)
@@ -643,7 +684,7 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     expect(messages.find((m:{id:string})=>m.id===sent.message.id).turnId).toBe(retry.value.data.id)
     await new ChatWorker(s.db,s.config,model(reply('重试后的真实模型替身回答'))).tick()
     const finished=(await s.call('chatTurn',null,{id:retry.value.data.id})).value.data
-    expect(finished).toMatchObject({status:'succeeded',budget,remainingBudget:{maxTokens:4400,maxSeconds:29}})
+    expect(finished).toMatchObject({status:'succeeded',budget,remainingBudget:{maxTokens:budget.maxTokens-600,maxSeconds:29}})
     expect((await s.call('chatTurn',null,{id:old.id})).value.data.id).toBe(old.id)
     expect((await s.call('chatMessages',null,{id:s.personal.id})).raw).toContain('重试后的真实模型替身回答')
     const uncertain=await s.ask();await new ChatWorker(s.db,s.config,async()=>({text:'',failure:'network_unknown',inputTokens:null,outputTokens:null,elapsedMs:10})).tick()
