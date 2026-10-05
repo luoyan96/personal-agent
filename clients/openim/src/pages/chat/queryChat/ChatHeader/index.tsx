@@ -115,7 +115,7 @@ const ChatHeader = () => {
             <div className="truncate text-base font-semibold">
               {isCoordinator ? "需求与协作" : contact?.displayName || currentConversation?.showName}
             </div>
-            {!isGroupSession && contact && <div className="text-xs text-slate-500">{isCoordinator ? `${contact.displayName} · 需求协调 Agent` : contact.identity.kind === 'human' ? '真人' : `${contact.displayName} · AI Agent`}</div>}
+            {!isGroupSession && contact && <div className="truncate text-xs text-slate-500">{isCoordinator ? `${contact.displayName} · 需求协调 Agent` : contact.identity.kind === 'human' ? '真人' : `${contact.displayName} · AI Agent`}</div>}
             {isGroupSession && currentUserIsInGroup && (
               <div className="flex items-center text-xs text-[var(--sub-text)]">
                 <img width={20} src={group_member} alt="member" />
