@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { ChatActionPayload, SendChatMessage, routes } from '../src/index.js'
+import { AgentTurn, CreatedAgentReceipt, ChatActionPayload, SendChatMessage, routes } from '../src/index.js'
 
 describe('CHAT1 dispatch and sharing boundaries', () => {
+  it('defaults historical turns to reply and limits creation receipts to actual contact pointers', () => {
+    const historical={id:'turn_a',conversationId:'conversation_a',inputMessageId:'message_a',agentContactId:'agent_a',status:'queued',failure:null,availability:{status:'available',reason:null},outputMessageId:null,usage:null,budget:{maxTokens:4000,maxSeconds:90},remainingBudget:{maxTokens:4000,maxSeconds:90},allowedActions:[],version:1,createdAt:'2026-10-05T00:00:00Z',updatedAt:'2026-10-05T00:00:00Z'}
+    expect(AgentTurn.parse(historical)).toMatchObject({purpose:'reply',createdAgent:null})
+    const receipt={contactId:'agent_b',conversationId:'direct_b',displayName:'区块链助手',reused:false}
+    expect(AgentTurn.parse({...historical,purpose:'create_agent',createdAgent:receipt,status:'succeeded'}).createdAgent).toEqual(receipt)
+    expect(CreatedAgentReceipt.safeParse({...receipt,ownerId:'someone_else'}).success).toBe(false)
+    expect(AgentTurn.safeParse({...historical,purpose:'execute_tool'}).success).toBe(false)
+  })
   it('requires an explicit agent and budget without dispatching ordinary mentions', () => {
     expect(SendChatMessage.safeParse({ text: '@李 看一下', mentions: [{ contactId: 'human_li', start: 0, end: 2 }] }).success).toBe(true)
     expect(SendChatMessage.safeParse({ text: 'hello', intent: 'ask_agent' }).success).toBe(false)

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.14.0"
+    "version": "0.15.0"
   },
   "paths": {
     "/api/v1/me/model-configurations": {
@@ -12461,6 +12461,50 @@
                                   "type": "string",
                                   "pattern": "^[A-Za-z0-9_-]{1,96}$"
                                 },
+                                "purpose": {
+                                  "default": "reply",
+                                  "type": "string",
+                                  "enum": [
+                                    "reply",
+                                    "create_agent"
+                                  ]
+                                },
+                                "createdAgent": {
+                                  "default": null,
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "contactId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                        },
+                                        "conversationId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                        },
+                                        "displayName": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 200
+                                        },
+                                        "reused": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "contactId",
+                                        "conversationId",
+                                        "displayName",
+                                        "reused"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
                                 "status": {
                                   "type": "string",
                                   "enum": [
@@ -12485,7 +12529,8 @@
                                         "LEASE_EXPIRED_USAGE_UNCERTAIN",
                                         "AUTHORITY_CHANGED",
                                         "INPUT_CHANGED",
-                                        "BUDGET_EXCEEDED"
+                                        "BUDGET_EXCEEDED",
+                                        "AGENT_LIMIT_REACHED"
                                       ]
                                     },
                                     {
@@ -12689,6 +12734,8 @@
                                 "conversationId",
                                 "inputMessageId",
                                 "agentContactId",
+                                "purpose",
+                                "createdAgent",
                                 "status",
                                 "failure",
                                 "availability",
@@ -12858,7 +12905,7 @@
     "/api/v1/chat/conversations/{id}/agent-messages": {
       "post": {
         "operationId": "agentChatMessage",
-        "description": "Natural personal/direct Agent chat. Server selects the unique joined Agent and bounded default budget4000/90, uses sender personal model and authorized memories. No plans/actions/implicit execution; human SDK messaging never uses this route.",
+        "description": "Natural personal/direct Agent chat. Server selects the unique joined Agent and bounded default budget4000/90, uses sender personal model. Only an anchored explicit creation command to the current owner personal coordinator permits purpose=create_agent: the model generates a strict profile or clarification from this complete request alone, then the service atomically creates/reuses the owner specialist and its direct. createdAgent is an authorized factual receipt, not SDK readiness. Other daily chat uses authorized history/memories, with no plans/actions/implicit execution. Human SDK messaging never uses this route.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -13113,6 +13160,50 @@
                                   "type": "string",
                                   "pattern": "^[A-Za-z0-9_-]{1,96}$"
                                 },
+                                "purpose": {
+                                  "default": "reply",
+                                  "type": "string",
+                                  "enum": [
+                                    "reply",
+                                    "create_agent"
+                                  ]
+                                },
+                                "createdAgent": {
+                                  "default": null,
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "contactId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                        },
+                                        "conversationId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                        },
+                                        "displayName": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 200
+                                        },
+                                        "reused": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "contactId",
+                                        "conversationId",
+                                        "displayName",
+                                        "reused"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
                                 "status": {
                                   "type": "string",
                                   "enum": [
@@ -13137,7 +13228,8 @@
                                         "LEASE_EXPIRED_USAGE_UNCERTAIN",
                                         "AUTHORITY_CHANGED",
                                         "INPUT_CHANGED",
-                                        "BUDGET_EXCEEDED"
+                                        "BUDGET_EXCEEDED",
+                                        "AGENT_LIMIT_REACHED"
                                       ]
                                     },
                                     {
@@ -13341,6 +13433,8 @@
                                 "conversationId",
                                 "inputMessageId",
                                 "agentContactId",
+                                "purpose",
+                                "createdAgent",
                                 "status",
                                 "failure",
                                 "availability",
@@ -13557,6 +13651,50 @@
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
                         },
+                        "purpose": {
+                          "default": "reply",
+                          "type": "string",
+                          "enum": [
+                            "reply",
+                            "create_agent"
+                          ]
+                        },
+                        "createdAgent": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "contactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "conversationId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "displayName": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "reused": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "contactId",
+                                "conversationId",
+                                "displayName",
+                                "reused"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "status": {
                           "type": "string",
                           "enum": [
@@ -13581,7 +13719,8 @@
                                 "LEASE_EXPIRED_USAGE_UNCERTAIN",
                                 "AUTHORITY_CHANGED",
                                 "INPUT_CHANGED",
-                                "BUDGET_EXCEEDED"
+                                "BUDGET_EXCEEDED",
+                                "AGENT_LIMIT_REACHED"
                               ]
                             },
                             {
@@ -13785,6 +13924,8 @@
                         "conversationId",
                         "inputMessageId",
                         "agentContactId",
+                        "purpose",
+                        "createdAgent",
                         "status",
                         "failure",
                         "availability",
@@ -13811,6 +13952,8 @@
                     "conversationId": "synthetic",
                     "inputMessageId": "synthetic",
                     "agentContactId": "synthetic",
+                    "purpose": "reply",
+                    "createdAgent": null,
                     "status": "queued",
                     "failure": null,
                     "availability": {
@@ -14039,6 +14182,50 @@
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
                         },
+                        "purpose": {
+                          "default": "reply",
+                          "type": "string",
+                          "enum": [
+                            "reply",
+                            "create_agent"
+                          ]
+                        },
+                        "createdAgent": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "contactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "conversationId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "displayName": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "reused": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "contactId",
+                                "conversationId",
+                                "displayName",
+                                "reused"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "status": {
                           "type": "string",
                           "enum": [
@@ -14063,7 +14250,8 @@
                                 "LEASE_EXPIRED_USAGE_UNCERTAIN",
                                 "AUTHORITY_CHANGED",
                                 "INPUT_CHANGED",
-                                "BUDGET_EXCEEDED"
+                                "BUDGET_EXCEEDED",
+                                "AGENT_LIMIT_REACHED"
                               ]
                             },
                             {
@@ -14267,6 +14455,8 @@
                         "conversationId",
                         "inputMessageId",
                         "agentContactId",
+                        "purpose",
+                        "createdAgent",
                         "status",
                         "failure",
                         "availability",
@@ -14293,6 +14483,8 @@
                     "conversationId": "synthetic",
                     "inputMessageId": "synthetic",
                     "agentContactId": "synthetic",
+                    "purpose": "reply",
+                    "createdAgent": null,
                     "status": "queued",
                     "failure": null,
                     "availability": {
@@ -14546,6 +14738,50 @@
                           "type": "string",
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
                         },
+                        "purpose": {
+                          "default": "reply",
+                          "type": "string",
+                          "enum": [
+                            "reply",
+                            "create_agent"
+                          ]
+                        },
+                        "createdAgent": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "contactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "conversationId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "displayName": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "reused": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "contactId",
+                                "conversationId",
+                                "displayName",
+                                "reused"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "status": {
                           "type": "string",
                           "enum": [
@@ -14570,7 +14806,8 @@
                                 "LEASE_EXPIRED_USAGE_UNCERTAIN",
                                 "AUTHORITY_CHANGED",
                                 "INPUT_CHANGED",
-                                "BUDGET_EXCEEDED"
+                                "BUDGET_EXCEEDED",
+                                "AGENT_LIMIT_REACHED"
                               ]
                             },
                             {
@@ -14774,6 +15011,8 @@
                         "conversationId",
                         "inputMessageId",
                         "agentContactId",
+                        "purpose",
+                        "createdAgent",
                         "status",
                         "failure",
                         "availability",
@@ -14800,6 +15039,8 @@
                     "conversationId": "synthetic",
                     "inputMessageId": "synthetic",
                     "agentContactId": "synthetic",
+                    "purpose": "reply",
+                    "createdAgent": null,
                     "status": "queued",
                     "failure": null,
                     "availability": {
@@ -17505,7 +17746,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.14.0"
+                          "const": "0.15.0"
                         },
                         "checks": {
                           "type": "object",
@@ -17564,7 +17805,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.14.0",
+                    "contractVersion": "0.15.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -17718,7 +17959,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.14.0"
+                          "const": "0.15.0"
                         },
                         "checks": {
                           "type": "object",
@@ -17777,7 +18018,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.14.0",
+                    "contractVersion": "0.15.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -17909,7 +18150,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.14.0"
+                          "const": "0.15.0"
                         },
                         "checks": {
                           "type": "object",
@@ -17968,7 +18209,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.14.0",
+                    "contractVersion": "0.15.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
