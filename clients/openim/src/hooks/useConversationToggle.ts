@@ -112,7 +112,27 @@ export function useConversationToggle() {
         if (researchMode) navigate(`/chat/${conversation.conversationID}`);
         return true;
       }
-      await updateCurrentConversation({ ...conversation }, isJump, isCurrent);
+      const selection = updateCurrentConversation({ ...conversation }, isJump, isCurrent);
+      if (researchMode && sessionType === 1) {
+        // A Single selection commits synchronously. Keep selection and route in
+        // the same tick: yielding first lets QueryChat unmount the old footer
+        // for currentID !== routeID, cancelling this operation before navigate.
+        if (
+          params.isCurrent?.() !== false &&
+          route.current === previousRoute &&
+          useResearchStore.getState().generation === generation &&
+          useResearchStore.getState().actor?.member.id === actorId &&
+          useConversationStore.getState().currentConversation?.conversationID ===
+            conversation.conversationID
+        ) {
+          navigate(`/chat/${conversation.conversationID}`);
+          await selection;
+          return true;
+        }
+        await selection;
+        return;
+      }
+      await selection;
       if (
         researchMode &&
         (params.isCurrent?.() === false ||
