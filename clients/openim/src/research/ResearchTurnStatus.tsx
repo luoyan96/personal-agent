@@ -17,10 +17,12 @@ type RetryConfirmation = {
 export function ResearchTurnStatus({
   turn,
   manager = false,
+  compact = false,
   onRetried,
 }: {
   turn: AgentTurn;
   manager?: boolean;
+  compact?: boolean;
   onRetried?: (turn: AgentTurn) => void;
 }) {
   const guidance = turnGuidance(turn, manager);
@@ -39,10 +41,12 @@ export function ResearchTurnStatus({
     };
   }, []);
   const [confirmation, setConfirmation] = useState<RetryConfirmation>();
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<{ scope: string; message: string }>();
   useEffect(() => {
     setConfirmation(undefined);
+    setDetailsOpen(false);
     setFailure(undefined);
     setBusy(false);
   }, [scope]);
@@ -93,31 +97,14 @@ export function ResearchTurnStatus({
       if (isCurrent()) setBusy(false);
     }
   };
-  return (
-    <div className="min-w-0 break-words text-xs" role="status" data-ai-turn-status>
+  const feedback = (
+    <>
       <Alert
         type={guidance.tone}
         showIcon
         message={guidance.title}
         description={guidance.nextStep}
       />
-      {retryAllowed && (
-        <Button
-          className="mt-1"
-          size="small"
-          onClick={() => {
-            setFailure(undefined);
-            setConfirmation({
-              turnId: turn.id,
-              version: turn.version,
-              budget: { ...turn.remainingBudget! },
-              key: crypto.randomUUID(),
-            });
-          }}
-        >
-          核对并重试
-        </Button>
-      )}
       {failure?.scope === scope && (
         <p className="mt-1 text-red-700">{failure.message}</p>
       )}
@@ -144,6 +131,73 @@ export function ResearchTurnStatus({
           </p>
         </div>
       </details>
+    </>
+  );
+  const retryButton = retryAllowed ? (
+    <Button
+      className="shrink-0"
+      size="small"
+      onClick={() => {
+        setDetailsOpen(false);
+        setFailure(undefined);
+        setConfirmation({
+          turnId: turn.id,
+          version: turn.version,
+          budget: { ...turn.remainingBudget! },
+          key: crypto.randomUUID(),
+        });
+      }}
+    >
+      核对并重试
+    </Button>
+  ) : null;
+  return (
+    <div className="min-w-0 break-words text-xs" role="status" data-ai-turn-status>
+      {compact ? (
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            className={`min-w-0 flex-1 truncate ${
+              guidance.tone === "error"
+                ? "text-red-700"
+                : guidance.tone === "warning"
+                ? "text-amber-700"
+                : guidance.tone === "success"
+                ? "text-green-700"
+                : "text-slate-600"
+            }`}
+            title={guidance.title}
+          >
+            {turn.failure === "BUDGET_EXCEEDED" ? "本次请求超出预算" : guidance.title}
+          </span>
+          <Button
+            className="shrink-0"
+            size="small"
+            type="text"
+            onClick={() => setDetailsOpen(true)}
+          >
+            查看详情
+          </Button>
+        </div>
+      ) : (
+        <>
+          {feedback}
+          <div className="mt-1">{retryButton}</div>
+        </>
+      )}
+      <Modal
+        title="AI 请求详情"
+        open={compact && detailsOpen}
+        onCancel={() => setDetailsOpen(false)}
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            {retryButton}
+            <Button onClick={() => setDetailsOpen(false)}>关闭</Button>
+          </div>
+        }
+        destroyOnClose
+      >
+        <div className="min-w-0 break-words">{feedback}</div>
+      </Modal>
       <Modal
         title="使用本轮剩余预算重试？"
         open={!!confirmation}

@@ -133,7 +133,7 @@ export function useResearchComposer() {
         {canonical.error && <Alert type="error" message={canonical.error} />}
         {(turnRead.data?.data || turn) &&
           turn?.conversationId === mapping.researchConversationId && (
-            <div className="mx-3 mt-1 max-h-32 overflow-y-auto">
+            <div className="mx-3 mt-1">
               {turnRead.error && (
                 <p className="text-red-700">
                   当前状态无法确认，以下为上次记录。{turnRead.error}
@@ -142,6 +142,7 @@ export function useResearchComposer() {
               <ResearchTurnStatus
                 turn={turnRead.data?.data || turn!}
                 manager={manager}
+                compact
                 onRetried={
                   turnRead.data && !turnRead.error
                     ? (next) =>
