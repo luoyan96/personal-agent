@@ -20,19 +20,18 @@ export const EmptyChat = () => {
     return (
       <Layout className="no-mobile flex items-center justify-center bg-white px-6">
         <div className="max-w-sm space-y-4">
-          <h1 className="text-xl font-medium">先聊聊你想完成的科研工作</h1>
+          <h1 className="text-xl font-medium">准备聊天</h1>
           <p className="text-slate-600">
-            在“需求与协作”中告诉协调 Agent
-            目标、已有材料、交付形式和截止时间；安排由你确认后再推进。
+            与你的 Agent 聊聊科研、学习或日常想法，也可以从左侧选择朋友。
           </p>
           {entry.error ? (
             <Alert type="error" showIcon message={entry.error} />
           ) : (
             <p className="text-sm text-slate-500" role="status">
               {!entry.ready
-                ? "正在登录并同步即时通信，完成后将打开需求与协作…"
+                ? "正在登录并同步即时通信，完成后将打开你的 Agent…"
                 : entry.pending || !entry.canOpenCoordinator
-                ? "正在准备当前账号的需求入口…"
+                ? "正在准备当前账号的聊天…"
                 : "也可以从左侧选择已有聊天。"}
             </p>
           )}
@@ -42,7 +41,7 @@ export const EmptyChat = () => {
             disabled={!entry.ready}
             onClick={entry.retry}
           >
-            {entry.canOpenCoordinator ? "打开需求与协作" : "重试准备需求入口"}
+            {entry.canOpenCoordinator ? "打开我的 Agent" : "重试准备聊天"}
           </Button>
         </div>
       </Layout>

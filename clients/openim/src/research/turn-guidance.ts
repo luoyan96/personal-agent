@@ -14,9 +14,7 @@ function modelGuidance(turn: AgentTurn, manager: boolean): Guidance {
         "这次请求记录为模型不可用；当前模型配置已可用。请核对剩余预算后决定是否明确重试，系统不会自动重试。",
       tone: "warning",
     };
-  const settings = manager
-    ? "请在实验室设置中检查模型配置，处理后再明确提交请求。"
-    : "请联系实验室负责人检查模型配置，处理后再明确提交请求。";
+  const settings = "请在模型设置中检查你的配置，处理后再明确发送。";
   switch (turn.availability.reason) {
     case "platform_disabled":
       return {
@@ -25,10 +23,10 @@ function modelGuidance(turn: AgentTurn, manager: boolean): Guidance {
         tone: "warning",
       };
     case "lab_disabled":
-      return { title: "实验室模型尚未启用", nextStep: settings, tone: "warning" };
+      return { title: "模型尚未启用", nextStep: settings, tone: "warning" };
     case "missing_credentials":
       return {
-        title: "实验室模型密钥未配置或暂不可用",
+        title: "模型密钥未配置或暂不可用",
         nextStep: settings,
         tone: "warning",
       };

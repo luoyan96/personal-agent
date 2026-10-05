@@ -1,5 +1,5 @@
 import { Alert, Button, Input, Modal, Space, Tag } from "antd";
-import { forwardRef, useEffect, useState } from "react";
+import { forwardRef, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { SessionType } from "@openim/wasm-client-sdk";
 import { OverlayVisibleHandle, useOverlayVisible } from "@/hooks/useOverlayVisible";
 import { useConversationToggle } from "@/hooks/useConversationToggle";
@@ -12,19 +12,20 @@ import { MemoryPanel } from "./MemoryPanel";
 
 export const ResearchUserCard = forwardRef<
   OverlayVisibleHandle,
-  { userID?: string; isSelf?: boolean }
+  { userID?: string; isSelf?: boolean; contactId?: string }
 >((props, ref) => {
   const { isOverlayOpen, closeOverlay } = useOverlayVisible(ref);
   const contacts = useResearchStore((s) => s.contacts);
   const self = useUserStore((s) => s.selfInfo.userID);
   const actor = useResearchStore((s) => s.actor);
+  const generation = useResearchStore((s) => s.generation);
   const entry = contacts.find((c) =>
     props.isSelf
       ? c.contact.identity.kind === "human" &&
         c.contact.identity.memberId === actor?.member.id
       : c.userID === props.userID,
   );
-  const contactId = entry?.contact.id || "";
+  const contactId = props.contactId || entry?.contact.id || "";
   const { data, error, refresh } = useResearchRead(
     () => researchApi("chatContact", { params: { id: contactId } }),
     contactId,
@@ -42,12 +43,27 @@ export const ResearchUserCard = forwardRef<
   const [version, setVersion] = useState(0);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState("");
+  const epoch = useRef(0);
+  const currentScope = useRef("");
+  const scope = `${generation}:${actor?.member.id}:${contactId}:${isOverlayOpen}`;
+  currentScope.current = scope;
+  useLayoutEffect(() => {
+    epoch.current++;
+    return () => {
+      epoch.current++;
+    };
+  }, [scope]);
+  const close = () => {
+    epoch.current++;
+    closeOverlay();
+  };
   const { toSpecifiedConversation } = useConversationToggle();
   useEffect(() => {
     setEditing(false);
     setMemories(false);
     setFailure("");
-  }, [contactId, isOverlayOpen]);
+    setBusy(false);
+  }, [scope]);
   const edit = () => {
     if (!contact) return;
     setForm({
@@ -59,35 +75,44 @@ export const ResearchUserCard = forwardRef<
     setVersion(contact.profile.version);
     setEditing(true);
   };
-  const command = async (run: () => Promise<unknown>) => {
+  const command = async (run: (isCurrent: () => boolean) => Promise<unknown>) => {
+    const requestEpoch = epoch.current;
+    const isCurrent = () =>
+      isOverlayOpen &&
+      epoch.current === requestEpoch &&
+      currentScope.current === scope &&
+      useResearchStore.getState().generation === generation &&
+      useResearchStore.getState().actor?.member.id === actor?.member.id;
+    if (!isCurrent()) return;
     setBusy(true);
     setFailure("");
     try {
-      await run();
+      await run(isCurrent);
+      if (!isCurrent()) return;
       await useResearchStore.getState().refresh();
+      if (!isCurrent()) return;
       await refresh();
     } catch (err) {
-      setFailure(err instanceof Error ? err.message : "操作失败");
-      await refresh();
+      if (isCurrent()) {
+        setFailure(err instanceof Error ? err.message : "操作失败");
+        await refresh();
+      }
     } finally {
-      setBusy(false);
+      if (isCurrent()) setBusy(false);
     }
   };
   return (
     <Modal
       title="联系人资料"
       open={isOverlayOpen}
-      onCancel={closeOverlay}
+      onCancel={close}
       footer={null}
       destroyOnClose
       width={500}
     >
       {(error || failure) && <Alert type="error" showIcon message={error || failure} />}
-      {!entry && (
-        <Alert
-          type="warning"
-          message="当前身份未在实验室通讯录中，不能以 IM 资料授予科研权限。"
-        />
+      {!entry && !props.contactId && (
+        <Alert type="warning" message="当前联系人资料暂不可读取，请稍后重试。" />
       )}
       {contact && (
         <div className="space-y-4">
@@ -95,12 +120,15 @@ export const ResearchUserCard = forwardRef<
             <OIMAvatar text={contact.displayName} size={48} />
             <div>
               <strong>{contact.displayName}</strong>
+              {contact.username && (
+                <p className="text-xs text-slate-500">@{contact.username}</p>
+              )}
               <div>
                 <Tag>
                   {contact.identity.kind === "human"
                     ? "真人"
                     : contact.profile.role === "coordinator"
-                    ? "AI · 需求协调"
+                    ? "你的 AI 联系人"
                     : "AI Agent"}
                 </Tag>
               </div>
@@ -130,11 +158,11 @@ export const ResearchUserCard = forwardRef<
                     (contact.identity.kind === "human"
                       ? ""
                       : contact.identity.ownerMemberId),
-              )?.contact.displayName || contact.identity.ownerMemberId}{" "}
+              )?.contact.displayName || "对方的账号"}{" "}
               ·{" "}
               {contact.availability.status === "available"
-                ? "科研服务已配置"
-                : "科研服务当前不可用"}
+                ? "模型可用"
+                : "模型暂不可用"}
             </p>
           )}
           {editing ? (
@@ -169,12 +197,12 @@ export const ResearchUserCard = forwardRef<
                   loading={busy}
                   disabled={!contact.allowedActions.includes("edit_profile")}
                   onClick={() =>
-                    void command(async () => {
+                    void command(async (isCurrent) => {
                       await researchApi("updateContactProfile", {
                         params: { id: contact.id },
                         body: { ...form, expectedVersion: version },
                       });
-                      setEditing(false);
+                      if (isCurrent()) setEditing(false);
                     })
                   }
                 >
@@ -207,12 +235,31 @@ export const ResearchUserCard = forwardRef<
                     type="primary"
                     loading={busy}
                     onClick={() =>
-                      void command(async () => {
+                      void command(async (isCurrent) => {
+                        if (!entry) {
+                          const canonical = await researchApi(
+                            "createDirectConversation",
+                            { body: { contactId: contact.id } },
+                          );
+                          if (!isCurrent()) return;
+                          await researchApi("imSyncConversation", {
+                            params: { id: canonical.data.id },
+                            body: {},
+                          });
+                          if (!isCurrent()) return;
+                          await useResearchStore.getState().refresh();
+                        }
+                        if (!isCurrent()) return;
+                        const target = useResearchStore
+                          .getState()
+                          .contacts.find((c) => c.contact.id === contact.id);
+                        if (!target)
+                          throw new Error("聊天目标尚未准备完成，请稍后再试。");
                         await toSpecifiedConversation({
-                          sourceID: entry!.userID,
+                          sourceID: target.userID,
                           sessionType: SessionType.Single,
                         });
-                        closeOverlay();
+                        if (isCurrent()) close();
                       })
                     }
                   >

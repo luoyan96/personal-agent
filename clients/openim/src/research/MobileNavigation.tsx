@@ -9,7 +9,6 @@ import { LabSettings } from "./LabSettings";
 export function MobileNavigation() {
   const navigate = useNavigate(),
     [settings, setSettings] = useState(false);
-  const actor = useResearchStore((s) => s.actor);
   return (
     <div className="hidden h-11 shrink-0 items-center justify-between border-b bg-white px-2 max-[600px]:flex">
       <Button type="text" onClick={() => navigate("/chat")}>
@@ -24,7 +23,7 @@ export function MobileNavigation() {
             { key: "requests", label: "联系人申请" },
             { key: "invitations", label: "群邀请与任务" },
             { key: "profile", label: "我的资料" },
-            ...(actor?.isLabManager ? [{ key: "settings", label: "实验室设置" }] : []),
+            { key: "settings", label: "模型设置" },
             { key: "logout", label: "退出登录" },
           ],
           onClick: ({ key }) => {

@@ -139,7 +139,7 @@ const ChatFooter = () => {
           data-composer-controls
         >
           {composer.controls}
-          {composer.isCoordinator && !html && (
+          {composer.advanced && composer.isCoordinator && !html && (
             <div className="px-3 py-1 text-xs">
               <p className="mb-1 text-slate-600">目标 · 材料 · 交付 · 截止时间</p>
               <div className="flex flex-wrap gap-2">
@@ -170,15 +170,12 @@ const ChatFooter = () => {
           <CKEditor
             key={imID}
             value={html}
-            placeholder={
-              composer.isCoordinator
-                ? "告诉你的需求协调 Agent，你想完成什么…"
-                : "发送消息…"
-            }
+            placeholder="发送消息…"
             onEnter={() => void enterToSend()}
             onChange={onChange}
           />
-          <div className="flex items-center justify-end py-2 pr-3">
+          <div className="flex items-center justify-between px-3 py-2">
+            <div>{composer.advancedToggle}</div>
             <Button
               className="w-fit px-6 py-1"
               type="primary"

@@ -14,6 +14,8 @@ import ModifyForm from "./ModifyForm";
 import RegisterForm from "./RegisterForm";
 import ResearchLogin from "@/research/ResearchLogin";
 import { researchMode } from "@/research/api";
+import { MessageOutlined, TeamOutlined, BlockOutlined } from "@ant-design/icons";
+import "@/research/auth-page.scss";
 
 export type FormType = 0 | 1 | 2;
 
@@ -34,6 +36,45 @@ export const Login = () => {
     feedbackToast({ msg: t("toast.copySuccess") });
   };
 
+  if (researchMode)
+    return (
+      <div className="research-auth-page">
+        {window.electronAPI && (
+          <div className="app-drag absolute left-0 right-0 top-0 h-10">
+            <WindowControlBar />
+          </div>
+        )}
+        <aside className="research-auth-brand">
+          <div className="research-auth-brand-content">
+            <div className="research-auth-symbol">
+              <MessageOutlined rev={undefined} />
+            </div>
+            <h1>科研微信</h1>
+            <p>与人和 Agent，像朋友一样聊天。</p>
+            <ul>
+              <li>
+                <TeamOutlined rev={undefined} />
+                一个账号，连接朋友与 Agent
+              </li>
+              <li>
+                <MessageOutlined rev={undefined} />
+                熟悉的聊天、文件与语音
+              </li>
+              <li>
+                <BlockOutlined rev={undefined} />
+                为自己的 Agent 选择模型
+              </li>
+            </ul>
+          </div>
+        </aside>
+        <section className="research-auth-panel">
+          <div className="research-auth-form">
+            <ResearchLogin />
+          </div>
+        </section>
+      </div>
+    );
+
   return (
     <div className="relative flex h-full flex-col">
       <div className="app-drag relative h-10 bg-[var(--top-search-bar)]">
@@ -42,22 +83,28 @@ export const Login = () => {
       <div className="flex flex-1 items-center justify-center">
         <LeftBar />
         <div
-          className={`${styles.login} mr-14 max-[900px]:mr-0 min-h-[450px] max-h-[calc(100vh-96px)] overflow-y-auto w-[350px] max-w-[calc(100vw-24px)] rounded-md p-8 max-[400px]:p-5`}
+          className={`${styles.login} mr-14 max-h-[calc(100vh-96px)] min-h-[450px] w-[350px] max-w-[calc(100vw-24px)] overflow-y-auto rounded-md p-8 max-[900px]:mr-0 max-[400px]:p-5`}
           style={{ boxShadow: "0 0 30px rgba(0,0,0,.1)" }}
         >
-          {researchMode ? <ResearchLogin /> : <>{formType === 0 && (
-            <LoginForm
-              setFormType={setFormType}
-              loginMethod={loginMethod}
-              updateLoginMethod={updateLoginMethod}
-            />
+          {researchMode ? (
+            <ResearchLogin />
+          ) : (
+            <>
+              {formType === 0 && (
+                <LoginForm
+                  setFormType={setFormType}
+                  loginMethod={loginMethod}
+                  updateLoginMethod={updateLoginMethod}
+                />
+              )}
+              {formType === 1 && (
+                <ModifyForm setFormType={setFormType} loginMethod={loginMethod} />
+              )}
+              {formType === 2 && (
+                <RegisterForm loginMethod={loginMethod} setFormType={setFormType} />
+              )}
+            </>
           )}
-          {formType === 1 && (
-            <ModifyForm setFormType={setFormType} loginMethod={loginMethod} />
-          )}
-          {formType === 2 && (
-            <RegisterForm loginMethod={loginMethod} setFormType={setFormType} />
-          )}</>}
         </div>
       </div>
       <div
@@ -75,8 +122,14 @@ const LeftBar = () => {
   return (
     <div className="flex min-h-[420] max-[900px]:hidden">
       <div className="mr-14 text-center">
-        <div className="text-2xl">{researchMode ? "科研微信" : t("placeholder.title")}</div>
-        <span className="text-sm text-gray-500">{researchMode ? "和真人与 AI 一起，把科研任务做完" : t("placeholder.subTitle")}</span>
+        <div className="text-2xl">
+          {researchMode ? "科研微信" : t("placeholder.title")}
+        </div>
+        <span className="text-sm text-gray-500">
+          {researchMode
+            ? "和真人与 AI 一起，把科研任务做完"
+            : t("placeholder.subTitle")}
+        </span>
         <img src={login_bg} alt="login_bg" />
       </div>
     </div>

@@ -49,9 +49,12 @@ const ChatHeader = () => {
     (state) => state.currentConversation,
   );
   const currentGroupInfo = useConversationStore((state) => state.currentGroupInfo);
-  const coordinator = useResearchStore(s => s.session?.coordinator);
-  const contact = useResearchStore(s => s.contacts.find(c=>c.userID===currentConversation?.userID)?.contact);
-  const isCoordinator = coordinator?.imConversationID === currentConversation?.conversationID;
+  const coordinator = useResearchStore((s) => s.session?.coordinator);
+  const contact = useResearchStore(
+    (s) => s.contacts.find((c) => c.userID === currentConversation?.userID)?.contact,
+  );
+  const isCoordinator =
+    coordinator?.imConversationID === currentConversation?.conversationID;
   const currentUserIsInGroup = useConversationStore((state) =>
     Boolean(state.currentMemberInGroup?.userID),
   );
@@ -83,7 +86,10 @@ const ChatHeader = () => {
         });
         break;
       case 2:
-        if (researchMode && !isGroupSession) { emit("OPEN_USER_CARD", {userID:currentConversation?.userID}); break; }
+        if (researchMode && !isGroupSession) {
+          emit("OPEN_USER_CARD", { userID: currentConversation?.userID });
+          break;
+        }
         if (isGroupSession) {
           groupSettingRef.current?.openOverlay();
         } else {
@@ -113,9 +119,19 @@ const ChatHeader = () => {
             )}
           >
             <div className="truncate text-base font-semibold">
-              {isCoordinator ? "需求与协作" : contact?.displayName || currentConversation?.showName}
+              {contact?.displayName || currentConversation?.showName}
             </div>
-            {!isGroupSession && contact && <div className="truncate text-xs text-slate-500">{isCoordinator ? `${contact.displayName} · 需求协调 Agent` : contact.identity.kind === 'human' ? '真人' : `${contact.displayName} · AI Agent`}</div>}
+            {!isGroupSession && contact && (
+              <div className="truncate text-xs text-slate-500">
+                {contact.identity.kind === "human"
+                  ? contact.username
+                    ? `@${contact.username}`
+                    : "真人"
+                  : isCoordinator
+                  ? "你的 AI 联系人 · 可选需求与协作"
+                  : "AI 联系人"}
+              </div>
+            )}
             {isGroupSession && currentUserIsInGroup && (
               <div className="flex items-center text-xs text-[var(--sub-text)]">
                 <img width={20} src={group_member} alt="member" />

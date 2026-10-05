@@ -12,11 +12,15 @@ import useConversationState from "./useConversationState";
 import { researchMode } from "@/research/api";
 import { ResearchConversationPanel } from "@/research/ResearchConversationPanel";
 import type { ResearchChatEntry } from "@/research/useResearchChatEntry";
+import { useResearchStore } from "@/research/store";
 
 export const QueryChat = () => {
   const entry = useOutletContext<ResearchChatEntry>();
   const { conversationID } = useParams();
   const currentID = useConversationStore((s) => s.currentConversation?.conversationID);
+  const mapping = useResearchStore((s) =>
+    s.mappings.find((c) => c.imConversationID === currentID),
+  );
   const updateCurrentConversation = useConversationStore(
     (state) => state.updateCurrentConversation,
   );
@@ -73,7 +77,7 @@ export const QueryChat = () => {
             }
           />
         )}
-        {researchMode && <ResearchConversationPanel />}
+        {researchMode && mapping?.kind === "group" && <ResearchConversationPanel />}
         <PanelGroup direction="vertical">
           <Panel id="chat-main" order={0}>
             <ChatContent />

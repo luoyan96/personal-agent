@@ -1,4 +1,4 @@
-import { Alert, Tag } from "antd";
+import { Alert } from "antd";
 import { OpenImResearchPointer } from "@research-agent-platform/contracts";
 import { IMessageItemProps } from "@/pages/chat/queryChat/MessageItem";
 import { researchApi } from "./api";
@@ -9,6 +9,7 @@ import { useResearchStore } from "./store";
 import { useConversationStore } from "@/store";
 import { useState } from "react";
 import type { AgentTurn } from "@research-agent-platform/contracts";
+import styles from "@/pages/chat/queryChat/MessageItem/message-item.module.scss";
 
 export default function ResearchMessageRender({ message }: IMessageItemProps) {
   const imID = useConversationStore((s) => s.currentConversation?.conversationID);
@@ -72,36 +73,48 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
     !!turnId,
   );
   return (
-    <div className="max-w-[620px] rounded border bg-white p-3 text-sm">
-      <Tag color="blue">科研回执 · 当前授权</Tag>
-      {!pointer && <Alert type="warning" message="这条消息不含可读取的科研回执" />}
+    <div className={`${styles.bubble} max-w-[620px] text-sm`}>
+      {!pointer && <Alert type="warning" message="这条消息暂无法显示" />}
       {read.error && (
-        <Alert type="warning" message="科研消息当前不可读取" description={read.error} />
+        <Alert type="warning" message="这条消息当前无法读取" description={read.error} />
       )}
-      {pointer && !read.data && !read.error && <p>正在核对权限…</p>}
+      {pointer && !read.data && !read.error && (
+        <p className="text-slate-500">正在加载消息…</p>
+      )}
       {read.data && (
         <>
           <p className="whitespace-pre-wrap break-words">{read.data.fact.text}</p>
-          {read.data.fact.resources.map((resource) => (
-            <p
-              key={`${resource.kind}:${resource.ref.id}`}
-              className="text-xs text-slate-600"
-            >
-              {resource.kind} · {resource.ref.id} / 版本 {resource.ref.version}
-            </p>
-          ))}
-          {read.data.actions.map((action) => (
-            <ResearchActionCard
-              key={action.id + ":" + action.version + ":" + action.status}
-              action={action}
-            />
-          ))}
+          {!!read.data.fact.resources.length && (
+            <details className="mt-2 text-xs">
+              <summary>相关材料</summary>
+              {read.data.fact.resources.map((resource) => (
+                <p
+                  key={`${resource.kind}:${resource.ref.id}`}
+                  className="text-xs text-slate-600"
+                >
+                  {resource.kind} · {resource.ref.id} / 版本 {resource.ref.version}
+                </p>
+              ))}
+            </details>
+          )}
+          {!!read.data.actions.length && (
+            <details className="mt-2">
+              <summary>协作建议（{read.data.actions.length}）</summary>
+              {read.data.actions.map((action) => (
+                <ResearchActionCard
+                  key={action.id + ":" + action.version + ":" + action.status}
+                  action={action}
+                />
+              ))}
+            </details>
+          )}
         </>
       )}
       {(turn.data?.data || currentRetry) && (
         <ResearchTurnStatus
           turn={turn.data?.data || currentRetry!}
           manager={manager}
+          compact
           onRetried={
             turn.data && !turn.error
               ? (next) => {

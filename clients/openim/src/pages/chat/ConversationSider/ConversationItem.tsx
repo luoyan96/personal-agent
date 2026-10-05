@@ -22,8 +22,10 @@ interface IConversationProps {
 
 const ConversationItem = ({ isActive, conversation }: IConversationProps) => {
   const navigate = useNavigate();
-  const coordinator = useResearchStore(s => s.session?.coordinator);
-  const contact = useResearchStore(s => s.contacts.find(c => c.userID === conversation.userID)?.contact);
+  const coordinator = useResearchStore((s) => s.session?.coordinator);
+  const contact = useResearchStore(
+    (s) => s.contacts.find((c) => c.userID === conversation.userID)?.contact,
+  );
   const isCoordinator = coordinator?.imConversationID === conversation.conversationID;
   const updateCurrentConversation = useConversationStore(
     (state) => state.updateCurrentConversation,
@@ -72,15 +74,21 @@ const ConversationItem = ({ isActive, conversation }: IConversationProps) => {
 
       <div className="ml-3 flex h-11 flex-1 flex-col justify-between overflow-hidden">
         <div className="flex items-center justify-between">
-          <div className="flex-1 truncate font-medium">{isCoordinator ? "需求与协作" : contact?.displayName || conversation.showName}{contact && contact.identity.kind !== "human" && <span className="ml-1 text-xs text-blue-600">AI</span>}</div>
+          <div className="flex-1 truncate font-medium">
+            {contact?.displayName || conversation.showName}
+            {contact && contact.identity.kind !== "human" && (
+              <span className="ml-1 text-xs text-blue-600">AI</span>
+            )}
+          </div>
           <div className="ml-2 text-xs text-[var(--sub-text)]">{latestMessageTime}</div>
         </div>
 
         <div className="flex items-center">
           <div className="flex min-h-[16px] flex-1 items-center overflow-hidden text-xs">
-            <div
-              className="truncate text-[rgba(81,94,112,0.5)]"
-            >{latestMessageContent || (isCoordinator ? contact?.displayName || conversation.showName : "")}</div>
+            <div className="truncate text-[rgba(81,94,112,0.5)]">
+              {latestMessageContent ||
+                (isCoordinator ? contact?.displayName || conversation.showName : "")}
+            </div>
           </div>
         </div>
       </div>

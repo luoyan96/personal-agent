@@ -15,7 +15,9 @@ const authRule = (field: "username" | "password" | "inviteCode") => ({
   validator: async (_rule: unknown, value: unknown) => {
     const input =
       typeof value === "string" && field !== "password" ? value.trim() : value;
-    const parsed = routes.register.request.shape.body.shape[field].safeParse(input);
+    const parsed = routes.register.request.shape.body.shape[field].safeParse(
+      field === "inviteCode" && !input ? undefined : input,
+    );
     if (!parsed.success) throw new Error(validationMessage([{ path: [field] }]));
   },
 });
@@ -33,7 +35,7 @@ export default function ResearchLogin() {
   const imReason = useResearchStore((s) => s.session?.reason);
   const imDescription =
     imReason === "not_configured"
-      ? "即时通信服务尚未配置。请联系实验室负责人；资料和实验室设置仍可使用。"
+      ? "即时通信服务尚未配置。请联系服务管理员；资料和模型设置仍可使用。"
       : imReason === "policy_not_configured"
       ? "即时通信权限配置待核对。请联系实验室负责人。"
       : imReason === "backend_unreachable"
@@ -125,7 +127,9 @@ export default function ResearchLogin() {
           body: {
             username: values.username,
             password: values.password,
-            inviteCode: values.inviteCode!,
+            ...(values.inviteCode?.trim()
+              ? { inviteCode: values.inviteCode.trim() }
+              : {}),
             displayName: values.displayName!,
           },
         });
@@ -223,9 +227,7 @@ export default function ResearchLogin() {
                   重新连接
                 </Button>
                 <Button onClick={() => profile.current?.openOverlay()}>我的资料</Button>
-                {actor.isLabManager && (
-                  <Button onClick={() => setSettings(true)}>实验室设置</Button>
-                )}
+                <Button onClick={() => setSettings(true)}>模型设置</Button>
                 <Button
                   onClick={async () => {
                     try {
@@ -246,9 +248,12 @@ export default function ResearchLogin() {
             </div>
           ) : (
             <>
-              <h1 className="mb-5 text-xl font-medium">
-                {registering ? "邀请码注册" : "登录科研微信"}
-              </h1>
+              <h1>{registering ? "创建账号" : "登录科研微信"}</h1>
+              <p className="research-auth-subtitle">
+                {registering
+                  ? "注册后即可添加好友，与 Agent 聊天。"
+                  : "与朋友和你的 Agent 继续聊天。"}
+              </p>
               {registered && (
                 <Alert className="mb-3" type="success" message="账号已创建，请登录" />
               )}
@@ -260,13 +265,6 @@ export default function ResearchLogin() {
                 {registering && (
                   <>
                     <Form.Item
-                      label="实验室邀请码"
-                      name="inviteCode"
-                      rules={[authRule("inviteCode")]}
-                    >
-                      <Input autoComplete="off" />
-                    </Form.Item>
-                    <Form.Item
                       label="显示姓名"
                       name="displayName"
                       rules={[
@@ -274,7 +272,7 @@ export default function ResearchLogin() {
                         { max: 200, message: "显示姓名最多 200 个字符" },
                       ]}
                     >
-                      <Input />
+                      <Input placeholder="请输入你的显示姓名" autoComplete="name" />
                     </Form.Item>
                   </>
                 )}
@@ -282,22 +280,24 @@ export default function ResearchLogin() {
                   label="用户名"
                   name="username"
                   rules={[authRule("username")]}
-                  extra="只能包含字母、数字、下划线和连字符；区分大小写。"
+                  extra="用于登录和添加好友；区分大小写。"
                 >
                   <Input
                     autoComplete="username"
                     autoCapitalize="none"
                     spellCheck={false}
+                    placeholder="请输入用户名"
                   />
                 </Form.Item>
                 <Form.Item
                   label="密码"
                   name="password"
                   rules={[authRule("password")]}
-                  extra="密码至少 8 个字符，无需组合大小写、数字或符号。"
+                  extra="至少 8 个字符"
                 >
                   <Input.Password
                     autoComplete={registering ? "new-password" : "current-password"}
+                    placeholder="请输入密码"
                   />
                 </Form.Item>
                 {(error || connectionError) && (
@@ -308,19 +308,40 @@ export default function ResearchLogin() {
                     message={error || connectionError}
                   />
                 )}
-                <Button type="primary" htmlType="submit" block loading={pending}>
+                <Button
+                  className="research-auth-submit"
+                  type="primary"
+                  htmlType="submit"
+                  block
+                  loading={pending}
+                >
                   {registering ? "创建账号" : "登录并连接"}
                 </Button>
-                <Button
-                  type="link"
-                  className="mt-2"
-                  onClick={() => {
-                    setRegistering(!registering);
-                    setError("");
-                  }}
-                >
-                  {registering ? "返回登录" : "使用实验室邀请码注册"}
-                </Button>
+                <div className="research-auth-switch">
+                  {registering ? "已有账号？" : "还没有账号？"}
+                  <Button
+                    type="link"
+                    className="mt-2"
+                    onClick={() => {
+                      setRegistering(!registering);
+                      setError("");
+                    }}
+                  >
+                    {registering ? "登录" : "创建账号"}
+                  </Button>
+                </div>
+                {registering && (
+                  <details className="research-auth-team">
+                    <summary>我有团队邀请码（可选）</summary>
+                    <Form.Item
+                      label="团队邀请码"
+                      name="inviteCode"
+                      rules={[authRule("inviteCode")]}
+                    >
+                      <Input autoComplete="off" placeholder="加入已有团队时填写" />
+                    </Form.Item>
+                  </details>
+                )}
               </Form>
             </>
           )}

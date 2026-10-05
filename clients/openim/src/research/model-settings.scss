@@ -1,0 +1,290 @@
+.model-settings-modal {
+  --model-accent: #0089ff;
+  --model-ink: #172338;
+  --model-muted: #65758b;
+  --model-line: #e3e9f1;
+
+  .ant-modal-content {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    max-height: calc(100dvh - 40px);
+    overflow: hidden;
+    border-radius: 12px;
+    background: #fff;
+    color: var(--model-ink);
+  }
+  .ant-modal-header {
+    margin: 0;
+    padding: 26px 28px 20px;
+  }
+  .ant-modal-title {
+    color: var(--model-ink);
+  }
+  .ant-modal-close {
+    top: 24px;
+    inset-inline-end: 24px;
+  }
+  .ant-modal-body {
+    min-height: 0;
+    overflow: auto;
+  }
+  h1 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    font-weight: 650;
+    line-height: 1.3;
+  }
+  h2 {
+    margin: 0 0 6px;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  p {
+    margin: 0;
+    color: var(--model-muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .ant-input,
+  .ant-input-affix-wrapper,
+  .ant-select-selector {
+    min-height: 40px;
+    font-size: 14px;
+    border-color: #d7e0ec;
+    border-radius: 8px;
+  }
+  .ant-input-affix-wrapper .ant-input {
+    min-height: auto;
+    border-radius: 0;
+  }
+  .ant-select-selector {
+    display: flex;
+    align-items: center;
+  }
+  .ant-btn {
+    height: 40px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  .ant-btn-primary,
+  .ant-switch-checked {
+    background: var(--model-accent);
+  }
+}
+.model-settings-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 28px;
+  min-height: 425px;
+  padding: 0 20px 0;
+}
+.model-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 18px 12px;
+  border-radius: 8px;
+  background: #f5f7fa;
+  > h3 {
+    margin: 0 0 8px;
+    padding: 0 4px;
+    color: #475b74;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .model-config-rows {
+    max-height: 300px;
+    overflow: auto;
+  }
+  .model-config-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 6px;
+    padding: 12px 10px;
+    border-radius: 7px;
+    color: var(--model-ink, #172338);
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.5;
+    &:hover {
+      background: #edf1f7;
+    }
+    &[aria-pressed="true"] {
+      background: #e0efff;
+      color: #0089ff;
+    }
+    > span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    small {
+      display: block;
+      color: #65758b;
+      font-size: 11px;
+    }
+  }
+  .model-add {
+    margin-top: 10px;
+    background: #fff;
+  }
+}
+.model-settings-form {
+  min-width: 0;
+  padding: 8px 8px 20px 0;
+  .model-form-description {
+    margin-bottom: 24px;
+  }
+  .model-form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .model-form-two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+    color: #24364e;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .ant-select {
+    width: 100%;
+  }
+  .model-key-line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .model-key-status {
+    flex-shrink: 0;
+    color: #17956b;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .model-key-help {
+    margin-top: 6px;
+    font-size: 12px;
+  }
+  .model-default {
+    margin-top: 18px;
+  }
+  label.ant-checkbox-wrapper {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    font-weight: 400;
+  }
+  .model-toggle-label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    font-weight: 400;
+  }
+  .model-privacy {
+    margin-top: 12px;
+    font-size: 12px;
+  }
+  .model-error {
+    margin-top: 14px;
+  }
+}
+.model-settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 28px 0;
+  padding: 16px 0 20px;
+  border-top: 1px solid #e3e9f1;
+  .model-footer-actions {
+    display: flex;
+    gap: 12px;
+  }
+  .ant-btn-primary {
+    min-width: 82px;
+  }
+}
+@media (max-width: 600px) {
+  .model-settings-modal {
+    margin: 12px auto;
+    padding: 0;
+    .ant-modal-content {
+      max-height: calc(100dvh - 24px);
+    }
+    .ant-modal-header {
+      padding: 22px 18px 16px;
+    }
+    .ant-modal-close {
+      top: 18px;
+      inset-inline-end: 12px;
+    }
+    h1 {
+      font-size: 22px;
+    }
+    h2 {
+      font-size: 21px;
+    }
+  }
+  .model-settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding: 0 16px;
+    min-height: 0;
+  }
+  .model-settings-list {
+    padding: 12px;
+    gap: 4px;
+  }
+  .model-settings-list .model-config-rows {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+  }
+  .model-settings-list .model-config-row {
+    min-width: 135px;
+    width: auto;
+    margin: 0;
+  }
+  .model-settings-list .model-add {
+    margin-top: 6px;
+  }
+  .model-settings-form {
+    padding: 0 0 8px;
+  }
+  .model-settings-form .model-form-two {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  .model-settings-form .model-key-line {
+    gap: 8px;
+  }
+  .model-settings-form .model-form-description {
+    margin-bottom: 18px;
+  }
+  .model-settings-footer {
+    position: sticky;
+    bottom: 0;
+    margin: 6px 0 0;
+    padding: 12px 16px;
+    background: #fff;
+  }
+  .model-settings-footer .ant-btn {
+    padding-inline: 10px;
+  }
+  .model-settings-footer .model-footer-actions {
+    gap: 6px;
+  }
+}

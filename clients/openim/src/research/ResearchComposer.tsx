@@ -10,6 +10,7 @@ import { researchApi, researchMode } from "./api";
 import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
 import { ResearchTurnStatus } from "./ResearchTurnStatus";
+import { DownOutlined, UpOutlined } from "@ant-design/icons";
 
 export function useResearchComposer() {
   const conversation = useConversationStore((s) => s.currentConversation);
@@ -28,6 +29,7 @@ export function useResearchComposer() {
     mapping?.researchConversationId || "",
     researchMode && !!mapping,
   );
+  const [advanced, setAdvanced] = useState(false);
   const [mode, setMode] = useState<"chat" | "ask_agent">("chat"),
     [agentId, setAgentId] = useState(""),
     [maxTokens, setTokens] = useState(4000),
@@ -46,6 +48,9 @@ export function useResearchComposer() {
         const contact = contacts.find((c) => c.contact.id === m.contactId)?.contact;
         return contact && contact.identity.kind !== "human" ? [contact] : [];
       }) || [];
+  const peer = contacts.find((c) => c.userID === conversation?.userID)?.contact;
+  const isDirectAgent =
+    !!mapping && mapping.kind !== "group" && !!peer && peer.identity.kind !== "human";
   const turn =
     turnSnapshot?.generation === actorGeneration && turnSnapshot.imID === imID
       ? turnSnapshot.turn
@@ -59,32 +64,39 @@ export function useResearchComposer() {
     setContext([]);
     setOpen(false);
     setTurn(undefined);
+    setAdvanced(false);
     const peer = contacts.find((c) => c.userID === conversation?.userID)?.contact;
     setAgentId(peer && peer.identity.kind !== "human" ? peer.id : "");
-    setMode(peer && peer.identity.kind !== "human" ? "ask_agent" : "chat");
+    setMode("chat");
   }, [imID, actorGeneration]);
   const sendResearch = async (text: string) => {
-    if (!researchMode || mode !== "ask_agent") return false;
+    const advancedRequest = advanced && mode === "ask_agent";
+    if (!researchMode || (!isDirectAgent && !advancedRequest)) return false;
     if (
       !mapping ||
       !canonical.data?.data.allowedActions.includes("send") ||
-      !agents.some((a) => a.id === agentId)
+      (advancedRequest ? !agents.some((a) => a.id === agentId) : agents.length !== 1)
     )
       throw new Error("请确认当前会话权限，并选择实际已加入的 AI");
     const generation = useResearchStore.getState().generation;
     const memberId = useResearchStore.getState().actor?.member.id;
     const selfUserID = useUserStore.getState().selfInfo.userID;
-    const result = await researchApi("sendChatMessage", {
-      params: { id: mapping.researchConversationId },
-      body: {
-        text,
-        intent: "ask_agent",
-        agentContactId: agentId,
-        budget: { maxTokens, maxSeconds },
-        mentions: [],
-        context,
-      },
-    });
+    const result = advancedRequest
+      ? await researchApi("sendChatMessage", {
+          params: { id: mapping.researchConversationId },
+          body: {
+            text,
+            intent: "ask_agent",
+            agentContactId: agentId,
+            budget: { maxTokens, maxSeconds },
+            mentions: [],
+            context,
+          },
+        })
+      : await researchApi("agentChatMessage", {
+          params: { id: mapping.researchConversationId },
+          body: { text },
+        });
     if (
       useResearchStore.getState().generation === generation &&
       useResearchStore.getState().actor?.member.id === memberId &&
@@ -109,39 +121,42 @@ export function useResearchComposer() {
   const controls =
     researchMode && mapping ? (
       <>
-        <div className="flex flex-wrap items-center gap-2 px-3 text-xs">
-          <Select
-            size="small"
-            aria-label="发送方式"
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: "chat", label: "普通聊天" },
-              { value: "ask_agent", label: "请 AI 回复或提出安排" },
-            ]}
-          />
-          {mode === "ask_agent" && (
-            <>
-              <Select
-                size="small"
-                aria-label="请求的 AI"
-                value={agentId || undefined}
-                placeholder="选择已加入 AI"
-                onChange={setAgentId}
-                options={agents.map((agent) => ({
-                  value: agent.id,
-                  label: agent.displayName,
-                }))}
-              />
-              <Button size="small" onClick={() => setOpen(true)}>
-                材料与预算 ({context.length})
-              </Button>
-            </>
-          )}
-          <span className="text-slate-500">
-            @ 不自动执行；建群、邀请和运行须明确确认。
-          </span>
-        </div>
+        {advanced && (
+          <div className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs">
+            <strong>需求与协作</strong>
+            <Select
+              size="small"
+              aria-label="发送方式"
+              value={mode}
+              onChange={setMode}
+              options={[
+                { value: "chat", label: "普通聊天" },
+                { value: "ask_agent", label: "提出协作需求" },
+              ]}
+            />
+            {mode === "ask_agent" && (
+              <>
+                <Select
+                  size="small"
+                  aria-label="请求的 AI"
+                  value={agentId || undefined}
+                  placeholder="选择已加入 AI"
+                  onChange={setAgentId}
+                  options={agents.map((agent) => ({
+                    value: agent.id,
+                    label: agent.displayName,
+                  }))}
+                />
+                <Button size="small" onClick={() => setOpen(true)}>
+                  材料与预算 ({context.length})
+                </Button>
+              </>
+            )}
+            <span className="text-slate-500">
+              @ 不自动执行；建群、邀请和运行须明确确认。
+            </span>
+          </div>
+        )}
         {canonical.error && <Alert type="error" message={canonical.error} />}
         {(turnRead.data?.data || turn) &&
           turn?.conversationId === mapping.researchConversationId && (
@@ -210,10 +225,27 @@ export function useResearchComposer() {
     sendResearch,
     controls,
     isCoordinator: mapping?.kind === "personal",
+    advanced,
+    advancedToggle:
+      researchMode && mapping && agents.length ? (
+        <Button
+          type="text"
+          size="small"
+          onClick={() => setAdvanced(!advanced)}
+          icon={
+            advanced ? <UpOutlined rev={undefined} /> : <DownOutlined rev={undefined} />
+          }
+        >
+          可选协作
+        </Button>
+      ) : null,
     invalid:
       researchMode &&
-      mode === "ask_agent" &&
-      (!agents.some((a) => a.id === agentId) || !canonical.data),
+      ((advanced && mode === "ask_agent") || isDirectAgent) &&
+      (!canonical.data?.data.allowedActions.includes("send") ||
+        (advanced && mode === "ask_agent"
+          ? !agents.some((a) => a.id === agentId)
+          : agents.length !== 1)),
   };
 }
 function ContextTask({

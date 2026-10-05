@@ -1,19 +1,30 @@
 import { Alert, Button, Input, Modal, Select, Space, Tag } from "antd";
-import { useState } from "react";
-import { emit } from "@/utils/events";
+import { useLayoutEffect, useRef, useState } from "react";
 import OIMAvatar from "@/components/OIMAvatar";
 import { researchApi } from "./api";
 import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
+import { ResearchUserCard } from "./ResearchUserCard";
+import type { OverlayVisibleHandle } from "@/hooks/useOverlayVisible";
 
 export function ResearchContacts() {
-  const [view, setView] = useState<"mine" | "directory">("mine");
+  const [view, setView] = useState<"mine" | "directory" | "search">("mine");
   const [search, setSearch] = useState("");
+  const [accountQuery, setAccountQuery] = useState("");
+  const [selectedContact, setSelectedContact] = useState<string>();
+  const profile = useRef<OverlayVisibleHandle>(null);
   const { data, error, refresh } = useResearchRead(
-    () => researchApi("chatContacts", { query: { view, limit: 100 } }),
-    view,
+    () =>
+      researchApi("chatContacts", {
+        query:
+          view === "search"
+            ? { view: "directory", scope: "global", search: accountQuery, limit: 100 }
+            : { view, scope: "local", limit: 100 },
+      }),
+    `${view}:${accountQuery}`,
+    view !== "search" || !!accountQuery,
   );
-  const mapped = useResearchStore((s) => s.contacts);
+  const generation = useResearchStore((s) => s.generation);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
     displayName: "",
@@ -23,49 +34,73 @@ export function ResearchContacts() {
   });
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState("");
+  const epoch = useRef(0);
+  useLayoutEffect(() => {
+    epoch.current++;
+    setBusy(false);
+    setFailure("");
+    return () => {
+      epoch.current++;
+    };
+  }, [generation, creating]);
   return (
     <div className="h-full space-y-4 overflow-auto bg-white p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-bold">联系人</h2>
         <Button onClick={() => setCreating(true)}>创建专属 Agent</Button>
       </div>
-      <Space>
+      <Space wrap>
         <Select
           value={view}
           onChange={setView}
           options={[
             { value: "mine", label: "我的联系人" },
-            { value: "directory", label: "发现 · 实验室通讯录" },
+            { value: "search", label: "添加朋友" },
+            { value: "directory", label: "团队通讯录" },
           ]}
         />
-        <Input
-          aria-label="搜索联系人"
-          placeholder="搜索名称"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        {view === "search" ? (
+          <Input.Search
+            aria-label="查找账号"
+            placeholder="输入朋友的完整用户名"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            onSearch={(value) => setAccountQuery(value.trim())}
+            enterButton="查找"
+          />
+        ) : (
+          <Input
+            aria-label="搜索联系人"
+            placeholder="搜索名称"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        )}
       </Space>
       {error && <Alert type="error" message={error} />}
       {data?.data
-        .filter((c) => c.displayName.toLowerCase().includes(search.toLowerCase()))
+        .filter(
+          (c) =>
+            view === "search" ||
+            c.displayName.toLowerCase().includes(search.toLowerCase()) ||
+            c.username?.includes(search),
+        )
         .map((contact) => (
           <button
             type="button"
             className="flex w-full items-center gap-3 border-b p-3 text-left hover:bg-slate-50"
             key={contact.id}
-            onClick={async () => {
-              await useResearchStore.getState().refresh();
-              const current =
-                useResearchStore
-                  .getState()
-                  .contacts.find((item) => item.contact.id === contact.id) ||
-                mapped.find((item) => item.contact.id === contact.id);
-              if (current) emit("OPEN_USER_CARD", { userID: current.userID });
+            onClick={() => {
+              setSelectedContact(contact.id);
+              profile.current?.openOverlay();
             }}
           >
             <OIMAvatar text={contact.displayName} />
             <div>
               <strong>{contact.displayName}</strong>
+              {contact.username && (
+                <p className="text-xs text-slate-500">@{contact.username}</p>
+              )}
               <p className="text-xs text-slate-600">
                 {contact.profile.introduction || "尚未填写介绍"}
               </p>
@@ -74,16 +109,31 @@ export function ResearchContacts() {
               {contact.identity.kind === "human"
                 ? "真人"
                 : contact.profile.role === "coordinator"
-                ? "AI · 需求协调"
+                ? "我的 AI"
                 : "AI"}
             </Tag>
           </button>
         ))}
-      {data && !data.data.length && <p>暂无可查看的联系人</p>}
+      {data && !data.data.length && (
+        <p>
+          {view === "search"
+            ? "没有找到这个账号，请检查完整用户名。"
+            : "暂无可查看的联系人"}
+        </p>
+      )}
+      {view === "search" && !accountQuery && (
+        <p className="text-sm text-slate-500">
+          通过唯一用户名查找朋友；添加后需对方同意。
+        </p>
+      )}
+      <ResearchUserCard contactId={selectedContact} ref={profile} />
       <Modal
         title="创建专属 Agent"
         open={creating}
-        onCancel={() => setCreating(false)}
+        onCancel={() => {
+          epoch.current++;
+          setCreating(false);
+        }}
         footer={null}
       >
         <p className="mb-3 text-xs text-slate-600">
@@ -120,12 +170,19 @@ export function ResearchContacts() {
             loading={busy}
             disabled={!form.displayName.trim()}
             onClick={async () => {
+              const requestEpoch = epoch.current;
+              const isCurrent = () =>
+                requestEpoch === epoch.current &&
+                generation === useResearchStore.getState().generation;
               setBusy(true);
               setFailure("");
               try {
                 await researchApi("createPersonalAgent", { body: form });
+                if (!isCurrent()) return;
                 await useResearchStore.getState().refresh();
+                if (!isCurrent()) return;
                 await refresh();
+                if (!isCurrent()) return;
                 setCreating(false);
                 setForm({
                   displayName: "",
@@ -134,9 +191,10 @@ export function ResearchContacts() {
                   personality: "",
                 });
               } catch (err) {
-                setFailure(err instanceof Error ? err.message : "创建失败");
+                if (isCurrent())
+                  setFailure(err instanceof Error ? err.message : "创建失败");
               } finally {
-                setBusy(false);
+                if (isCurrent()) setBusy(false);
               }
             }}
           >

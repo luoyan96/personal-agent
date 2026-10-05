@@ -253,7 +253,7 @@ const LeftNavBar = memo(() => {
             className="flex cursor-pointer items-center justify-between rounded-md px-3 py-4 hover:bg-[var(--primary-active)]"
             onClick={() => profileMenuClick(menu.idx)}
           >
-            <div>{researchMode && menu.idx === 1 ? "实验室设置" : menu.title}</div>
+            <div>{researchMode && menu.idx === 1 ? "模型设置" : menu.title}</div>
             <RightOutlined rev={undefined} />
           </div>
           {menu.gap && (

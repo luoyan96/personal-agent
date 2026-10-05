@@ -1,0 +1,199 @@
+.research-auth-page {
+  display: grid;
+  grid-template-columns: 56.5% minmax(0, 1fr);
+  min-height: 100dvh;
+  background: #fff;
+  color: #172338;
+  .research-auth-brand {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 60px 44px;
+    background: #e8f4ff;
+    &::before,
+    &::after {
+      position: absolute;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      background: #dfefff;
+      content: "";
+    }
+    &::before {
+      top: -324px;
+      right: -150px;
+    }
+    &::after {
+      bottom: -325px;
+      left: -260px;
+    }
+  }
+  .research-auth-brand-content {
+    position: relative;
+    z-index: 1;
+    max-width: 620px;
+  }
+  .research-auth-symbol {
+    margin: 0 0 46px 58px;
+    color: #0089ff;
+    font-size: 128px;
+    line-height: 1;
+  }
+  .research-auth-brand h1 {
+    margin: 0 0 12px;
+    color: #0089ff;
+    font-size: clamp(52px, 5.55vw, 86px);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 1px;
+  }
+  .research-auth-brand p {
+    margin: 0 0 42px;
+    color: #4f6580;
+    font-size: clamp(22px, 2.05vw, 32px);
+    line-height: 1.6;
+  }
+  .research-auth-brand ul {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    color: #4f6580;
+    font-size: clamp(18px, 1.7vw, 26px);
+  }
+  .research-auth-brand li {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .research-auth-brand li .anticon {
+    font-size: 30px;
+  }
+  .research-auth-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    padding: 64px 50px;
+    overflow: auto;
+  }
+  .research-auth-form {
+    width: 100%;
+    max-width: 466px;
+  }
+  .research-auth-form h1 {
+    margin: 0 0 10px;
+    color: #172338;
+    font-size: 42px;
+    font-weight: 650;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .research-auth-subtitle {
+    margin: 0 0 40px;
+    color: #65758b;
+    font-size: 17px;
+    line-height: 1.7;
+    text-align: center;
+  }
+  .ant-form-item {
+    margin-bottom: 26px;
+  }
+  .ant-form-item-label {
+    padding-bottom: 8px;
+  }
+  .ant-form-item-label > label {
+    color: #24364e;
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .ant-input,
+  .ant-input-affix-wrapper {
+    min-height: 52px;
+    padding: 12px 16px;
+    border-color: #d7e0ec;
+    border-radius: 8px;
+    font-size: 16px;
+  }
+  .ant-input-affix-wrapper .ant-input {
+    min-height: auto;
+    padding: 0;
+    border-radius: 0;
+  }
+  .ant-form-item-extra,
+  .ant-form-item-explain {
+    margin-top: 7px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .research-auth-submit {
+    height: 54px;
+    border-radius: 8px;
+    background: #0089ff;
+    font-size: 18px;
+  }
+  .research-auth-switch {
+    margin: 18px 0 0;
+    text-align: center;
+    font-size: 15px;
+    color: #65758b;
+  }
+  .research-auth-switch .ant-btn {
+    padding: 0 6px;
+    font-size: 15px;
+    color: #0089ff;
+  }
+  .research-auth-team {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e3e9f1;
+    color: #475b74;
+  }
+  .research-auth-team summary {
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .research-auth-team .ant-form-item {
+    margin-top: 20px;
+    margin-bottom: 0;
+  }
+}
+@media (max-width: 900px) {
+  .research-auth-page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .research-auth-page .research-auth-brand {
+    display: none;
+  }
+  .research-auth-page .research-auth-panel {
+    padding: 40px 24px;
+  }
+}
+@media (max-width: 400px) {
+  .research-auth-page .research-auth-panel {
+    align-items: flex-start;
+    padding: 32px 20px;
+  }
+  .research-auth-page .research-auth-form h1 {
+    font-size: 30px;
+  }
+  .research-auth-page .research-auth-subtitle {
+    margin-bottom: 26px;
+    font-size: 14px;
+  }
+  .research-auth-page .ant-form-item-label > label {
+    font-size: 14px;
+  }
+  .research-auth-page .ant-input,
+  .research-auth-page .ant-input-affix-wrapper {
+    min-height: 46px;
+    font-size: 14px;
+  }
+  .research-auth-page .ant-input-affix-wrapper .ant-input {
+    min-height: auto;
+  }
+}

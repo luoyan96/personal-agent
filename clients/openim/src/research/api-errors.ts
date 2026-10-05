@@ -21,7 +21,7 @@ const messages: Record<string, string> = {
   ALREADY_CLAIMED: "任务已被其他成员承接，请刷新后查看。",
   DEPENDENCY_BLOCKED: "前置任务尚未满足要求，请查看任务依赖。",
   CAPABILITY_UNAVAILABLE: "当前能力不可用，请重新选择获准的能力。",
-  MODEL_UNAVAILABLE: "实验室模型暂不可用，请联系负责人检查模型设置。",
+  MODEL_UNAVAILABLE: "模型暂不可用，请在模型设置中检查你的配置。",
   CURSOR_EXPIRED: "列表已变化，请刷新后重新查看。",
   SERVICE_UNAVAILABLE: "服务暂不可用，请稍后重试。",
   NOT_IMPLEMENTED: "此功能暂未开放。",

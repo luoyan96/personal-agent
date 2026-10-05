@@ -53,23 +53,52 @@ export function useConversationToggle() {
   const toSpecifiedConversation = useCallback(
     async (params: ToSpecifiedConversationParams) => {
       const { sourceID, sessionType, isJump } = params;
+      const generation = useResearchStore.getState().generation;
+      const actorId = useResearchStore.getState().actor?.member.id;
+      const previousID =
+        useConversationStore.getState().currentConversation?.conversationID;
+      const isCurrent = () =>
+        !researchMode ||
+        (useResearchStore.getState().generation === generation &&
+          useResearchStore.getState().actor?.member.id === actorId &&
+          useConversationStore.getState().currentConversation?.conversationID ===
+            previousID);
       let conversation;
       if (researchMode) {
         if (sessionType === 1) {
           await useResearchStore.getState().refresh();
-          const contact = useResearchStore.getState().contacts.find(c => c.userID === sourceID)?.contact;
-          if (!contact?.allowedActions.includes("chat")) throw new Error("请先添加联系人并获得同意，才能私聊");
-          const canonical = (await researchApi("createDirectConversation",{body:{contactId:contact.id}})).data;
-          const mapping = (await researchApi("imSyncConversation",{params:{id:canonical.id},body:{}})).data;
+          if (!isCurrent()) return;
+          const contact = useResearchStore
+            .getState()
+            .contacts.find((c) => c.userID === sourceID)?.contact;
+          if (!contact?.allowedActions.includes("chat"))
+            throw new Error("请先添加联系人并获得同意，才能私聊");
+          const canonical = (
+            await researchApi("createDirectConversation", {
+              body: { contactId: contact.id },
+            })
+          ).data;
+          if (!isCurrent()) return;
+          const mapping = (
+            await researchApi("imSyncConversation", {
+              params: { id: canonical.id },
+              body: {},
+            })
+          ).data;
+          if (!isCurrent()) return;
           await useResearchStore.getState().refresh();
+          if (!isCurrent()) return;
           conversation = await ensureResearchConversation(mapping);
         } else {
-          const mapping = useResearchStore.getState().mappings.find(item => item.groupID === sourceID);
+          const mapping = useResearchStore
+            .getState()
+            .mappings.find((item) => item.groupID === sourceID);
           if (!mapping) throw new Error("当前没有这个群的科研访问权限");
           conversation = await ensureResearchConversation(mapping);
         }
       } else conversation = await getConversation({ sourceID, sessionType });
       if (
+        !isCurrent() ||
         !conversation ||
         useConversationStore.getState().currentConversation?.conversationID ===
           conversation.conversationID
