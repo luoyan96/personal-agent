@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.15.0"
+    "version": "0.16.0"
   },
   "paths": {
     "/api/v1/me/model-configurations": {
@@ -205,6 +205,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -226,6 +236,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -506,6 +526,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -527,6 +557,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -825,6 +865,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -846,6 +896,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -1151,6 +1211,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -1172,6 +1242,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -1481,6 +1561,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -1502,6 +1592,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -1885,6 +1985,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -1906,6 +2016,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -2345,6 +2465,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -2366,6 +2496,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -2602,6 +2742,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -2623,6 +2773,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -2907,6 +3067,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -2928,6 +3098,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -3176,6 +3356,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -3197,6 +3387,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -3641,6 +3841,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -3662,6 +3872,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -4030,6 +4250,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -4051,6 +4281,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -4521,6 +4761,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -4542,6 +4792,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -4975,6 +5235,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -4996,6 +5266,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -5497,6 +5777,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -5518,6 +5808,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -6003,6 +6303,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -6024,6 +6334,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -6489,6 +6809,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -6510,6 +6840,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -6774,6 +7114,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -6795,6 +7145,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -7066,6 +7426,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -7087,6 +7457,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -7563,6 +7943,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -7584,6 +7974,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -7846,6 +8246,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -7867,6 +8277,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -8139,6 +8559,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -8160,6 +8590,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -8454,6 +8894,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -8475,6 +8925,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -8772,6 +9232,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -8793,6 +9263,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -9070,6 +9550,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -9091,6 +9581,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -9429,6 +9929,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -9450,6 +9960,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -10102,6 +10622,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -10123,6 +10653,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -10451,6 +10991,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -10472,6 +11022,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -10790,6 +11350,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -10811,6 +11381,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -11024,6 +11604,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -11045,6 +11635,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -11263,6 +11863,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -11284,6 +11894,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -11635,6 +12255,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -11656,6 +12286,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -11807,6 +12447,62 @@
                               "model",
                               "service"
                             ]
+                          },
+                          "files": {
+                            "maxItems": 1,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "messageId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "filename": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "mediaType": {
+                                  "type": "string",
+                                  "enum": [
+                                    "application/pdf",
+                                    "text/plain",
+                                    "text/markdown",
+                                    "text/csv"
+                                  ]
+                                },
+                                "byteLength": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 10485760
+                                },
+                                "sha256": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "pageCount": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 200
+                                },
+                                "characterCount": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 200000
+                                }
+                              },
+                              "required": [
+                                "messageId",
+                                "filename",
+                                "mediaType",
+                                "byteLength",
+                                "sha256",
+                                "pageCount",
+                                "characterCount"
+                              ],
+                              "additionalProperties": false
+                            }
                           },
                           "text": {
                             "anyOf": [
@@ -11999,6 +12695,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -12020,6 +12726,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -12315,6 +13031,62 @@
                                 "service"
                               ]
                             },
+                            "files": {
+                              "maxItems": 1,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "messageId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "filename": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "mediaType": {
+                                    "type": "string",
+                                    "enum": [
+                                      "application/pdf",
+                                      "text/plain",
+                                      "text/markdown",
+                                      "text/csv"
+                                    ]
+                                  },
+                                  "byteLength": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 10485760
+                                  },
+                                  "sha256": {
+                                    "type": "string",
+                                    "pattern": "^[a-f0-9]{64}$"
+                                  },
+                                  "pageCount": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 200
+                                  },
+                                  "characterCount": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 200000
+                                  }
+                                },
+                                "required": [
+                                  "messageId",
+                                  "filename",
+                                  "mediaType",
+                                  "byteLength",
+                                  "sha256",
+                                  "pageCount",
+                                  "characterCount"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
                             "text": {
                               "anyOf": [
                                 {
@@ -12502,6 +13274,72 @@
                                       "type": "null"
                                     }
                                   ]
+                                },
+                                "fileRead": {
+                                  "type": "object",
+                                  "properties": {
+                                    "messageId": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    "filename": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    },
+                                    "pageCount": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 200
+                                    },
+                                    "characterCount": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 200000
+                                    },
+                                    "ranges": {
+                                      "maxItems": 20,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "pageNumber": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 200
+                                          },
+                                          "start": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "end": {
+                                            "type": "integer",
+                                            "exclusiveMinimum": 0,
+                                            "maximum": 9007199254740991
+                                          }
+                                        },
+                                        "required": [
+                                          "pageNumber",
+                                          "start",
+                                          "end"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "partial": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "messageId",
+                                    "filename",
+                                    "pageCount",
+                                    "characterCount",
+                                    "ranges",
+                                    "partial"
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "status": {
                                   "type": "string",
@@ -12825,6 +13663,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -12846,6 +13694,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -12950,6 +13808,34 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 8000
+                  },
+                  "fileSelection": {
+                    "type": "object",
+                    "properties": {
+                      "messageId": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                      },
+                      "pageNumbers": {
+                        "minItems": 1,
+                        "maxItems": 10,
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 200
+                        }
+                      },
+                      "query": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      }
+                    },
+                    "required": [
+                      "messageId"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -13009,6 +13895,62 @@
                                 "model",
                                 "service"
                               ]
+                            },
+                            "files": {
+                              "maxItems": 1,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "messageId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "filename": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "mediaType": {
+                                    "type": "string",
+                                    "enum": [
+                                      "application/pdf",
+                                      "text/plain",
+                                      "text/markdown",
+                                      "text/csv"
+                                    ]
+                                  },
+                                  "byteLength": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 10485760
+                                  },
+                                  "sha256": {
+                                    "type": "string",
+                                    "pattern": "^[a-f0-9]{64}$"
+                                  },
+                                  "pageCount": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 200
+                                  },
+                                  "characterCount": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 200000
+                                  }
+                                },
+                                "required": [
+                                  "messageId",
+                                  "filename",
+                                  "mediaType",
+                                  "byteLength",
+                                  "sha256",
+                                  "pageCount",
+                                  "characterCount"
+                                ],
+                                "additionalProperties": false
+                              }
                             },
                             "text": {
                               "anyOf": [
@@ -13197,6 +14139,72 @@
                                       "type": "null"
                                     }
                                   ]
+                                },
+                                "fileRead": {
+                                  "type": "object",
+                                  "properties": {
+                                    "messageId": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    "filename": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    },
+                                    "pageCount": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 200
+                                    },
+                                    "characterCount": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 200000
+                                    },
+                                    "ranges": {
+                                      "maxItems": 20,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "pageNumber": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 200
+                                          },
+                                          "start": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "end": {
+                                            "type": "integer",
+                                            "exclusiveMinimum": 0,
+                                            "maximum": 9007199254740991
+                                          }
+                                        },
+                                        "required": [
+                                          "pageNumber",
+                                          "start",
+                                          "end"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "partial": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "messageId",
+                                    "filename",
+                                    "pageCount",
+                                    "characterCount",
+                                    "ranges",
+                                    "partial"
+                                  ],
+                                  "additionalProperties": false
                                 },
                                 "status": {
                                   "type": "string",
@@ -13520,6 +14528,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -13541,6 +14559,878 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/conversations/{id}/agent-files": {
+      "post": {
+        "operationId": "agentFileMessage",
+        "description": "Explicit local file bytes to a personal/direct joined Agent only. Up to10MiB PDF or UTF8 txt/md/csv; isolated bounded text extraction, no URL/OCR. Persist bounded page text privately in turn metadata; API returns metadata only. Default4000/90 budget selects labeled page/UTF16 ranges and partial status. File instructions never authorize tools/contact creation/tasks. Exact replay reauthorizes without parsing or dispatching again. Followup agentChatMessage optionally selects source message/pages/query within the same authorized conversation.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "filename": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "pattern": "^[^\\\\/\\x00-\\x1f]+$"
+                  },
+                  "mediaType": {
+                    "type": "string",
+                    "enum": [
+                      "application/pdf",
+                      "text/plain",
+                      "text/markdown",
+                      "text/csv"
+                    ]
+                  },
+                  "contentBase64": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 13981016,
+                    "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8000
+                  }
+                },
+                "required": [
+                  "filename",
+                  "mediaType",
+                  "contentBase64"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "filename": "synthetic",
+                "mediaType": "application/pdf",
+                "contentBase64": "eA=="
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            "conversationId": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            "sequence": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "senderContactId": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "human",
+                                "model",
+                                "service"
+                              ]
+                            },
+                            "files": {
+                              "maxItems": 1,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "messageId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "filename": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "mediaType": {
+                                    "type": "string",
+                                    "enum": [
+                                      "application/pdf",
+                                      "text/plain",
+                                      "text/markdown",
+                                      "text/csv"
+                                    ]
+                                  },
+                                  "byteLength": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 10485760
+                                  },
+                                  "sha256": {
+                                    "type": "string",
+                                    "pattern": "^[a-f0-9]{64}$"
+                                  },
+                                  "pageCount": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 200
+                                  },
+                                  "characterCount": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 200000
+                                  }
+                                },
+                                "required": [
+                                  "messageId",
+                                  "filename",
+                                  "mediaType",
+                                  "byteLength",
+                                  "sha256",
+                                  "pageCount",
+                                  "characterCount"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "text": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 8000
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "mentions": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "contactId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "start": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "end": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "contactId",
+                                  "start",
+                                  "end"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "resources": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "plan",
+                                      "task",
+                                      "assignment",
+                                      "run",
+                                      "deliverable",
+                                      "artifact"
+                                    ]
+                                  },
+                                  "ref": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                      },
+                                      "version": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "version"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "ref"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "actionIds": {
+                              "maxItems": 10,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              }
+                            },
+                            "turnId": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "conversationId",
+                            "sequence",
+                            "senderContactId",
+                            "origin",
+                            "text",
+                            "mentions",
+                            "resources",
+                            "actionIds",
+                            "turnId",
+                            "createdAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "turn": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "conversationId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "inputMessageId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "agentContactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "purpose": {
+                                  "type": "string",
+                                  "enum": [
+                                    "reply",
+                                    "create_agent"
+                                  ]
+                                },
+                                "createdAgent": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "contactId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                        },
+                                        "conversationId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                        },
+                                        "displayName": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 200
+                                        },
+                                        "reused": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "contactId",
+                                        "conversationId",
+                                        "displayName",
+                                        "reused"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "fileRead": {
+                                  "type": "object",
+                                  "properties": {
+                                    "messageId": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    "filename": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    },
+                                    "pageCount": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 200
+                                    },
+                                    "characterCount": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 200000
+                                    },
+                                    "ranges": {
+                                      "maxItems": 20,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "pageNumber": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 200
+                                          },
+                                          "start": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "end": {
+                                            "type": "integer",
+                                            "exclusiveMinimum": 0,
+                                            "maximum": 9007199254740991
+                                          }
+                                        },
+                                        "required": [
+                                          "pageNumber",
+                                          "start",
+                                          "end"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "partial": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "messageId",
+                                    "filename",
+                                    "pageCount",
+                                    "characterCount",
+                                    "ranges",
+                                    "partial"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "queued",
+                                    "running",
+                                    "waiting_input",
+                                    "succeeded",
+                                    "unavailable",
+                                    "failed",
+                                    "interrupted",
+                                    "cancelled"
+                                  ]
+                                },
+                                "failure": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "MODEL_UNAVAILABLE",
+                                        "INVALID_MODEL_OUTPUT",
+                                        "MODEL_FAILED",
+                                        "LEASE_EXPIRED_USAGE_UNCERTAIN",
+                                        "AUTHORITY_CHANGED",
+                                        "INPUT_CHANGED",
+                                        "BUDGET_EXCEEDED",
+                                        "AGENT_LIMIT_REACHED"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "availability": {
+                                  "type": "object",
+                                  "properties": {
+                                    "status": {
+                                      "type": "string",
+                                      "enum": [
+                                        "available",
+                                        "unavailable",
+                                        "disabled"
+                                      ]
+                                    },
+                                    "reason": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "platform_disabled",
+                                            "lab_disabled",
+                                            "missing_credentials",
+                                            "capability_unavailable",
+                                            "owner_authorization_required",
+                                            "not_connected"
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "status",
+                                    "reason"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "outputMessageId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "usage": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "inputTokens": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "outputTokens": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "elapsedMs": {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        "cost": {
+                                          "anyOf": [
+                                            {
+                                              "type": "number",
+                                              "minimum": 0
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "currency": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "maxLength": 10
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "inputTokens",
+                                        "outputTokens",
+                                        "elapsedMs",
+                                        "cost",
+                                        "currency"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "budget": {
+                                  "type": "object",
+                                  "properties": {
+                                    "maxTokens": {
+                                      "type": "integer",
+                                      "exclusiveMinimum": 0,
+                                      "maximum": 1000000
+                                    },
+                                    "maxSeconds": {
+                                      "type": "integer",
+                                      "exclusiveMinimum": 0,
+                                      "maximum": 86400
+                                    }
+                                  },
+                                  "required": [
+                                    "maxTokens",
+                                    "maxSeconds"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "remainingBudget": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "maxTokens": {
+                                          "type": "integer",
+                                          "exclusiveMinimum": 0,
+                                          "maximum": 1000000
+                                        },
+                                        "maxSeconds": {
+                                          "type": "integer",
+                                          "exclusiveMinimum": 0,
+                                          "maximum": 86400
+                                        }
+                                      },
+                                      "required": [
+                                        "maxTokens",
+                                        "maxSeconds"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "allowedActions": {
+                                  "maxItems": 2,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "cancel",
+                                      "retry"
+                                    ]
+                                  }
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                },
+                                "createdAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                "updatedAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "conversationId",
+                                "inputMessageId",
+                                "agentContactId",
+                                "status",
+                                "failure",
+                                "availability",
+                                "outputMessageId",
+                                "usage",
+                                "budget",
+                                "remainingBudget",
+                                "allowedActions",
+                                "version",
+                                "createdAt",
+                                "updatedAt"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "turn"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "message": {
+                      "id": "synthetic",
+                      "conversationId": "synthetic",
+                      "sequence": 1,
+                      "senderContactId": null,
+                      "origin": "human",
+                      "text": null,
+                      "mentions": [],
+                      "resources": [],
+                      "actionIds": [],
+                      "turnId": null,
+                      "createdAt": "2026-09-21T08:00:00+08:00"
+                    },
+                    "turn": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -13684,6 +15574,72 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "fileRead": {
+                          "type": "object",
+                          "properties": {
+                            "messageId": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            "filename": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "pageCount": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 200
+                            },
+                            "characterCount": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 200000
+                            },
+                            "ranges": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "pageNumber": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 200
+                                  },
+                                  "start": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "end": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "pageNumber",
+                                  "start",
+                                  "end"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "partial": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "messageId",
+                            "filename",
+                            "pageCount",
+                            "characterCount",
+                            "ranges",
+                            "partial"
+                          ],
+                          "additionalProperties": false
                         },
                         "status": {
                           "type": "string",
@@ -14002,6 +15958,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -14023,6 +15989,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -14210,6 +16186,72 @@
                             }
                           ]
                         },
+                        "fileRead": {
+                          "type": "object",
+                          "properties": {
+                            "messageId": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            "filename": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "pageCount": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 200
+                            },
+                            "characterCount": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 200000
+                            },
+                            "ranges": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "pageNumber": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 200
+                                  },
+                                  "start": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "end": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "pageNumber",
+                                  "start",
+                                  "end"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "partial": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "messageId",
+                            "filename",
+                            "pageCount",
+                            "characterCount",
+                            "ranges",
+                            "partial"
+                          ],
+                          "additionalProperties": false
+                        },
                         "status": {
                           "type": "string",
                           "enum": [
@@ -14527,6 +16569,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -14548,6 +16600,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -14760,6 +16822,72 @@
                             }
                           ]
                         },
+                        "fileRead": {
+                          "type": "object",
+                          "properties": {
+                            "messageId": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            "filename": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "pageCount": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 200
+                            },
+                            "characterCount": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 200000
+                            },
+                            "ranges": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "pageNumber": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 200
+                                  },
+                                  "start": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "end": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "pageNumber",
+                                  "start",
+                                  "end"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "partial": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "messageId",
+                            "filename",
+                            "pageCount",
+                            "characterCount",
+                            "ranges",
+                            "partial"
+                          ],
+                          "additionalProperties": false
+                        },
                         "status": {
                           "type": "string",
                           "enum": [
@@ -15077,6 +17205,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -15098,6 +17236,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -15919,6 +18067,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -15940,6 +18098,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -16869,6 +19037,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -16890,6 +19068,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -17104,6 +19292,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -17125,6 +19323,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -17354,6 +19562,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -17375,6 +19593,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -17618,6 +19846,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -17639,6 +19877,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -17720,7 +19968,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.15.0"
+                          "const": "0.16.0"
                         },
                         "checks": {
                           "type": "object",
@@ -17779,7 +20027,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.15.0",
+                    "contractVersion": "0.16.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -17831,6 +20079,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -17852,6 +20110,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -17933,7 +20201,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.15.0"
+                          "const": "0.16.0"
                         },
                         "checks": {
                           "type": "object",
@@ -17992,7 +20260,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.15.0",
+                    "contractVersion": "0.16.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -18044,6 +20312,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -18065,6 +20343,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -18124,7 +20412,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.15.0"
+                          "const": "0.16.0"
                         },
                         "checks": {
                           "type": "object",
@@ -18183,7 +20471,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.15.0",
+                    "contractVersion": "0.16.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -18759,6 +21047,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -18780,6 +21078,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -18978,6 +21286,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -18999,6 +21317,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -19624,6 +21952,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -19645,6 +21983,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -19809,6 +22157,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -19830,6 +22188,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -20052,6 +22420,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -20073,6 +22451,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -20350,6 +22738,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -20371,6 +22769,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -20623,6 +23031,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -20644,6 +23062,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -20846,6 +23274,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -20867,6 +23305,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -21132,6 +23580,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -21153,6 +23611,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -21776,6 +24244,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -21797,6 +24275,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -22459,6 +24947,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -22480,6 +24978,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -23173,6 +25681,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -23194,6 +25712,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -23465,6 +25993,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -23486,6 +26024,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -24824,6 +27372,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -24845,6 +27403,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -28814,6 +31382,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -28835,6 +31413,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -29633,6 +32221,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -29654,6 +32252,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -31008,6 +33616,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -31029,6 +33647,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -31855,6 +34483,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -31876,6 +34514,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -33504,6 +36152,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -33525,6 +36183,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -36927,6 +39595,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -36948,6 +39626,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -37917,6 +40605,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -37938,6 +40636,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -38680,6 +41388,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -38701,6 +41419,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -39413,6 +42141,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -39434,6 +42172,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -40276,6 +43024,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -40297,6 +43055,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -41166,6 +43934,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -41187,6 +43965,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -42029,6 +44817,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -42050,6 +44848,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -42428,6 +45236,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -42449,6 +45267,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -42805,6 +45633,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -42826,6 +45664,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -43915,6 +46763,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -43936,6 +46794,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -44631,6 +47499,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -44652,6 +47530,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -44885,6 +47773,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -44906,6 +47804,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -45755,6 +48663,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -45776,6 +48694,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -46084,6 +49012,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -46105,6 +49043,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -46960,6 +49908,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -46981,6 +49939,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -47238,6 +50206,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -47259,6 +50237,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -48121,6 +51109,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -48142,6 +51140,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -48449,6 +51457,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -48470,6 +51488,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -48742,6 +51770,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -48763,6 +51801,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -49006,6 +52054,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -49027,6 +52085,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -49153,6 +52221,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -49174,6 +52252,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -51757,6 +54845,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -51778,6 +54876,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -52053,6 +55161,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -52074,6 +55192,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -54504,6 +57632,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -54525,6 +57663,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -55361,6 +58509,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -55382,6 +58540,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -56084,6 +59252,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -56105,6 +59283,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -56857,6 +60045,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -56878,6 +60076,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -57111,6 +60319,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -57132,6 +60350,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -57894,6 +61122,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -57915,6 +61153,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -58248,6 +61496,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -58269,6 +61527,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -60749,6 +64017,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -60770,6 +64048,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -61118,6 +64406,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -61139,6 +64437,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -61543,6 +64851,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -61564,6 +64882,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -61848,6 +65176,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -61869,6 +65207,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -62140,6 +65488,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -62161,6 +65519,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -62572,6 +65940,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -62593,6 +65971,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -62806,6 +66194,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -62827,6 +66225,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -63175,6 +66583,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -63196,6 +66614,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -63513,6 +66941,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -63534,6 +66972,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -63844,6 +67292,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -63865,6 +67323,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -64078,6 +67546,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -64099,6 +67577,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -64400,6 +67888,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -64421,6 +67919,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -64770,6 +68278,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -64791,6 +68309,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -65572,6 +69100,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -65593,6 +69131,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -65957,6 +69505,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -65978,6 +69536,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -66330,6 +69898,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -66351,6 +69929,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -66619,6 +70207,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -66640,6 +70238,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -66926,6 +70534,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -66947,6 +70565,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -67237,6 +70865,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -67258,6 +70896,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -67524,6 +71172,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -67545,6 +71203,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -67838,6 +71506,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -67859,6 +71537,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -68147,6 +71835,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -68168,6 +71866,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -68420,6 +72128,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -68441,6 +72159,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -68733,6 +72461,16 @@
               }
             }
           },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
@@ -68754,6 +72492,16 @@
             }
           },
           "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "See error.code mapping and retry rules in protocol.md.",
             "content": {
               "application/json": {
@@ -68837,7 +72585,16 @@
                   "INVALID_STATE",
                   "INTERNAL_ERROR",
                   "INVITE_UNAVAILABLE",
-                  "USERNAME_TAKEN"
+                  "USERNAME_TAKEN",
+                  "FILE_UNSUPPORTED",
+                  "FILE_TOO_LARGE",
+                  "FILE_INVALID_ENCODING",
+                  "FILE_ENCRYPTED",
+                  "FILE_NO_TEXT",
+                  "FILE_PARSE_FAILED",
+                  "FILE_PARSE_TIMEOUT",
+                  "FILE_EXTRACTION_LIMIT",
+                  "FILE_PAGE_UNAVAILABLE"
                 ]
               },
               "message": {
