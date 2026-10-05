@@ -10,10 +10,11 @@ import { personalModelRuntime } from './personal-models.js'
 import type { Config } from './config.js'
 import { fail } from './errors.js'
 import { ContactDirectory, directoryCommands } from './contact-directory.js'
+import { isAgentCreationCommand, legacyTurnDocument } from './agent-creation.js'
 
 export type ChatCommand = keyof typeof chatRoutes | 'imCreateGroup' | 'imInviteContact'
 type Resource = z.infer<typeof ChatResource>
-export type TurnInput = { budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean }
+export type TurnInput = { budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED' }
 export type ChatRequest = { params: { id?: string; contactId?: string }; query: { cursor?: string; limit?: number; search?: string; afterSequence?: number; view?: 'directory'|'mine'; direction?: 'all'|'incoming'|'outgoing'; status?: 'all'|'pending'; scope?: 'private_agent'|'conversation'|'local'|'global'; scopeId?: string }; headers: { 'Idempotency-Key'?: string }; body: unknown }
 type Request = ChatRequest
 const decode = (value: unknown) => JSON.parse(String(value))
@@ -180,8 +181,12 @@ export class ChatService {
   }
   checkTurnInput(turnId: string, exact = true) {
     const row = this.db.prepare('SELECT * FROM chat_turns WHERE id=?').get(turnId); if (!row) fail('NOT_FOUND')
-    const turn = AgentTurn.parse(decode(row.document)), input = decode(row.request_json) as TurnInput
+    const input = decode(row.request_json) as TurnInput, turn = this.materializedTurn(row)
     const group = this.conversation(turn.conversationId, false); this.joinedAgent(group, turn.agentContactId)
+    if(input.purpose==='create_agent') {
+      const agent=this.contact(turn.agentContactId),message=this.projectedMessage(turn.inputMessageId)
+      if(!input.dailyChat||group.kind!=='personal'||group.ownerMemberId!==this.c.actor.id||agent.identity.kind!=='personal_agent'||agent.identity.ownerMemberId!==this.c.actor.id||agent.profile.role!=='coordinator'||message.origin!=='human'||message.senderContactId!==this.human().id||!isAgentCreationCommand(message.text??''))fail('FORBIDDEN')
+    }
     if (exact) this.c.checkVersion(group.version, input.conversationVersion)
     if(exact && input.modelSelectionFingerprint && input.modelSelectionFingerprint!==personalModelRuntime(this.db,this.c.actor,this.config).fingerprint)fail('VERSION_CONFLICT')
     if (exact && input.agentContextFingerprint && input.agentContextFingerprint!==this.directory.modelContext(turn.agentContactId,group.id).fingerprint)fail('VERSION_CONFLICT')
@@ -191,7 +196,13 @@ export class ChatService {
   turn(id: string) {
     const row=this.db.prepare('SELECT * FROM chat_turns WHERE id=? AND owner_id=?').get(id,this.c.actor.id)
     if(!row)fail('NOT_FOUND')
-    const turn=AgentTurn.parse(decode(row.document));this.conversation(turn.conversationId, false)
+    const turn=this.materializedTurn(row);this.conversation(turn.conversationId, false)
+    if(turn.createdAgent){
+      try{const contact=this.contact(turn.createdAgent.contactId),direct=this.conversation(turn.createdAgent.conversationId,false)
+        if(turn.status!=='succeeded'||contact.identity.kind!=='personal_agent'||contact.identity.ownerMemberId!==this.c.actor.id||contact.profile.role!=='specialist'||direct.kind!=='direct'||direct.ownerMemberId!==this.c.actor.id||!direct.members.some(m=>m.contactId===contact.id&&m.status==='joined'))turn.createdAgent=null
+        else turn.createdAgent.displayName=contact.displayName
+      }catch{turn.createdAgent=null}
+    }
     const root=decode(this.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(row.root_id!)!.request_json) as TurnInput
     const attempts=this.db.prepare('SELECT turn_id,usage_json FROM chat_attempts WHERE root_id=?').all(row.root_id!)
     turn.budget=root.budget;turn.remainingBudget=null;turn.allowedActions=[]
@@ -212,7 +223,15 @@ export class ChatService {
     // Status remains visible after source/agent revocation; output content has separate live ACL checks.
     return turn
   }
-  saveTurn(turn: AgentTurn) { this.db.prepare('UPDATE chat_turns SET status=?,document=? WHERE id=?').run(turn.status, encode(turn), turn.id) }
+  materializedTurn(row:Record<string,unknown>):AgentTurn {
+    const input=decode(row.request_json) as TurnInput
+    return AgentTurn.parse({...decode(row.document),...(input.purpose==='create_agent'?{purpose:'create_agent',createdAgent:input.createdAgent??null,...(input.creationFailure?{failure:input.creationFailure}:{})}:{})})
+  }
+  saveTurn(turn: AgentTurn) {
+    const input=decode(this.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(turn.id)!.request_json) as TurnInput
+    if(turn.purpose==='create_agent') {input.purpose='create_agent';input.createdAgent=turn.createdAgent??null;input.creationFailure=turn.failure==='AGENT_LIMIT_REACHED'?'AGENT_LIMIT_REACHED':undefined}
+    this.db.prepare('UPDATE chat_turns SET status=?,document=?,request_json=? WHERE id=?').run(turn.status,encode(legacyTurnDocument(turn)),encode(input),turn.id)
+  }
   message(groupId: string, value: Omit<ChatMessage, 'id' | 'conversationId' | 'sequence' | 'createdAt'>) {
     const group = this.rawConversation(groupId)
     const message = ChatMessage.parse({ ...value, id: randomUUID(), conversationId: groupId, sequence: group.lastSequence + 1, createdAt: instant() })
@@ -320,7 +339,8 @@ export class ChatService {
     if (Number(this.db.prepare("SELECT count(*) n FROM chat_turns WHERE owner_id=? AND status IN ('queued','running')").get(this.c.actor.id)!.n) >= 5) fail('RATE_LIMITED')
     const availability = agent.availability
     const turn = AgentTurn.parse({ id: randomUUID(), conversationId: group.id, inputMessageId: message.id, agentContactId: agentId, status: availability.status === 'available' ? 'queued' : 'unavailable', failure: availability.status === 'available' ? null : 'MODEL_UNAVAILABLE', availability, outputMessageId: null, usage: null, budget: input.budget, remainingBudget: input.budget, allowedActions: [], version: 1, createdAt: instant(), updatedAt: instant() })
-    this.db.prepare('INSERT INTO chat_turns(id,conversation_id,owner_id,root_id,status,request_json,document) VALUES (?,?,?,?,?,?,?)').run(turn.id, group.id, this.c.actor.id, root ?? turn.id, turn.status, encode(input), encode(turn))
+    input.createdAgent=undefined;input.creationFailure=undefined
+    this.db.prepare('INSERT INTO chat_turns(id,conversation_id,owner_id,root_id,status,request_json,document) VALUES (?,?,?,?,?,?,?)').run(turn.id, group.id, this.c.actor.id, root ?? turn.id, turn.status, encode(input), encode(legacyTurnDocument(turn)))
     return this.turn(turn.id)
   }
   // Persistent snapshot IDs keep signed cursors bounded while preserving sort keys across updates.
@@ -463,7 +483,9 @@ export class ChatService {
       for (const resource of input.context) this.checkResource(resource, id, true)
       if (input.intent === 'ask_agent') this.joinedAgent(group, input.agentContactId!)
       const message = this.message(id, { senderContactId: this.human().id, origin: 'human', text: input.text, mentions: input.mentions, resources: input.context, actionIds: [], turnId: null })
-      const turn = input.intent === 'ask_agent' ? this.newTurn(group, message, input.agentContactId!, { budget: input.budget!, context: input.context, conversationVersion: group.version, inputSequence: message.sequence,dailyChat:name==='agentChatMessage' }) : null
+      const agent=input.agentContactId?this.contact(input.agentContactId):null
+      const purpose=name==='agentChatMessage'&&group.kind==='personal'&&group.ownerMemberId===this.c.actor.id&&agent?.identity.kind==='personal_agent'&&agent.identity.ownerMemberId===this.c.actor.id&&agent.profile.role==='coordinator'&&isAgentCreationCommand(input.text)?'create_agent' as const:undefined
+      const turn = input.intent === 'ask_agent' ? this.newTurn(group, message, input.agentContactId!, { budget: input.budget!, context: input.context, conversationVersion: group.version, inputSequence: message.sequence,dailyChat:name==='agentChatMessage',...(purpose?{purpose}:{}) }) : null
       if (turn) { message.turnId = turn.id; this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(message), message.id) }
       return { data: { message, turn } }
     }

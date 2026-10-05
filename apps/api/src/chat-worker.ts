@@ -11,6 +11,7 @@ import { instant } from './ai.js'
 import type { Config } from './config.js'
 import { ApiError } from './errors.js'
 import { chatModelSystem, chatInputTokenBound } from './chat-model-input.js'
+import { AgentCreationOutput, agentCreationSystem, applyAgentCreation, legacyTurnDocument } from './agent-creation.js'
 
 // Local model protocol: validated JSON, no model-side tools or business authority.
 export const ChatModelOutput = z.strictObject({
@@ -32,7 +33,7 @@ export function reconcileChat(db: DatabaseSync, config: Config) {
     if (failure) {
       turn.status = failure === 'MODEL_UNAVAILABLE' ? 'unavailable' : failure === 'LEASE_EXPIRED_USAGE_UNCERTAIN' ? 'interrupted' : 'cancelled'
       turn.failure = failure; turn.version++; turn.updatedAt = instant()
-      db.prepare('UPDATE chat_turns SET status=?,document=?,fence=fence+1,lease_owner=NULL,lease_until=NULL WHERE id=?').run(turn.status, JSON.stringify(turn), turn.id)
+      db.prepare('UPDATE chat_turns SET status=?,document=?,fence=fence+1,lease_owner=NULL,lease_until=NULL WHERE id=?').run(turn.status, JSON.stringify(legacyTurnDocument(turn)), turn.id)
     }
   }
 }
@@ -45,6 +46,13 @@ export class ChatWorker {
       const row = this.db.prepare("SELECT * FROM chat_turns WHERE status='queued' ORDER BY rowid LIMIT 1").get()
       if (!row) return null
       const s = service(this.db, String(row.owner_id), this.config), { turn, input, group } = s.checkTurnInput(String(row.id))
+      let system:string,prompt:string
+      if(turn.purpose==='create_agent') {
+        // This new operation is authorized by exactly this owner's imperative,
+        // not by any past message, profile, memory or proposed business action.
+        system=agentCreationSystem
+        prompt=JSON.stringify({request:s.projectedMessage(turn.inputMessageId).text})
+      } else {
       // Snapshot the context and bounded message window; normal chat never creates a job.
       let remainingText=32000
       const messages = this.db.prepare('SELECT id FROM chat_messages WHERE conversation_id=? AND sequence<=? ORDER BY sequence DESC LIMIT 20').all(group.id, input.inputSequence).flatMap(r => {
@@ -78,8 +86,9 @@ export class ChatWorker {
       const messageColumns=['origin','sender','text',...(messages.some(m=>m.mentions.length)?['mentions']:[]),...(messages.some(m=>m.resources.length)?['resources']:[])]
       const messageRows=messages.map(m=>messageColumns.map(key=>key==='sender'?m.senderContactId===null?null:senderIds.indexOf(m.senderContactId):m[key as keyof typeof m]))
       const selectedTasks=input.context.filter(ref=>ref.kind==='task').map(ref=>s.c.task(ref.ref.id))
-      const system=input.dailyChat?'You are the requested personal Agent in a natural private conversation. Follow its user-authored capability and personality when compatible with permissions. Read authorized conversation history and memories as context. Answer the current user naturally; do not turn ordinary conversation into task planning, invitations, execution or onboarding. No tools, no external action. Return only your natural-language reply, no JSON envelope or business action payload. Reply must be nonempty and at most8000 characters. Never invent completed external actions. The tables have explicit columns; sender indexes expand through senderIds to stable Contact IDs.':chatModelSystem({group:group.kind==='personal'&&agentContext.agent.profile.role==='coordinator',inviteContact:group.kind==='group'&&group.ownerMemberId===s.c.actor.id,inviteTask:group.kind==='group'&&group.ownerMemberId===s.c.actor.id&&selectedTasks.some(task=>task.initiatorId===s.c.actor.id),runTask:group.kind==='group'&&selectedTasks.some(task=>task.leadId===s.c.actor.id)})
-      const prompt=JSON.stringify({ownerId:s.c.actor.id,labId:s.c.actor.labId,requestedAgent,conversation,contactColumns,contacts:contacts.map(c=>contactColumns.map(key=>c[key as keyof typeof c])),senderIds,messageColumns,messages:messageRows,...(agentContext.memories.length?{memories:agentContext.memories}:{}),...(context.length?{context}:{})})
+      system=input.dailyChat?'You are the requested personal Agent in a natural private conversation. Follow its user-authored capability and personality when compatible with permissions. Read authorized conversation history and memories as context. Answer the current user naturally; do not turn ordinary conversation into task planning, invitations, execution or onboarding. No tools, no external action. Return only your natural-language reply, no JSON envelope or business action payload. Reply must be nonempty and at most8000 characters. Never invent completed external actions. The tables have explicit columns; sender indexes expand through senderIds to stable Contact IDs.':chatModelSystem({group:group.kind==='personal'&&agentContext.agent.profile.role==='coordinator',inviteContact:group.kind==='group'&&group.ownerMemberId===s.c.actor.id,inviteTask:group.kind==='group'&&group.ownerMemberId===s.c.actor.id&&selectedTasks.some(task=>task.initiatorId===s.c.actor.id),runTask:group.kind==='group'&&selectedTasks.some(task=>task.leadId===s.c.actor.id)})
+      prompt=JSON.stringify({ownerId:s.c.actor.id,labId:s.c.actor.labId,requestedAgent,conversation,contactColumns,contacts:contacts.map(c=>contactColumns.map(key=>c[key as keyof typeof c])),senderIds,messageColumns,messages:messageRows,...(agentContext.memories.length?{memories:agentContext.memories}:{}),...(context.length?{context}:{})})
+      }
       const remainingOutput=input.budget.maxTokens-chatInputTokenBound(system,prompt)
       if (prompt.length > 100000 || remainingOutput<64) {
         turn.status = 'failed'; turn.failure = 'BUDGET_EXCEEDED'; turn.version++; turn.updatedAt = instant(); s.saveTurn(turn); return null
@@ -121,6 +130,17 @@ export class ChatWorker {
         // Savepoint guarantees invalid output cannot leave partial plans/actions/messages.
         this.db.exec('SAVEPOINT chat_model_output')
         try {
+          if(job.input.purpose==='create_agent') {
+            const output=AgentCreationOutput.parse(JSON.parse(result.text))
+            let text:string
+            if(output.kind==='clarify') {turn.status='waiting_input';turn.createdAgent=null;text=output.question}
+            else {
+              turn.createdAgent=applyAgentCreation(s,turn.id,output.profile);turn.status='succeeded'
+              text=turn.createdAgent.reused?`已找到你已有的联系人“${turn.createdAgent.displayName}”，可以打开专属聊天。`:`已保存联系人“${turn.createdAgent.displayName}”，可以打开专属聊天。`
+            }
+            const message=s.message(group.id,{senderContactId:turn.agentContactId,origin:'service',text,mentions:[],resources:[],actionIds:[],turnId:turn.id})
+            turn.outputMessageId=message.id;turn.failure=null;s.saveTurn(turn)
+          } else {
           const output = job.input.dailyChat?{answer:Text.parse(result.text),waitingInput:false,group:null,actions:[]}:ChatModelOutput.parse(JSON.parse(result.text))
           if(job.input.dailyChat&&!output.answer.trim())throw new Error('INVALID_MODEL_OUTPUT')
           if (output.waitingInput && (output.group || output.actions.length)) throw new Error('INVALID_MODEL_OUTPUT')
@@ -142,8 +162,9 @@ export class ChatWorker {
           const actions = payloads.map(payload => s.addAction(turn, message.id, payload)); message.actionIds = actions.map(a => a.id)
           this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(JSON.stringify(message), message.id)
           turn.status = output.waitingInput ? 'waiting_input' : 'succeeded'; turn.outputMessageId = message.id; turn.failure = null
+          }
           this.db.exec('RELEASE chat_model_output')
-        } catch { this.db.exec('ROLLBACK TO chat_model_output; RELEASE chat_model_output'); turn.status = 'failed'; turn.failure = 'INVALID_MODEL_OUTPUT'; turn.outputMessageId = null }
+        } catch(error) { this.db.exec('ROLLBACK TO chat_model_output; RELEASE chat_model_output'); turn.status = 'failed'; turn.failure = job.input.purpose==='create_agent'&&error instanceof ApiError&&error.code==='RATE_LIMITED'?'AGENT_LIMIT_REACHED':'INVALID_MODEL_OUTPUT'; turn.outputMessageId = null;if(job.input.purpose==='create_agent')turn.createdAgent=null }
       }
       turn.version++; turn.updatedAt = instant(); s.saveTurn(turn)
       this.db.prepare('UPDATE chat_turns SET lease_owner=NULL,lease_until=NULL WHERE id=?').run(turn.id)
