@@ -52,8 +52,10 @@ function isRetryable(error: unknown) {
     error.status >= 500
   );
 }
-function fileKey(clientMsgID?: string) {
-  return clientMsgID ? `agent-file-sdk:${clientMsgID}` : crypto.randomUUID();
+async function fileKey(clientMsgID?: string) {
+  if (!clientMsgID) return crypto.randomUUID();
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(clientMsgID));
+  return `agent-file-sdk-${Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("")}`;
 }
 export function canReadSdkFile(message: MessageItem) {
   const conversation = useConversationStore.getState().currentConversation;
@@ -134,7 +136,9 @@ export function useAgentFileReading() {
   };
   const onFileSent = async ({ file, agentConversationId, isCurrent, sdkClientMsgID }: SentFileContext) => {
     if (!agentConversationId || !isCurrent()) return;
-    const entry: Reading = { id: crypto.randomUUID(), filename: file.name, conversationId: agentConversationId, idempotencyKey: fileKey(sdkClientMsgID), phase: "reading" };
+    const idempotencyKey = await fileKey(sdkClientMsgID);
+    if (!isCurrent()) return;
+    const entry: Reading = { id: crypto.randomUUID(), filename: file.name, conversationId: agentConversationId, idempotencyKey, phase: "reading" };
     const ticket = begin(entry.idempotencyKey); if (!ticket) return;
     put(entry);
     try { await readFile(file, entry, isCurrent); }
@@ -157,8 +161,10 @@ export function useAgentFileReading() {
     const mapping = useResearchStore.getState().mappings.find(item => item.imConversationID === imID)!;
     const operation = capture();
     const isCurrent = () => operation.isCurrent() && selectionIsCurrent() && canReadSdkFile(message);
+    const idempotencyKey = await fileKey(message.clientMsgID);
+    if (!isCurrent()) { operation.dispose(); return; }
     const entry: Reading = { id: crypto.randomUUID(), filename: message.fileElem!.fileName,
-      conversationId: mapping.researchConversationId, idempotencyKey: fileKey(message.clientMsgID),
+      conversationId: mapping.researchConversationId, idempotencyKey,
       existingFile: message.fileElem!, phase: localFile ? "reading" : "downloading" };
     const ticket = begin(entry.idempotencyKey);
     if (!ticket) { operation.dispose(); return; }
