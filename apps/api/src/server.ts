@@ -18,6 +18,7 @@ import { cleanBlobs } from './coordination.js'
 import { ApiError, fail } from './errors.js'
 import type { AuthValidationField } from './errors.js'
 import { register } from './registration.js'
+import { personalModelCommands, runPersonalModel } from './personal-models.js'
 import { isLabManager, managerInvites, createManagerInvite, revokeManagerInvite } from './invite-management.js'
 import { labAiRuntime, labAiSettings, updateLabAiSettings } from './lab-ai-settings.js'
 import { ChatService } from './chat.js'
@@ -114,7 +115,7 @@ export function createServer(config: Config, options:{imClient?:OpenImClient}={}
       try { return transaction(connection, () => {
         const actor = authenticate(connection, token)
         if (route.method !== 'GET') requireCsrf(actor, request.headers['x-csrf-token'])
-        if (name === 'session') return routes.session.response.parse({ data: { member: new Collaboration(connection, actor).member(actor.id), csrfToken: csrfToken(connection, token), expiresAt: actor.expiresAt, isLabManager:isLabManager(connection,actor) } })
+        if (name === 'session') return routes.session.response.parse({ data: { member: new Collaboration(connection, actor).member(actor.id), csrfToken: csrfToken(connection, token), expiresAt: actor.expiresAt, isLabManager:isLabManager(connection,actor), spaceKind:connection.prepare('SELECT 1 FROM personal_spaces WHERE lab_id=?').get(actor.labId)?'personal':'laboratory' } })
         if (name === 'logout') {
           connection.prepare('UPDATE sessions SET revoked_at=? WHERE token_hash=?').run(new Date().toISOString(), hash(token))
           reply.header('Set-Cookie', cookie('', 0)); return { data: { loggedOut: true } }
@@ -122,6 +123,7 @@ export function createServer(config: Config, options:{imClient?:OpenImClient}={}
         if (name === 'managerInvites') return routes.managerInvites.response.parse(managerInvites(connection,actor,parsed.data as RequestFor<'managerInvites'>))
         if (name === 'createManagerInvite') return routes.createManagerInvite.response.parse(createManagerInvite(connection,actor,parsed.data as RequestFor<'createManagerInvite'>))
         if (name === 'revokeManagerInvite') return routes.revokeManagerInvite.response.parse(revokeManagerInvite(connection,actor,parsed.data as RequestFor<'revokeManagerInvite'>))
+        if((personalModelCommands as readonly string[]).includes(name)){const result=runPersonalModel(connection,actor,name as typeof personalModelCommands[number],parsed.data as RequestFor<typeof personalModelCommands[number]>,config);reconcileChat(connection,config);return route.response.parse(result)}
         if (name === 'labAiSettings') return routes.labAiSettings.response.parse(labAiSettings(connection,actor,parsed.data as RequestFor<'labAiSettings'>,config))
         if (name === 'updateLabAiSettings') return routes.updateLabAiSettings.response.parse(updateLabAiSettings(connection,actor,parsed.data as RequestFor<'updateLabAiSettings'>,config))
         const labAi = labAiRuntime(connection,actor.labId,config)

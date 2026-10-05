@@ -9,7 +9,7 @@ export async function register(db: DatabaseSync, input: RequestFor<'register'>, 
  const { body, headers } = input
  const key = headers['Idempotency-Key']!
  const digest = createHmac('sha256', signingKey(db)).update(JSON.stringify(body)).digest('hex')
- const codeHash = hash(body.inviteCode)
+ const codeHash = body.inviteCode ? hash(body.inviteCode) : null
  const now = Date.now()
  const blocked = transaction(db, () => {
   db.prepare('DELETE FROM login_limits WHERE window_start < ?').run(now - 900000)
@@ -25,6 +25,7 @@ export async function register(db: DatabaseSync, input: RequestFor<'register'>, 
   return JSON.parse(String(row.response_json)) as ResponseFor<'register'>
  }
  const invitation = () => {
+  if (!codeHash) {if(db.prepare('SELECT 1 FROM auth_accounts WHERE username=?').get(body.username))fail('USERNAME_TAKEN');return null}
   const row = db.prepare('SELECT id,lab_id,bootstrap_manager FROM registration_invites WHERE code_hash=? AND revoked_at IS NULL AND expires_at>? AND used_count<max_uses').get(codeHash,new Date().toISOString())
   if (!row) fail('INVITE_UNAVAILABLE')
   if (db.prepare('SELECT 1 FROM auth_accounts WHERE username=?').get(body.username)) fail('USERNAME_TAKEN')
@@ -46,15 +47,18 @@ export async function register(db: DatabaseSync, input: RequestFor<'register'>, 
    // Recheck capacity, expiry and revocation after the asynchronous KDF.
    const invite = invitation()
    const memberId = randomUUID(), at = new Date().toISOString()
-   db.prepare('INSERT INTO members(id,lab_id,display_name,is_synthetic) VALUES (?,?,?,0)').run(memberId,invite.lab_id!,body.displayName)
+   const labId=invite?String(invite.lab_id):`personal_${randomUUID()}`
+   if(!invite)db.prepare('INSERT INTO labs VALUES (?,?)').run(labId,`${body.displayName}的个人空间`)
+   db.prepare('INSERT INTO members(id,lab_id,display_name,is_synthetic) VALUES (?,?,?,0)').run(memberId,labId,body.displayName)
    db.prepare('INSERT INTO auth_accounts VALUES (?,?,?,0)').run(memberId,body.username,encoded)
-   if(invite.bootstrap_manager===1){
+   if(!invite)db.prepare('INSERT INTO personal_spaces VALUES (?,?)').run(labId,memberId)
+   if(invite?.bootstrap_manager===1){
     if(db.prepare('SELECT 1 FROM lab_managers WHERE lab_id=?').get(invite.lab_id!))fail('INVITE_UNAVAILABLE')
     db.prepare('INSERT INTO lab_managers VALUES (?,?,?,?)').run(invite.lab_id!,memberId,at,invite.id!)
    }
-   db.prepare('UPDATE registration_invites SET used_count=used_count+1 WHERE id=?').run(invite.id!)
+   if(invite)db.prepare('UPDATE registration_invites SET used_count=used_count+1 WHERE id=?').run(invite.id!)
    const result: ResponseFor<'register'> = { data: { registered:true,username:body.username } }
-   db.prepare('INSERT INTO registration_receipts VALUES (?,?,?,?,?,?)').run(key,digest,invite.id!,memberId,JSON.stringify(result),at)
+   db.prepare('INSERT INTO registration_receipts VALUES (?,?,?,?,?,?)').run(key,digest,invite?.id??null,memberId,JSON.stringify(result),at)
    return result
   })
  } finally { db.prepare('DELETE FROM registration_work WHERE id=?').run(workId) }

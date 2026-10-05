@@ -279,7 +279,7 @@
       },
       "post": {
         "operationId": "createPersonalModel",
-        "description": "Self only, max20. First active configuration becomes the default. Encrypted key bound to member and configuration identity; provider/model must be implemented. Key omitted means unset; no secret in receipt.",
+        "description": "Self only, max20. The first ever created configuration becomes default only if enabled with a key; later enabling or creating requires explicit default selection. Encrypted key bound to member, provider and configuration identity; provider/model must be implemented. Key omitted means unset; no secret in receipt.",
         "x-stage": "B5b",
         "x-implemented": true,
         "security": [
@@ -582,7 +582,7 @@
     "/api/v1/me/model-configurations/{id}": {
       "patch": {
         "operationId": "updatePersonalModel",
-        "description": "Self only and exact configuration version. Omitted apiKey preserves secret; removeApiKey explicitly revokes while disabled. All changes fence prior model turns; response only hasApiKey.",
+        "description": "Self only and exact configuration version. Omitted apiKey preserves secret only for the same provider; changing provider requires a new key or explicit removal; removeApiKey explicitly revokes while disabled. All changes fence prior model turns; response only hasApiKey.",
         "x-stage": "B5b",
         "x-implemented": true,
         "security": [

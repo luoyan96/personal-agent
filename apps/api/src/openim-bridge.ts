@@ -35,11 +35,12 @@ export class OpenImBridge {
     return OpenImConversation.parse({researchConversationId:id,imConversationID,kind:group.kind,peerUserID,groupID,pinned:group.kind==='personal',transportStatus:reason?'unavailable':row.status==='ready'&&row.synced_version===group.version?'ready':'pending',reason})
   }
   contacts(chat:ChatService){
-    const all=this.db.prepare('SELECT id FROM chat_contacts WHERE lab_id=? ORDER BY id').all(chat.c.actor.labId).flatMap(row=>{try{return [this.identity(chat,String(row.id))]}catch{return []}})
+    const ids=[...new Set([...chat.mineContactIds(),...this.db.prepare('SELECT id FROM chat_contacts WHERE lab_id=?').all(chat.c.actor.labId).map(row=>String(row.id))])]
+    const all=ids.flatMap(id=>{try{const contact=chat.contact(id);if(contact.labId!==chat.c.actor.labId&&!['own','accepted'].includes(contact.relationship.status))return [];return [this.identity(chat,contact.id)]}catch{return []}})
     return {contacts:all.slice(0,100),truncated:all.length>100}
   }
   conversations(chat:ChatService,imConversationID?:string){
-    const all=this.db.prepare('SELECT id FROM chat_conversations WHERE lab_id=? ORDER BY id').all(chat.c.actor.labId).flatMap(row=>{try{return [this.mapping(chat,String(row.id))]}catch{return []}}).filter(mapping=>!imConversationID||mapping.imConversationID===imConversationID)
+    const all=this.db.prepare("SELECT c.id FROM chat_conversations c JOIN chat_members m ON m.conversation_id=c.id AND m.contact_id=? AND m.status='joined' ORDER BY c.id").all(chat.human().id).flatMap(row=>{try{return [this.mapping(chat,String(row.id))]}catch{return []}}).filter(mapping=>!imConversationID||mapping.imConversationID===imConversationID)
     return {conversations:all.slice(0,100),truncated:all.length>100}
   }
   async provision(actor:Actor,id:string){
@@ -71,7 +72,7 @@ export class OpenImBridge {
     if(!Array.isArray(remote.friendsInfo))throw new ImUnavailable('provisioning_failed')
     for(const friend of remote.friendsInfo as {friendUser?:{userID?:string}}[]){
       const userID=friend.friendUser?.userID;if(typeof userID!=='string')throw new ImUnavailable('provisioning_failed')
-      const authorized=transaction(this.db,()=>{const chat=this.chat(reauthorize()),row=this.db.prepare('SELECT contact_id FROM im_identities WHERE user_id=? AND lab_id=?').get(userID,actor.labId);if(!row)return false;try{chat.directory.requireDirect(chat.contact(String(row.contact_id)));return true}catch{return false}})
+      const authorized=transaction(this.db,()=>{const chat=this.chat(reauthorize()),row=this.db.prepare('SELECT contact_id FROM im_identities WHERE user_id=?').get(userID);if(!row)return false;try{chat.directory.requireDirect(chat.contact(String(row.contact_id)));return true}catch{return false}})
       if(!authorized){transaction(this.db,reauthorize);await this.client.request('/friend/delete_friend',{ownerUserID:self,friendUserID:userID})}
     }
     return Number(remote.total??remote.friendsInfo.length)>1000

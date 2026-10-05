@@ -27,11 +27,11 @@ function masterKey(config: Config) {
   } catch { fail('SERVICE_UNAVAILABLE') }
 }
 
-function masterAvailable(config: Config) {
+export function masterAvailable(config: Config) {
   try { masterKey(config); return true } catch { return false }
 }
 
-function encrypt(config: Config, labId: string, apiKey: string) {
+export function encrypt(config: Config, labId: string, apiKey: string) {
   const nonce = randomBytes(12)
   const cipher = createCipheriv('aes-256-gcm', masterKey(config), nonce)
   cipher.setAAD(Buffer.from(`lab-ai-key:v1:${labId}`))
@@ -39,7 +39,7 @@ function encrypt(config: Config, labId: string, apiKey: string) {
   return ['v1', nonce.toString('base64url'), cipher.getAuthTag().toString('base64url'), encrypted.toString('base64url')].join(':')
 }
 
-function decrypt(config: Config, labId: string, value: string) {
+export function decrypt(config: Config, labId: string, value: string) {
   try {
     const [version, nonce, tag, encrypted, extra] = value.split(':')
     if (version !== 'v1' || !nonce || !tag || !encrypted || extra) fail('SERVICE_UNAVAILABLE')

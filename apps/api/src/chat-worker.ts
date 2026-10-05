@@ -6,7 +6,7 @@ import { ChatService } from './chat.js'
 import { transaction } from './database.js'
 import { serviceFor, callHarness } from './execution-worker.js'
 import type { ModelCall, ModelResult } from './execution-worker.js'
-import { labApiKey } from './lab-ai-settings.js'
+import { personalModelKey, personalModelRuntime } from './personal-models.js'
 import { instant } from './ai.js'
 import type { Config } from './config.js'
 import { ApiError } from './errors.js'
@@ -65,7 +65,8 @@ export class ChatWorker {
       // Human-authored profile facts stay intact. Versions remain in the server
       // fingerprint, not repeated as readonly metadata in the model directory.
       const publicContact = (contact:ReturnType<typeof s.contact>) => ({id:contact.id,displayName:contact.displayName,identity:contact.identity,availability:{status:contact.availability.status,...(contact.availability.reason?{reason:contact.availability.reason}:{})},profile:Object.fromEntries(Object.entries(contact.profile).filter(([key,value])=>key!=='version'&&value!==''))})
-      const contacts = this.db.prepare('SELECT id FROM chat_contacts WHERE lab_id=? AND id<>? ORDER BY id').all(s.c.actor.labId,turn.agentContactId).flatMap(r => { try { return [publicContact(s.contact(String(r.id)))] } catch { return [] } }).slice(0, 100)
+      const candidates=input.dailyChat?group.members.map(m=>m.contactId).filter(id=>id!==turn.agentContactId):this.db.prepare('SELECT id FROM chat_contacts WHERE lab_id=? AND id<>? ORDER BY id').all(s.c.actor.labId,turn.agentContactId).map(r=>String(r.id))
+      const contacts = candidates.flatMap(id => { try { return [publicContact(s.contact(id))] } catch { return [] } }).slice(0, 100)
       const agentContext=s.directory.modelContext(turn.agentContactId,group.id),requestedAgent=publicContact(agentContext.agent)
       input.agentContextFingerprint=agentContext.fingerprint
       this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(JSON.stringify(input),turn.id)
@@ -77,21 +78,22 @@ export class ChatWorker {
       const messageColumns=['origin','sender','text',...(messages.some(m=>m.mentions.length)?['mentions']:[]),...(messages.some(m=>m.resources.length)?['resources']:[])]
       const messageRows=messages.map(m=>messageColumns.map(key=>key==='sender'?m.senderContactId===null?null:senderIds.indexOf(m.senderContactId):m[key as keyof typeof m]))
       const selectedTasks=input.context.filter(ref=>ref.kind==='task').map(ref=>s.c.task(ref.ref.id))
-      const system=chatModelSystem({group:group.kind==='personal'&&agentContext.agent.profile.role==='coordinator',inviteContact:group.kind==='group'&&group.ownerMemberId===s.c.actor.id,inviteTask:group.kind==='group'&&group.ownerMemberId===s.c.actor.id&&selectedTasks.some(task=>task.initiatorId===s.c.actor.id),runTask:group.kind==='group'&&selectedTasks.some(task=>task.leadId===s.c.actor.id)})
+      const system=input.dailyChat?'You are the requested personal Agent in a natural private conversation. Follow its user-authored capability and personality when compatible with permissions. Read authorized conversation history and memories as context. Answer the current user naturally; do not turn ordinary conversation into task planning, invitations, execution or onboarding. No tools, no external action. Return only your natural-language reply, no JSON envelope or business action payload. Reply must be nonempty and at most8000 characters. Never invent completed external actions. The tables have explicit columns; sender indexes expand through senderIds to stable Contact IDs.':chatModelSystem({group:group.kind==='personal'&&agentContext.agent.profile.role==='coordinator',inviteContact:group.kind==='group'&&group.ownerMemberId===s.c.actor.id,inviteTask:group.kind==='group'&&group.ownerMemberId===s.c.actor.id&&selectedTasks.some(task=>task.initiatorId===s.c.actor.id),runTask:group.kind==='group'&&selectedTasks.some(task=>task.leadId===s.c.actor.id)})
       const prompt=JSON.stringify({ownerId:s.c.actor.id,labId:s.c.actor.labId,requestedAgent,conversation,contactColumns,contacts:contacts.map(c=>contactColumns.map(key=>c[key as keyof typeof c])),senderIds,messageColumns,messages:messageRows,...(agentContext.memories.length?{memories:agentContext.memories}:{}),...(context.length?{context}:{})})
       const remainingOutput=input.budget.maxTokens-chatInputTokenBound(system,prompt)
       if (prompt.length > 100000 || remainingOutput<64) {
         turn.status = 'failed'; turn.failure = 'BUDGET_EXCEEDED'; turn.version++; turn.updatedAt = instant(); s.saveTurn(turn); return null
       }
       let apiKey: string
-      try { apiKey = labApiKey(this.db, s.c.actor.labId, this.config) } catch {
+      try { apiKey = personalModelKey(this.db, s.c.actor, this.config) } catch {
         turn.status = 'unavailable'; turn.failure = 'MODEL_UNAVAILABLE'; turn.version++; turn.updatedAt = instant(); s.saveTurn(turn); return null
       }
       const fence = Number(row.fence) + 1
       turn.status = 'running'; turn.version++; turn.updatedAt = instant(); s.saveTurn(turn)
       this.db.prepare('UPDATE chat_turns SET fence=?,lease_owner=?,lease_until=? WHERE id=?').run(fence, this.owner, Date.now() + 15000, turn.id)
       this.db.prepare('INSERT INTO chat_attempts VALUES (?,?,?,NULL)').run(turn.id, row.root_id!, instant())
-      return { id: turn.id, ownerId: String(row.owner_id), fence, input, modelInput: { system, prompt, model: s.ai.model, maxTokens: Math.min(4096,remainingOutput), timeoutMs: input.budget.maxSeconds * 1000 }, credential: { apiKey } }
+      const selected=personalModelRuntime(this.db,s.c.actor,this.config)
+      return { id: turn.id, ownerId: String(row.owner_id), fence, input, modelInput: { provider:selected.provider,system, prompt, model:selected.model, maxTokens: Math.min(4096,remainingOutput), timeoutMs: input.budget.maxSeconds * 1000 }, credential: { apiKey } }
     })
     if (!job) return false
     const controller = new AbortController(), started = Date.now()
@@ -119,7 +121,8 @@ export class ChatWorker {
         // Savepoint guarantees invalid output cannot leave partial plans/actions/messages.
         this.db.exec('SAVEPOINT chat_model_output')
         try {
-          const output = ChatModelOutput.parse(JSON.parse(result.text))
+          const output = job.input.dailyChat?{answer:Text.parse(result.text),waitingInput:false,group:null,actions:[]}:ChatModelOutput.parse(JSON.parse(result.text))
+          if(job.input.dailyChat&&!output.answer.trim())throw new Error('INVALID_MODEL_OUTPUT')
           if (output.waitingInput && (output.group || output.actions.length)) throw new Error('INVALID_MODEL_OUTPUT')
           const payloads = [...output.actions]
           for (const payload of payloads) {

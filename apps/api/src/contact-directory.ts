@@ -13,7 +13,7 @@ export class ContactDirectory {
   get db() { return this.chat.db }
   get actor() { return this.chat.c.actor }
   profile(id: string): ContactProfile & {displayName:string|null} {
-    const row = this.db.prepare('SELECT * FROM chat_contacts WHERE id=? AND lab_id=?').get(id, this.actor.labId)
+    const row = this.db.prepare('SELECT * FROM chat_contacts WHERE id=?').get(id)
     if (!row) fail('NOT_FOUND')
     const role = row.kind === 'human' ? 'human' : row.kind === 'public_agent' ? 'public_capability' : row.principal === row.owner_id ? 'coordinator' : 'specialist'
     this.db.prepare('INSERT INTO chat_contact_profiles(contact_id,role) VALUES (?,?) ON CONFLICT(contact_id) DO NOTHING').run(id, role)
@@ -21,8 +21,8 @@ export class ContactDirectory {
     return { ...ContactProfile.parse({ role:p.role, introduction:p.introduction, capabilityDescription:p.capability_description, personality:p.personality, version:p.version }), displayName: p.display_name as string|null }
   }
   relationKey(contact: Contact) {
-    if (contact.identity.kind === 'human') return `human:${this.actor.labId}:${[this.actor.id,contact.identity.memberId].sort().join(':')}`
-    return `agent:${this.actor.labId}:${this.actor.id}:${contact.id}`
+    if (contact.identity.kind === 'human') return `human:${[this.actor.id,contact.identity.memberId].sort().join(':')}`
+    return `agent:${this.actor.id}:${contact.id}`
   }
   relationRow(contact: Contact) { return this.db.prepare('SELECT * FROM chat_contact_requests WHERE relation_key=?').get(this.relationKey(contact)) }
   owns(contact: Contact) { return contact.identity.kind === 'human' ? contact.identity.memberId === this.actor.id : contact.identity.kind === 'personal_agent' && contact.identity.ownerMemberId === this.actor.id }
@@ -43,7 +43,7 @@ export class ContactDirectory {
   }
   requireDirect(contact: Contact) { if (!contact.allowedActions.includes('chat')) fail('FORBIDDEN') }
   request(id: string): ContactRequest {
-    const row=this.db.prepare('SELECT * FROM chat_contact_requests WHERE id=? AND lab_id=?').get(id,this.actor.labId)
+    const row=this.db.prepare('SELECT * FROM chat_contact_requests WHERE id=?').get(id)
     if(!row || (row.requester_id!==this.actor.id && row.decider_id!==this.actor.id))fail('NOT_FOUND')
     this.chat.baseContact(String(row.target_contact_id)); const requester=this.chat.human(String(row.requester_id))
     return ContactRequest.parse({id:row.id,requesterMemberId:row.requester_id,requesterContactId:requester.id,targetContactId:row.target_contact_id,deciderMemberId:row.decider_id,status:row.status,version:row.version,createdAt:row.created_at,updatedAt:row.updated_at,allowedDecisions:row.decider_id===this.actor.id&&row.status==='pending'?['accept','decline']:[]})
@@ -64,7 +64,7 @@ export class ContactDirectory {
     }
   }
   memory(id:string,write=false):ChatMemory {
-    const row=this.db.prepare('SELECT * FROM chat_memories WHERE id=? AND lab_id=?').get(id,this.actor.labId)
+    const row=this.db.prepare('SELECT * FROM chat_memories WHERE id=?').get(id)
     if(!row)fail('NOT_FOUND')
     this.memoryScope(row.scope as ChatMemory['scope'],String(row.scope_id),write)
     let mayWrite=true;try{this.memoryScope(row.scope as ChatMemory['scope'],String(row.scope_id),true)}catch{mayWrite=false}
@@ -77,7 +77,7 @@ export class ContactDirectory {
   modelContext(agentId:string,conversationId:string) {
     const agent=this.contact(agentId), conversation=this.chat.conversation(conversationId,false)
     const privateAllowed=agent.identity.kind==='personal_agent' && agent.identity.ownerMemberId===this.actor.id && (conversation.kind==='personal'||conversation.kind==='direct')
-    const rows=this.db.prepare("SELECT id FROM chat_memories WHERE lab_id=? AND status='active' AND ((scope='conversation' AND scope_id=?) OR (scope='private_agent' AND scope_id=?)) ORDER BY id").all(this.actor.labId,conversationId,privateAllowed?agentId:'')
+    const rows=this.db.prepare("SELECT id FROM chat_memories WHERE status='active' AND ((scope='conversation' AND scope_id=?) OR (scope='private_agent' AND scope_id=?)) ORDER BY id").all(conversationId,privateAllowed?agentId:'')
     const memories=rows.map(row=>this.memory(String(row.id)))
     const relation=this.relationRow(agent)
     // Coordinator recommendations depend on the bounded public roster. A changed
@@ -130,7 +130,7 @@ export class ContactDirectory {
       return {data:this.contact(id)}
     }
     if(name==='contactRequests') {
-      const rows=this.db.prepare('SELECT id FROM chat_contact_requests WHERE lab_id=? AND (requester_id=? OR decider_id=?) ORDER BY created_at DESC,id DESC').all(this.actor.labId,this.actor.id,this.actor.id).map(row=>String(row.id))
+      const rows=this.db.prepare('SELECT id FROM chat_contact_requests WHERE (requester_id=? OR decider_id=?) ORDER BY created_at DESC,id DESC').all(this.actor.id,this.actor.id).map(row=>String(row.id))
       const project=(id:string)=>{const r=this.request(id);if((req.query.status!=='all'&&r.status!=='pending')||(req.query.direction!=='all'&&(req.query.direction==='incoming'?r.deciderMemberId!==this.actor.id:r.requesterMemberId!==this.actor.id)))fail('NOT_FOUND');return r}
       return this.chat.page(name,req.query,rows,project)
     }
@@ -145,7 +145,7 @@ export class ContactDirectory {
       const contact=this.contact(id),row=this.relationRow(contact);if(!row)fail('NOT_FOUND')
       this.revokeRequest(String(row.id),(b as RequestFor<'revokeContact'>['body']).expectedVersion);return {data:this.contact(id)}
     }
-    if(name==='chatMemories')return this.chat.page(name,req.query,this.db.prepare("SELECT id FROM chat_memories WHERE lab_id=? AND scope=? AND scope_id=? AND status='active' ORDER BY created_at DESC,id DESC").all(this.actor.labId,req.query.scope!,req.query.scopeId!).map(row=>String(row.id)),id=>{const memory=this.memory(id);if(memory.status!=='active')fail('NOT_FOUND');return memory})
+    if(name==='chatMemories')return this.chat.page(name,req.query,this.db.prepare("SELECT id FROM chat_memories WHERE scope=? AND scope_id=? AND status='active' ORDER BY created_at DESC,id DESC").all(req.query.scope!,req.query.scopeId!).map(row=>String(row.id)),id=>{const memory=this.memory(id);if(memory.status!=='active')fail('NOT_FOUND');return memory})
     if(name==='createChatMemory') {
       const body=b as RequestFor<'createChatMemory'>['body'];if(Number(this.db.prepare("SELECT count(*) n FROM chat_memories WHERE scope=? AND scope_id=? AND status='active'").get(body.scope,body.scopeId)!.n)>=10)fail('RATE_LIMITED')
       const now=instant(),memoryId=randomUUID();this.db.prepare("INSERT INTO chat_memories VALUES (?,?,?,?,?,'active',1,?,?,?,?)").run(memoryId,this.actor.labId,body.scope,body.scopeId,this.actor.id,body.content,body.source,now,now)

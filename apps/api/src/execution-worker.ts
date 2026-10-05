@@ -13,7 +13,7 @@ import { transaction } from './database.js'
 import { randomUUID } from 'node:crypto'
 import { labAiRuntime, labApiKey } from './lab-ai-settings.js'
 
-export interface ModelInput {system:string;prompt:string;model:string;maxTokens:number;timeoutMs:number}
+export interface ModelInput {provider?:'deepseek'|'qwen'|'doubao';system:string;prompt:string;model:string;maxTokens:number;timeoutMs:number}
 export interface ModelResult {text:string;failure:string|null;inputTokens:number|null;outputTokens:number|null;elapsedMs:number}
 export type ModelCall=(input:ModelInput,signal:AbortSignal,credential:{apiKey:string})=>Promise<ModelResult>
 const encode=JSON.stringify
@@ -54,7 +54,8 @@ export function reconcile(db:DatabaseSync,config:Config){
 export const callHarness:ModelCall=async(input,signal,credential)=>new Promise(resolve=>{
   const childEnv:NodeJS.ProcessEnv={}
   for(const name of ['SystemRoot','WINDIR','PATH','TEMP','TMP','DEEPSEEK_BASE_URL'])if(process.env[name])childEnv[name]=process.env[name]
-  childEnv.DEEPSEEK_API_KEY=credential.apiKey
+  if(input.provider&&input.provider!=='deepseek')childEnv.MODEL_API_KEY=credential.apiKey
+  else childEnv.DEEPSEEK_API_KEY=credential.apiKey
   const child=spawn(process.execPath,[fileURLToPath(new URL('../../../integrations/deepseek-harness/runtime/dist/cli.js',import.meta.url))],{env:childEnv,windowsHide:true,stdio:['pipe','pipe','pipe']})
   let output='',settled=false
   const started=Date.now()

@@ -19,12 +19,12 @@
 | route | 请求/响应 |
 | --- | --- |
 | personalModels GET `/me/model-configurations` | data PersonalModelSettings |
-| createPersonalModel POST 同路径 | body PersonalModelInput；data PersonalModelConfiguration；首个enabled且有Key的配置自动默认 |
+| createPersonalModel POST 同路径 | body PersonalModelInput；data PersonalModelConfiguration；首次创建即enabled且有Key的配置自动默认；首次disabled后启用仍须明确设默认 |
 | updatePersonalModel PATCH `/{id}` | PersonalModelInput+expectedVersion（配置version）；data配置 |
 | deletePersonalModel POST `/{id}/delete` | expectedVersion（配置version）；data settings |
 | defaultPersonalModel POST `/default` | expectedVersion（settings.version），configurationId:id或null清空；data settings |
 
-所有写操作Origin/CSRF/幂等。max20配置，仅本人CRUD；name/provider/model/enabled是明确完整保存，apiKey省略保留，removeApiKey=true显式撤销且enabled=false。Key服务端AES-GCM加密且绑定本人+配置身份，响应/普通receipt不含明文/密文，仅hasApiKey。Default选择独立请求；前端保存成功后再取settings.version切默认，失败如实说明部分状态，不声称两个操作原子。
+所有写操作Origin/CSRF/幂等。max20配置，仅本人CRUD；name/provider/model/enabled是明确完整保存，apiKey省略保留，removeApiKey=true显式撤销且enabled=false。更换provider时必须提供新的Key或显式remove，禁止把旧Key自动发给新厂商。Key服务端AES-GCM加密且绑定本人+provider+配置身份，响应/普通receipt不含明文/密文，仅hasApiKey。Default选择独立请求；前端保存成功后再取settings.version切默认，失败如实说明部分状态，不声称两个操作原子。
 
 支持provider=`deepseek|qwen|doubao`。DeepSeek model限定`deepseek-flash|deepseek-v4-pro`；千问/豆包model由本人填写官方模型名/ep-ID（ASCII字母数字_.:-，最多128）。响应baseUrl只读，分别为现有DeepSeek Anthropic兼容地址、千问DashScope compatible-mode/v1与北京火山Ark api/v3；不接受用户任意URL。Harness公开适配扩展由总控实现，合成wire检查不代表厂商真实凭据或在线验收。无模型或加密主钥时返回真实不可用。
 
@@ -34,4 +34,4 @@ Settings包含configurations/version/platformEnabled/defaultConfigurationId/sour
 
 `agentChatMessage` POST `/chat/conversations/{id}/agent-messages`只 `{text}`，响应data `{message,turn}`，canonical/outbox与原服务同源。仅personal/direct且唯一joined Agent；默认4000 totalTokens/90sec由服务选，前端不选intent/budget。完整获准历史/性格/记忆保持；私有Agent被他人添加后使用申请人的模型与该direct共享记忆，不注入主人私人记忆。
 
-worker此通路只接受answer/waitingInput、group=null/actions=[]；不能创建计划、任务、执行或邀请。原sendChatMessage高级明确请求暂保留。普通OpenIM真人↔真人文字/媒体/@不自动调模型，媒体不成为模型材料。
+worker此通路只接受非空长度有界纯文本回答，不解析JSON业务计划/actions；不能创建计划、任务、执行或邀请。原sendChatMessage高级明确请求暂保留。普通OpenIM真人↔真人文字/媒体/@不自动调模型，媒体不成为模型材料。
