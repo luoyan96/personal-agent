@@ -159,6 +159,7 @@ export function useResearchComposer() {
         )}
         {canonical.error && <Alert type="error" message={canonical.error} />}
         {(turnRead.data?.data || turn) &&
+          (advanced || (turnRead.data?.data || turn)?.status !== "succeeded") &&
           turn?.conversationId === mapping.researchConversationId && (
             <div className="mx-3 mt-1">
               {turnRead.error && (

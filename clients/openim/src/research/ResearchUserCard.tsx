@@ -127,7 +127,8 @@ export const ResearchUserCard = forwardRef<
                 <Tag>
                   {contact.identity.kind === "human"
                     ? "真人"
-                    : contact.profile.role === "coordinator"
+                    : contact.profile.role === "coordinator" &&
+                      contact.identity.ownerMemberId === actor?.member.id
                     ? "你的 AI 联系人"
                     : "AI Agent"}
                 </Tag>

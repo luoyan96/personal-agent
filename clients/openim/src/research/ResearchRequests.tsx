@@ -1,5 +1,5 @@
 import { Alert, Button, Modal, Space, Tag } from "antd";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { researchApi } from "./api";
 import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
@@ -10,23 +10,98 @@ export function ResearchRequests() {
     "requests",
   );
   const contacts = useResearchStore((s) => s.contacts);
+  const generation = useResearchStore((s) => s.generation);
+  const [names, setNames] = useState<Record<string, string>>({});
+  const scope = useRef(0);
+  const mounted = useRef(false);
+  const confirmation = useRef<ReturnType<typeof Modal.confirm>>();
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      confirmation.current?.destroy();
+    };
+  }, []);
+  const profileIds = JSON.stringify(
+    [
+      ...new Set(
+        data?.data.flatMap((request) => [
+          request.requesterContactId,
+          request.targetContactId,
+        ]) || [],
+      ),
+    ].sort(),
+  );
+  useEffect(() => {
+    const requestScope = ++scope.current;
+    const controller = new AbortController();
+    setNames({});
+    setBusy(false);
+    const missing = (JSON.parse(profileIds) as string[]).filter(
+      (id) => !contacts.some((c) => c.contact.id === id),
+    );
+    void Promise.allSettled(
+      missing.map(async (id) => ({
+        id,
+        contact: (
+          await researchApi("chatContact", {
+            params: { id },
+            signal: controller.signal,
+          })
+        ).data,
+      })),
+    ).then((results) => {
+      if (
+        controller.signal.aborted ||
+        scope.current !== requestScope ||
+        useResearchStore.getState().generation !== generation
+      )
+        return;
+      setNames(
+        Object.fromEntries(
+          results.flatMap((result) =>
+            result.status === "fulfilled"
+              ? [[result.value.id, result.value.contact.displayName]]
+              : [],
+          ),
+        ),
+      );
+    });
+    return () => {
+      scope.current++;
+      controller.abort();
+    };
+  }, [profileIds, generation]);
   const [failure, setFailure] = useState("");
   const [busy, setBusy] = useState(false);
   const name = (id: string) =>
-    contacts.find((c) => c.contact.id === id)?.contact.displayName || id;
+    contacts.find((c) => c.contact.id === id)?.contact.displayName ||
+    names[id] ||
+    "联系人资料待加载";
   const command = async (run: () => Promise<unknown>) => {
+    const requestScope = scope.current;
+    const isCurrent = () =>
+      mounted.current &&
+      requestScope === scope.current &&
+      generation === useResearchStore.getState().generation;
+    if (!isCurrent()) return;
     setBusy(true);
     setFailure("");
     try {
       await run();
+      if (!isCurrent()) return;
       await researchApi("imSync", { body: {} });
+      if (!isCurrent()) return;
       await useResearchStore.getState().refresh();
+      if (!isCurrent()) return;
       await refresh();
     } catch (err) {
-      setFailure(err instanceof Error ? err.message : "操作失败");
-      await refresh();
+      if (isCurrent()) {
+        setFailure(err instanceof Error ? err.message : "操作失败");
+        await refresh();
+      }
     } finally {
-      setBusy(false);
+      if (isCurrent()) setBusy(false);
     }
   };
   return (
@@ -69,19 +144,26 @@ export function ResearchRequests() {
               <Button
                 danger
                 disabled={busy}
-                onClick={() =>
-                  Modal.confirm({
+                onClick={() => {
+                  const confirmationScope = scope.current;
+                  confirmation.current = Modal.confirm({
                     title: request.status === "pending" ? "撤回申请？" : "撤销授权？",
                     content: "取消此联系人关系，不自动撤销独立群成员身份和已承接任务。",
-                    onOk: () =>
-                      command(() =>
+                    onOk: () => {
+                      if (
+                        scope.current !== confirmationScope ||
+                        generation !== useResearchStore.getState().generation
+                      )
+                        return;
+                      return command(() =>
                         researchApi("revokeContactRequest", {
                           params: { id: request.id },
                           body: { expectedVersion: request.version },
                         }),
-                      ),
-                  })
-                }
+                      );
+                    },
+                  });
+                }}
               >
                 {request.status === "pending" ? "撤回申请" : "撤销授权"}
               </Button>

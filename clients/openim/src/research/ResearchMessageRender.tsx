@@ -110,27 +110,28 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
           )}
         </>
       )}
-      {(turn.data?.data || currentRetry) && (
-        <ResearchTurnStatus
-          turn={turn.data?.data || currentRetry!}
-          manager={manager}
-          compact
-          onRetried={
-            turn.data && !turn.error
-              ? (next) => {
-                  setRetried({
-                    generation: actorGeneration,
-                    imID,
-                    messageID: pointer!.messageId,
-                    sourceTurnId: turnId!,
-                    turn: next,
-                  });
-                  void read.refresh();
-                }
-              : undefined
-          }
-        />
-      )}
+      {(turn.data?.data || currentRetry) &&
+        (turn.data?.data || currentRetry)?.status !== "succeeded" && (
+          <ResearchTurnStatus
+            turn={turn.data?.data || currentRetry!}
+            manager={manager}
+            compact
+            onRetried={
+              turn.data && !turn.error
+                ? (next) => {
+                    setRetried({
+                      generation: actorGeneration,
+                      imID,
+                      messageID: pointer!.messageId,
+                      sourceTurnId: turnId!,
+                      turn: next,
+                    });
+                    void read.refresh();
+                  }
+                : undefined
+            }
+          />
+        )}
       {turn.error && (
         <p className="text-xs text-red-700">AI 请求状态暂时无法读取：{turn.error}</p>
       )}

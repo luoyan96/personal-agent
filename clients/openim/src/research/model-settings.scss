@@ -282,7 +282,14 @@
     background: #fff;
   }
   .model-settings-footer .ant-btn {
-    padding-inline: 10px;
+    padding-inline: 8px;
+    font-size: 13px;
+  }
+  .model-settings-footer > .ant-btn {
+    padding-inline: 4px;
+  }
+  .model-settings-footer .ant-btn-primary {
+    min-width: 66px;
   }
   .model-settings-footer .model-footer-actions {
     gap: 6px;

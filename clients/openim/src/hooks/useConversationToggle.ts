@@ -1,7 +1,7 @@
 import type { SessionType } from "@openim/wasm-client-sdk";
 import { ConversationItem } from "@openim/wasm-client-sdk/lib/types/entity";
-import { useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { IMSDK } from "@/layout/MainContentWrap";
 import { useConversationStore } from "@/store";
@@ -46,6 +46,9 @@ const getConversation = async ({
 
 export function useConversationToggle() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const route = useRef(location.pathname);
+  route.current = location.pathname;
   const updateCurrentConversation = useConversationStore(
     (state) => state.updateCurrentConversation,
   );
@@ -57,10 +60,12 @@ export function useConversationToggle() {
       const actorId = useResearchStore.getState().actor?.member.id;
       const previousID =
         useConversationStore.getState().currentConversation?.conversationID;
+      const previousRoute = route.current;
       const isCurrent = () =>
         !researchMode ||
         (useResearchStore.getState().generation === generation &&
           useResearchStore.getState().actor?.member.id === actorId &&
+          route.current === previousRoute &&
           useConversationStore.getState().currentConversation?.conversationID ===
             previousID);
       let conversation;
@@ -104,7 +109,16 @@ export function useConversationToggle() {
           conversation.conversationID
       )
         return;
-      await updateCurrentConversation({ ...conversation }, isJump);
+      await updateCurrentConversation({ ...conversation }, isJump, isCurrent);
+      if (
+        researchMode &&
+        (route.current !== previousRoute ||
+          useResearchStore.getState().generation !== generation ||
+          useResearchStore.getState().actor?.member.id !== actorId ||
+          useConversationStore.getState().currentConversation?.conversationID !==
+            conversation.conversationID)
+      )
+        return;
       navigate(`/chat/${conversation.conversationID}`);
     },
     [navigate, updateCurrentConversation],

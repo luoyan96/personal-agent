@@ -108,7 +108,8 @@ export function ResearchContacts() {
             <Tag className="ml-auto">
               {contact.identity.kind === "human"
                 ? "真人"
-                : contact.profile.role === "coordinator"
+                : contact.profile.role === "coordinator" &&
+                  contact.relationship.status === "own"
                 ? "我的 AI"
                 : "AI"}
             </Tag>
