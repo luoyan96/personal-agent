@@ -7,12 +7,21 @@ import { useResearchStore } from "./store";
 /** Shared by contact profiles and starters; only open a real, current SDK session. */
 export function useResearchContactChat() {
   const { toSpecifiedConversation } = useConversationToggle();
-  return async (contactId: string, isCurrent: () => boolean) => {
+  return async (
+    contactId: string,
+    isCurrent: () => boolean,
+    options?: { expectedConversationId?: string; onTarget?: (imID: string) => void },
+  ) => {
     if (!isCurrent()) return false;
     const canonical = await researchApi("createDirectConversation", {
       body: { contactId },
     });
     if (!isCurrent()) return false;
+    if (
+      options?.expectedConversationId &&
+      canonical.data.id !== options.expectedConversationId
+    )
+      throw new Error("当前私聊与创建结果不一致，请重新查看联系人资料。");
     const mapping = await researchApi("imSyncConversation", {
       params: { id: canonical.data.id },
       body: {},
@@ -33,8 +42,16 @@ export function useResearchContactChat() {
       user.syncState !== "success"
     )
       throw new Error("私聊已保存；即时通信暂未连接，连接恢复后可再次点击开始聊天。");
+    if (mapping.data.researchConversationId !== canonical.data.id)
+      throw new Error("聊天映射与当前私聊不一致，请稍后重试。");
     const target = state.contacts.find((entry) => entry.contact.id === contactId);
     if (!target) throw new Error("聊天目标尚未准备完成，请稍后重试。");
+    if (
+      !target.contact.allowedActions.includes("chat") ||
+      target.userID !== mapping.data.peerUserID
+    )
+      throw new Error("当前没有这个 Agent 的聊天权限，请重新查看联系人资料。");
+    options?.onTarget?.(mapping.data.imConversationID);
     return await toSpecifiedConversation({
       sourceID: target.userID,
       sessionType: SessionType.Single,

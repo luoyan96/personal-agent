@@ -10,6 +10,7 @@ import { useConversationStore } from "@/store";
 import { useState } from "react";
 import type { AgentTurn } from "@research-agent-platform/contracts";
 import styles from "@/pages/chat/queryChat/MessageItem/message-item.module.scss";
+import { CreatedAgentChatButton } from "./CreatedAgentChatButton";
 
 export default function ResearchMessageRender({ message }: IMessageItemProps) {
   const imID = useConversationStore((s) => s.currentConversation?.conversationID);
@@ -135,6 +136,14 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
       {turn.error && (
         <p className="text-xs text-red-700">AI 请求状态暂时无法读取：{turn.error}</p>
       )}
+      {read.data?.fact.origin === "service" &&
+        turn.data?.data.purpose === "create_agent" &&
+        turn.data?.data.status === "succeeded" &&
+        turn.data.data.createdAgent && (
+          <div className="mt-2">
+            <CreatedAgentChatButton created={turn.data.data.createdAgent} />
+          </div>
+        )}
     </div>
   );
 }

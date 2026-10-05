@@ -51,6 +51,30 @@ function modelGuidance(turn: AgentTurn, manager: boolean): Guidance {
 
 /** Present only the actual turn state; never infer a reply or successful task. */
 export function turnGuidance(turn: AgentTurn, manager = false): Guidance {
+  if (
+    turn.purpose === "create_agent" &&
+    (turn.status === "queued" || turn.status === "running")
+  )
+    return {
+      title: "正在创建 Agent",
+      nextStep:
+        turn.status === "queued"
+          ? "创建请求已保存，正在等待处理；联系人尚未创建。"
+          : "正在整理 Agent 档案；联系人尚未创建。",
+      tone: "info",
+    };
+  if (turn.purpose === "create_agent" && turn.status === "waiting_input")
+    return {
+      title: "创建 Agent 需要补充信息",
+      nextStep: "请查看助理的问题并补充后发送；本次尚未添加联系人。",
+      tone: "info",
+    };
+  if (turn.status === "succeeded" && turn.createdAgent)
+    return {
+      title: turn.createdAgent.reused ? "已找到你的 Agent" : "Agent 已添加",
+      nextStep: "联系人与私聊已保存，可以打开 Agent 聊天；没有自动发送消息。",
+      tone: "success",
+    };
   if (turn.status === "queued")
     return {
       title: "等待 AI 回复",
@@ -76,6 +100,13 @@ export function turnGuidance(turn: AgentTurn, manager = false): Guidance {
       tone: "success",
     };
   switch (turn.failure) {
+    case "AGENT_LIMIT_REACHED":
+      return {
+        title: "你的 Agent 数量已达上限",
+        nextStep:
+          "本次没有创建新的联系人。可以从通讯录打开已有 Agent，或修改已有 Agent 的资料后使用。",
+        tone: "warning",
+      };
     case "MODEL_UNAVAILABLE":
       return modelGuidance(turn, manager);
     case "BUDGET_EXCEEDED": {

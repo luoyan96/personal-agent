@@ -1,5 +1,5 @@
 import { Alert, Button, InputNumber, Modal, Select, Space } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AgentTurn, RequestFor } from "@research-agent-platform/contracts";
 type ChatResource = NonNullable<
   RequestFor<"sendChatMessage">["body"]["context"]
@@ -11,8 +11,25 @@ import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
 import { ResearchTurnStatus } from "./ResearchTurnStatus";
 import { DownOutlined, UpOutlined } from "@ant-design/icons";
+import {
+  useAgentChatOperation,
+  type AgentChatOperation,
+} from "./useAgentChatOperation";
+import { useResearchContactChat } from "./useResearchContactChat";
+import { CreatedAgentChatButton } from "./CreatedAgentChatButton";
 
 export function useResearchComposer() {
+  const captureOperation = useAgentChatOperation();
+  const openAgentChat = useResearchContactChat();
+  const freshCreation = useRef<{
+    turnId?: string;
+    operation: AgentChatOperation;
+    attempted: boolean;
+  }>();
+  const [creationFailure, setCreationFailure] = useState<{
+    turnId: string;
+    message: string;
+  }>();
   const conversation = useConversationStore((s) => s.currentConversation);
   const imID = conversation?.conversationID;
   const mapping = useResearchStore((s) =>
@@ -60,6 +77,45 @@ export function useResearchComposer() {
     `${imID}:${turn?.id || ""}`,
     !!turn && turn.conversationId === mapping?.researchConversationId,
   );
+  const currentTurn = turnRead.data?.data || turn;
+  useEffect(() => {
+    const fresh = freshCreation.current;
+    if (
+      !fresh ||
+      fresh.attempted ||
+      !currentTurn ||
+      fresh.turnId !== currentTurn.id ||
+      currentTurn.purpose !== "create_agent" ||
+      currentTurn.conversationId !== mapping?.researchConversationId ||
+      !fresh.operation.isCurrent()
+    )
+      return;
+    if (
+      ["failed", "unavailable", "cancelled", "interrupted", "waiting_input"].includes(
+        currentTurn.status,
+      )
+    ) {
+      fresh.operation.dispose();
+      freshCreation.current = undefined;
+      return;
+    }
+    if (currentTurn.status !== "succeeded" || !currentTurn.createdAgent) return;
+    fresh.attempted = true;
+    const created = currentTurn.createdAgent;
+    void openAgentChat(created.contactId, fresh.operation.isCurrent, {
+      expectedConversationId: created.conversationId,
+      onTarget: fresh.operation.allowTarget,
+    })
+      .catch((error) => {
+        if (fresh.operation.isCurrent())
+          setCreationFailure({
+            turnId: currentTurn.id,
+            message:
+              error instanceof Error ? error.message : "聊天暂未打开，请稍后重试。",
+          });
+      })
+      .finally(() => fresh.operation.dispose());
+  }, [currentTurn, mapping?.researchConversationId, openAgentChat]);
   useEffect(() => {
     setContext([]);
     setOpen(false);
@@ -68,6 +124,7 @@ export function useResearchComposer() {
     const peer = contacts.find((c) => c.userID === conversation?.userID)?.contact;
     setAgentId(peer && peer.identity.kind !== "human" ? peer.id : "");
     setMode("chat");
+    setCreationFailure(undefined);
   }, [imID, actorGeneration]);
   const sendResearch = async (text: string) => {
     const advancedRequest = advanced && mode === "ask_agent";
@@ -81,23 +138,40 @@ export function useResearchComposer() {
     const generation = useResearchStore.getState().generation;
     const memberId = useResearchStore.getState().actor?.member.id;
     const selfUserID = useUserStore.getState().selfInfo.userID;
-    const result = advancedRequest
-      ? await researchApi("sendChatMessage", {
-          params: { id: mapping.researchConversationId },
-          body: {
-            text,
-            intent: "ask_agent",
-            agentContactId: agentId,
-            budget: { maxTokens, maxSeconds },
-            mentions: [],
-            context,
-          },
-        })
-      : await researchApi("agentChatMessage", {
-          params: { id: mapping.researchConversationId },
-          body: { text },
-        });
+    freshCreation.current?.operation.dispose();
+    const operation = captureOperation();
+    const fresh = {
+      operation,
+      attempted: false,
+      turnId: undefined as string | undefined,
+    };
+    freshCreation.current = fresh;
+    setCreationFailure(undefined);
+    let result;
+    try {
+      result = advancedRequest
+        ? await researchApi("sendChatMessage", {
+            params: { id: mapping.researchConversationId },
+            body: {
+              text,
+              intent: "ask_agent",
+              agentContactId: agentId,
+              budget: { maxTokens, maxSeconds },
+              mentions: [],
+              context,
+            },
+          })
+        : await researchApi("agentChatMessage", {
+            params: { id: mapping.researchConversationId },
+            body: { text },
+          });
+    } catch (error) {
+      operation.dispose();
+      if (freshCreation.current === fresh) freshCreation.current = undefined;
+      throw error;
+    }
     if (
+      operation.isCurrent() &&
       useResearchStore.getState().generation === generation &&
       useResearchStore.getState().actor?.member.id === memberId &&
       useConversationStore.getState().currentConversation?.conversationID === imID &&
@@ -106,6 +180,12 @@ export function useResearchComposer() {
       setTurn(
         result.data.turn ? { generation, imID, turn: result.data.turn } : undefined,
       );
+      if (result.data.turn?.purpose === "create_agent")
+        fresh.turnId = result.data.turn.id;
+      else {
+        operation.dispose();
+        freshCreation.current = undefined;
+      }
       // The pointer still arrives through the canonical outbox and real SDK.
       // Only successful persistence authorizes the UI to follow this request.
       if (imID)
@@ -114,7 +194,7 @@ export function useResearchComposer() {
           actorGeneration: generation,
           selfUserID,
         });
-    }
+    } else operation.dispose();
     // Only the canonical backend outbox publishes the research pointer.
     return true;
   };
@@ -158,6 +238,28 @@ export function useResearchComposer() {
           </div>
         )}
         {canonical.error && <Alert type="error" message={canonical.error} />}
+        {currentTurn?.purpose === "create_agent" &&
+          currentTurn.status === "succeeded" &&
+          currentTurn.createdAgent &&
+          currentTurn.conversationId === mapping.researchConversationId && (
+            <div className="mx-3 mt-1 flex min-w-0 items-start gap-2">
+              <span
+                className="min-w-0 flex-1 truncate text-xs text-slate-600"
+                title={currentTurn.createdAgent.displayName}
+              >
+                {currentTurn.createdAgent.reused ? "已找到" : "已添加"}{" "}
+                {currentTurn.createdAgent.displayName}
+              </span>
+              <CreatedAgentChatButton
+                created={currentTurn.createdAgent}
+                initialFailure={
+                  creationFailure?.turnId === currentTurn.id
+                    ? creationFailure.message
+                    : ""
+                }
+              />
+            </div>
+          )}
         {(turnRead.data?.data || turn) &&
           (advanced || (turnRead.data?.data || turn)?.status !== "succeeded") &&
           turn?.conversationId === mapping.researchConversationId && (
