@@ -1,5 +1,6 @@
 import { Alert, Button, Input, Modal, Select, Space, Tag } from "antd";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import OIMAvatar from "@/components/OIMAvatar";
 import { researchApi } from "./api";
 import { useResearchStore } from "./store";
@@ -9,7 +10,9 @@ import type { OverlayVisibleHandle } from "@/hooks/useOverlayVisible";
 import { AgentStarters } from "./AgentStarters";
 
 export function ResearchContacts() {
-  const [view, setView] = useState<"mine" | "directory" | "search">("mine");
+  const [params, setParams] = useSearchParams();
+  const requestedView = params.get("view");
+  const view = requestedView === "search" || requestedView === "directory" ? requestedView : "mine";
   const [search, setSearch] = useState("");
   const [accountQuery, setAccountQuery] = useState("");
   const [selectedContact, setSelectedContact] = useState<string>();
@@ -36,6 +39,13 @@ export function ResearchContacts() {
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState("");
   const epoch = useRef(0);
+  useEffect(() => {
+    if (params.get("action") !== "create-agent") return;
+    setCreating(true);
+    const next = new URLSearchParams(params);
+    next.delete("action");
+    setParams(next, { replace: true });
+  }, [params, setParams]);
   useLayoutEffect(() => {
     epoch.current++;
     setBusy(false);
@@ -54,7 +64,14 @@ export function ResearchContacts() {
       <Space wrap>
         <Select
           value={view}
-          onChange={setView}
+          onChange={(nextView) => {
+            setSearch("");
+            setAccountQuery("");
+            const next = new URLSearchParams(params);
+            if (nextView === "mine") next.delete("view");
+            else next.set("view", nextView);
+            setParams(next);
+          }}
           options={[
             { value: "mine", label: "我的联系人" },
             { value: "search", label: "添加朋友" },
@@ -64,6 +81,7 @@ export function ResearchContacts() {
         {view === "search" ? (
           <Input.Search
             aria-label="查找账号"
+            autoFocus
             placeholder="输入朋友的完整用户名"
             value={search}
             onChange={(event) => setSearch(event.target.value)}

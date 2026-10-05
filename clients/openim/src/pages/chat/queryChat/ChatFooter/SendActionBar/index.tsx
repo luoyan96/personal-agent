@@ -1,54 +1,26 @@
+import { AudioOutlined, CloseOutlined, PlusOutlined } from "@ant-design/icons";
 import { MessageItem } from "@openim/wasm-client-sdk";
-import { Popover, PopoverProps, Upload, UploadProps } from "antd";
-import { TooltipPlacement } from "antd/es/tooltip";
+import { Button, Popover } from "antd";
 import clsx from "clsx";
-import i18n, { t } from "i18next";
-import { memo, ReactNode, useState } from "react";
-import React from "react";
+import { t } from "i18next";
+import { memo, useId, useLayoutEffect, useRef, useState } from "react";
 
 import image from "@/assets/images/chatFooter/image.png";
 import fileIcon from "@/assets/images/chatFooter/file.png";
 import rtc from "@/assets/images/chatFooter/rtc.png";
+import { researchMode } from "@/research/api";
 import { useConversationStore } from "@/store";
+import { feedbackToast } from "@/utils/common";
 
 import { SendMessageParams } from "../useSendMessage";
 import CallPopContent from "./CallPopContent";
 import VoiceRecorder from "./VoiceRecorder";
-import { feedbackToast } from "@/utils/common";
 
-type UploadRequestOption = Parameters<NonNullable<UploadProps["customRequest"]>>[0];
-
-const sendActionList = [
-  {
-    title: "文件",
-    icon: fileIcon,
-    key: "file",
-    accept: "*",
-    comp: null,
-    placement: undefined,
-  },
-  {
-    title: t("placeholder.image"),
-    icon: image,
-    key: "image",
-    accept: "image/*",
-    comp: null,
-    placement: undefined,
-  },
-  {
-    title: t("placeholder.call"),
-    icon: rtc,
-    key: "rtc",
-    accept: undefined,
-    comp: <CallPopContent />,
-    placement: "top",
-  },
-];
-
-i18n.on("languageChanged", () => {
-  sendActionList[1].title = t("placeholder.image");
-  sendActionList[2].title = t("placeholder.call");
-});
+const mediaActions = [
+  { key: "image", title: "图片", icon: image, accept: "image/*" },
+  { key: "file", title: "文件", icon: fileIcon, accept: "*" },
+] as const;
+const actionClass = "flex h-20 w-full flex-col items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-700 hover:border-blue-300 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500";
 
 const SendActionBar = ({
   sendMessage,
@@ -61,94 +33,119 @@ const SendActionBar = ({
   getFileMessage: (file: File) => Promise<MessageItem>;
   getSoundMessage: (file: File, duration: number) => Promise<MessageItem>;
 }) => {
-  const [visibleState, setVisibleState] = useState(false);
-  const isGroupSession = useConversationStore((state) =>
-    Boolean(state.currentConversation?.groupID),
-  );
+  const [expanded, setExpanded] = useState(false);
+  const [voiceVisible, setVoiceVisible] = useState(false);
+  const panelId = useId();
+  const mediaEpoch = useRef(0);
+  const fileIntent = useRef<{ conversationID: string; epoch: number }>();
+  const fileInputs = useRef<Partial<Record<"image" | "file", HTMLInputElement>>>({});
+  const conversationID = useConversationStore((s) => s.currentConversation?.conversationID);
+  const isGroupSession = useConversationStore((s) => Boolean(s.currentConversation?.groupID));
 
-  const closePop = () => setVisibleState(false);
+  useLayoutEffect(() => {
+    mediaEpoch.current++;
+    setExpanded(false);
+    setVoiceVisible(false);
+    fileIntent.current = undefined;
+    return () => { mediaEpoch.current++; };
+  }, [conversationID]);
 
-  const fileHandle = (options: UploadRequestOption, kind: string) => {
-    if (!(options.file instanceof File)) return;
-    const file = options.file;
+  const fileHandle = (file: File, kind: "image" | "file") => {
     const conversation = useConversationStore.getState().currentConversation;
-    if (!conversation) { options.onError?.(new Error("请先选择会话")); return; }
+    const intent = fileIntent.current;
+    if (!conversation || !intent || intent.conversationID !== conversation.conversationID || intent.epoch !== mediaEpoch.current) {
+      const error = new Error("会话已切换，请在当前会话重新选择文件");
+      feedbackToast({ error, msg: error.message });
+      return;
+    }
     void (async () => {
       try {
         const message = await (kind === "image" ? getImageMessage(file) : getFileMessage(file));
+        if (intent.epoch !== mediaEpoch.current || useConversationStore.getState().currentConversation?.conversationID !== conversation.conversationID)
+          throw new Error("会话已切换，请在当前会话重新选择文件");
         await sendMessage({ message, recvID: conversation.userID, groupID: conversation.groupID });
-        options.onSuccess?.(message);
-      } catch (error) { feedbackToast({ error, msg: "文件发送失败，请检查连接后重试" }); options.onError?.(error instanceof Error ? error : new Error("文件发送失败")); }
+      } catch (error) {
+        feedbackToast({ error, msg: "文件发送失败，请检查连接后重试" });
+      }
     })();
   };
 
   return (
-    <div className="flex flex-wrap items-center px-4.5 pt-2">
-      {sendActionList.map((action) => {
-        if (action.key === "rtc" && isGroupSession) {
-          return null;
-        }
-        const popProps: PopoverProps = {
-          placement: action.placement as TooltipPlacement,
-          content:
-            action.comp &&
-            React.cloneElement(action.comp as React.ReactElement, {
-              closePop,
-            }),
-          title: null,
-          arrow: false,
-          trigger: "click",
-          // @ts-ignore
-          open: action.comp ? visibleState : false,
-          onOpenChange: (visible) => setVisibleState(visible),
-        };
-
-        return (
-          <ActionWrap
-            popProps={popProps}
-            key={action.key}
-            accept={action.accept}
-            fileHandle={options => fileHandle(options, action.key)}
-          >
-            <div
-              className={clsx("flex cursor-pointer items-center last:mr-0", {
-                "mr-5": !action.accept,
-              })}
+    <div className="px-4.5 pt-2">
+      <Button
+        type="text"
+        className="!flex !h-9 !w-9 !items-center !justify-center !rounded-full !border !border-slate-300 !text-xl"
+        aria-label="更多聊天功能"
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        icon={expanded ? <CloseOutlined /> : <PlusOutlined />}
+        onClick={() => setExpanded((value) => !value)}
+      />
+      <div
+        id={panelId}
+        role="group"
+        aria-label="聊天扩展功能"
+        className={clsx("my-2 max-w-[360px] grid-cols-3 gap-2 rounded-xl bg-slate-50 p-3", expanded ? "grid" : "hidden")}
+      >
+        {mediaActions.map((action) => (
+          <div key={action.key}>
+            <button
+              type="button"
+              aria-label={`发送${action.title}`}
+              className={actionClass}
+              onClick={() => {
+                const current = useConversationStore.getState().currentConversation;
+                fileIntent.current = current ? { conversationID: current.conversationID, epoch: mediaEpoch.current } : undefined;
+                setExpanded(false);
+                fileInputs.current[action.key]?.click();
+              }}
             >
-              <img src={action.icon} width={20} alt={action.title} />
-            </div>
-          </ActionWrap>
-        );
-      })}
-      <VoiceRecorder getSoundMessage={getSoundMessage} sendMessage={sendMessage} />
+              <img src={action.icon} width={24} alt="" />
+              <span>{action.title}</span>
+            </button>
+            <input
+              ref={(element) => {
+                if (element) fileInputs.current[action.key] = element;
+                else delete fileInputs.current[action.key];
+              }}
+              type="file"
+              className="hidden"
+              accept={action.accept}
+              multiple
+              onChange={(event) => {
+                const files = Array.from(event.currentTarget.files ?? []);
+                event.currentTarget.value = "";
+                files.forEach((file) => fileHandle(file, action.key));
+              }}
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          aria-label="打开语音面板"
+          className={actionClass}
+          onClick={() => { setExpanded(false); setVoiceVisible(true); }}
+        >
+          <AudioOutlined className="text-2xl" />
+          <span>语音</span>
+        </button>
+        {!researchMode && !isGroupSession && (
+          <Popover content={<CallPopContent closeAllPop={() => setExpanded(false)} />} trigger="click" arrow={false} placement="top">
+            <button type="button" className={actionClass} aria-label={t("placeholder.call")}>
+              <img src={rtc} width={24} alt="" />
+              <span>{t("placeholder.call")}</span>
+            </button>
+          </Popover>
+        )}
+      </div>
+      {voiceVisible && (
+        <div className="my-2 flex flex-wrap items-start justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2" role="group" aria-label="语音消息">
+          <VoiceRecorder getSoundMessage={getSoundMessage} sendMessage={sendMessage} />
+          <Button type="text" size="small" icon={<CloseOutlined />} aria-label="关闭语音面板" onClick={() => setVoiceVisible(false)} />
+        </div>
+      )}
     </div>
   );
 };
 
 export default memo(SendActionBar);
-
-const ActionWrap = ({
-  accept,
-  popProps,
-  children,
-  fileHandle,
-}: {
-  accept?: string;
-  children: ReactNode;
-  popProps?: PopoverProps;
-  fileHandle: (options: UploadRequestOption) => void;
-}) => {
-  return accept ? (
-    <Upload
-      showUploadList={false}
-      customRequest={fileHandle}
-      accept={accept}
-      multiple
-      className="mr-5 flex"
-    >
-      {children}
-    </Upload>
-  ) : (
-    <Popover {...popProps}>{children}</Popover>
-  );
-};

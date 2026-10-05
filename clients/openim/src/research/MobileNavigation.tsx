@@ -1,4 +1,5 @@
 import { Button, Dropdown } from "antd";
+import { PlusOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "@/store";
 import { emit } from "@/utils/events";
@@ -17,6 +18,23 @@ export function MobileNavigation() {
       <Button type="text" onClick={() => navigate("/contact")}>
         联系人
       </Button>
+      <Dropdown
+        trigger={["click"]}
+        menu={{
+          items: [
+            { key: "friend", label: "添加朋友" },
+            { key: "agent", label: "创建 Agent" },
+            { key: "group", label: "发起群聊" },
+          ],
+          onClick: ({ key }) => {
+            if (key === "friend") navigate("/contact?view=search");
+            else if (key === "agent") navigate("/contact?action=create-agent");
+            else emit("OPEN_CHOOSE_MODAL", { type: "CRATE_GROUP" });
+          },
+        }}
+      >
+        <Button type="text" aria-label="新建与添加" icon={<PlusOutlined />} />
+      </Dropdown>
       <Dropdown
         menu={{
           items: [

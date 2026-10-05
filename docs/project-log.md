@@ -137,3 +137,11 @@
 - Workbench文件上传Session到期，正常刷新原免密连接后39.6MB单包上传完成。文件页隐藏Terminal导致一次fill选择器中止，切回已见终端后核验 / 解包 / 发布；原动作没有误执行或权限扩大。外层及helper哈希实际云回执在outer-verified，静态部署实际成功回执在deployment-verified。未新增SSH或修改用户Workbench页。
 - 原真实IFRC曾弹另一设备登录提示，本批正常刷新现有页面后会话恢复，不需要提取或重输真实密码 / Key。20:35实际通讯录出现三卡并添加“文献阅读助手”，真实SDK直接会话打开、发送一次自编植物光照摘要，收到真实模型四点阅读梳理，区分事实 / 推断 / 未提供资料。20:36重选本人已有档案后相同SDK会话及历史恢复。没有自动消息、任务 / 群或运行工具；该真实联系人保留给用户使用，不当作一次性QA删除。另两预设只有可选入口与本地精确档案验证，未分别调用真实模型。
 - 实际截图live-agent-catalog-added.png / live-agent-chat.png、DOM / live-ui-proof.json均在Git外父目录 `.runtime/agent-starters-20261005`，没有新建测试云账号、改真实模型配置或读secret。5项发布helper局部门禁测试与实际云运行回执分开记录。README / current-state / roadmap / brief / client / ECS说明同步，剩余自然需求自动匹配 / 建Agent、联网 / 文件工具、自主科研执行和原生端仍未实现；日常角色回复不代替科研正确性与小组收益验收。
+
+
+## 2026-10-05：加号菜单与聊天媒体入口（候选）
+
+- 用户要求调整OpenIM的“＋”交互。桌面顶部和320px导航提供添加朋友 / 创建Agent / 发起群聊；朋友直接查找，Agent消费一次查询参数打开现有表单，群聊沿用ChooseModal。输入区一个加号展开图片 / 文件 / 语音，文件系统选择器调用既有消息构造与发送，语音先显示面板再显式申请麦克风。会话世代守卫阻止换会话后迟返回文件发送。
+- 最终客户端类型 / Web构建 / 四个固定SDK资源通过。实际组件九组本地检查通过，API / SDK / 媒体均明确合成；pageerror0，React Router future、Antd WaveEffect弃用与故意旧文件拒绝日志保留。没有真人麦克风、云文件投递或新建群 / 联系人验收动作。证据在父目录 `.runtime/plus-menus-20261005/run-e79b8d07-2941-46b1-8aca-8964c3fa8d08/report.json` 和桌面 / 320px截图。
+- 原分页fixture缺nextCursor / 关系枚举错误、按钮选择器 / 嵌套Upload按钮、构建并行触发Windows wasm watcher EBUSY、fixture漏AntdGlobalComp和全局窄屏样式的中止证据均保留；修正产品的媒体单按钮后，补完整实际公共包裹才完成最终检查。不能把这些 failed 原报告改成 passed。
+- 只改完整客户端与说明，无共享契约、后端、runtime或SQLite变更，不要求重复根CI；对应后端0ea的共享CI457 + 2仍为历史证据。本节为发布候选，线上基线0ea / 949镜像 / 契约0.15 / schema16不变；静态发布完成后补确切源码和公网hash。未推GitHub。

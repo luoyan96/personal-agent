@@ -6,6 +6,7 @@ import {
   SignalingInvitation,
 } from "@openim/wasm-client-sdk/lib/types/entity";
 import { Popover } from "antd";
+import { PlusOutlined, RobotOutlined } from "@ant-design/icons";
 import i18n, { t } from "i18next";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -13,7 +14,6 @@ import { getBusinessUserInfo } from "@/api/login";
 import add_friend from "@/assets/images/topSearchBar/add_friend.png";
 import add_group from "@/assets/images/topSearchBar/add_group.png";
 import create_group from "@/assets/images/topSearchBar/create_group.png";
-import show_more from "@/assets/images/topSearchBar/show_more.png";
 import WindowControlBar from "@/components/WindowControlBar";
 import { CustomType } from "@/constants";
 import { OverlayVisibleHandle } from "@/hooks/useOverlayVisible";
@@ -149,11 +149,19 @@ const TopSearchBar = () => {
   }, [openGroupCardWithData]);
 
   const actionClick = (idx: number) => {
+    if (researchMode) {
+      if (idx === 0) navigate("/contact?view=search");
+      if (idx === 1) navigate("/contact?action=create-agent");
+      if (idx === 2) {
+        setChooseModalState({ type: "CRATE_GROUP" });
+        chooseModalRef.current?.openOverlay();
+      }
+      setActionVisible(false);
+      return;
+    }
     switch (idx) {
       case 0:
-        if (researchMode) { navigate('/contact'); break; }
       case 1:
-        if (researchMode) { navigate('/contact/groupNotifications'); break; }
         setIsSearchGroup(Boolean(idx));
         searchModalRef.current?.openOverlay();
         break;
@@ -172,7 +180,7 @@ const TopSearchBar = () => {
       <div className="flex w-full items-center justify-center">
         <div className="app-no-drag flex h-[26px] w-1/3 items-center justify-center rounded-md bg-[rgba(255,255,255,0.2)]"></div>
         <Popover
-          content={<ActionPopContent actionClick={actionClick} />}
+          content={<ActionPopContent actionClick={actionClick} research={researchMode} />}
           arrow={false}
           title={null}
           trigger="click"
@@ -180,12 +188,15 @@ const TopSearchBar = () => {
           open={actionVisible}
           onOpenChange={(vis) => setActionVisible(vis)}
         >
-          <img
-            className="app-no-drag ml-8 cursor-pointer"
-            width={20}
-            src={show_more}
-            alt=""
-          />
+          <button
+            type="button"
+            className="app-no-drag ml-8 flex h-8 w-8 items-center justify-center rounded-md text-xl text-white hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            aria-label="新建与添加"
+            aria-expanded={actionVisible}
+            aria-haspopup="menu"
+          >
+            <PlusOutlined />
+          </button>
         </Popover>
       </div>
       <WindowControlBar />
@@ -229,18 +240,26 @@ i18n.on("languageChanged", () => {
   actionMenuList[2].title = t("placeholder.createGroup");
 });
 
-const ActionPopContent = ({ actionClick }: { actionClick: (idx: number) => void }) => {
+const researchActionMenuList = [
+  { idx: 0, title: "添加朋友", icon: add_friend },
+  { idx: 1, title: "创建 Agent", icon: null },
+  { idx: 2, title: "发起群聊", icon: create_group },
+];
+
+const ActionPopContent = ({ actionClick, research }: { actionClick: (idx: number) => void; research: boolean }) => {
   return (
-    <div className="p-1">
-      {actionMenuList.map((action) => (
-        <div
-          className="flex cursor-pointer items-center rounded px-3 py-2 text-xs hover:bg-[var(--primary-active)]"
+    <div className="min-w-[160px] p-1" role="menu" aria-label="新建与添加菜单">
+      {(research ? researchActionMenuList : actionMenuList).map((action) => (
+        <button
+          type="button"
+          role="menuitem"
+          className="flex w-full items-center rounded px-3 py-3 text-sm hover:bg-[var(--primary-active)] focus-visible:bg-[var(--primary-active)]"
           key={action.idx}
           onClick={() => actionClick?.(action.idx)}
         >
-          <img width={20} src={action.icon} alt="call_video" />
+          {action.icon ? <img width={20} src={action.icon} alt="" /> : <RobotOutlined className="text-xl text-[var(--primary)]" />}
           <div className="ml-3">{action.title}</div>
-        </div>
+        </button>
       ))}
     </div>
   );
