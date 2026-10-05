@@ -7,6 +7,21 @@ const failure = (code: string, status: number) => response({error:{code,message:
 const intent = () => new Intent('confirmPlan',{expectedVersion:2},{id:'plan_test'});
 
 describe('F1 service boundary and retry intents',()=>{
+  it('normalizes account and invite whitespace while transporting the exact simple eight-character password',async()=>{
+    const fetcher=vi.fn<typeof fetch>().mockResolvedValue(response({data:{registered:true,username:'luoyan'}},201));
+    const client=new ApiClient(fetcher);
+    await client.send(new Intent('register',{username:' luoyan ',inviteCode:' RAP-synthetic_invitation_01 ',displayName:'合成注册成员',password:' abcdef '},{}));
+    const sent=JSON.parse(String(fetcher.mock.calls[0]![1]!.body));
+    expect(sent).toMatchObject({username:'luoyan',inviteCode:'RAP-synthetic_invitation_01',password:' abcdef '});
+  });
+  it('provides field guidance before transport and does not show server issue JSON',async()=>{
+    const fetcher=vi.fn<typeof fetch>().mockResolvedValue(response({error:{code:'VALIDATION_ERROR',message:'[{"origin":"string","format":"regex","path":["username"]}]',requestId:'req_auth_test'}},400));
+    const client=new ApiClient(fetcher);
+    await expect(client.call('login',{params:{},query:{},headers:{},body:{username:'luo yan',password:'abcdefgh'}})).rejects.toMatchObject({code:'VALIDATION_ERROR',message:expect.stringContaining('字母、数字、下划线和连字符')});
+    expect(fetcher).not.toHaveBeenCalled();
+    await expect(client.call('login',{params:{},query:{},headers:{},body:{username:'luoyan',password:'abcdefg'}})).rejects.toMatchObject({code:'VALIDATION_ERROR',message:'密码至少 8 个字符。'});
+    await expect(client.call('login',{params:{},query:{},headers:{},body:{username:'luoyan',password:'abcdefgh'}})).rejects.toMatchObject({code:'VALIDATION_ERROR',message:'请检查填写内容、格式和长度后再试。',requestId:'req_auth_test'});
+  });
   it('treats a proxy HTML 502 as unavailable and retains the original request for retry',async()=>{
     const fetcher=vi.fn<typeof fetch>().mockResolvedValueOnce(new Response('<h1>Bad gateway</h1>',{status:502})).mockResolvedValueOnce(failure('VERSION_CONFLICT',409));
     const client=new ApiClient(fetcher);const slot=new CommandSlot();const original=intent();

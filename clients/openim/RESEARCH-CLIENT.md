@@ -9,7 +9,7 @@
 1. 在仓库根构建唯一共享契约：`pnpm --config.verifyDepsBeforeRun=false --filter @research-agent-platform/contracts build`。
 2. 进入 `clients/openim`，使用其固定 pnpm **10.28.0**：`pnpm install --ignore-workspace --frozen-lockfile`。该客户端不加入根 pnpm 11 workspace。
 3. 复制 `.env.example` 为 `.env.local`。开发默认客户端 `http://127.0.0.1:4317`，科研服务 `http://127.0.0.1:3217`；科研服务 APP_ORIGIN 必须是客户端地址。
-4. `pnpm --ignore-workspace dev`；仅浏览器开发可设置 `VSCODE_DEBUG=true`，避免启动 Electron 窗口。
+4. `pnpm --ignore-workspace dev`；仅浏览器开发可设置 `VSCODE_DEBUG=true`，避免启动 Electron 窗口。共享契约变更后重新安装其 file 依赖，并用 `pnpm --ignore-workspace dev --force` 重新预构建，避免 Vite 沿用旧契约缓存。
 5. `pnpm --ignore-workspace typecheck`、`pnpm --ignore-workspace build`。
 6. Windows x64：`pnpm --ignore-workspace build:win`。输出 `release/Base/3.8.3/ResearchWeChat_3.8.3.exe`，不自动安装或发布。`electron:smoke` 对实际打包程序做隐藏窗口启动、真实 renderer/native SDK 桥检查。
 
@@ -19,7 +19,7 @@
 
 ## 操作入口
 
-- 用户名登录与邀请码注册沿科研 API；密码至少 9 个字符。科研账号已登录但 IM 不可用时，仍能重新连接、退出、编辑本人资料和管理实验室设置。
+- 用户名登录与邀请码注册沿科研 API；密码至少 8 个字符，无复杂度要求或 256 字符上限，空格按原密码保留。用户名和邀请码只清除首尾空白，用户名允许字母、数字、下划线和连字符；非法输入使用中文提示，不显示内部校验 JSON。科研账号已登录但 IM 不可用时，仍能重新连接、退出、编辑本人资料和管理实验室设置。
 - 左上本人头像 → 我的资料 / 实验室设置。模型密钥只通过同源 API 提交，不显示原密钥。负责人可创建、撤销注册邀请码。
 - 通讯录 → 我的联系人 / 发现；真人和 Agent 同列，身份清楚。创建专属 Agent、编辑名称/介绍/能力描述/性格、私有记忆保存/修订/移除/历史。
 - 联系人申请与授权 → 同意、拒绝、撤回或撤销关系。群邀请与任务 → 真人入群和 Agent 授权分别决定，任务接受独立操作。
@@ -34,6 +34,8 @@
 ## 验证边界
 
 源码构建、安装包生成、桌面启动、实际科研 HTTP/SQLite、真实双账号 OpenIM 文件/语音互通分别验证。没有实际 IM Server 时，登录 session 的 `unavailable` 不得改成成功，不填充演示联系人或消息作为连通证据。浏览器脚本、截图、测试账号及打包输出均留在 Git 外 `.runtime/openim-client-rebuild` 或忽略的 `release`；不提交密钥、密码、会话或生成产物。
+
+2026-10-05 注册修复使用共享契约 **0.13.1**。客户端和旧网页各以独立真实 HTTP/SQLite 及 Edge 完成 9 组、共 **18 组**本地检查：7 位密码与非法用户名显示中文且不提交；简单 8 位、含首尾空格的 8 位和 300 位密码分别真实注册、登录和退出；用户名/邀请码只移除首尾空白、密码原样传递；320px 无横向溢出。客户端类型、3 项认证单测、旧网页类型与 23 项 focused 单测通过。此次没有 IM Server 或模型调用，也没有提交线上账号或邀请码。脚本和报告在 Git 外 `.runtime/auth-input-review/`，成功运行后缀 `e586de8a`；两次旧 Vite 契约缓存导致的失败记录亦保留。未捕获页面异常为 0；开发依赖仍记录 Antd WaveEffect 弃用、React Router future 警告及初始未登录的 401。
 
 2026-10-04 本地验证：客户端类型检查、Vite 构建、Windows x64 NSIS 生成、实际安装包隐藏启动（页面/preload/原生 SDK constructor）通过；服务地址验证 2 项通过。真实科研 API/SQLite/Edge 的 10 条检查记录覆盖登录、重连的真实未连接状态、320/390px、资料保存/轮询/刷新、模型停用、创建邀请码、注册与成员权限、退出和服务端会话失效。安装包额外 6 条检查覆盖首次连接表单、地址限制、离线重试、坏地址不持久化、成功地址跨进程保存、远程页面无法通过 IPC 改写或读取受保护的服务设置。
 

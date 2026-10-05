@@ -12,6 +12,7 @@ import { CoordinationContext } from './coordination-view';
 import { ReuseContext } from './reuse-controller';
 import { scheduleFields, readSchedule, datedFields, readDated } from './schedule-editor';
 import { registrationPage, bindRegistration } from './registration';
+import { bindAuthInputValidation } from './auth-form';
 import { ChatView, clearStoredChatDrafts } from './chat-view';
 import type { ChatDraftEntries } from './chat-view';
 import { ChatApiSource } from './chat-api-source';
@@ -175,12 +176,13 @@ function form(key: string, fn: (data: FormData, submitter: HTMLElement | null) =
 const field = (label: string, key: string, value = '', area = false, max = 8000) => `<label>${label}${area ? `<textarea name="${key}" required maxlength="${max}" rows="3">${e(value)}</textarea>` : `<input name="${key}" required maxlength="${max}" value="${e(value)}">`}</label>`;
 
 function login() {
-  content(`<section class="flow login"><p class="eyebrow">进入你的协作空间</p><h1>登录</h1><p class="intro">使用你的账号继续协作。</p><form data-form="login" class="panel">${field('账号','username','',false,100)}<label>密码<input name="password" type="password" required minlength="9" maxlength="256" autocomplete="current-password"></label><button class="primary" type="submit">登录</button><p class="fine">忘记密码或账号停用时请联系管理员；密码重置后使用新密码。</p></form><p>还没有账号？${link('/register','使用邀请码注册')}</p><p>${link('/help','首次使用与恢复指引')}</p></section>`, '登录');
+  content(`<section class="flow login"><p class="eyebrow">进入你的协作空间</p><h1>登录</h1><p class="intro">使用你的账号继续协作。</p><form data-form="login" class="panel"><label>账号<input name="username" required autocomplete="username" autocapitalize="none" spellcheck="false"></label><p class="fine">用户名只能包含字母、数字、下划线和连字符。</p><label>密码<input name="password" type="password" required minlength="8" autocomplete="current-password"></label><p class="fine">密码至少 8 个字符，无需组合大小写、数字或符号。</p><button class="primary" type="submit">登录</button><p class="fine">忘记密码或账号停用时请联系管理员；密码重置后使用新密码。</p></form><p>还没有账号？${link('/register','使用邀请码注册')}</p><p>${link('/help','首次使用与恢复指引')}</p></section>`, '登录');
+  bindAuthInputValidation(document.querySelector<HTMLFormElement>('[data-form=login]')!);
   document.querySelector<HTMLInputElement>('[name=username]')!.autocomplete = 'username';
   form('login', async data => {
     busy = true;
     try {
-      await api.call('login',{params:{},query:{},headers:{},body:{username:String(data.get('username')),password:String(data.get('password'))}});
+      await api.call('login',{params:{},query:{},headers:{},body:{username:String(data.get('username')).trim(),password:String(data.get('password'))}});
       location.hash = '/'; await load();
     } finally {busy = false;}
   }, false);

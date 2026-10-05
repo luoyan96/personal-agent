@@ -30,6 +30,7 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "test:service": "node --test tests/research-service.test.mjs",
+    "test:auth": "node --test tests/auth-input.test.mjs",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx src",
     "lint:fix": "eslint --ext .js,.jsx,.ts,.tsx --fix --quiet src",
     "prepare": "husky install"

@@ -5,6 +5,11 @@ import type {
   RouteName,
 } from "@research-agent-platform/contracts";
 import { clearIMProfile } from "@/utils/storage";
+import {
+  normalizeAuthBody,
+  serviceErrorMessage,
+  validationMessage,
+} from "./api-errors";
 
 export const researchMode = import.meta.env.VITE_RESEARCH_MODE !== "false";
 let csrfToken = "";
@@ -36,9 +41,19 @@ export async function researchApi<K extends RouteName>(
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(options.query ?? {}))
     if (value != null) query.set(key, String(value));
-  const body = route.request.shape.body.parse(
-    options.body ?? (route.method === "GET" ? null : {}),
+  const suppliedBody = options.body ?? (route.method === "GET" ? null : {});
+  const parsedBody = route.request.shape.body.safeParse(
+    name === "login" || name === "register"
+      ? normalizeAuthBody(suppliedBody)
+      : suppliedBody,
   );
+  if (!parsedBody.success)
+    throw new ResearchApiError(
+      "VALIDATION_ERROR",
+      0,
+      validationMessage(parsedBody.error.issues),
+    );
+  const body = parsedBody.data;
   if (route.method !== "GET" && route.access === "session" && !csrfToken)
     csrfToken = (await researchApi("session")).data.csrfToken;
   const headers: Record<string, string> = {};
@@ -50,35 +65,62 @@ export async function researchApi<K extends RouteName>(
     if (!slots.has(intent)) slots.set(intent, crypto.randomUUID());
     headers["Idempotency-Key"] = slots.get(intent)!;
   }
-  const response = await fetch(path + (query.size ? `?${query}` : ""), {
-    method: route.method,
-    credentials: "same-origin",
-    headers,
-    signal: options.signal,
-    ...(route.method !== "GET" ? { body: JSON.stringify(body) } : {}),
-  });
-  const value: unknown = await response.json();
+  let response: Response;
+  try {
+    response = await fetch(path + (query.size ? `?${query}` : ""), {
+      method: route.method,
+      credentials: "same-origin",
+      headers,
+      signal: options.signal,
+      ...(route.method !== "GET" ? { body: JSON.stringify(body) } : {}),
+    });
+  } catch (error) {
+    if (options.signal?.aborted) throw error;
+    throw new ResearchApiError(
+      "NETWORK_ERROR",
+      0,
+      "服务连接失败，填写内容已保留，请检查连接后重试。",
+    );
+  }
+  if (
+    response.status === 401 &&
+    name !== "login" &&
+    (name !== "session" || actorVerified)
+  ) {
+    clearResearchSession();
+    void clearIMProfile();
+    window.dispatchEvent(new Event("research-session-expired"));
+  }
+  let value: unknown;
+  try {
+    value = await response.json();
+  } catch {
+    throw new ResearchApiError(
+      response.ok ? "INVALID_RESPONSE" : "SERVICE_UNAVAILABLE",
+      response.status,
+      response.ok
+        ? "服务响应无法读取，请刷新或重试原请求。"
+        : serviceErrorMessage("SERVICE_UNAVAILABLE", response.status, name),
+    );
+  }
+  if (options.signal?.aborted) throw new DOMException("Read cancelled", "AbortError");
   if (!response.ok) {
     const parsed = ErrorResponse.safeParse(value),
       code = parsed.success ? parsed.data.error.code : "HTTP_ERROR";
-    if (
-      response.status === 401 &&
-      name !== "login" &&
-      (name !== "session" || actorVerified)
-    ) {
-      clearResearchSession();
-      void clearIMProfile();
-      window.dispatchEvent(new Event("research-session-expired"));
-    }
     throw new ResearchApiError(
       code,
       response.status,
-      code === "VERSION_CONFLICT"
-        ? "版本已变化，请重新读取并核对后再提交；填写已保留。"
-        : `${code}（${response.status}）`,
+      serviceErrorMessage(code, response.status, name),
     );
   }
-  const result = route.response.parse(value) as ResponseFor<K>;
+  const parsedResult = route.response.safeParse(value);
+  if (!parsedResult.success)
+    throw new ResearchApiError(
+      "INVALID_RESPONSE",
+      response.status,
+      "服务响应不符合要求，请刷新或重试原请求。",
+    );
+  const result = parsedResult.data as ResponseFor<K>;
   if (name === "session") {
     csrfToken = (result as ResponseFor<"session">).data.csrfToken;
     actorVerified = true;

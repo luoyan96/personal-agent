@@ -8,6 +8,17 @@ import { useResearchStore } from "./store";
 import { LabSettings } from "./LabSettings";
 import { ResearchUserCard } from "./ResearchUserCard";
 import { OverlayVisibleHandle } from "@/hooks/useOverlayVisible";
+import { routes } from "@research-agent-platform/contracts";
+import { validationMessage } from "./api-errors";
+
+const authRule = (field: "username" | "password" | "inviteCode") => ({
+  validator: async (_rule: unknown, value: unknown) => {
+    const input =
+      typeof value === "string" && field !== "password" ? value.trim() : value;
+    const parsed = routes.register.request.shape.body.shape[field].safeParse(input);
+    if (!parsed.success) throw new Error(validationMessage([{ path: [field] }]));
+  },
+});
 
 export default function ResearchLogin() {
   const [registering, setRegistering] = useState(false),
@@ -251,26 +262,39 @@ export default function ResearchLogin() {
                     <Form.Item
                       label="实验室邀请码"
                       name="inviteCode"
-                      rules={[{ required: true }]}
+                      rules={[authRule("inviteCode")]}
                     >
                       <Input autoComplete="off" />
                     </Form.Item>
                     <Form.Item
                       label="显示姓名"
                       name="displayName"
-                      rules={[{ required: true }]}
+                      rules={[
+                        { required: true, message: "请输入显示姓名" },
+                        { max: 200, message: "显示姓名最多 200 个字符" },
+                      ]}
                     >
                       <Input />
                     </Form.Item>
                   </>
                 )}
-                <Form.Item label="用户名" name="username" rules={[{ required: true }]}>
-                  <Input autoComplete="username" />
+                <Form.Item
+                  label="用户名"
+                  name="username"
+                  rules={[authRule("username")]}
+                  extra="只能包含字母、数字、下划线和连字符；区分大小写。"
+                >
+                  <Input
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                  />
                 </Form.Item>
                 <Form.Item
                   label="密码"
                   name="password"
-                  rules={[{ required: true }, { min: 9, message: "密码至少 9 个字符" }]}
+                  rules={[authRule("password")]}
+                  extra="密码至少 8 个字符，无需组合大小写、数字或符号。"
                 >
                   <Input.Password
                     autoComplete={registering ? "new-password" : "current-password"}

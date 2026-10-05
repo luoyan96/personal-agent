@@ -1,5 +1,6 @@
 import { routes, ErrorResponse, contractVersion } from '@research-agent-platform/contracts';
 import type { RouteName, RequestFor, ResponseFor } from '@research-agent-platform/contracts';
+import { normalizeAuthBody, serviceErrorMessage, validationMessage } from './api-errors';
 
 export class ApiError extends Error {
   constructor(public code: string, message: string, public requestId = '') { super(message); }
@@ -22,8 +23,8 @@ export class ApiClient {
   constructor(private transport: typeof fetch = (input, init) => fetch(input, init)) {}
   async call<K extends RouteName>(name: K, input: RequestFor<K>, signal?: AbortSignal): Promise<ResponseFor<K>> {
     const endpoint = routes[name];
-    const parsed = endpoint.request.safeParse(input);
-    if (!parsed.success) throw new ApiError('VALIDATION_ERROR', '请检查必填内容、日期和长度。');
+    const parsed = endpoint.request.safeParse(name === 'login' || name === 'register' ? {...input,body:normalizeAuthBody(input.body)} : input);
+    if (!parsed.success) throw new ApiError('VALIDATION_ERROR', validationMessage(parsed.error.issues));
     let path = endpoint.path;
     for (const [key, value] of Object.entries(input.params)) path = path.replace(`{${key}}`, encodeURIComponent(String(value)));
     const query = new URLSearchParams();
@@ -33,7 +34,7 @@ export class ApiClient {
       response = await this.transport(path + (query.size ? '?' + query : ''), {
         method: endpoint.method, credentials: 'same-origin', cache: 'no-store', signal,
         headers: { ...(endpoint.method !== 'GET' ? {'Content-Type': 'application/json', 'X-CSRF-Token': this.csrfToken} : {}), ...input.headers },
-        ...(endpoint.method !== 'GET' ? { body: JSON.stringify(input.body) } : {}),
+        ...(endpoint.method !== 'GET' ? { body: JSON.stringify(parsed.data.body) } : {}),
       });
     } catch (error) {
       if (signal?.aborted) throw error;
@@ -56,7 +57,7 @@ export class ApiClient {
     if (signal?.aborted) throw new DOMException('Read cancelled', 'AbortError');
     if (!response.ok) {
       const error = ErrorResponse.safeParse(json);
-      if (error.success) throw new ApiError(error.data.error.code, error.data.error.message, error.data.error.requestId);
+      if (error.success) throw new ApiError(error.data.error.code, serviceErrorMessage(error.data.error.code,response.status,name), error.data.error.requestId);
       throw new ApiError('SERVICE_UNAVAILABLE', `服务暂不可用（${response.status}）。`);
     }
     if (response.headers.get('X-Contract-Version') !== contractVersion) throw new ApiError('CONTRACT_MISMATCH', '服务与页面契约版本不一致，请联系维护者。');
