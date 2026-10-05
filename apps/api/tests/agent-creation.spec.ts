@@ -10,7 +10,7 @@ import { openDatabase, migrate } from '../src/database.js'
 import { createServer } from '../src/server.js'
 import { ChatWorker } from '../src/chat-worker.js'
 import type { ModelCall, ModelResult } from '../src/execution-worker.js'
-import { agentCreationBoundary, isAgentCreationCommand } from '../src/agent-creation.js'
+import { AgentCreationOutput, agentCreationBoundary, isAgentCreationCommand } from '../src/agent-creation.js'
 
 // Verbatim 0.14 AgentTurn schema from baseline 3be07110, before new metadata.
 // This intentionally does not derive from the new schema or broaden its enum.
@@ -156,5 +156,63 @@ describe('explicit Agent creation over actual HTTP/SQLite with synthetic model o
     expect(await s.tick(async()=>{calls++;return generated()})).toBe(false)
     expect(await s.turn(sent.turn.id)).toMatchObject({status:'failed',failure:'BUDGET_EXCEEDED',budget:{maxTokens:4000,maxSeconds:90},usage:null,createdAgent:null})
     expect(calls).toBe(0);expect(s.specialists()).toBe(0);expect(JSON.parse(String(s.db.prepare('SELECT document FROM chat_messages WHERE id=?').get(sent.message.id)!.document)).text).toBe(text);s.legacyStored()
+  })
+
+  it('limits only generated profiles to concise complete fields and retains the manual profile API limits',async()=>{
+    const s=await setup(),own=await s.own(),limits={displayName:60,introduction:80,capabilityDescription:200,personality:80}
+    const bounded=Object.fromEntries(Object.entries(limits).map(([field,size])=>[field,'研'.repeat(size)])) as typeof profile
+    expect(AgentCreationOutput.safeParse({kind:'create_agent',profile:bounded}).success).toBe(true)
+    for(const [field,size] of Object.entries(limits)){
+      const oversized={...profile,[field]:'研'.repeat(size+1)}
+      expect(AgentCreationOutput.safeParse({kind:'create_agent',profile:oversized}).success).toBe(false)
+      const sent=await s.send(own.conversation.id);await s.tick(async()=>generated(oversized));expect(await s.turn(sent.turn.id)).toMatchObject({status:'failed',failure:'INVALID_MODEL_OUTPUT',createdAgent:null})
+    }
+    const sent=await s.send(own.conversation.id);await s.tick(async()=>generated(bounded));const receipt=(await s.turn(sent.turn.id)).createdAgent
+    const created=(await s.call('chatContact',null,{id:receipt.contactId})).value.data
+    expect(created.displayName).toBe(bounded.displayName);expect(created.profile).toMatchObject({introduction:bounded.introduction,personality:bounded.personality,capabilityDescription:`${bounded.capabilityDescription}\n${agentCreationBoundary}`})
+    expect((await s.call('createPersonalAgent',{...profile,introduction:'研'.repeat(111),capabilityDescription:'研'.repeat(426),personality:'研'.repeat(127)})).status).toBe(201)
+  })
+
+  it('keeps an existing long persona intact across three long-reply rounds by omitting only oldest whole daily messages',async()=>{
+    const s=await setup(),text=(prefix:string,length:number)=>prefix+'研'.repeat(length-prefix.length)
+    const capabilityPrefix='合成项目文字分析，不运行工具。',capability=text(capabilityPrefix,426-agentCreationBoundary.length-1)+'\n'+agentCreationBoundary
+    const large={displayName:'合成链研',introduction:text('合成介绍：',111),capabilityDescription:capability,personality:text('直接、坦诚：',127)}
+    const agent=(await s.call('createPersonalAgent',large)).value.data,direct=(await s.call('createDirectConversation',{contactId:agent.id})).value.data
+    const reply=text('合成讨论回复：',260),proofs:{cap:number;messages:number;omitted:boolean}[]=[]
+    for(const current of ['你擅长什么？两句话回答','请再说一遍完整观点，直接一点。','继续讨论，当前请求文字须完整保留。']){
+      const sent=await s.send(direct.id,current);let calls=0
+      expect(await s.tick(async input=>{
+        calls++;const p=JSON.parse(input.prompt),column=p.messageColumns.indexOf('text'),rows=p.messages as unknown[][]
+        expect(rows.at(-1)![column]).toBe(current);expect(rows.length).toBeLessThanOrEqual(20)
+        for(const field of ['introduction','capabilityDescription','personality'] as const)expect(p.requestedAgent.profile[field]).toBe(large[field])
+        for(const row of rows)expect([current,reply,'你擅长什么？两句话回答','请再说一遍完整观点，直接一点。']).toContain(row[column])
+        if(proofs.length)expect(p.earlierMessagesOmitted).toBe(true)
+        expect(input.maxTokens).toBeGreaterThanOrEqual(64);proofs.push({cap:input.maxTokens,messages:rows.length,omitted:!!p.earlierMessagesOmitted})
+        return modelResult(reply,{outputTokens:Math.min(256,input.maxTokens)})
+      })).toBe(true)
+      expect(calls).toBe(1);expect(await s.turn(sent.turn.id)).toMatchObject({status:'succeeded',budget:{maxTokens:4000,maxSeconds:90}})
+    }
+    expect((await s.call('chatContact',null,{id:agent.id})).value.data.profile).toMatchObject({introduction:large.introduction,capabilityDescription:large.capabilityDescription,personality:large.personality})
+    expect((await s.call('chatMessages',null,{id:direct.id})).value.data).toHaveLength(6)
+    if(process.env.AGENT_CREATION_EVIDENCE_ROOT)writeFileSync(join(process.env.AGENT_CREATION_EVIDENCE_ROOT,'daily-long-persona-proof.json'),JSON.stringify({kind:'real-http-sqlite-synthetic-model',lengths:{introduction:111,capabilityDescription:426,personality:127,reply:260},proofs,defaultBudget:{maxTokens:4000,maxSeconds:90},actualVendorCalls:0},null,2))
+  })
+
+  it('reserves output for compact daily history, retains authorized memory, and rejects an oversized current request or base without trimming',async()=>{
+    const s=await setup(),agent=(await s.call('createPersonalAgent',profile)).value.data,direct=(await s.call('createDirectConversation',{contactId:agent.id})).value.data
+    const privateMemory='OWNER_PRIVATE_MEMORY_MUST_STAY_COMPLETE',memory=(await s.call('createChatMemory',{scope:'private_agent',scopeId:agent.id,content:privateMemory,source:null})).value.data
+    for(let i=0;i<10;i++)expect((await s.call('sendChatMessage',{text:`旧资料${i}：`+'史'.repeat(260)},{id:direct.id})).status).toBe(201)
+    const current='CURRENT_REQUEST_'+ '完整新句'.repeat(40),sent=await s.send(direct.id,current)
+    await s.tick(async input=>{const p=JSON.parse(input.prompt),column=p.messageColumns.indexOf('text');expect(p.earlierMessagesOmitted).toBe(true);expect(p.messages.at(-1)[column]).toBe(current);expect(p.memories.some((m:any)=>m.content===privateMemory)).toBe(true);expect(input.maxTokens).toBeGreaterThanOrEqual(512);return modelResult('完整保留当前请求和获准记忆。')})
+    expect((await s.turn(sent.turn.id)).status).toBe('succeeded')
+    const foreign=(await s.call('requestContact',{}, {id:agent.id},1)).value.data.relationship;await s.call('decideContactRequest',{expectedVersion:foreign.version,decision:'accept'},{id:foreign.requestId})
+    const otherDirect=(await s.call('createDirectConversation',{contactId:agent.id},{},1)).value.data
+    const otherSent=await s.send(otherDirect.id,'另一人的独立文字讨论。',1)
+    await s.tick(async input=>{expect(input.prompt).not.toContain(privateMemory);return modelResult('只使用当前人的获准上下文。')});expect((await s.turn(otherSent.turn.id,1)).status).toBe('succeeded')
+    for(const mode of ['current','memory'] as const){
+      if(mode==='memory')await s.call('reviseChatMemory',{content:'记'.repeat(2000),source:null,expectedVersion:memory.version},{id:memory.id})
+      const huge=mode==='current'?'完整当前请求：'+'新'.repeat(2400):'当前短问题，记忆本身超预算。',rejected=await s.send(direct.id,huge);let calls=0
+      expect(await s.tick(async()=>{calls++;return modelResult('不能调用')})).toBe(false);expect(calls).toBe(0);expect(await s.turn(rejected.turn.id)).toMatchObject({status:'failed',failure:'BUDGET_EXCEEDED',usage:null})
+      expect(JSON.parse(String(s.db.prepare('SELECT document FROM chat_messages WHERE id=?').get(rejected.message.id)!.document)).text).toBe(huge)
+    }
   })
 })

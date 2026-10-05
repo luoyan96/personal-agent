@@ -10,7 +10,7 @@ import { personalModelKey, personalModelRuntime } from './personal-models.js'
 import { instant } from './ai.js'
 import type { Config } from './config.js'
 import { ApiError } from './errors.js'
-import { chatModelSystem, chatInputTokenBound } from './chat-model-input.js'
+import { chatModelSystem, chatInputTokenBound, dailyChatSystem } from './chat-model-input.js'
 import { AgentCreationOutput, agentCreationSystem, applyAgentCreation, legacyTurnDocument } from './agent-creation.js'
 
 // Local model protocol: validated JSON, no model-side tools or business authority.
@@ -56,7 +56,7 @@ export class ChatWorker {
       // Snapshot the context and bounded message window; normal chat never creates a job.
       let remainingText=32000
       const messages = this.db.prepare('SELECT id FROM chat_messages WHERE conversation_id=? AND sequence<=? ORDER BY sequence DESC LIMIT 20').all(group.id, input.inputSequence).flatMap(r => {
-        try { const m = s.projectedMessage(String(r.id));if((m.text?.length??0)>remainingText)return [];remainingText-=m.text?.length??0;return [{ origin: m.origin, text: m.text, senderContactId: m.senderContactId,mentions:m.mentions,resources:m.resources }] } catch { return [] }
+        try { const m = s.projectedMessage(String(r.id));if(!input.dailyChat&&(m.text?.length??0)>remainingText)return [];remainingText-=m.text?.length??0;return [{ id:m.id,origin: m.origin, text: m.text, senderContactId: m.senderContactId,mentions:m.mentions,resources:m.resources }] } catch { return [] }
       }).reverse()
       let context: unknown[]
       try { context = input.context.map(ref => {
@@ -78,16 +78,31 @@ export class ChatWorker {
       const agentContext=s.directory.modelContext(turn.agentContactId,group.id),requestedAgent=publicContact(agentContext.agent)
       input.agentContextFingerprint=agentContext.fingerprint
       this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(JSON.stringify(input),turn.id)
-      // Column tables and the sender dictionary losslessly encode the existing
-      // authorized 20-message window; text is never shortened to fit the budget.
-      const senderIds=[...new Set([...group.members.map(m=>m.contactId),...messages.map(m=>m.senderContactId).filter((id):id is string=>id!==null)])]
-      const conversation={kind:group.kind,title:group.title,memberColumns:['sender','role','status'],members:group.members.map(m=>[senderIds.indexOf(m.contactId),m.role,m.status]),...(group.taskIds.length?{taskIds:group.taskIds}:{})}
       const contactColumns=['id','displayName','identity','availability','profile']
-      const messageColumns=['origin','sender','text',...(messages.some(m=>m.mentions.length)?['mentions']:[]),...(messages.some(m=>m.resources.length)?['resources']:[])]
-      const messageRows=messages.map(m=>messageColumns.map(key=>key==='sender'?m.senderContactId===null?null:senderIds.indexOf(m.senderContactId):m[key as keyof typeof m]))
       const selectedTasks=input.context.filter(ref=>ref.kind==='task').map(ref=>s.c.task(ref.ref.id))
-      system=input.dailyChat?'You are the requested personal Agent in a natural private conversation. Follow its user-authored capability and personality when compatible with permissions. Read authorized conversation history and memories as context. Answer the current user naturally; do not turn ordinary conversation into task planning, invitations, execution or onboarding. No tools, no external action. Return only your natural-language reply, no JSON envelope or business action payload. Reply must be nonempty and at most8000 characters. Never invent completed external actions. The tables have explicit columns; sender indexes expand through senderIds to stable Contact IDs.':chatModelSystem({group:group.kind==='personal'&&agentContext.agent.profile.role==='coordinator',inviteContact:group.kind==='group'&&group.ownerMemberId===s.c.actor.id,inviteTask:group.kind==='group'&&group.ownerMemberId===s.c.actor.id&&selectedTasks.some(task=>task.initiatorId===s.c.actor.id),runTask:group.kind==='group'&&selectedTasks.some(task=>task.leadId===s.c.actor.id)})
-      prompt=JSON.stringify({ownerId:s.c.actor.id,labId:s.c.actor.labId,requestedAgent,conversation,contactColumns,contacts:contacts.map(c=>contactColumns.map(key=>c[key as keyof typeof c])),senderIds,messageColumns,messages:messageRows,...(agentContext.memories.length?{memories:agentContext.memories}:{}),...(context.length?{context}:{})})
+      system=input.dailyChat?dailyChatSystem:chatModelSystem({group:group.kind==='personal'&&agentContext.agent.profile.role==='coordinator',inviteContact:group.kind==='group'&&group.ownerMemberId===s.c.actor.id,inviteTask:group.kind==='group'&&group.ownerMemberId===s.c.actor.id&&selectedTasks.some(task=>task.initiatorId===s.c.actor.id),runTask:group.kind==='group'&&selectedTasks.some(task=>task.leadId===s.c.actor.id)})
+      // Lossless rows: budget selection may omit an oldest DAILY message, never
+      // trim a retained message/profile/memory. Collaboration keeps its window.
+      const serialize=(selected:typeof messages,earlierMessagesOmitted=false)=>{
+        const senderIds=[...new Set([...group.members.map(m=>m.contactId),...selected.map(m=>m.senderContactId).filter((id):id is string=>id!==null)])]
+        const conversation={kind:group.kind,title:group.title,memberColumns:['sender','role','status'],members:group.members.map(m=>[senderIds.indexOf(m.contactId),m.role,m.status]),...(group.taskIds.length?{taskIds:group.taskIds}:{})}
+        const messageColumns=['origin','sender','text',...(selected.some(m=>m.mentions.length)?['mentions']:[]),...(selected.some(m=>m.resources.length)?['resources']:[])]
+        const messageRows=selected.map(m=>messageColumns.map(key=>key==='sender'?m.senderContactId===null?null:senderIds.indexOf(m.senderContactId):m[key as keyof typeof m]))
+        return JSON.stringify({ownerId:s.c.actor.id,labId:s.c.actor.labId,requestedAgent,conversation,contactColumns,contacts:contacts.map(c=>contactColumns.map(key=>c[key as keyof typeof c])),senderIds,messageColumns,messages:messageRows,...(agentContext.memories.length?{memories:agentContext.memories}:{}),...(context.length?{context}:{}),...(earlierMessagesOmitted?{earlierMessagesOmitted:true}:{})})
+      }
+      prompt=serialize(messages)
+      if(input.dailyChat){
+        const current=messages.find(m=>m.id===turn.inputMessageId)
+        if(!current){turn.status='failed';turn.failure='INPUT_CHANGED';turn.version++;turn.updatedAt=instant();s.saveTurn(turn);return null}
+        const base=serialize([current],messages.length>1)
+        const minimumOutput=input.budget.maxTokens-chatInputTokenBound(system,base)>=512?512:64
+        let selected=messages
+        while(selected.length>1&&input.budget.maxTokens-chatInputTokenBound(system,prompt)<minimumOutput){
+          const oldest=selected.findIndex(m=>m.id!==current.id)
+          selected=selected.filter((_,i)=>i!==oldest)
+          prompt=serialize(selected,true)
+        }
+      }
       }
       const remainingOutput=input.budget.maxTokens-chatInputTokenBound(system,prompt)
       if (prompt.length > 100000 || remainingOutput<64) {
