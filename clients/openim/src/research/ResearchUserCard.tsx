@@ -1,14 +1,13 @@
 import { Alert, Button, Input, Modal, Space, Tag } from "antd";
 import { forwardRef, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { SessionType } from "@openim/wasm-client-sdk";
 import { OverlayVisibleHandle, useOverlayVisible } from "@/hooks/useOverlayVisible";
-import { useConversationToggle } from "@/hooks/useConversationToggle";
 import OIMAvatar from "@/components/OIMAvatar";
 import { useUserStore } from "@/store";
 import { researchApi } from "./api";
 import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
 import { MemoryPanel } from "./MemoryPanel";
+import { useResearchContactChat } from "./useResearchContactChat";
 
 export const ResearchUserCard = forwardRef<
   OverlayVisibleHandle,
@@ -57,7 +56,7 @@ export const ResearchUserCard = forwardRef<
     epoch.current++;
     closeOverlay();
   };
-  const { toSpecifiedConversation } = useConversationToggle();
+  const openChat = useResearchContactChat();
   useEffect(() => {
     setEditing(false);
     setMemories(false);
@@ -237,30 +236,9 @@ export const ResearchUserCard = forwardRef<
                     loading={busy}
                     onClick={() =>
                       void command(async (isCurrent) => {
-                        if (!entry) {
-                          const canonical = await researchApi(
-                            "createDirectConversation",
-                            { body: { contactId: contact.id } },
-                          );
-                          if (!isCurrent()) return;
-                          await researchApi("imSyncConversation", {
-                            params: { id: canonical.data.id },
-                            body: {},
-                          });
-                          if (!isCurrent()) return;
-                          await useResearchStore.getState().refresh();
+                        if (await openChat(contact.id, isCurrent)) {
+                          if (isCurrent()) close();
                         }
-                        if (!isCurrent()) return;
-                        const target = useResearchStore
-                          .getState()
-                          .contacts.find((c) => c.contact.id === contact.id);
-                        if (!target)
-                          throw new Error("聊天目标尚未准备完成，请稍后再试。");
-                        await toSpecifiedConversation({
-                          sourceID: target.userID,
-                          sessionType: SessionType.Single,
-                        });
-                        if (isCurrent()) close();
                       })
                     }
                   >

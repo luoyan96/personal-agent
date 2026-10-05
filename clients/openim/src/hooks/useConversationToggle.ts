@@ -15,6 +15,7 @@ export type ToSpecifiedConversationParams = {
   sessionType: SessionType;
   isJump?: boolean;
   isChildWindow?: boolean;
+  isCurrent?: () => boolean;
 };
 
 const getConversation = async ({
@@ -62,12 +63,13 @@ export function useConversationToggle() {
         useConversationStore.getState().currentConversation?.conversationID;
       const previousRoute = route.current;
       const isCurrent = () =>
-        !researchMode ||
-        (useResearchStore.getState().generation === generation &&
-          useResearchStore.getState().actor?.member.id === actorId &&
-          route.current === previousRoute &&
-          useConversationStore.getState().currentConversation?.conversationID ===
-            previousID);
+        params.isCurrent?.() !== false &&
+        (!researchMode ||
+          (useResearchStore.getState().generation === generation &&
+            useResearchStore.getState().actor?.member.id === actorId &&
+            route.current === previousRoute &&
+            useConversationStore.getState().currentConversation?.conversationID ===
+              previousID));
       let conversation;
       if (researchMode) {
         if (sessionType === 1) {
@@ -102,17 +104,19 @@ export function useConversationToggle() {
           conversation = await ensureResearchConversation(mapping);
         }
       } else conversation = await getConversation({ sourceID, sessionType });
+      if (!isCurrent() || !conversation) return;
       if (
-        !isCurrent() ||
-        !conversation ||
         useConversationStore.getState().currentConversation?.conversationID ===
-          conversation.conversationID
-      )
-        return;
+        conversation.conversationID
+      ) {
+        if (researchMode) navigate(`/chat/${conversation.conversationID}`);
+        return true;
+      }
       await updateCurrentConversation({ ...conversation }, isJump, isCurrent);
       if (
         researchMode &&
-        (route.current !== previousRoute ||
+        (params.isCurrent?.() === false ||
+          route.current !== previousRoute ||
           useResearchStore.getState().generation !== generation ||
           useResearchStore.getState().actor?.member.id !== actorId ||
           useConversationStore.getState().currentConversation?.conversationID !==
@@ -120,6 +124,7 @@ export function useConversationToggle() {
       )
         return;
       navigate(`/chat/${conversation.conversationID}`);
+      return true;
     },
     [navigate, updateCurrentConversation],
   );

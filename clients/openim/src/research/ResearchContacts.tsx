@@ -6,6 +6,7 @@ import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
 import { ResearchUserCard } from "./ResearchUserCard";
 import type { OverlayVisibleHandle } from "@/hooks/useOverlayVisible";
+import { AgentStarters } from "./AgentStarters";
 
 export function ResearchContacts() {
   const [view, setView] = useState<"mine" | "directory" | "search">("mine");
@@ -49,6 +50,7 @@ export function ResearchContacts() {
         <h2 className="text-base font-bold">联系人</h2>
         <Button onClick={() => setCreating(true)}>创建专属 Agent</Button>
       </div>
+      <AgentStarters onChanged={refresh} />
       <Space wrap>
         <Select
           value={view}
