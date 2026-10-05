@@ -4,6 +4,12 @@
 
 正式新入口的完整网页资源、Nginx 同源反代、HTTPS/WSS/媒体配置和验收顺序见[部署说明](deploy/README.md)。新地址准备状态不等于服务已连接；真实双账号 SDK 验收结果另行记录。
 
+## 最新实际交付：自然语言创建与自动私聊
+
+2026-10-05 22:25北京时间，客户端与API / worker固定软件`0ea0516d71d4f3c114f96ee0621ad463924a7a85`已部署`chat.acceptcat.com`，contract0.15 / chat1.4 / SQLite16无迁移。完整客户端类型、Web构建、四固定SDK资源通过；客户端17原分组和5真实QueryChat父子路由专项中的SDK / 模型为显式合成。
+
+根在原IFRC实际浏览器中先创建“链研直言”，最终精确同档案复用请求后不手动点击即自动打开真实SDK专属会话；连续两轮真实模型回复与历史回执重开同URL / 保留历史通过。首版导航失败因Single selection更新current后await，让QueryChat卸载Footer取消了自己的操作；获准Single同tick导航修复已上线，组会话保留异步路径。生成档案精简与预算内整条历史选择一并发布，当前输入、档案、获准记忆仍完整保留。真实证据位于Git外`.runtime/agent-creation-20261005/{live-ui-closure.json,live-final-agent-chat.png}`。原失败、合成局部报告和历史受测版本保留；详细源 / 镜像 / 备份以[统一状态](../../docs/current-state.md)为准。新桌面安装包、手机App与工具执行未验，未推GitHub。
+
 ## 开发与构建
 
 1. 在仓库根构建唯一共享契约：`pnpm --config.verifyDepsBeforeRun=false --filter @research-agent-platform/contracts build`。

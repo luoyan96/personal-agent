@@ -1,6 +1,17 @@
 # 新 ECS：OpenIM 科研微信（2026-10-05）
 
-## 最新更新：三个可添加的科研聊天 Agent
+## 最新更新：自然语言创建 Agent、自动私聊与连续回复
+
+2026-10-05 22:25:01北京时间，最终前端 / API / worker软件`0ea0516d71d4f3c114f96ee0621ad463924a7a85`整体部署。current为`/opt/research-openim/releases/0ea0516d71d4f3c114f96ee0621ad463924a7a85`，Nginx root是该release下`clients/openim/dist`。API / worker镜像`sha256:949cd6501bdf286920db0f48b8ff23def262a534538f2226e010537667a45ac8`，其他六镜像未变；八服务运行 / 无OOM、API healthy / HTTPS ready0.15和schema16核验通过，没有迁移或新SSH。
+
+- 外层SHA256 `9dd70ca4919119d69f542cea3d62241da746a1f1ffe59fdc2826d1f24bc6ff4c`，执行helper `9d3d25bba302a157b8c0c1c9050728348f2397f163b68e68672a0e5a6dbb8d63`；恰好5成员 / 外层及内包checksum / 安全展开通过，source归档`3831fb427bc0634600461d0d9d495b0b0baa1fad2258f73a83d7d92fa499fda5`、web归档`7760b834644fb5de608ad10220a774c04fabadb2e707ec79508a3ac0a08dfc74`。云端离线从f847依赖镜像构建，三份变更API源码在归档 / 镜像 / 实际API和worker一致。www-data读取与公网精确index `7bcd46a2153093f56e69503a8c5339f66dca6d4e9409e2865dedd9a8521c76af`通过。
+- 本项目三个写入服务停止后做一致备份`/srv/research-openim-backups/20261005T142440Z`，12checksums / 9gzip完整流 / 隔离SQLite恢复integrity ok / 16迁移与原checksum通过；另保存本次原f847静态前端及精确首页。仅派生backup脚本EXIT trap使数据服务先恢复，API / worker / OpenIM直到版本切换后恢复，原backup脚本未改。尚未做完整组件恢复或异地备份。
+- 回退基线是首版f847，API / worker旧镜像`sha256:1e238ea6c6b96e3475290f30a43b4aa53f14670c60438197e02bb4447eb94d4b`，前端`/opt/research-openim/releases/f8478d7b171d27fd0972787ddb8e599fdc89aec5/clients/openim/dist`，首页`0f5bc91c71c5b772c653f98155306d89dfa6983d28436f875b494daf69ba744e`。原Nginx保存`/opt/research-openim/ops/agent-creation-0ea0516d71d4/activate-20261005T142439Z/research-openim-production`。恢复镜像 / current / Nginx后核对旧精确首页、ready0.15、全部服务与schema16；保留当前数据库，不需要恢复旧数据，不套用更早015数据库回退。失败回退模拟通过，最终激活没有触发实际回退。
+- 首版f847在21:45发布，备份`20261005T134506Z`保留，实际创建联系人 / 手动SDK开聊 / 一轮真实回复。实际自动导航失败和生成档案挤占连续聊天预算后，本批整体补救；独立导航静态包没有上传 / 激活。最终22:26原IFRC新精确档案请求复用链研直言并自动SDK开聊，22:27 / 22:28两轮真实模型回复、历史回执同URL重开与历史保留通过。没有读取 / 修改真实密码、Key、记忆或新建云QA账号。
+- 最终共享CI457 + 2、完整客户端类型 / Web / 四资源、客户端原17组与父子路由5组、后端连续预算10组通过；局部模型 / SDK合成测试明确记录。首版失败、Workbench首次上传Session过期和UI过早断言保留；正常续登同权限连接后同包成功。模型 / 原生客户端 / 媒体其他批次证据不可冒充本次复测。
+- 云回执`/opt/research-openim/ops/agent-creation-0ea0516d71d4/deployment-verified.json`；本机Git外`.runtime/agent-creation-20261005/continuous-{bundle-receipt,outer-verified,prepared,deployment-verified}.json`、`live-ui-closure.json`、`live-final-agent-chat.png`和本地检查日志。部署后仅补本地交接文档，不改变0ea软件归档或推GitHub。
+
+## 上一批更新：三个可添加的科研聊天 Agent
 
 2026-10-05 20:34北京时间，前端固定 `a25ee9bdf1601f81fce78f6028216b9aed9db792` 发布到 `/opt/research-openim/client-releases/a25ee9bdf1601f81fce78f6028216b9aed9db792/clients/openim/dist`，Nginx root指向该目录。后端current仍为下面的68d；API / worker镜像和其余六容器镜像全部不变，八服务运行 / 无OOM，API healthy、HTTPS ready / 契约0.14核验。
 

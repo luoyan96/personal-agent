@@ -23,22 +23,26 @@
 
 ## 代码、线上与数据位置
 
-当前在收尾[自然语言创建Agent](development/natural-agent-creation-brief.md)：首版f847已于21:45上线，实际保存“链研直言”及SDK私聊 / 一次真实模型回复通过；首轮自动导航失败与长人设连续聊天预算风险已定位，补救尚在本地。不能把首版创建成功当作全部闭环验收完成。最终共享代码f966完整CI457 + 2、客户端导航版类型 / Web / 四SDK资源、既有17组局部页面、5组实际父子route / 合成SDK和10组后端连续预算专项通过；合成模型不能当成厂商调用。旧0.14普通响应 / 持久文档严格兼容实测。当前准确线上如下。
+2026-10-05 22:25北京时间，[自然语言创建Agent](development/natural-agent-creation-brief.md)最终软件0ea0516已上线。本人助理中的明确创建请求保存真实联系人与专属私聊，随后当前页面自动打开。原IFRC实际创建“链研直言”、最终精确档案复用 / 自动SDK开聊、连续两轮真实模型回复及历史回执重开同一会话通过。首版自动导航失败和长档案预算问题的原证据保留；最终修复共享代码f966完整CI457 + 2、客户端类型 / Web / 四SDK资源通过。17组局部页面、5组真实QueryChat父子路由 / 合成SDK与10组后端连续预算专项属于本地证据。旧0.14普通响应 / 持久文档严格兼容实测。准确线上如下。
 
 | 项目 | 当前事实 |
 | --- | --- |
 | 总控集成目录 | `D:/deepseek-agent/research-agent-platform-chat-integration`；操作前用 `git status` 确认目录与已有改动 |
 | 分支 | `feature/openim-client-rebuild`；最新本地 SHA 用 `git log -1` 读取，不使用其他旧克隆代替 |
-| 已上线前端 | `f8478d7b171d27fd0972787ddb8e599fdc89aec5`（21:45北京时间首版自然语言创建）；本地导航1c533c0尚未发，交接文档提交不改变线上软件 SHA |
-| 已上线 API / worker | `f8478d7b171d27fd0972787ddb8e599fdc89aec5`；镜像 `sha256:1e238ea6c6b96e3475290f30a43b4aa53f14670c60438197e02bb4447eb94d4b`；纯文本聊天与个人模型隔离，总预算仍为输入与输出合计 4000 / 90 秒 |
+| 已上线前端 | `0ea0516d71d4f3c114f96ee0621ad463924a7a85`（22:25北京时间）；交接文档提交不改变线上软件 SHA |
+| 已上线 API / worker | `0ea0516d71d4f3c114f96ee0621ad463924a7a85`；镜像 `sha256:949cd6501bdf286920db0f48b8ff23def262a534538f2226e010537667a45ac8`；纯文本聊天与个人模型隔离，总预算仍为输入与输出合计 4000 / 90 秒 |
 | 新站 | `https://chat.acceptcat.com`，文件 `https://files.chat.acceptcat.com` |
 | 新 ECS | 广州 Ubuntu 22.04.5，4 vCPU / 8 GiB / 50 GiB；当前到期日 2026-11-04，未改续费设置 |
-| 运行与发布 | `/srv/research-openim`；后端 `/opt/research-openim/current` 指向 `/opt/research-openim/releases/f8478d7b171d27fd0972787ddb8e599fdc89aec5`；Nginx root 为该release下`clients/openim/dist` |
+| 运行与发布 | `/srv/research-openim`；后端 `/opt/research-openim/current` 指向 `/opt/research-openim/releases/0ea0516d71d4f3c114f96ee0621ad463924a7a85`；Nginx root 为该release下`clients/openim/dist` |
 | 版本 | 契约 0.15.0、聊天 1.4.0、IM 桥 1.0.0、SQLite 迁移 016；本批无新增迁移 |
 | 旧站 | `research.acceptcat.com` 独立保留；旧账号 / 模型配置不自动迁移，不在本轮升级范围 |
 | GitHub | 新 OpenIM 批次未推送。用户先看完成结果；不要把“本地已提交”写成“GitHub 已上传” |
 
 ## 已完成、证据与边界
+
+- 最新自然语言创建批次：明确当前命令仅在本人个人助理内有效；生成四项简洁档案、原子保存本人联系人 / direct / 回执，完全相同本人档案复用。当前有效发送页自动开聊，主动离开 / 换账号取消，历史回执手动打开；创建成功但IM未就绪重试仅打开既有聊天。首版21:45 f847真实创建，自动导航失败；最终22:25 0ea修复Single同tick导航与连续聊天历史预算。生成档案限制60 / 80 / 200 / 80字，服务追加固定能力边界；手动资料上限保持。普通聊天按4000预算选取最多20条完整最近消息，完整保留当前输入、档案与所有获准记忆，过长当前或记忆仍明确拒绝。
+- 最终共享CI35文件 / 457项 + 2生产入口、客户端类型 / Web / 四SDK资源通过；后端47原针对项与10新连续预算组、客户端17原组与5父子路由组分别记录。模型和SDK的本地合成检查不能替代真实调用。实际22:26本人助理收到完整四项档案请求，服务回执“已找到你已有的联系人”，未手动点击即自动进入链研直言SDK私聊；22:27 / 22:28两轮真实模型回复，第二轮接上第一轮，历史回执重开同SDK URL且消息保留。沿用正常登录，不读Key或密码，不增云测试账号。
+- 最终公网首页精确SHA256 `7bcd46a2153093f56e69503a8c5339f66dca6d4e9409e2865dedd9a8521c76af`，源与API / worker三份变更文件逐hash一致；八服务运行 / API healthy / HTTPS ready，其余六镜像未变，schema16无迁移。更新前一致备份 `/srv/research-openim-backups/20261005T142440Z`：12checksums / 9gzip / 隔离SQLite恢复integrity及16迁移校验通过。回退恢复f847代码、镜像、current与Nginx，保留现有schema16，禁止套用更早015数据库回退。证据在父目录`.runtime/agent-creation-20261005`的`continuous-{bundle-receipt,outer-verified,prepared,deployment-verified}.json`、`live-ui-closure.json`、`live-final-agent-chat.png`及构建 / 局部报告。首版失败、上传会话到期与过早UI断言保留，等待实际就绪后无重复动作即成功。独立导航包未上传 / 激活；未推GitHub，未验新原生客户端或工具执行。
 
 - 2026-10-05 20:34北京时间，三种可添加的科研聊天Agent客户端 `a25ee9b` 已实际静态发布；公网index SHA256 `dcc6cc772661fcd8fe957f2935989abcce2e154a5117c2382990264dad390565`精确核验、HTTPS ready / 契约0.14、八容器运行 / 无OOM且镜像全部不变。后端仍为68d / schema16，没有数据迁移或新SSH。回退配置 `/opt/research-openim/ops/agent-starters-a25ee9bdf160-20261005T123403Z/research-openim-production`；本批仅回退客户端root，无数据库或镜像回退。
 - 真实本地后端52 HTTP / SQLite、4合成模型上下文检查，实际客户端16组分段闭合、类型 / Web / 四固定SDK资源通过。三档案本人所有、记忆与发送者模型隔离、取消 / 迟响应 / 未连接 / 复用 / 编辑和桌面 / 320px均有证据。Workbench上传文件页需切回终端的选择器中止和Session到期保留；正常恢复已有连接，无权限扩展。发布helper自身5项归档 / 公网hash守卫检查与云实际回执分开。
@@ -77,7 +81,7 @@
 
 - 个人账号现在可直接注册，无需实验室邀请码；准确用户名用于添加联系人。旧 IFRC 首次注册说明仅在本机受控 `.runtime/openim-cloud-20261004/IFRC-首次注册.txt`，不把内容粘贴到聊天、日志、截图或 Git。账号自行设密码，左侧头像菜单的“模型设置”管理个人模型；团队邀请码仅用于自愿加入已有实验室。
 - 运行记录在总控父目录 `.runtime/openim-cloud-20261004` 和 `.runtime/openim-client-rebuild/sdk-media`。源码仓库不收录密码、邀请码、token、真实资料或录音。
-- 最新更新前一致备份：`/srv/research-openim-backups/20261005T093246Z`；12份checksum / 9个gzip完整流通过、隔离SQLite恢复integrity ok / 迁移15。此前 `20261005T055755Z` 和更早备份也保留；尚未做异地备份或完整组件恢复演练。
+- 最新更新前一致备份：`/srv/research-openim-backups/20261005T142440Z`；12份checksum / 9个gzip完整流通过、隔离SQLite恢复integrity ok / 迁移16。首版创建备份`20261005T134506Z`与更早备份保留；尚未做异地备份或完整组件恢复演练。
 - 历史默认需求入口静态发布保留原 d7 / b404 前端及 Nginx 回退配置；最终备份 `/opt/research-openim/ops/demand-entry-20261005T015857Z/research-openim-production`。需求验收账号已审计停用、邀请码撤销，活跃 RAP 会话及 IM lease 均为 0，合成历史保留。完整回执 `.runtime/demand-entry-20261005/closure.json`；没有读取或改动真实账号 / 模型 Key。
 - 两域证书实际换发至 2027-01-02 UTC，webroot 自动续期 dry-run 和 deploy hook 通过，timer 已启用。
 - 上批临时 SSH 公钥已撤销，独立新连接明确拒绝，本地专用密钥已删；不得继续假定该 key 可用。可用用户已有阿里云 Workbench 连接进行已授权维护。
@@ -85,10 +89,10 @@
 
 ## 当前工作与后续优先级
 
-本批已上线可直接添加的三个科研聊天 Agent，详见[本轮范围](development/agent-starters-brief.md)：文献阅读、论文修改、研究方案。通讯录选择 / 确认后保存本人真实档案并打开私聊，复用完整相同的本人档案；原自定义创建继续保留。真实文献Agent回复与同会话重开已验；不能将档案角色写成联网、文件工具或自主科研执行。
+本批已上线[自然语言创建Agent与私聊](development/natural-agent-creation-brief.md)：在本人助理明确说“帮我创建一个……Agent”，保存真实联系人并自动开始专属聊天，复用完全相同档案。此前通讯录的文献阅读 / 论文修改 / 研究方案与手动自定义创建保留。真实文献助手与本批链研直言聊天已验；不能将档案角色写成联网、文件工具或自主科研执行。
 
-1. 当前前端a25 / 后端68d已上线；个人注册、模型管理与跨空间双向IM验收保留，新增可选科研聊天档案与一个真实专业私聊验证。后续交接文档提交仅在本地，不改变上述线上软件归档。
-   最新用户接受先完善网页版，并询问“向个人助理提出一件事后，是创建Agent联系人并转入聊天，还是其他形式”。现状：普通聊天只有文本回复，手动创建专属Agent的接口与通讯录入口已存在；从自然需求自动匹配 / 新建Agent / 开始专门会话的闭环尚未接通。建议根据需求复用已有Agent，简单事情由助理直接处理，单人专业事情用专属Agent私聊，多角色协作建立任务群；新增持续Agent档案和建群需有明确确认。该流程建议不能当作当前已实现或真实执行验收。
+1. 当前前端 / 后端0ea已上线；个人注册、模型管理与跨空间双向IM历史验收保留，明确创建Agent及开始专门聊天闭环通过。后续交接文档提交仅在本地，不改变上述线上软件归档。
+   普通“我想做一件事”不隐式生成联系人或任务群；用户明确要求创建时才保存。按能力语义匹配已有Agent、自动转介普通需求与多角色协作群仍待后续产品实现和真实验收。用户已要求暂缓需求编排，继续优先自然聊天体验。
    业务流程稳定后交付Windows客户端：从现有OpenIM Electron工程构建新版安装包，接当前ECS，验证原生SDK登录 / 重启恢复、人与Agent消息、文件 / 录音、托盘 / 通知和更新路径。旧2026-10-04安装包构建 / 启动证据不替代最新版真实云桌面验收；保留同一账号与后端，不另建一套业务。
    随后接OpenIM移动客户端 / 移动SDK，复用科研API与权限协议，独立完成Android / iOS设备、系统权限、后台 / 推送与消息恢复验证；尚无手机App交付证据，不把320px网页截图作为手机App验收。
 2. 通义 / 豆包真实 Key 调用、自定义接口及长上下文精确计数仍待独立授权和验证。仅支持三家固定官方地址，不宣称任意OpenAI兼容地址可用；不得自动提取既有Key为新服务配置。

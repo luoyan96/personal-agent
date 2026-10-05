@@ -1,5 +1,15 @@
 # 项目进展日志
 
+## 2026-10-05：自然语言创建 Agent、自动开聊与连续回复上线
+
+- 最终软件`0ea0516d71d4f3c114f96ee0621ad463924a7a85`于22:25北京时间整体发布前端 / API / worker，镜像`sha256:949cd6501bdf286920db0f48b8ff23def262a534538f2226e010537667a45ac8`，公网index `7bcd46a2153093f56e69503a8c5339f66dca6d4e9409e2865dedd9a8521c76af`；contract0.15 / chat1.4 / schema16无迁移。八服务运行、API healthy / HTTPS ready、三变更源文件hash一致、其他六镜像未变。
+- 先21:45发布f847，原IFRC本人助理明确请求实际创建“链研直言”，通讯录与SDK私聊存在，21:58一轮真实模型回复通过。但自动开聊因Single selection先await造成QueryChat卸载 / 自取消而失败；前端6b8e8fd / 整合1c533c0改为同tick导航。长生成档案111 / 426 / 127字还挤占下一轮预算；后端fee66b1 / 整合f96644c精简生成档案并按预算选取完整最近历史，保留当前输入 / 全档案 / 获准记忆，仍4000 / 90。所有失败与原档案保留。
+- 最终共享CI35文件 / 457项 + 2生产入口及全部构建 / 类型 / 契约 / B0 / 生产隔离通过，完整客户端类型 / Web / 四SDK资源通过。47原后端针对项、10连续预算组、17客户端原组、5真实QueryChat父子路由组通过；合成模型 / SDK明确标记，不能替代真实调用。初次453 / 1契约版本基线失败与fixture缺GET / 选择器等报告保留。
+- 22:26本人助理收到精确简洁四档案的新创建请求，实际回执找到已有链研直言，不重复建；未手动点击即自动进入真实SDK私聊。22:27 / 22:28两轮真实模型回复，第二轮接着第一轮继续，历史回执再次打开同SDK URL且历史保留。本人资料UI仅把新Agent三项长说明改简洁，身份 / 模型 / Key / 记忆未改；没有新建云测试账号、读取Key / 密码或自动重放旧请求。
+- 更新前一致备份`/srv/research-openim-backups/20261005T142440Z`：12校验 / 9gzip / 独立SQLite恢复integrity与16迁移校验通过。回退Nginx位于`/opt/research-openim/ops/agent-creation-0ea0516d71d4/activate-20261005T142439Z/research-openim-production`；回退f847代码与镜像时保留现有schema16，无需数据库恢复，不套用旧015回退。完整组件恢复 / 异地备份未验。
+- Workbench上传会话过期后正常恢复同权限连接，未新加SSH。历史按钮导航中间态的过早断言保留，等待UI就绪后无重复点击即通过。独立1c导航包未上传 / 激活；最终Git外交付证据`.runtime/agent-creation-20261005/{continuous-deployment-verified,live-ui-closure}.json`和`live-final-agent-chat.png`。项目文档已同步，后续仅本地文档提交不改变上述线上SHA，未推GitHub。
+- 边界：当前仅明确要求创建时持久保存，普通需求自动能力匹配 / 转介、任务群、联网、文件读取和工具执行待后续；原生桌面 / 手机另验。详见[统一状态](current-state.md)与[本轮范围](development/natural-agent-creation-brief.md)。
+
 ## 2026-10-05：自然语言创建 Agent 修复进行中
 
 - 用户截图21:06明确要求创建区块链Agent，旧个人助理只写人设。本批补齐明确命令、本条独立档案生成、原子保存本人联系人与direct、真实回执、当前发送页面自动开聊。普通聊天不因此创建对象，历史回执仅手动打开。

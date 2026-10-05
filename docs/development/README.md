@@ -6,6 +6,8 @@
 
 ## 现在怎么继续
 
+最新[自然语言创建Agent与自动私聊](natural-agent-creation-brief.md)已于2026-10-05 22:25上线0ea：明确创建命令保存真实联系人 / direct并自动打开，连续模型回复与历史重开实际通过。contract0.15 / chat1.4 / schema16无迁移；完整CI457 + 2与客户端类型 / Web / 四SDK资源通过，合成局部与真实证据分开。当前继续自然聊天体验，普通需求能力匹配 / 转介、任务群和原生客户端另做，未推GitHub。以下保留此前批次。
+
 当前[联系人、Agent 档案与持续记忆](agent-contacts-brief.md)已完成前后端接线与本地整合验收。[0.12.0 接口](agent-contacts-contract.md)、聊天协议 1.2.0、迁移 014；后端范围见[实施记录](agent-contacts-backend.md)，页面与 Edge 18 组检查见[前端记录](../../apps/web/third-party/openim/AGENT-CONTACTS-REVIEW.md)。固定置顶“需求与协作”协调需求和任务群；专属 Agent 以自己的稳定身份、公开设定和获准记忆参与聊天。新版本先本地展示，未推 GitHub 或部署。以下保留前批完成记录。
 
 2026-10-04 最新的 [OpenIM 客户端采用批次](openim-adoption-brief.md)已完成前后端分工与总控整合，契约 0.11.0、聊天协议 1.1.0、迁移 013。本地构建、类型、全量 CI、真实 HTTP/SQLite、Edge 协作与 IAB 发送/布局检查通过；先展示本地版本，尚未推 GitHub 或部署。后端 [会话状态接口](research-chat-viewer-state.md)、[验证记录](research-chat-openim-backend.md)和前端[来源及验收](../../apps/web/third-party/openim/FRONTEND-REVIEW.md)供维护交接。此前科研聊天 0.10.0 批次已[部署 ECS](../deployment/ecs.md#2026-10-04-科研聊天升级已部署)，线上与本地版本分别记录。
