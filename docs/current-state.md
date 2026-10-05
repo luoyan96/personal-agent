@@ -27,16 +27,21 @@
 | --- | --- |
 | 总控集成目录 | `D:/deepseek-agent/research-agent-platform-chat-integration`；操作前用 `git status` 确认目录与已有改动 |
 | 分支 | `feature/openim-client-rebuild`；最新本地 SHA 用 `git log -1` 读取，不使用其他旧克隆代替 |
-| 已上线前端 | `68d0592de941fa0f47907ba9df6e86fddd83f250`（公开个人注册、自然 Agent 聊天、个人模型设置）；后续本地交接文档提交不改变线上软件 SHA |
-| 已上线 API / worker | 同一 `68d0592de941fa0f47907ba9df6e86fddd83f250`；镜像 `sha256:b9ecbbe826f4fa37126c98241b082cf780c370bb828596583226e60979c216fc`；纯文本聊天与个人模型隔离，总预算仍为输入与输出合计 4000 / 90 秒 |
+| 已上线前端 | `a25ee9bdf1601f81fce78f6028216b9aed9db792`（20:34北京时间新增三种可添加的科研聊天Agent）；后续本地交接文档提交不改变线上软件 SHA |
+| 已上线 API / worker | `68d0592de941fa0f47907ba9df6e86fddd83f250`，本批未更新；镜像 `sha256:b9ecbbe826f4fa37126c98241b082cf780c370bb828596583226e60979c216fc`；纯文本聊天与个人模型隔离，总预算仍为输入与输出合计 4000 / 90 秒 |
 | 新站 | `https://chat.acceptcat.com`，文件 `https://files.chat.acceptcat.com` |
 | 新 ECS | 广州 Ubuntu 22.04.5，4 vCPU / 8 GiB / 50 GiB；当前到期日 2026-11-04，未改续费设置 |
-| 运行与发布 | `/srv/research-openim`；`/opt/research-openim/current` 指向 `/opt/research-openim/releases/68d0592de941fa0f47907ba9df6e86fddd83f250`，Nginx root 为该 release 的 `clients/openim/dist` |
+| 运行与发布 | `/srv/research-openim`；后端 `/opt/research-openim/current` 仍指向 `/opt/research-openim/releases/68d0592de941fa0f47907ba9df6e86fddd83f250`；Nginx root 为 `/opt/research-openim/client-releases/a25ee9bdf1601f81fce78f6028216b9aed9db792/clients/openim/dist` |
 | 版本 | 契约 0.14.0、聊天 1.3.0、IM 桥 1.0.0、SQLite 迁移 016；显式迁移与激活前旧数据逐表核验通过 |
 | 旧站 | `research.acceptcat.com` 独立保留；旧账号 / 模型配置不自动迁移，不在本轮升级范围 |
 | GitHub | 新 OpenIM 批次未推送。用户先看完成结果；不要把“本地已提交”写成“GitHub 已上传” |
 
 ## 已完成、证据与边界
+
+- 2026-10-05 20:34北京时间，三种可添加的科研聊天Agent客户端 `a25ee9b` 已实际静态发布；公网index SHA256 `dcc6cc772661fcd8fe957f2935989abcce2e154a5117c2382990264dad390565`精确核验、HTTPS ready / 契约0.14、八容器运行 / 无OOM且镜像全部不变。后端仍为68d / schema16，没有数据迁移或新SSH。回退配置 `/opt/research-openim/ops/agent-starters-a25ee9bdf160-20261005T123403Z/research-openim-production`；本批仅回退客户端root，无数据库或镜像回退。
+- 真实本地后端52 HTTP / SQLite、4合成模型上下文检查，实际客户端16组分段闭合、类型 / Web / 四固定SDK资源通过。三档案本人所有、记忆与发送者模型隔离、取消 / 迟响应 / 未连接 / 复用 / 编辑和桌面 / 320px均有证据。Workbench上传文件页需切回终端的选择器中止和Session到期保留；正常恢复已有连接，无权限扩展。发布helper自身5项归档 / 公网hash守卫检查与云实际回执分开。
+- 原IFRC登录页正常刷新恢复后，20:35实际从通讯录添加“文献阅读助手”，真实SDK私聊打开，发送一次自编植物摘要后获得真实模型四点梳理，事实 / 推断 / 资料缺口区分可见；20:36再次打开同SDK会话且历史保留。未读取 / 复制 / 修改真实Key或密码，没有新建测试云账号、自动发送或任务执行。另两角色目前为已上线可选档案及本地验证，未分别做真实模型调用。本批只证明文本聊天角色效果，不证明科研结论准确性或工具执行。
+- 本批证据在父目录 `.runtime/agent-starters-20261005`：`deployment-verified.json`、`outer-verified.json`、`live-ui-proof.json`、`live-agent-catalog-added.png`、`live-agent-chat.png`、`root-client-verification.json`、`VERIFICATION.md`、`local-http-KiLmLx/report.json`与`runs/417358bc...`。源候选d18 / 整合a9、说明681 / 整合424；部署源码a25固定后只补本地交接文档，不重发软件或推GitHub。
 
 - 2026-10-05 17:33 北京时间，个人注册 / 联系人 / 自然聊天 / 模型管理的固定软件 `68d0592` 已在新 ECS 上线。源码、API / worker 镜像及精确公网首页对齐，首页 SHA256 `896450e229d810aef3ed8c5747efe5482a50118725aaf17deedb019cff3dc090`。八服务实际运行，其余六镜像未变，HTTPS ready / 契约 0.14.0 / 迁移016核验通过。没有新增 SSH 或推 GitHub。
 - 共享 CI 34 文件 / 446 项和 2 项生产入口通过；精确完整客户端类型 / Web 构建 / 四个 SDK 资源通过。前端本地 17 组真实 HTTP / SQLite、10 组组件合成传输和两张最终布局截图通过；固定官方多厂商 loopback wire / usage 23 项通过。真实模型证据与合成检查分开。
@@ -78,9 +83,9 @@
 
 ## 当前工作与后续优先级
 
-本批补齐可直接添加的三个科研聊天 Agent，详见[本轮范围](development/agent-starters-brief.md)：文献阅读、论文修改、研究方案。通讯录选择 / 确认后保存本人真实档案并打开私聊，复用完整相同的本人档案；原自定义创建继续保留。客户端候选已整合为 `a9fcb28`，总控 typecheck、Web 构建与四个 SDK 静态资源通过；52 次真实本地 HTTP / SQLite、4 次合成模型上下文检查通过。此段为部署前状态，仍需渲染交互与实际云端静态发布 / SDK 验收；不能将档案角色写成联网、文件工具或自主科研执行。
+本批已上线可直接添加的三个科研聊天 Agent，详见[本轮范围](development/agent-starters-brief.md)：文献阅读、论文修改、研究方案。通讯录选择 / 确认后保存本人真实档案并打开私聊，复用完整相同的本人档案；原自定义创建继续保留。真实文献Agent回复与同会话重开已验；不能将档案角色写成联网、文件工具或自主科研执行。
 
-1. 当前软件已上线并完成自然对话、个人注册、模型管理与跨空间双向IM验收；后续交接文档提交仅在本地，不改变线上68d软件归档。
+1. 当前前端a25 / 后端68d已上线；个人注册、模型管理与跨空间双向IM验收保留，新增可选科研聊天档案与一个真实专业私聊验证。后续交接文档提交仅在本地，不改变上述线上软件归档。
    最新用户接受先完善网页版，并询问“向个人助理提出一件事后，是创建Agent联系人并转入聊天，还是其他形式”。现状：普通聊天只有文本回复，手动创建专属Agent的接口与通讯录入口已存在；从自然需求自动匹配 / 新建Agent / 开始专门会话的闭环尚未接通。建议根据需求复用已有Agent，简单事情由助理直接处理，单人专业事情用专属Agent私聊，多角色协作建立任务群；新增持续Agent档案和建群需有明确确认。该流程建议不能当作当前已实现或真实执行验收。
    业务流程稳定后交付Windows客户端：从现有OpenIM Electron工程构建新版安装包，接当前ECS，验证原生SDK登录 / 重启恢复、人与Agent消息、文件 / 录音、托盘 / 通知和更新路径。旧2026-10-04安装包构建 / 启动证据不替代最新版真实云桌面验收；保留同一账号与后端，不另建一套业务。
    随后接OpenIM移动客户端 / 移动SDK，复用科研API与权限协议，独立完成Android / iOS设备、系统权限、后台 / 推送与消息恢复验证；尚无手机App交付证据，不把320px网页截图作为手机App验收。

@@ -112,3 +112,12 @@
 - 前端 `d18f73d` 整合 `a9fcb28`，总控完整客户端类型、build:web / 四固定 SDK 资源通过。候选完整字段复用、成功保存后保留 ID / 重试只开聊天，以及 actor / 路由 / 关闭重开迟响应守卫已审查；渲染交互另由前端执行。本批无共享后端源码、契约或数据库变更，无需重跑根共享 CI。
 - 既有后端 52 次真实 loopback HTTP / SQLite、七门禁 / 四合成 model callback 通过：三份精确档案进入 requestedAgent，主人私有记忆与跨空间获准访客 direct / 模型配置隔离，稳定 direct、未配置模型 / IM 明确 unavailable，plans / actions / tasks / jobs 均0。未调用真实厂商或实际 IM Server；不当作模型质量和 SDK 连通证据。
 - 证据在父目录 `.runtime/agent-starters-20261005`：`root-client-verification.json`、`VERIFICATION.md`、`local-http-KiLmLx/report.json` 与实际模块hash。云部署准备为只更新客户端 Nginx root，不改 backend current、八个容器、配置 / Key 或迁移；部署前实际baseline核对仍为68d / b9镜像 / 896450e2首页。本节尚未表示云发布完成，未推 GitHub。
+
+## 2026-10-05：科研聊天 Agent 入口上线与真实私聊验收
+
+- 前端候选d18整合a9后固定部署源码 `a25ee9bdf1601f81fce78f6028216b9aed9db792`，于20:34北京时间实际静态上线。Nginx指向client-releases/a25.../clients/openim/dist，后端current仍68d，API / worker b9镜像与其余六镜像全部不变；八服务running / 无OOM、API healthy、HTTPS ready / contract0.14、精确公网首页 `dcc6cc772661fcd8fe957f2935989abcce2e154a5117c2382990264dad390565`验证。无迁移 / 服务重启 / 新SSH / Github推送。
+- 发布源 / Web / 外层包逐hash，release目录755 / www-data实际读index、nginx -t / reload、health和所有镜像守卫实际通过。云部署helper85ea811dd95b...，Nginx备份 `/opt/research-openim/ops/agent-starters-a25ee9bdf160-20261005T123403Z/research-openim-production`。本批仅静态回退，不改schema16数据库或后端current；不能套用上一批015数据库回退流程。
+- 真实本地客户端16组闭合：首eccaa936前8项成功后测试误找原自定义表单取消按钮中止，续417358bc同账号8项 / extra create0通过。中间记忆按钮空格和regex转义失败及harness早期相对Tailwind漏样式原样保留；仅修测试配置 / 选择器，不重跑通过业务。首report direct计数器写旧path故显示0，实际canonical响应 / 同ID独立证明保留，续正确；不改写原报告。最终完整样式桌面 / 320px与确认可达，pageerror0，Antd / Router警告保留；无本地SDK / 模型调用。client说明681整合424只本地收尾，不重发布。
+- Workbench文件上传Session到期，正常刷新原免密连接后39.6MB单包上传完成。文件页隐藏Terminal导致一次fill选择器中止，切回已见终端后核验 / 解包 / 发布；原动作没有误执行或权限扩大。外层及helper哈希实际云回执在outer-verified，静态部署实际成功回执在deployment-verified。未新增SSH或修改用户Workbench页。
+- 原真实IFRC曾弹另一设备登录提示，本批正常刷新现有页面后会话恢复，不需要提取或重输真实密码 / Key。20:35实际通讯录出现三卡并添加“文献阅读助手”，真实SDK直接会话打开、发送一次自编植物光照摘要，收到真实模型四点阅读梳理，区分事实 / 推断 / 未提供资料。20:36重选本人已有档案后相同SDK会话及历史恢复。没有自动消息、任务 / 群或运行工具；该真实联系人保留给用户使用，不当作一次性QA删除。另两预设只有可选入口与本地精确档案验证，未分别调用真实模型。
+- 实际截图live-agent-catalog-added.png / live-agent-chat.png、DOM / live-ui-proof.json均在Git外父目录 `.runtime/agent-starters-20261005`，没有新建测试云账号、改真实模型配置或读secret。5项发布helper局部门禁测试与实际云运行回执分开记录。README / current-state / roadmap / brief / client / ECS说明同步，剩余自然需求自动匹配 / 建Agent、联网 / 文件工具、自主科研执行和原生端仍未实现；日常角色回复不代替科研正确性与小组收益验收。

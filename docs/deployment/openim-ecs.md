@@ -1,6 +1,16 @@
 # 新 ECS：OpenIM 科研微信（2026-10-05）
 
-## 最新更新：个人注册、自然聊天与模型设置
+## 最新更新：三个可添加的科研聊天 Agent
+
+2026-10-05 20:34北京时间，前端固定 `a25ee9bdf1601f81fce78f6028216b9aed9db792` 发布到 `/opt/research-openim/client-releases/a25ee9bdf1601f81fce78f6028216b9aed9db792/clients/openim/dist`，Nginx root指向该目录。后端current仍为下面的68d；API / worker镜像和其余六容器镜像全部不变，八服务运行 / 无OOM，API healthy、HTTPS ready / 契约0.14核验。
+
+- 通讯录新增文献阅读 / 论文修改 / 研究方案三卡，确认保存本人真实档案后打开既有直接会话；取消不创建，保存后IM失败重试不重复建，完整相同档案复用。原资料 / 记忆 / 自定义创建保留。仅聊天角色，不新增联网、PDF / 文件上下文、工具或科研执行能力。
+- 原有Workbench连接正常恢复后上传单包，外层SHA256 `05e7e7586dabc13e1fb48c08acdcd3f8a0b100a66315f74dd649b4138ce7fdef`，helper `85ea811dd95b4229a66a02c6b6d99399cdcd674de43c94a0e80cc89fd38cf9c7`；源码 `c52694f6c5cb96ae7929eb2f9f747ccbfec0f3d15c8f18364fa8dab771ac351e`、Web `a4b38ed92cbe872219556d0a31e547acdb91d830c1c66f739edc5f2a62d4207a`逐核验。新release755、实际www-data读取index通过，Nginx -t / reload后公网首页精确SHA256 `dcc6cc772661fcd8fe957f2935989abcce2e154a5117c2382990264dad390565`。
+- 没有数据迁移、镜像重建、重启服务或新增SSH。前端回退Nginx保存于 `/opt/research-openim/ops/agent-starters-a25ee9bdf160-20261005T123403Z/research-openim-production`；本批失败守卫只恢复该Nginx并验证旧首页 / health / 镜像，不涉及schema16。回退须核对后端current仍68d和旧前端896450e2首页，禁止套用上一批015数据库回退。
+- 本地后端52 HTTP / SQLite / 4合成模型上下文检查，客户端16组真实本地分段记录、总控类型 / Web / 四资源通过。20:35既有IFRC正常刷新恢复、实际添加文献Agent、SDK私聊 / 一次自编摘要真实模型回复，20:36重开同会话通过；没有读取或更改真实Key / 密码，没新增QA账号。另两角色尚未分别调用真实模型；未重测媒体、Electron或执行任务。
+- Git外 `.runtime/agent-starters-20261005` 保存baseline、bundle / outer / deployment回执、16组成功与旧选择器 / 样式失败记录、`live-ui-proof.json`及实际catalog / chat截图。部署源a25后只合入本地交接文档，不重新发布或推GitHub。
+
+## 上一批更新：个人注册、自然聊天与模型设置
 
 2026-10-05 17:33 北京时间发布固定软件 `68d0592de941fa0f47907ba9df6e86fddd83f250`，前端 / API / worker 同一源。当前指针 `/opt/research-openim/releases/68d0592de941fa0f47907ba9df6e86fddd83f250`，Nginx root为其 `clients/openim/dist`；API / worker镜像 `sha256:b9ecbbe826f4fa37126c98241b082cf780c370bb828596583226e60979c216fc`。契约0.14.0、聊天1.3.0、IM桥1.0.0、显式迁移016。
 
