@@ -1,6 +1,19 @@
 # 新 ECS：OpenIM 科研微信（2026-10-05）
 
-## 最新更新：默认需求入口已上线
+## 最新更新：真实 AI 连续回复与显示修复
+
+2026-10-05 13:58 北京时间，固定软件 `979b7c10afb0b75b2a72572431cc08fb5195cf47` 同时发布前端、API 和 worker；`/opt/research-openim/current` 指向该 release，Nginx root 为 `/opt/research-openim/releases/979b7c10afb0b75b2a72572431cc08fb5195cf47/clients/openim/dist`。API / worker 镜像 `sha256:e2402ee40c51e050e40e1ab0597dbd756f2e675e629e034c0b93c9cd77da0caa`。契约 0.13.1、IM 桥 1.0.0、迁移 015 不变。
+
+- 原失败来自生成式内部 schema 过长和输入未预留预算；采用精简按权限提供的协议、明确列名与稳定 ID 字典，完整保留非空资料和既有 20 条授权消息窗口。默认仍为输入与输出合计 4000 Token / 90 秒；实际用量超过总量仍拒绝。固定官方适配器的缓存读 / 写与未缓存输入独立相加；不重复加 reasoning，未知或矛盾计量拒绝接受回复。
+- 输入区使用状态摘要和详情弹窗，编辑区保留可用高度。真实 canonical 保存成功后才发当前会话的跟随滚动事件；权限正文、模型回复和状态卡异步增高时保持最新，主动向上读历史停止跟随，旧会话 / 账号事件不能写回。没有伪造 SDK 消息或模型结果。
+- 根共享 CI 32 文件 / 419 项、生产入口 2 项、B0 / 构建 / 类型 / 契约通过；最终客户端整合类型、Web 构建及四个 SDK 资源通过。实际组件的明确合成传输输入区 6 项、滚动 12 项通过，覆盖 >100ms 权限正文、5 秒状态增高、历史阅读、路由与 320px；这些不代替真实云验收。
+- 13:58 / 13:59 在用户已有 IFRC 登录页面中发送自行编写的短测试，真实依次收到“收到一”“收到二”。最终缓存正规化后的输入 / 输出为 895 / 21 和 915 / 299，耗时 584 / 1531ms；各总预算仍为 4000 / 90 秒。两条模型消息均经 canonical / 真 SDK 展示，无手动滚动，底部距离 0，发送后编辑区 85px。最新请求模型消息 1、动作 / 草案均 0。总控没有提取、复制或改动真实密码、邀请码和 Key；worker 正常使用实验室已有配置调用模型，没有修改负责人配置或注销其会话。
+- 激活前一致备份 `/srv/research-openim-backups/20261005T055755Z`：12 个 checksum / 9 个 gzip 完整流通过，隔离 SQLite integrity ok / 迁移 15。额外备份当时当前前端及 hash；此前 `20261005T053044Z`、`20261005T045827Z` 和初次备份保留。备份仍在同 ECS，未验收异地或完整组件恢复。
+- 外层 / 源码 / Web 归档核验，四份变更后端源文件在 API、worker 容器内与源归档一致；公网 HTML 精确 hash `c0e0c8bd5c753e4b0b2a8c7c179860934075ec7e3c33ead4d8535f8fa82436ca`。最后两条真实消息后再次检查 `/api/v1/health/ready` 为 ok / 0.13.1，八服务运行 / API healthy / 无 OOM。其余六个镜像未变，没有数据迁移、新 SSH 授权或 GitHub 推送。
+- 前一版 `7098a89efcc65bf23e833565d246eac2afe491f3` release 与镜像 `sha256:0cfb94cc2194ac3318b682ae4953abbedc1da332743059bd370c419d68b5caca`保留；对应 Nginx 配置保存于 `/opt/research-openim/ops/ai-reply-979b7c10afb0/research-openim-production`。回退时同步恢复旧镜像标签、配置和 current 指针，用三份实际 Compose 配置只重建 API / worker，核对 ready 与精确旧首页；禁止 down -v。
+- 实际云回执 `/opt/research-openim/ops/ai-reply-979b7c10afb0/deployment-verified.json`、`/opt/research-openim/ops/ai-reply-final.json`；本机父目录 `.runtime/ai-reply-20261005/{deployment-verified,diagnostic-final,live-closure-ui,live-verified}.json` 与 `live-final-replies.png`。初版 a7 只有首条成功，后续预检失败、输入区和滚动问题以及测试工具失败记录均保留。旧缓存计量不能回算，不能把旧未缓存输入数字当完整用量。本轮只验收短问答和连续显示，真实科研规划 / 组群 / 执行 / 交付仍待单独完成。
+
+## 历史更新：默认需求入口已上线
 
 2026-10-05 09:58 北京时间，前端固定为 `d99c884dcc9c9dc3165949e82fd4568fdb4fa1b2`。登录就绪后打开实际“需求与协作”，用户可直接输入目标 / 材料 / 交付 / 截止时间；模板只填草稿。保留现有私聊 / 群聊深链接及刷新，主动导航不被轮询切走；320px 长介绍保持单行，标题可读。
 
@@ -10,7 +23,7 @@
 - 首次立即核对首页时得到旧 hash，脚本实际回退；增加 20 秒内的新首页收敛检查后成功，失败日志 `demand-entry-deploy.initial-failed.log` 保留。健康入口必须使用 `/api/v1/health/ready`；`/readyz` 会返回 SPA HTML，不能作为 API readiness。最终真实健康入口返回 HTTP 200 / status ok / 0.13.1。
 - 10:00 审计停用本批合成账号、撤销邀请码，RAP 活跃会话和 IM lease 0，测试历史保留；本机合成密码 / bootstrap 文件已移除。10:04 再核对八个服务运行、API healthy、无 OOM、精确首页、Nginx root 和后端镜像未变。云回执 `/opt/research-openim/ops/demand-entry-closure.json`，本机父目录 `.runtime/demand-entry-20261005/closure.json` 及桌面 / 手机截图。不推 GitHub；真实 AI 理解 / 协作安排 / 科研交付仍需另行验收。
 
-## 上次更新：注册修复已上线
+## 历史更新：注册修复已上线
 
 2026-10-05 08:26 北京时间发布固定软件 `d7cbe97abdd6271f459918727bf00f7c2bab154c`，`/opt/research-openim/current` 已指向该 release。当前科研契约 **0.13.1**、IM 桥 **1.0.0**、迁移 **015**。后续本地交接文档提交不改变软件归档。下文初次部署 / SDK 媒体结果保留受测基线 `c3f58a4`，本轮未重新做整套媒体或真实模型验收。
 
@@ -34,7 +47,7 @@
 
 ## 来源和构建（初次部署基线）
 
-初次部署固定软件源码为 `c3f58a4a88a3b0c0efdf2c868a556cc9d29f25ac`，源码归档 SHA256 `623eb87693bef1841d6bebe3a77879c2592f3474930ce7a95f17fdd000218ebc`，完整客户端归档 SHA256 `27b53c20386fad272fddf3475d904cdcc62fb64219375703e4dd5cfa6e0df1b0`。云端验证归档后解包至对应完整 SHA 目录，当时 `/opt/research-openim/current` 指向该版本。该批公网首页与精确构建文件的 SHA256 一致（`8adfd087d42158deed7c470081835cd188596a8811f73025038f9e6c6ed7d636`）。当前指针与软件归档见本文开头的注册修复记录。
+初次部署固定软件源码为 `c3f58a4a88a3b0c0efdf2c868a556cc9d29f25ac`，源码归档 SHA256 `623eb87693bef1841d6bebe3a77879c2592f3474930ce7a95f17fdd000218ebc`，完整客户端归档 SHA256 `27b53c20386fad272fddf3475d904cdcc62fb64219375703e4dd5cfa6e0df1b0`。云端验证归档后解包至对应完整 SHA 目录，当时 `/opt/research-openim/current` 指向该版本。该批公网首页与精确构建文件的 SHA256 一致（`8adfd087d42158deed7c470081835cd188596a8811f73025038f9e6c6ed7d636`）。当前指针与软件归档见本文开头的最新更新记录。
 
 完整客户端来自仓库 `clients/openim`，Web 构建包含实际 OpenIM WASM / SQLite WASM、字体和媒体组件。Nginx 明确为 WASM 返回 `application/wasm`，并启用压缩。
 
@@ -89,12 +102,12 @@ MinIO 实际签名 PUT / GET 校验通过：服务器 loopback 与公网 HTTPS �
 
 这台试用 ECS 当前到期日为 2026-11-04，续费设置未变更。容量数字只是本次小规模合成验收的主机观测，不代表更多真实成员或大附件的压力测试。
 
-新 IFRC 实验室尚未配置模型；模型理解需求、提出分组、AI 实际执行和科学结果交付不包含在无模型的 IM 验收结论中。手动组群、独立接受邀请和人类任务交付另行验收。
+初次无模型 IM 验收时，新 IFRC 尚未配置模型；该历史结果不包含模型理解需求、提出分组、AI 实际执行和科学结果交付。当前 IFRC 已启用模型及实际短问答证据见最新更新。手动组群、独立接受邀请和人类任务交付另行验收。
 
 实际一致备份位于新主机 `/srv/research-openim-backups/20261004T184707Z`，目录限 root 访问。备份只停止本项目的八个容器，包含科研运行目录（SQLite、运行数据和私有凭据）、证书目录、固定源码、客户端构建及 MongoDB / Redis / etcd / Kafka / MinIO 五个组件卷，另存 Nginx 配置、实际镜像 override 和版本清单。12 份文件的 SHA256 和 9 个 gzip 归档的完整流 / CRC 均通过；仅将 SQLite / WAL / SHM 提取到私有临时目录做恢复校验，`integrity_check=ok`、迁移 015、两名 QA 已停用、IFRC 邀请码未用，随后删除临时副本。该备份保存在同一 ECS，尚未做异地备份或完整组件恢复演练。
 
 最初备份脚本的恢复步骤因相对 Compose 路径失败，服务已立即恢复；改成绝对路径后重新执行上述完整备份，脚本退出 0，八个容器实际恢复运行、API 健康、无 OOM。最后 OpenIM 的实际 Mage 检查退出 0 并确认全部服务正常。不得使用 `docker compose down -v`；恢复时必须使用本项目实际 override 和同一批数据。完整组件恢复仍需单独验证。
 
-验收结束实际停用两名合成账号、撤销两枚测试邀请码，清理所有该实验室测试会话和 IM lease；最终只读数据库显示活跃会话 / IM lease 均为 0，保留三项任务与 34 条科研消息。两名原测试账号再登录均返回 401。IFRC 负责人邀请码仍可用，新 IFRC 和测试实验室均未配置模型。云端最终数据库、备份和运行回执已保存到本地受控运行目录，不提交 Git。
+验收结束实际停用两名合成账号、撤销两枚测试邀请码，清理所有该实验室测试会话和 IM lease；最终只读数据库显示活跃会话 / IM lease 均为 0，保留三项任务与 34 条科研消息。两名原测试账号再登录均返回 401。初次验收当时 IFRC 负责人邀请码仍可用，新 IFRC 和测试实验室均未配置模型；这不代表现在的邀请或配置状态，当前状态见最新更新。云端最终数据库、备份和运行回执已保存到本地受控运行目录，不提交 Git。
 
 本次临时 root SSH 公钥已实际撤销，原服务器公钥保留；关闭连接复用后新的 SSH 连接明确返回 `Permission denied (publickey)`。本地专用私钥、公钥和合成浏览器密码文件已删除，IFRC 私有首次注册文件保留。当前未推送 GitHub。

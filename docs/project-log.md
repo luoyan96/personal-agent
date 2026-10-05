@@ -49,3 +49,16 @@
 - 末尾健康检查一度误读 `/readyz` 的 SPA HTML 回退；部署时该路径的 HTTP 200 不作为 API readiness 证据。10:04 使用真实契约路由 `/api/v1/health/ready` 验证 HTTP 200 / status ok / contract 0.13.1，同时核对八个服务、API healthy、无 OOM、后端镜像未变和精确公网首页。最终以 closure.live 为准，原部署回执保留。
 - 10:00 审计 CLI 撤销独立实验室 `lab_sdk_qa_20261005_demand_752e0f9c` 的测试邀请码、停用唯一测试账号，活跃会话 / IM lease 均为 0，合成会话历史保留。没有使用 IFRC 真实账号 / 开通码 / Key；最后八服务运行、API healthy、HTTPS ready、无 OOM。
 - 证据在总控父目录 `.runtime/demand-entry-20261005`：`baseline-report.json`、`after-report.json`、`deployment-verified.json`、`closure.json`、两份构建日志与桌面 / 手机截图；运行凭据不进 Git。云回执 `/opt/research-openim/ops/demand-entry-closure.json`。本批仅本地提交，未推 GitHub。下一步由负责人配置模型后另行完成需求澄清、协作建议与任务执行的实际闭环。
+
+## 2026-10-05：真实消息不回复、输入区和消息自动显示修复
+
+- 用户截图含 MODEL_UNAVAILABLE 和 BUDGET_EXCEEDED。新 ECS 只读元数据核对：模型不可用产生在 lab_disabled 时；负责人已于 12:26 自行启用 deepseek-flash。旧“在吗”实际报告输入 7360 / 输出 763，已经超过默认 4000。内部生成 schema 约 16.9KB，且把总预算全作 output cap，导致普通请求失效；数据库诊断只取状态、用量和长度，没有提取真实 Key / 密码 / 邀请码 / 消息或记忆正文。
+- 后端 7b58 整合 b136，客户端 885c 整合 a7f；初次 a7 于 12:58 上线，13:01 首条真实返回“收到”。随后真实第二条仍 preflight 超限且无模型调用，发送后 CKEditor 高度 0；这些失败证据保留，不以首次成功结束验收。
+- 客户端 4d06 整合 0a1：摘要 / 详情弹窗、控制区滚动上限、编辑区最小可用高度。真实组件合成布局 6 项通过。后端 397dd 整合 7098：表格字段显式列名、sender 稳定身份字典、非空内容完整保留；协议按真实个人 / 群权限描述，canonical 校验继续独立负责权限和 payload。合成 8 条旧 human / model 后默认 4000 连续两次通过。根 CI 407 + 2，通过；13:31 的 7098 部署后两条真实问答成功，但自发送与异步高度使列表跳回旧消息，需手动滚动，继续修复。
+- 计量复核发现固定官方 0.2.0-rc.1 TokenUsage 是 disjoint，旧 runtime 漏缓存读 / 写。fae481 整合 1c378：normalize 输入合计未缓存 + cacheRead + cacheWrite，以 totalTokens 一致性核对；输出已含 reasoning，不二次相加。缺失 / 非法 / 不一致计量拒绝接受结果，禁止假定剩余额度。固定真实 adapter + loopback 合成 SSE 与 API 累计预算 18 项 focused通过；根最终 CI 32 文件 / 419 项 + 2 项生产入口，类型 / 构建 / B0 / 契约通过。旧 usage 缺 cache 分项无法回算，本轮 IFRC 旧 failed 无可用余额，不回填历史。
+- 客户端 954c 整合 979b：canonical 保存成功后发当前会话 / actor 的 scoped 跟随意图；Virtuoso 初始实际 LAST/end，真实正文与卡片延迟增高保持最新；主动上滚读历史立即停止跟随，路由 / actor 变化取消旧 RAF。真实组件明确合成传输 12/12、pageerror0，覆盖短 / 长历史、700ms授权正文、450ms turn、5 秒状态增高、历史阅读、迟到旧请求和 320px。首个 fixture 缺 nextCursor / alias 配置的工具失败证据保留，修正测试数据后通过，未据此改产品。
+- 最终软件 `979b7c10afb0b75b2a72572431cc08fb5195cf47` 于 13:58 实际发布，前端 / API / worker 对齐。完整客户端整合 typecheck / build:web / 4 SDK 资源通过；镜像 `sha256:e2402ee40c51e050e40e1ab0597dbd756f2e675e629e034c0b93c9cd77da0caa`由旧官方依赖镜像离线 overlay 构建，新增 runtime 和 API 均真实编译。四个变更 src 在两容器 hash 对齐归档，精确公网首页与构建一致，其余六镜像未变。
+- 新一致备份 `/srv/research-openim-backups/20261005T055755Z`：12 checksums / 9 gzip / SQLite独立恢复integrity ok / 迁移15；额外保留当前前端。前两轮本日备份也保留。两条最终实际请求后八服务运行、API healthy、JSON ready ok / 0.13.1、无OOM、源与首页再核验通过；未新增SSH或迁移。
+- 真实 IFRC 用户已有登录页面依次发送两条自行编写的短测试，真实收到“收到一”“收到二”。最终 turn 6f77c6f7 的正规化 input895 + output21 =916，584ms；turn 82ce111b 的 input915 + output299 =1214，1531ms；各请求预算4000 / 90。全程无手动滚动、最新 gap0、编辑区85px；最新模型消息1/动作0/草案0。没有调用旧科研任务、建群、复制凭据或改变负责人会话/设置；历史失败消息保留。
+- 本轮父目录 `.runtime/ai-reply-20261005` 保存三轮部署归档/回执、初版失败诊断、`ci-final.log` / `ci-continuous.log` / `ci-cache-final.log`、client各精确构建、`diagnostic-final.json` / `live-closure-ui.json` / `live-verified.json` 与最终截图。初次pnpm自动依赖验证NO_TTY中止及外层tar目录验证在解包前失败记录保留。前端专项在 `.runtime/ai-turn-feedback-review`，其中输入区 `footer-2026-10-05T05-15-49-126Z_7b770be1`、滚动 `scroll-2026-10-05T05-50-14-972Z_1afe3d77`。
+- README / 当前状态 / 本文 / 部署记录同步更新，本地交接文档提交不重新发布软件；未推GitHub。浏览器开发插件缺失的合成UI检查采用既有Playwright/Edge，实际生产UI使用CUA。下一批仍需真实需求澄清、分组建议、人类确认、任务执行和科研交付闭环；本轮没有重测媒体或原生Electron。长上下文仍受保守UTF-8预留限制，后续精确计数需要官方匹配tokenizer，不允许字符除法、静默截内容或自动加预算。
