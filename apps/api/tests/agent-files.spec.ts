@@ -2,6 +2,7 @@ import {randomUUID,randomBytes} from 'node:crypto'
 import {mkdirSync,mkdtempSync,rmSync,writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
+import {createServer as createHttpServer} from 'node:http'
 import {z} from 'zod'
 import {afterEach,describe,it,expect,vi} from 'vitest'
 import {routes,Id,Text,Budget,Version,Instant,ChatAvailability,ModelUsage,ChatResource,Mention,AgentFileMessage,type RouteName} from '@research-agent-platform/contracts'
@@ -10,6 +11,7 @@ import {openDatabase,migrate} from '../src/database.js'
 import {createServer} from '../src/server.js'
 import {ChatWorker} from '../src/chat-worker.js'
 import type {ModelCall,ModelResult} from '../src/execution-worker.js'
+import {callHarness} from '../src/execution-worker.js'
 import {syntheticPdf,agentFileSmoke} from '../src/agent-file-smoke.js'
 import * as files from '../src/agent-files.js'
 import {chatInputTokenBound} from '../src/chat-model-input.js'
@@ -52,6 +54,41 @@ async function setup(){
 
 
 describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{timeout:30000},()=>{
+ it('saves real adapter plain file replies, preserves ordinary defaults and rejects truncated output with actual usage',async()=>{
+  const s=await setup(),own=await s.own(),seen:{thinking:unknown;maxTokens:number}[]=[],reply='依据提供的两页文字：第一页说明合成研究目的，第二页补充合成结果。',truncated='合成不完整正文'
+  let limit=false
+  const server=createHttpServer((request,response)=>{
+    let raw='';request.on('data',chunk=>{raw+=String(chunk)});request.on('end',()=>{
+      const body=JSON.parse(raw);seen.push({thinking:body.thinking,maxTokens:body.max_tokens})
+      const events=[{type:'message_start',message:{usage:{input_tokens:840,output_tokens:0}}},{type:'content_block_start',index:0,content_block:{type:'text',text:''}},{type:'content_block_delta',index:0,delta:{type:'text_delta',text:limit?truncated:reply}},{type:'content_block_stop',index:0},{type:'message_delta',delta:{stop_reason:limit?'max_tokens':'end_turn'},usage:{output_tokens:limit?body.max_tokens:100}},{type:'message_stop'}]
+      response.writeHead(200,{'content-type':'text/event-stream'});response.end(events.map(event=>`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`).join(''))
+    })
+  })
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));cleanup.push(()=>new Promise<void>((resolve,reject)=>server.close(error=>error?reject(error):resolve())))
+  const address=server.address();if(!address||typeof address==='string')throw Error('Expected loopback address')
+  const original=process.env.DEEPSEEK_BASE_URL;process.env.DEEPSEEK_BASE_URL=`http://127.0.0.1:${address.port}/anthropic`;cleanup.push(()=>{if(original===undefined)delete process.env.DEEPSEEK_BASE_URL;else process.env.DEEPSEEK_BASE_URL=original})
+  const ordinary=await s.send(own.conversation.id,'你好');await s.tick(callHarness);expect((await s.turn(ordinary.turn.id)).status).toBe('succeeded');expect(seen[0]!.thinking).toEqual({type:'enabled'})
+  const sent=await s.call('agentFileMessage',uploadBody(),{id:own.conversation.id});expect(sent.status,sent.text).toBe(201)
+  await s.tick(callHarness);expect(await s.turn(sent.value.data.turn.id)).toMatchObject({status:'succeeded',usage:{inputTokens:840,outputTokens:100},fileRead:{partial:false}});expect(seen[1]!.thinking).toEqual({type:'disabled'})
+  const messages=(await s.call('chatMessages',null,{id:own.conversation.id})).value.data;expect(messages.at(-1).text).toBe(reply);expect(messages.at(-2).files[0].pageCount).toBe(2)
+  const follow=await s.send(own.conversation.id,'请解释第二页');limit=true;await s.tick(callHarness)
+  expect(await s.turn(follow.turn.id)).toMatchObject({status:'failed',failure:'BUDGET_EXCEEDED',outputMessageId:null,usage:{inputTokens:840,outputTokens:seen[2]!.maxTokens}});expect(seen[2]!.thinking).toEqual({type:'disabled'})
+  expect((await s.call('chatMessages',null,{id:own.conversation.id})).text).not.toContain(truncated)
+  const input=JSON.parse(String(s.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(follow.turn.id)!.request_json))
+  expect(input.modelOutputDiagnostic).toEqual({stage:'output_limit',returnedTextLength:0,trimEmpty:true,maxOutputTokens:seen[2]!.maxTokens,reasoningEffort:'off',finishReason:'max-tokens',failure:'OUTPUT_LIMIT'})
+  expect(JSON.stringify(input.modelOutputDiagnostic)).not.toContain('synthetic-owner');expect(JSON.stringify(input.modelOutputDiagnostic)).not.toContain(truncated)
+  s.legacyStored();expect(s.count('chat_actions')).toBe(0);expect(s.count('tasks')).toBe(0)
+  for(const row of s.db.prepare('SELECT document FROM chat_messages').all())expect(LegacyMessage.safeParse(JSON.parse(String(row.document))).success).toBe(true)
+  const evidence=process.env.AGENT_FILES_EVIDENCE_ROOT;if(evidence)writeFileSync(join(evidence,'file-reply-runtime-proof.json'),JSON.stringify({synthetic:true,realParser:true,actualPinnedAdapter:true,realVendor:false,seen,turnStatus:'BUDGET_EXCEEDED',diagnostic:input.modelOutputDiagnostic},null,2))
+ })
+ it('distinguishes a real SQLite save failure from malformed model output without retaining reply text in diagnostics',async()=>{
+  const s=await setup(),own=await s.own(),sent=await s.call('agentFileMessage',uploadBody(),{id:own.conversation.id})
+  s.db.exec("CREATE TRIGGER synthetic_reject_model BEFORE INSERT ON chat_messages WHEN json_extract(NEW.document,'$.origin')='model' BEGIN SELECT RAISE(ABORT,'synthetic refusal'); END")
+  const reply='合成有效文字，但数据库写入被测试触发器拒绝。';await s.tick(async()=>result(reply))
+  expect(await s.turn(sent.value.data.turn.id)).toMatchObject({status:'failed',failure:'MODEL_FAILED',outputMessageId:null,usage:{inputTokens:200,outputTokens:100}});expect(s.count('chat_messages')).toBe(1)
+  const input=JSON.parse(String(s.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(sent.value.data.turn.id)!.request_json))
+  expect(input.modelOutputDiagnostic).toMatchObject({stage:'persistence',errorCategory:'sqlite',returnedTextLength:reply.length,trimEmpty:false,reasoningEffort:'off'});expect(JSON.stringify(input.modelOutputDiagnostic)).not.toContain(reply);s.legacyStored()
+ })
  it('parses an actual two-page PDF, persists old documents, replays once and reads page2 after server restart',async()=>{
   const s=await setup(),own=await s.own(),key=randomUUID(),parse=vi.spyOn(files,'extractAgentFile')
   cleanup.push(()=>parse.mockRestore())

@@ -13,8 +13,8 @@ import { transaction } from './database.js'
 import { randomUUID } from 'node:crypto'
 import { labAiRuntime, labApiKey } from './lab-ai-settings.js'
 
-export interface ModelInput {provider?:'deepseek'|'qwen'|'doubao';system:string;prompt:string;model:string;maxTokens:number;timeoutMs:number}
-export interface ModelResult {text:string;failure:string|null;inputTokens:number|null;outputTokens:number|null;elapsedMs:number}
+export interface ModelInput {provider?:'deepseek'|'qwen'|'doubao';system:string;prompt:string;model:string;maxTokens:number;timeoutMs:number;reasoningEffort?:'off'}
+export interface ModelResult {text:string;failure:string|null;inputTokens:number|null;outputTokens:number|null;elapsedMs:number;finishReason?:string}
 export type ModelCall=(input:ModelInput,signal:AbortSignal,credential:{apiKey:string})=>Promise<ModelResult>
 const encode=JSON.stringify
 export function serviceFor(db:DatabaseSync,ownerId:string,config:Config){
@@ -66,7 +66,7 @@ export const callHarness:ModelCall=async(input,signal,credential)=>new Promise(r
   child.stdout.on('data',chunk=>{output+=String(chunk);if(output.length>150000)child.kill()})
   child.stderr.on('data',()=>{/* Provider diagnostics may contain secrets. Never log or relay. */})
   child.on('error',()=>finish(failure('HARNESS_START_FAILED')))
-  child.on('exit',()=>{try{const parsed=z.object({text:z.string().max(100000),failure:z.string().nullable(),inputTokens:z.number().nonnegative().nullable(),outputTokens:z.number().nonnegative().nullable(),elapsedMs:z.number().nonnegative()}).parse(JSON.parse(output));finish(parsed)}catch{finish(failure(signal.aborted?'INTERRUPTED':'HARNESS_PROCESS_FAILED'))}})
+  child.on('exit',()=>{try{const parsed=z.object({text:z.string().max(100000),failure:z.string().nullable(),inputTokens:z.number().nonnegative().nullable(),outputTokens:z.number().nonnegative().nullable(),elapsedMs:z.number().nonnegative(),finishReason:z.string().regex(/^[a-z_-]{1,64}$/).optional()}).parse(JSON.parse(output));finish(parsed)}catch{finish(failure(signal.aborted?'INTERRUPTED':'HARNESS_PROCESS_FAILED'))}})
   child.stdin.on('error',()=>{});child.stdin.end(encode(input))
 })
 export class ExecutionWorker {

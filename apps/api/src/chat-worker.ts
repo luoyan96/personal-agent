@@ -134,7 +134,9 @@ export class ChatWorker {
       this.db.prepare('UPDATE chat_turns SET fence=?,lease_owner=?,lease_until=? WHERE id=?').run(fence, this.owner, Date.now() + 15000, turn.id)
       this.db.prepare('INSERT INTO chat_attempts VALUES (?,?,?,NULL)').run(turn.id, row.root_id!, instant())
       const selected=personalModelRuntime(this.db,s.c.actor,this.config)
-      return { id: turn.id, ownerId: String(row.owner_id), fence, input, modelInput: { provider:selected.provider,system, prompt, model:selected.model, maxTokens: Math.min(4096,remainingOutput), timeoutMs: input.budget.maxSeconds * 1000 }, credential: { apiKey } }
+      // File reading needs a plain reply within the existing output allowance.
+      // Only this DeepSeek path changes the provider's documented default.
+      return { id: turn.id, ownerId: String(row.owner_id), fence, input, modelInput: { provider:selected.provider,...(selected.provider==='deepseek'&&input.dailyChat&&input.fileSource?{reasoningEffort:'off' as const}:{}),system, prompt, model:selected.model, maxTokens: Math.min(4096,remainingOutput), timeoutMs: input.budget.maxSeconds * 1000 }, credential: { apiKey } }
     })
     if (!job) return false
     const controller = new AbortController(), started = Date.now()
@@ -150,17 +152,27 @@ export class ChatWorker {
       const usage = ModelUsage.parse({ inputTokens: result.inputTokens, outputTokens: result.outputTokens, elapsedMs: result.elapsedMs, cost: null, currency: null })
       // Actual returned usage survives cancellation even when output is fenced.
       this.db.prepare('UPDATE chat_attempts SET usage_json=? WHERE turn_id=?').run(JSON.stringify(usage), job.id)
+      const diagnostic=(stage:string,errorCategory?:string)=>{
+        if(!job.input.fileSource)return
+        // Private operational metadata only: never retain provider text or keys.
+        const input=JSON.parse(String(this.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(job.id)!.request_json))
+        const text=typeof result.text==='string'?result.text:''
+        input.modelOutputDiagnostic={stage,returnedTextLength:text.length,trimEmpty:!text.trim(),maxOutputTokens:job.modelInput.maxTokens,reasoningEffort:job.modelInput.reasoningEffort??'default',...(result.finishReason?{finishReason:result.finishReason}:{}),...(result.failure?{failure:result.failure}:{}),...(errorCategory?{errorCategory}:{})}
+        this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(JSON.stringify(input),job.id)
+      }
+      diagnostic('returned')
       reconcileChat(this.db, this.config)
       const row = this.db.prepare('SELECT * FROM chat_turns WHERE id=?').get(job.id)!
       if (row.status !== 'running' || row.fence !== job.fence || row.lease_owner !== this.owner) return
       const s = service(this.db, job.ownerId, this.config), { turn, group } = s.checkTurnInput(job.id)
       turn.usage = usage
-      if (result.failure) { turn.status = 'failed'; turn.failure = 'MODEL_FAILED' }
+      if (result.failure) { turn.status = 'failed'; turn.failure = result.failure==='OUTPUT_LIMIT'?'BUDGET_EXCEEDED':'MODEL_FAILED';diagnostic(result.failure==='OUTPUT_LIMIT'?'output_limit':'provider_error') }
       else if (result.inputTokens===null||result.outputTokens===null) { turn.status='failed';turn.failure='MODEL_FAILED' }
       else if (result.inputTokens + result.outputTokens > job.input.budget.maxTokens || result.outputTokens>job.modelInput.maxTokens || result.elapsedMs > job.input.budget.maxSeconds * 1000) { turn.status = 'failed'; turn.failure = 'BUDGET_EXCEEDED' }
       else {
         // Savepoint guarantees invalid output cannot leave partial plans/actions/messages.
         this.db.exec('SAVEPOINT chat_model_output')
+        let outputStage='validation'
         try {
           if(job.input.purpose==='create_agent') {
             const output=AgentCreationOutput.parse(JSON.parse(result.text))
@@ -190,13 +202,14 @@ export class ChatWorker {
             payloads.push({ kind: 'create_group', title: output.group.title, plan: { id: created.data.id, version: created.data.version }, contactIds: output.group.contactIds, sharedContext: output.group.sharedContext })
           }
           for (const payload of payloads) s.validatePayload(payload, group.id)
+          outputStage='persistence'
           const message = s.message(group.id, { senderContactId: turn.agentContactId, origin: 'model', text: output.answer, mentions: [], resources: [], actionIds: [], turnId: turn.id })
           const actions = payloads.map(payload => s.addAction(turn, message.id, payload)); message.actionIds = actions.map(a => a.id)
           this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(JSON.stringify(message), message.id)
           turn.status = output.waitingInput ? 'waiting_input' : 'succeeded'; turn.outputMessageId = message.id; turn.failure = null
           }
           this.db.exec('RELEASE chat_model_output')
-        } catch(error) { this.db.exec('ROLLBACK TO chat_model_output; RELEASE chat_model_output'); turn.status = 'failed'; turn.failure = job.input.purpose==='create_agent'&&error instanceof ApiError&&error.code==='RATE_LIMITED'?'AGENT_LIMIT_REACHED':'INVALID_MODEL_OUTPUT'; turn.outputMessageId = null;if(job.input.purpose==='create_agent')turn.createdAgent=null }
+        } catch(error) { this.db.exec('ROLLBACK TO chat_model_output; RELEASE chat_model_output');diagnostic(outputStage,error instanceof z.ZodError?'schema':error instanceof ApiError?'business':(error as {code?:unknown})?.code==='ERR_SQLITE_ERROR'?'sqlite':'unknown'); turn.status = 'failed'; turn.failure = job.input.purpose==='create_agent'&&error instanceof ApiError&&error.code==='RATE_LIMITED'?'AGENT_LIMIT_REACHED':outputStage==='persistence'?'MODEL_FAILED':'INVALID_MODEL_OUTPUT'; turn.outputMessageId = null;if(job.input.purpose==='create_agent')turn.createdAgent=null }
       }
       turn.version++; turn.updatedAt = instant(); s.saveTurn(turn)
       this.db.prepare('UPDATE chat_turns SET lease_owner=NULL,lease_until=NULL WHERE id=?').run(turn.id)
