@@ -12462,7 +12462,6 @@
                                   "pattern": "^[A-Za-z0-9_-]{1,96}$"
                                 },
                                 "purpose": {
-                                  "default": "reply",
                                   "type": "string",
                                   "enum": [
                                     "reply",
@@ -12470,7 +12469,6 @@
                                   ]
                                 },
                                 "createdAgent": {
-                                  "default": null,
                                   "anyOf": [
                                     {
                                       "type": "object",
@@ -12734,8 +12732,6 @@
                                 "conversationId",
                                 "inputMessageId",
                                 "agentContactId",
-                                "purpose",
-                                "createdAgent",
                                 "status",
                                 "failure",
                                 "availability",
@@ -13161,7 +13157,6 @@
                                   "pattern": "^[A-Za-z0-9_-]{1,96}$"
                                 },
                                 "purpose": {
-                                  "default": "reply",
                                   "type": "string",
                                   "enum": [
                                     "reply",
@@ -13169,7 +13164,6 @@
                                   ]
                                 },
                                 "createdAgent": {
-                                  "default": null,
                                   "anyOf": [
                                     {
                                       "type": "object",
@@ -13433,8 +13427,6 @@
                                 "conversationId",
                                 "inputMessageId",
                                 "agentContactId",
-                                "purpose",
-                                "createdAgent",
                                 "status",
                                 "failure",
                                 "availability",
@@ -13652,7 +13644,6 @@
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
                         },
                         "purpose": {
-                          "default": "reply",
                           "type": "string",
                           "enum": [
                             "reply",
@@ -13660,7 +13651,6 @@
                           ]
                         },
                         "createdAgent": {
-                          "default": null,
                           "anyOf": [
                             {
                               "type": "object",
@@ -13924,8 +13914,6 @@
                         "conversationId",
                         "inputMessageId",
                         "agentContactId",
-                        "purpose",
-                        "createdAgent",
                         "status",
                         "failure",
                         "availability",
@@ -13952,8 +13940,6 @@
                     "conversationId": "synthetic",
                     "inputMessageId": "synthetic",
                     "agentContactId": "synthetic",
-                    "purpose": "reply",
-                    "createdAgent": null,
                     "status": "queued",
                     "failure": null,
                     "availability": {
@@ -14183,7 +14169,6 @@
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
                         },
                         "purpose": {
-                          "default": "reply",
                           "type": "string",
                           "enum": [
                             "reply",
@@ -14191,7 +14176,6 @@
                           ]
                         },
                         "createdAgent": {
-                          "default": null,
                           "anyOf": [
                             {
                               "type": "object",
@@ -14455,8 +14439,6 @@
                         "conversationId",
                         "inputMessageId",
                         "agentContactId",
-                        "purpose",
-                        "createdAgent",
                         "status",
                         "failure",
                         "availability",
@@ -14483,8 +14465,6 @@
                     "conversationId": "synthetic",
                     "inputMessageId": "synthetic",
                     "agentContactId": "synthetic",
-                    "purpose": "reply",
-                    "createdAgent": null,
                     "status": "queued",
                     "failure": null,
                     "availability": {
@@ -14739,7 +14719,6 @@
                           "pattern": "^[A-Za-z0-9_-]{1,96}$"
                         },
                         "purpose": {
-                          "default": "reply",
                           "type": "string",
                           "enum": [
                             "reply",
@@ -14747,7 +14726,6 @@
                           ]
                         },
                         "createdAgent": {
-                          "default": null,
                           "anyOf": [
                             {
                               "type": "object",
@@ -15011,8 +14989,6 @@
                         "conversationId",
                         "inputMessageId",
                         "agentContactId",
-                        "purpose",
-                        "createdAgent",
                         "status",
                         "failure",
                         "availability",
@@ -15039,8 +15015,6 @@
                     "conversationId": "synthetic",
                     "inputMessageId": "synthetic",
                     "agentContactId": "synthetic",
-                    "purpose": "reply",
-                    "createdAgent": null,
                     "status": "queued",
                     "failure": null,
                     "availability": {

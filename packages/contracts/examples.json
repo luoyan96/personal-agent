@@ -1817,8 +1817,6 @@
           "conversationId": "synthetic",
           "inputMessageId": "synthetic",
           "agentContactId": "synthetic",
-          "purpose": "reply",
-          "createdAgent": null,
           "status": "queued",
           "failure": null,
           "availability": {
@@ -1864,8 +1862,6 @@
           "conversationId": "synthetic",
           "inputMessageId": "synthetic",
           "agentContactId": "synthetic",
-          "purpose": "reply",
-          "createdAgent": null,
           "status": "queued",
           "failure": null,
           "availability": {
@@ -1915,8 +1911,6 @@
           "conversationId": "synthetic",
           "inputMessageId": "synthetic",
           "agentContactId": "synthetic",
-          "purpose": "reply",
-          "createdAgent": null,
           "status": "queued",
           "failure": null,
           "availability": {
