@@ -3,6 +3,7 @@ import * as m from './models.js'
 import { chatRoutes } from './chat.js'
 import { openImRoutes } from './openim.js'
 import { AccountUsername, AccountPassword, RegistrationCode } from './authentication.js'
+import { personalModelRoutes } from './personal-models.js'
 
 const empty = z.strictObject({})
 const id = z.strictObject({ id: m.Id })
@@ -23,13 +24,14 @@ function route<P extends z.ZodType, Q extends z.ZodType, B extends z.ZodType, R 
     errors: m.ErrorResponse, errorStatuses: m.errorStatus, idempotent: keyed }
 }
 export const routes = {
+  ...personalModelRoutes,
   ...openImRoutes,
   ...chatRoutes,
   live: route('GET', '/health/live', 'B0', empty, empty, z.null(), m.data(m.Health), 200, 'Process liveness only.', 'public'),
   ready: route('GET', '/health/ready', 'B0', empty, empty, z.null(), m.data(m.Health), 200, '503 with same health schema if database migration/write probe or blob read/write probe fails.', 'public'),
   login: route('POST', '/auth/login', 'B1', empty, empty, z.strictObject({ username: AccountUsername, password: AccountPassword }), m.data(m.Member), 200, 'Trim surrounding username whitespace only; case-sensitive ASCII account identity. Password at least 8 characters, preserved exactly, no complexity or field-length cap; HTTP body limit applies. Verify provisioned hash, rotate session and issue HttpOnly cookie.', 'public', false),
-  register: route('POST', '/auth/register', 'B5b', empty, empty, z.strictObject({ inviteCode:RegistrationCode, username:AccountUsername, displayName:z.string().trim().min(1).max(200), password:AccountPassword }), m.data(z.strictObject({registered:z.literal(true),username:AccountUsername})), 201, 'Same-origin invitation-only account creation. Trim surrounding username/invite-code whitespace only. Password at least 8 characters, preserved exactly, no complexity or field-length cap; HTTP body limit applies. No client lab/role/member ID; current valid invitation required. Account, membership, use count and retry receipt are atomic. No session or raw code/password persisted.', 'public'),
-  session: route('GET', '/auth/session', 'B1', empty, empty, z.null(), m.data(z.strictObject({ member: m.Member, csrfToken: m.Id, expiresAt: m.Instant, isLabManager: z.boolean() })), 200, 'Session DB lookup; expiry and revocation checked; manager flag is server-authoritative.'),
+  register: route('POST', '/auth/register', 'B5b', empty, empty, z.strictObject({ inviteCode:RegistrationCode.optional(), username:AccountUsername, displayName:z.string().trim().min(1).max(200), password:AccountPassword }), m.data(z.strictObject({registered:z.literal(true),username:AccountUsername})), 201, 'Same-origin public account creation without a code creates an isolated personal space, never joins a laboratory or grants manager authority. A supplied invitation retains the existing laboratory flow. Trim surrounding username/invite-code whitespace only. Password at least 8 characters, preserved exactly, no complexity or field-length cap; HTTP body limit applies. No client lab/role/member ID; supplied invitation must be valid. Account, membership, use count and retry receipt are atomic. No session or raw code/password persisted.', 'public'),
+  session: route('GET', '/auth/session', 'B1', empty, empty, z.null(), m.data(z.strictObject({ member: m.Member, csrfToken: m.Id, expiresAt: m.Instant, isLabManager: z.boolean(), spaceKind:z.enum(['personal','laboratory']).default('laboratory') })), 200, 'Session DB lookup; expiry and revocation checked; manager flag is server-authoritative.'),
   logout: route('POST', '/auth/logout', 'B1', empty, empty, empty, m.data(z.strictObject({ loggedOut: z.literal(true) })), 200, 'Revoke current session and clear cookie; Origin and CSRF required.', 'session', false),
   managerInvites: route('GET', '/labs/{id}/registration-invites', 'B5b', id, empty, z.null(), m.data(z.strictObject({ invites:z.array(m.RegistrationInvite).max(50), truncated:z.boolean() })), 200, 'Current lab manager only; metadata for 50 latest invites, never raw codes or hashes.'),
   createManagerInvite: route('POST', '/labs/{id}/registration-invites', 'B5b', id, empty, z.strictObject({ expiresAt:m.Instant, maxUses:z.number().int().min(1).max(50) }), m.data(z.strictObject({ invite:m.RegistrationInvite, code:z.string().min(20).max(128) })), 201, 'Current lab manager only; code returned on creation or exact idempotent retry, never stored raw. CSRF and same-Origin required.'),

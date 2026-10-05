@@ -2,9 +2,1558 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.13.1"
+    "version": "0.14.0"
   },
   "paths": {
+    "/api/v1/me/model-configurations": {
+      "get": {
+        "operationId": "personalModels",
+        "description": "Self-only metadata; never returns secret or ciphertext. Personal configurations take precedence over legacy laboratory configuration; isolated public accounts cannot use laboratory credentials.",
+        "x-stage": "B5b",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "B5b contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "configurations": {
+                          "maxItems": 20,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              },
+                              "provider": {
+                                "type": "string",
+                                "enum": [
+                                  "deepseek",
+                                  "qwen",
+                                  "doubao"
+                                ]
+                              },
+                              "model": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                              },
+                              "baseUrl": {
+                                "type": "string",
+                                "enum": [
+                                  "https://api.deepseek.com/anthropic",
+                                  "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                                  "https://ark.cn-beijing.volces.com/api/v3"
+                                ]
+                              },
+                              "enabled": {
+                                "type": "boolean"
+                              },
+                              "hasApiKey": {
+                                "type": "boolean"
+                              },
+                              "isDefault": {
+                                "type": "boolean"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "updatedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "provider",
+                              "model",
+                              "baseUrl",
+                              "enabled",
+                              "hasApiKey",
+                              "isDefault",
+                              "version",
+                              "createdAt",
+                              "updatedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "platformEnabled": {
+                          "type": "boolean"
+                        },
+                        "defaultConfigurationId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "personal",
+                            "legacy_lab",
+                            "unconfigured"
+                          ]
+                        },
+                        "legacyLabAvailable": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "configurations",
+                        "version",
+                        "platformEnabled",
+                        "defaultConfigurationId",
+                        "source",
+                        "legacyLabAvailable"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "configurations": [],
+                    "version": 0,
+                    "platformEnabled": false,
+                    "defaultConfigurationId": null,
+                    "source": "personal",
+                    "legacyLabAvailable": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPersonalModel",
+        "description": "Self only, max20. First active configuration becomes the default. Encrypted key bound to member and configuration identity; provider/model must be implemented. Key omitted means unset; no secret in receipt.",
+        "x-stage": "B5b",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "deepseek",
+                      "qwen",
+                      "doubao"
+                    ]
+                  },
+                  "model": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "apiKey": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 512
+                  },
+                  "removeApiKey": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "provider",
+                  "model",
+                  "enabled"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "name": "synthetic",
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "enabled": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "B5b contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "provider": {
+                          "type": "string",
+                          "enum": [
+                            "deepseek",
+                            "qwen",
+                            "doubao"
+                          ]
+                        },
+                        "model": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                        },
+                        "baseUrl": {
+                          "type": "string",
+                          "enum": [
+                            "https://api.deepseek.com/anthropic",
+                            "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                            "https://ark.cn-beijing.volces.com/api/v3"
+                          ]
+                        },
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "hasApiKey": {
+                          "type": "boolean"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "provider",
+                        "model",
+                        "baseUrl",
+                        "enabled",
+                        "hasApiKey",
+                        "isDefault",
+                        "version",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "id": "synthetic",
+                    "name": "synthetic",
+                    "provider": "deepseek",
+                    "model": "deepseek-flash",
+                    "baseUrl": "https://api.deepseek.com/anthropic",
+                    "enabled": false,
+                    "hasApiKey": false,
+                    "isDefault": false,
+                    "version": 1,
+                    "createdAt": "2026-09-21T08:00:00+08:00",
+                    "updatedAt": "2026-09-21T08:00:00+08:00"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/model-configurations/{id}": {
+      "patch": {
+        "operationId": "updatePersonalModel",
+        "description": "Self only and exact configuration version. Omitted apiKey preserves secret; removeApiKey explicitly revokes while disabled. All changes fence prior model turns; response only hasApiKey.",
+        "x-stage": "B5b",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "deepseek",
+                      "qwen",
+                      "doubao"
+                    ]
+                  },
+                  "model": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "apiKey": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 512
+                  },
+                  "removeApiKey": {
+                    "type": "boolean"
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "name",
+                  "provider",
+                  "model",
+                  "enabled",
+                  "expectedVersion"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "name": "synthetic",
+                "provider": "deepseek",
+                "model": "deepseek-flash",
+                "enabled": false,
+                "expectedVersion": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "B5b contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "provider": {
+                          "type": "string",
+                          "enum": [
+                            "deepseek",
+                            "qwen",
+                            "doubao"
+                          ]
+                        },
+                        "model": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                        },
+                        "baseUrl": {
+                          "type": "string",
+                          "enum": [
+                            "https://api.deepseek.com/anthropic",
+                            "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                            "https://ark.cn-beijing.volces.com/api/v3"
+                          ]
+                        },
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "hasApiKey": {
+                          "type": "boolean"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "provider",
+                        "model",
+                        "baseUrl",
+                        "enabled",
+                        "hasApiKey",
+                        "isDefault",
+                        "version",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "id": "synthetic",
+                    "name": "synthetic",
+                    "provider": "deepseek",
+                    "model": "deepseek-flash",
+                    "baseUrl": "https://api.deepseek.com/anthropic",
+                    "enabled": false,
+                    "hasApiKey": false,
+                    "isDefault": false,
+                    "version": 1,
+                    "createdAt": "2026-09-21T08:00:00+08:00",
+                    "updatedAt": "2026-09-21T08:00:00+08:00"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/model-configurations/{id}/delete": {
+      "post": {
+        "operationId": "deletePersonalModel",
+        "description": "Self only and exact version; delete encrypted key and configuration. Default deletion leaves no selected configuration; no automatic fallback to another user or laboratory credential while personal records remain.",
+        "x-stage": "B5b",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "expectedVersion"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "expectedVersion": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "B5b contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "configurations": {
+                          "maxItems": 20,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              },
+                              "provider": {
+                                "type": "string",
+                                "enum": [
+                                  "deepseek",
+                                  "qwen",
+                                  "doubao"
+                                ]
+                              },
+                              "model": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                              },
+                              "baseUrl": {
+                                "type": "string",
+                                "enum": [
+                                  "https://api.deepseek.com/anthropic",
+                                  "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                                  "https://ark.cn-beijing.volces.com/api/v3"
+                                ]
+                              },
+                              "enabled": {
+                                "type": "boolean"
+                              },
+                              "hasApiKey": {
+                                "type": "boolean"
+                              },
+                              "isDefault": {
+                                "type": "boolean"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "updatedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "provider",
+                              "model",
+                              "baseUrl",
+                              "enabled",
+                              "hasApiKey",
+                              "isDefault",
+                              "version",
+                              "createdAt",
+                              "updatedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "platformEnabled": {
+                          "type": "boolean"
+                        },
+                        "defaultConfigurationId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "personal",
+                            "legacy_lab",
+                            "unconfigured"
+                          ]
+                        },
+                        "legacyLabAvailable": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "configurations",
+                        "version",
+                        "platformEnabled",
+                        "defaultConfigurationId",
+                        "source",
+                        "legacyLabAvailable"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "configurations": [],
+                    "version": 0,
+                    "platformEnabled": false,
+                    "defaultConfigurationId": null,
+                    "source": "personal",
+                    "legacyLabAvailable": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/model-configurations/default": {
+      "post": {
+        "operationId": "defaultPersonalModel",
+        "description": "Self only; expectedVersion is PersonalModelSettings.version. Select an existing enabled configuration with a usable key, or null to clear. Changes fence queued/running older selection, retaining actual usage; explicit personal selection never falls back to a laboratory secret.",
+        "x-stage": "B5b",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "configurationId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "configurationId"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "expectedVersion": 0,
+                "configurationId": null
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "B5b contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "configurations": {
+                          "maxItems": 20,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              },
+                              "provider": {
+                                "type": "string",
+                                "enum": [
+                                  "deepseek",
+                                  "qwen",
+                                  "doubao"
+                                ]
+                              },
+                              "model": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                              },
+                              "baseUrl": {
+                                "type": "string",
+                                "enum": [
+                                  "https://api.deepseek.com/anthropic",
+                                  "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                                  "https://ark.cn-beijing.volces.com/api/v3"
+                                ]
+                              },
+                              "enabled": {
+                                "type": "boolean"
+                              },
+                              "hasApiKey": {
+                                "type": "boolean"
+                              },
+                              "isDefault": {
+                                "type": "boolean"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9007199254740991
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "updatedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "provider",
+                              "model",
+                              "baseUrl",
+                              "enabled",
+                              "hasApiKey",
+                              "isDefault",
+                              "version",
+                              "createdAt",
+                              "updatedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "platformEnabled": {
+                          "type": "boolean"
+                        },
+                        "defaultConfigurationId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "personal",
+                            "legacy_lab",
+                            "unconfigured"
+                          ]
+                        },
+                        "legacyLabAvailable": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "configurations",
+                        "version",
+                        "platformEnabled",
+                        "defaultConfigurationId",
+                        "source",
+                        "legacyLabAvailable"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "configurations": [],
+                    "version": 0,
+                    "platformEnabled": false,
+                    "defaultConfigurationId": null,
+                    "source": "personal",
+                    "legacyLabAvailable": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/im/session": {
       "post": {
         "operationId": "imSession",
@@ -455,6 +2004,17 @@
                                     "minLength": 1,
                                     "maxLength": 200
                                   },
+                                  "username": {
+                                    "default": null,
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
                                   "identity": {
                                     "anyOf": [
                                       {
@@ -689,6 +2249,7 @@
                                   "id",
                                   "labId",
                                   "displayName",
+                                  "username",
                                   "identity",
                                   "availability",
                                   "version",
@@ -2545,7 +4106,7 @@
     "/api/v1/chat/contacts": {
       "get": {
         "operationId": "chatContacts",
-        "description": "Directory discovers current lab public identities and profiles; mine includes owned agents and accepted contacts. Relationship, group membership and task authorization are independent. No private memory/history in profiles.",
+        "description": "Local directory discovers laboratory identities; mine includes all owned and accepted contacts across spaces. Global scope requires exact username search and returns that human and their personal Agents public profiles only. Relationship, group membership and task authorization are independent. No private memory/history in profiles.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -2582,6 +4143,19 @@
             "schema": {
               "type": "string",
               "maxLength": 200
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "default": "local",
+              "type": "string",
+              "enum": [
+                "local",
+                "global"
+              ]
             }
           },
           {
@@ -2625,6 +4199,17 @@
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 200
+                          },
+                          "username": {
+                            "default": null,
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "identity": {
                             "anyOf": [
@@ -2860,6 +4445,7 @@
                           "id",
                           "labId",
                           "displayName",
+                          "username",
                           "identity",
                           "availability",
                           "version",
@@ -3054,6 +4640,17 @@
                           "type": "string",
                           "minLength": 1,
                           "maxLength": 200
+                        },
+                        "username": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "identity": {
                           "anyOf": [
@@ -3289,6 +4886,7 @@
                         "id",
                         "labId",
                         "displayName",
+                        "username",
                         "identity",
                         "availability",
                         "version",
@@ -3309,6 +4907,7 @@
                     "id": "synthetic",
                     "labId": "synthetic",
                     "displayName": "synthetic",
+                    "username": null,
                     "identity": {
                       "kind": "human",
                       "memberId": "synthetic"
@@ -3564,6 +5163,17 @@
                           "minLength": 1,
                           "maxLength": 200
                         },
+                        "username": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "identity": {
                           "anyOf": [
                             {
@@ -3798,6 +5408,7 @@
                         "id",
                         "labId",
                         "displayName",
+                        "username",
                         "identity",
                         "availability",
                         "version",
@@ -3818,6 +5429,7 @@
                     "id": "synthetic",
                     "labId": "synthetic",
                     "displayName": "synthetic",
+                    "username": null,
                     "identity": {
                       "kind": "human",
                       "memberId": "synthetic"
@@ -4057,6 +5669,17 @@
                           "minLength": 1,
                           "maxLength": 200
                         },
+                        "username": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "identity": {
                           "anyOf": [
                             {
@@ -4291,6 +5914,7 @@
                         "id",
                         "labId",
                         "displayName",
+                        "username",
                         "identity",
                         "availability",
                         "version",
@@ -4311,6 +5935,7 @@
                     "id": "synthetic",
                     "labId": "synthetic",
                     "displayName": "synthetic",
+                    "username": null,
                     "identity": {
                       "kind": "human",
                       "memberId": "synthetic"
@@ -4530,6 +6155,17 @@
                           "minLength": 1,
                           "maxLength": 200
                         },
+                        "username": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "identity": {
                           "anyOf": [
                             {
@@ -4764,6 +6400,7 @@
                         "id",
                         "labId",
                         "displayName",
+                        "username",
                         "identity",
                         "availability",
                         "version",
@@ -4784,6 +6421,7 @@
                     "id": "synthetic",
                     "labId": "synthetic",
                     "displayName": "synthetic",
+                    "username": null,
                     "identity": {
                       "kind": "human",
                       "memberId": "synthetic"
@@ -5591,6 +7229,17 @@
                           "minLength": 1,
                           "maxLength": 200
                         },
+                        "username": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "identity": {
                           "anyOf": [
                             {
@@ -5825,6 +7474,7 @@
                         "id",
                         "labId",
                         "displayName",
+                        "username",
                         "identity",
                         "availability",
                         "version",
@@ -5845,6 +7495,7 @@
                     "id": "synthetic",
                     "labId": "synthetic",
                     "displayName": "synthetic",
+                    "username": null,
                     "identity": {
                       "kind": "human",
                       "memberId": "synthetic"
@@ -8088,6 +9739,17 @@
                               "minLength": 1,
                               "maxLength": 200
                             },
+                            "username": {
+                              "default": null,
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "identity": {
                               "anyOf": [
                                 {
@@ -8322,6 +9984,7 @@
                             "id",
                             "labId",
                             "displayName",
+                            "username",
                             "identity",
                             "availability",
                             "version",
@@ -8370,6 +10033,7 @@
                       "id": "synthetic",
                       "labId": "synthetic",
                       "displayName": "synthetic",
+                      "username": null,
                       "identity": {
                         "kind": "human",
                         "memberId": "synthetic"
@@ -10600,6 +12264,658 @@
                 "agentContactId": null,
                 "budget": null,
                 "context": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            "conversationId": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            "sequence": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "senderContactId": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "origin": {
+                              "type": "string",
+                              "enum": [
+                                "human",
+                                "model",
+                                "service"
+                              ]
+                            },
+                            "text": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 8000
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "mentions": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "contactId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "start": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "end": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "contactId",
+                                  "start",
+                                  "end"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "resources": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "plan",
+                                      "task",
+                                      "assignment",
+                                      "run",
+                                      "deliverable",
+                                      "artifact"
+                                    ]
+                                  },
+                                  "ref": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                      },
+                                      "version": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 9007199254740991
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "version"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "ref"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "actionIds": {
+                              "maxItems": 10,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              }
+                            },
+                            "turnId": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "conversationId",
+                            "sequence",
+                            "senderContactId",
+                            "origin",
+                            "text",
+                            "mentions",
+                            "resources",
+                            "actionIds",
+                            "turnId",
+                            "createdAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "turn": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "conversationId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "inputMessageId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "agentContactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "queued",
+                                    "running",
+                                    "waiting_input",
+                                    "succeeded",
+                                    "unavailable",
+                                    "failed",
+                                    "interrupted",
+                                    "cancelled"
+                                  ]
+                                },
+                                "failure": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "MODEL_UNAVAILABLE",
+                                        "INVALID_MODEL_OUTPUT",
+                                        "MODEL_FAILED",
+                                        "LEASE_EXPIRED_USAGE_UNCERTAIN",
+                                        "AUTHORITY_CHANGED",
+                                        "INPUT_CHANGED",
+                                        "BUDGET_EXCEEDED"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "availability": {
+                                  "type": "object",
+                                  "properties": {
+                                    "status": {
+                                      "type": "string",
+                                      "enum": [
+                                        "available",
+                                        "unavailable",
+                                        "disabled"
+                                      ]
+                                    },
+                                    "reason": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "platform_disabled",
+                                            "lab_disabled",
+                                            "missing_credentials",
+                                            "capability_unavailable",
+                                            "owner_authorization_required",
+                                            "not_connected"
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "status",
+                                    "reason"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "outputMessageId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "usage": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "inputTokens": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "outputTokens": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "elapsedMs": {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        "cost": {
+                                          "anyOf": [
+                                            {
+                                              "type": "number",
+                                              "minimum": 0
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "currency": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "maxLength": 10
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "inputTokens",
+                                        "outputTokens",
+                                        "elapsedMs",
+                                        "cost",
+                                        "currency"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "budget": {
+                                  "type": "object",
+                                  "properties": {
+                                    "maxTokens": {
+                                      "type": "integer",
+                                      "exclusiveMinimum": 0,
+                                      "maximum": 1000000
+                                    },
+                                    "maxSeconds": {
+                                      "type": "integer",
+                                      "exclusiveMinimum": 0,
+                                      "maximum": 86400
+                                    }
+                                  },
+                                  "required": [
+                                    "maxTokens",
+                                    "maxSeconds"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "remainingBudget": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "maxTokens": {
+                                          "type": "integer",
+                                          "exclusiveMinimum": 0,
+                                          "maximum": 1000000
+                                        },
+                                        "maxSeconds": {
+                                          "type": "integer",
+                                          "exclusiveMinimum": 0,
+                                          "maximum": 86400
+                                        }
+                                      },
+                                      "required": [
+                                        "maxTokens",
+                                        "maxSeconds"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "allowedActions": {
+                                  "maxItems": 2,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "cancel",
+                                      "retry"
+                                    ]
+                                  }
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                },
+                                "createdAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                "updatedAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "conversationId",
+                                "inputMessageId",
+                                "agentContactId",
+                                "status",
+                                "failure",
+                                "availability",
+                                "outputMessageId",
+                                "usage",
+                                "budget",
+                                "remainingBudget",
+                                "allowedActions",
+                                "version",
+                                "createdAt",
+                                "updatedAt"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "turn"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "message": {
+                      "id": "synthetic",
+                      "conversationId": "synthetic",
+                      "sequence": 1,
+                      "senderContactId": null,
+                      "origin": "human",
+                      "text": null,
+                      "mentions": [],
+                      "resources": [],
+                      "actionIds": [],
+                      "turnId": null,
+                      "createdAt": "2026-09-21T08:00:00+08:00"
+                    },
+                    "turn": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/conversations/{id}/agent-messages": {
+      "post": {
+        "operationId": "agentChatMessage",
+        "description": "Natural personal/direct Agent chat. Server selects the unique joined Agent and bounded default budget4000/90, uses sender personal model and authorized memories. No plans/actions/implicit execution; human SDK messaging never uses this route.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8000
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "text": "synthetic"
               }
             }
           }
@@ -15189,7 +17505,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.13.1"
+                          "const": "0.14.0"
                         },
                         "checks": {
                           "type": "object",
@@ -15248,7 +17564,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.13.1",
+                    "contractVersion": "0.14.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -15402,7 +17718,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.13.1"
+                          "const": "0.14.0"
                         },
                         "checks": {
                           "type": "object",
@@ -15461,7 +17777,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.13.1",
+                    "contractVersion": "0.14.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -15593,7 +17909,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.13.1"
+                          "const": "0.14.0"
                         },
                         "checks": {
                           "type": "object",
@@ -15652,7 +17968,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.13.1",
+                    "contractVersion": "0.14.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -16304,7 +18620,7 @@
     "/api/v1/auth/register": {
       "post": {
         "operationId": "register",
-        "description": "Same-origin invitation-only account creation. Trim surrounding username/invite-code whitespace only. Password at least 8 characters, preserved exactly, no complexity or field-length cap; HTTP body limit applies. No client lab/role/member ID; current valid invitation required. Account, membership, use count and retry receipt are atomic. No session or raw code/password persisted.",
+        "description": "Same-origin public account creation without a code creates an isolated personal space, never joins a laboratory or grants manager authority. A supplied invitation retains the existing laboratory flow. Trim surrounding username/invite-code whitespace only. Password at least 8 characters, preserved exactly, no complexity or field-length cap; HTTP body limit applies. No client lab/role/member ID; supplied invitation must be valid. Account, membership, use count and retry receipt are atomic. No session or raw code/password persisted.",
         "x-stage": "B5b",
         "x-implemented": true,
         "security": [],
@@ -16349,7 +18665,6 @@
                   }
                 },
                 "required": [
-                  "inviteCode",
                   "username",
                   "displayName",
                   "password"
@@ -16357,7 +18672,6 @@
                 "additionalProperties": false
               },
               "example": {
-                "inviteCode": "syntheticxxxxxxxxxxx",
                 "username": "synthetic",
                 "displayName": "synthetic",
                 "password": "synthetic"
@@ -17010,13 +19324,22 @@
                         },
                         "isLabManager": {
                           "type": "boolean"
+                        },
+                        "spaceKind": {
+                          "default": "laboratory",
+                          "type": "string",
+                          "enum": [
+                            "personal",
+                            "laboratory"
+                          ]
                         }
                       },
                       "required": [
                         "member",
                         "csrfToken",
                         "expiresAt",
-                        "isLabManager"
+                        "isLabManager",
+                        "spaceKind"
                       ],
                       "additionalProperties": false
                     }
@@ -17039,7 +19362,8 @@
                     },
                     "csrfToken": "synthetic",
                     "expiresAt": "2026-09-21T08:00:00+08:00",
-                    "isLabManager": false
+                    "isLabManager": false,
+                    "spaceKind": "personal"
                   }
                 }
               }
@@ -52773,7 +55097,7 @@
                     "candidateDeliverableId": null,
                     "allowedActions": [],
                     "provider": "synthetic",
-                    "model": "synthetic",
+                    "model": "deepseek-flash",
                     "harnessVersion": "synthetic",
                     "updatedAt": "2026-09-21T08:00:00+08:00",
                     "usageDetail": null
@@ -53496,7 +55820,7 @@
                     "candidateDeliverableId": null,
                     "allowedActions": [],
                     "provider": "synthetic",
-                    "model": "synthetic",
+                    "model": "deepseek-flash",
                     "harnessVersion": "synthetic",
                     "updatedAt": "2026-09-21T08:00:00+08:00",
                     "usageDetail": null
@@ -54269,7 +56593,7 @@
                     "candidateDeliverableId": null,
                     "allowedActions": [],
                     "provider": "synthetic",
-                    "model": "synthetic",
+                    "model": "deepseek-flash",
                     "harnessVersion": "synthetic",
                     "updatedAt": "2026-09-21T08:00:00+08:00",
                     "usageDetail": null
@@ -55306,7 +57630,7 @@
                     "candidateDeliverableId": null,
                     "allowedActions": [],
                     "provider": "synthetic",
-                    "model": "synthetic",
+                    "model": "deepseek-flash",
                     "harnessVersion": "synthetic",
                     "updatedAt": "2026-09-21T08:00:00+08:00",
                     "usageDetail": null
@@ -62984,7 +65308,7 @@
                     "candidateDeliverableId": null,
                     "allowedActions": [],
                     "provider": "synthetic",
-                    "model": "synthetic",
+                    "model": "deepseek-flash",
                     "harnessVersion": "synthetic",
                     "updatedAt": "2026-09-21T08:00:00+08:00",
                     "usageDetail": null

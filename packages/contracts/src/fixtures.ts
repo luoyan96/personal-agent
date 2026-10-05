@@ -53,6 +53,7 @@ function sample(s: JsonShape, key = ''): unknown {
   if (s.type === 'array') return Array.from({ length: s.minItems ?? 0 }, () => sample(s.items!))
   if (s.type === 'boolean') return false
   if (s.type === 'integer' || s.type === 'number') return s.minimum ?? ((s.exclusiveMinimum ?? 0) + 1)
+  if (key === 'model') return 'deepseek-flash'
   if (key === 'timezone') return 'Asia/Shanghai'
   if (s.format === 'date') return '2026-09-21'
   if (s.format === 'date-time') return at
