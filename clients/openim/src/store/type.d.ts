@@ -43,6 +43,7 @@ export type ConversationListUpdateType = "push" | "filter";
 export interface ConversationStore {
   conversationList: ConversationItem[];
   currentConversation?: ConversationItem;
+  selectingConversationID?: string;
   unReadCount: number;
   currentGroupInfo?: GroupItem;
   currentMemberInGroup?: GroupMemberItem;
@@ -54,12 +55,19 @@ export interface ConversationStore {
   updateCurrentConversation: (
     conversation?: ConversationItem,
     isJump?: boolean,
+    canCommit?: () => boolean,
   ) => Promise<void>;
   getUnReadCountByReq: () => Promise<number>;
   updateUnReadCount: (count: number) => void;
-  getCurrentGroupInfoByReq: (groupID: string) => Promise<void>;
+  getCurrentGroupInfoByReq: (
+    groupID: string,
+    canCommit?: () => boolean,
+  ) => Promise<void>;
   updateCurrentGroupInfo: (groupInfo: GroupItem) => void;
-  getCurrentMemberInGroupByReq: (groupID: string) => Promise<void>;
+  getCurrentMemberInGroupByReq: (
+    groupID: string,
+    canCommit?: () => boolean,
+  ) => Promise<void>;
   setCurrentMemberInGroup: (memberInfo?: GroupMemberItem) => void;
   tryUpdateCurrentMemberInGroup: (member: GroupMemberItem) => void;
   clearConversationStore: () => void;

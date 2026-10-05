@@ -135,23 +135,27 @@ const ChatFooter = () => {
           getSoundMessage={getSoundMessage}
         />
         {composer.controls}
-        {composer.isCoordinator && !getCleanText(html) && (
-          <div className="flex flex-wrap gap-2 px-3 py-1 text-xs">
-            {["文献梳理", "数据分析", "论文修改"].map((label) => (
-              <Button
-                size="small"
-                key={label}
-                disabled={pending}
-                onClick={() => {
-                  if (!getCleanText(latestHtml.current))
-                    onChange(
-                      `我想完成${label}。请先向我确认目标、已有材料、交付形式与验收要求，再提出协作安排。`,
-                    );
-                }}
-              >
-                {label}
-              </Button>
-            ))}
+        {composer.isCoordinator && !html && (
+          <div className="px-3 py-1 text-xs">
+            <p className="mb-1 text-slate-600">目标 · 材料 · 交付 · 截止时间</p>
+            <div className="flex flex-wrap gap-2">
+              {["文献梳理", "数据分析", "论文修改"].map((label) => (
+                <Button
+                  size="small"
+                  key={label}
+                  disabled={pending}
+                  title="只填入草稿，请修改后发送"
+                  onClick={() => {
+                    if (!latestHtml.current && !drafts.current.get(imID))
+                      onChange(
+                        `我想完成${label}。目标：待补充；已有材料：待补充；希望交付：待补充；截止时间：待确认。请先帮我明确需求，再提出供我确认的协作安排。`,
+                      );
+                  }}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
           </div>
         )}
         <div className="relative flex flex-1 flex-col overflow-hidden">

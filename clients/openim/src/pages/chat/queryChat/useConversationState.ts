@@ -1,5 +1,6 @@
 import { useLatest, useUpdateEffect } from "ahooks";
 import { useCallback, useEffect, useRef } from "react";
+import { useParams } from "react-router-dom";
 
 import { IMSDK } from "@/layout/MainContentWrap";
 import { useResearchStore } from "@/research/store";
@@ -7,6 +8,8 @@ import { useConversationStore, useUserStore } from "@/store";
 import { feedbackToast } from "@/utils/common";
 
 export default function useConversationState() {
+  const { conversationID } = useParams();
+  const latestRouteID = useLatest(conversationID);
   const sdkReady = useUserStore(
     (state) =>
       !state.isLogining &&
@@ -24,7 +27,12 @@ export default function useConversationState() {
 
   const checkConversationState = useCallback(() => {
     const conversation = latestCurrentConversation.current;
-    if (!conversation || !latestSdkReady.current) return;
+    if (
+      !conversation ||
+      conversation.conversationID !== latestRouteID.current ||
+      !latestSdkReady.current
+    )
+      return;
 
     if (conversation.unreadCount > 0) {
       const generation = useResearchStore.getState().generation;
@@ -44,7 +52,7 @@ export default function useConversationState() {
         },
       );
     }
-  }, [latestCurrentConversation, latestSdkReady]);
+  }, [latestCurrentConversation, latestSdkReady, latestRouteID]);
 
   const throttleCheckConversationState = useCallback(() => {
     clearTimeout(throttleTimer.current);

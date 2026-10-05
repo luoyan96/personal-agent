@@ -8,6 +8,8 @@ type State = {
   refreshSequence: number;
   session?: ResponseFor<"imSession">["data"];
   actor?: ResponseFor<"session">["data"];
+  // The RAP actor paired with this IM session, distinct from later actor refreshes.
+  sessionActorId?: string;
   contacts: ResponseFor<"imContacts">["data"]["contacts"];
   mappings: ResponseFor<"imConversations">["data"]["conversations"];
   // A real SDK GetOneConversation result keeps the fixed entry available before
@@ -30,8 +32,15 @@ export const useResearchStore = create<State>((set) => ({
   coordinatorPinPending: false,
   error: "",
   setSession: (session, actor) =>
-    set((state) => ({ session, actor, error: "", coordinatorConversation: undefined,
-      coordinatorPinPending: false, generation: state.generation + 1 })),
+    set((state) => ({
+      session,
+      actor,
+      sessionActorId: actor.member.id,
+      error: "",
+      coordinatorConversation: undefined,
+      coordinatorPinPending: false,
+      generation: state.generation + 1,
+    })),
   refresh: async () => {
     const generation = useResearchStore.getState().generation;
     const sequence = useResearchStore.getState().refreshSequence + 1;
@@ -70,6 +79,7 @@ export const useResearchStore = create<State>((set) => ({
       generation: state.generation + 1,
       session: undefined,
       actor: undefined,
+      sessionActorId: undefined,
       contacts: [],
       mappings: [],
       coordinatorConversation: undefined,

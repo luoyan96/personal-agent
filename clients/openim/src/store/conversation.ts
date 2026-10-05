@@ -12,8 +12,10 @@ import { conversationSort, isGroupSession } from "@/utils/imCommon";
 
 import { ConversationListUpdateType, ConversationStore } from "./type";
 import { useUserStore } from "./user";
+import { useResearchStore } from "@/research/store";
 
 const CONVERSATION_SPLIT_COUNT = 500;
+let selectionSequence = 0;
 
 export const useConversationStore = create<ConversationStore>()((set, get) => ({
   conversationList: [],
@@ -48,7 +50,8 @@ export const useConversationStore = create<ConversationStore>()((set, get) => ({
     const idx = list.findIndex(
       (c) => c.conversationID === get().currentConversation?.conversationID,
     );
-    if (idx > -1) get().updateCurrentConversation(list[idx]);
+    // A same-conversation SDK refresh must not supersede a pending user selection.
+    if (idx > -1) set({ currentConversation: { ...list[idx] } });
 
     if (type === "filter") {
       set((state) => ({
@@ -67,10 +70,24 @@ export const useConversationStore = create<ConversationStore>()((set, get) => ({
 
     set(() => ({ conversationList: conversationSort([...list, ...filterArr]) }));
   },
-  updateCurrentConversation: async (conversation?: ConversationItem) => {
+  updateCurrentConversation: async (
+    conversation?: ConversationItem,
+    _isJump?: boolean,
+    canCommit = () => true,
+  ) => {
+    const sequence = ++selectionSequence;
+    const generation = useResearchStore.getState().generation;
+    const userID = useUserStore.getState().selfInfo.userID;
+    const isCurrent = () =>
+      canCommit() &&
+      sequence === selectionSequence &&
+      generation === useResearchStore.getState().generation &&
+      userID === useUserStore.getState().selfInfo.userID;
+    if (!isCurrent()) return;
     if (!conversation) {
       set(() => ({
         currentConversation: undefined,
+        selectingConversationID: undefined,
         quoteMessage: undefined,
         currentGroupInfo: undefined,
         currentMemberInGroup: undefined,
@@ -78,14 +95,22 @@ export const useConversationStore = create<ConversationStore>()((set, get) => ({
       return;
     }
     const prevConversation = get().currentConversation;
+    set({ selectingConversationID: conversation.conversationID });
 
     const toggleNewConversation =
       conversation.conversationID !== prevConversation?.conversationID;
-    if (toggleNewConversation && isGroupSession(conversation.conversationType)) {
-      get().getCurrentGroupInfoByReq(conversation.groupID);
-      await get().getCurrentMemberInGroupByReq(conversation.groupID);
+    try {
+      if (toggleNewConversation && isGroupSession(conversation.conversationType)) {
+        await Promise.all([
+          get().getCurrentGroupInfoByReq(conversation.groupID, isCurrent),
+          get().getCurrentMemberInGroupByReq(conversation.groupID, isCurrent),
+        ]);
+      }
+      if (!isCurrent()) return;
+      set(() => ({ currentConversation: { ...conversation } }));
+    } finally {
+      if (sequence === selectionSequence) set({ selectingConversationID: undefined });
     }
-    set(() => ({ currentConversation: { ...conversation } }));
   },
   getUnReadCountByReq: async () => {
     try {
@@ -100,21 +125,23 @@ export const useConversationStore = create<ConversationStore>()((set, get) => ({
   updateUnReadCount: (count: number) => {
     set(() => ({ unReadCount: count }));
   },
-  getCurrentGroupInfoByReq: async (groupID: string) => {
+  getCurrentGroupInfoByReq: async (groupID: string, canCommit = () => true) => {
     let groupInfo: GroupItem;
     try {
       const { data } = await IMSDK.getSpecifiedGroupsInfo([groupID]);
       groupInfo = data[0];
     } catch (error) {
+      if (!canCommit()) return;
       feedbackToast({ error, msg: t("toast.getGroupInfoFailed") });
       return;
     }
+    if (!canCommit()) return;
     set(() => ({ currentGroupInfo: { ...groupInfo } }));
   },
   updateCurrentGroupInfo: (groupInfo: GroupItem) => {
     set(() => ({ currentGroupInfo: { ...groupInfo } }));
   },
-  getCurrentMemberInGroupByReq: async (groupID: string) => {
+  getCurrentMemberInGroupByReq: async (groupID: string, canCommit = () => true) => {
     let memberInfo: GroupMemberItem;
     const selfID = useUserStore.getState().selfInfo.userID;
     try {
@@ -124,10 +151,12 @@ export const useConversationStore = create<ConversationStore>()((set, get) => ({
       });
       memberInfo = data[0];
     } catch (error) {
+      if (!canCommit()) return;
       set(() => ({ currentMemberInGroup: undefined }));
       feedbackToast({ error, msg: t("toast.getGroupMemberFailed") });
       return;
     }
+    if (!canCommit()) return;
     set(() => ({ currentMemberInGroup: memberInfo ? { ...memberInfo } : undefined }));
   },
   setCurrentMemberInGroup: (memberInfo?: GroupMemberItem) => {
@@ -143,9 +172,11 @@ export const useConversationStore = create<ConversationStore>()((set, get) => ({
     }
   },
   clearConversationStore: () => {
+    selectionSequence++;
     set(() => ({
       conversationList: [],
       currentConversation: undefined,
+      selectingConversationID: undefined,
       unReadCount: 0,
       currentGroupInfo: undefined,
       currentMemberInGroup: undefined,
