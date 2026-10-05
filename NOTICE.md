@@ -22,3 +22,7 @@ B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `
 后续完整重建采用同一固定提交的整个 React/Electron 客户端，保存在 `clients/openim`，完整原许可与 [来源记录](clients/openim/ORIGIN.md)随源码保留。它独立使用 pnpm 10，科研平台继续使用 pnpm 11；本批不以较早的 UI 子集代表完整客户端。
 
 派生 OpenIM Server 基于官方源码 `865bb89517b48493ef9b1b5d9fde87fe0cb05cc7`（`v3.8.3-patch.15`），增加发送人/平台绑定与可信回调上下文校验，原 Apache-2.0 许可及 [构建和修改说明](deploy/openim/server/README.md)保留；该补丁不变更客户端的原许可。
+
+## 2026-10-06 Agent 附件文字提取
+
+后端通过官方 npm 依赖使用 [mehmet-kozan/pdf-parse](https://github.com/mehmet-kozan/pdf-parse) 的固定版本 `2.4.5`，其安装包声明并保留 Apache-2.0 许可。`pdfjs-dist@5.4.296` 与 `@napi-rs/canvas@0.1.80` 由该版本依赖引入，解析器与平台包的完整性锁定在 `pnpm-lock.yaml`；各依赖保留自身许可。不复制上游源码，也不将附件解析等同于 OCR、联网检索或工具执行。
