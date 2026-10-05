@@ -23,18 +23,18 @@
 
 ## 代码、线上与数据位置
 
-本地当前另在完成[自然语言创建Agent](development/natural-agent-creation-brief.md)：本人个人助理中的明确创建请求将生成真实联系人和私聊，并仅在原发送页面仍有效时自动打开。契约已为0.15 / chat1.4，SQLite仍16；下表线上仍为0.14，不能把本地候选当成已部署。旧0.14普通回复 / 持久文档兼容已实测，完整CI和实际页面 / 云验收收尾中。
+当前在收尾[自然语言创建Agent](development/natural-agent-creation-brief.md)：首版f847已于21:45上线，实际保存“链研直言”及SDK私聊 / 一次真实模型回复通过；首轮自动导航失败与长人设连续聊天预算风险已定位，补救尚在本地。不能把首版创建成功当作全部闭环验收完成。最终共享代码f966完整CI457 + 2、客户端导航版类型 / Web / 四SDK资源、既有17组局部页面、5组实际父子route / 合成SDK和10组后端连续预算专项通过；合成模型不能当成厂商调用。旧0.14普通响应 / 持久文档严格兼容实测。当前准确线上如下。
 
 | 项目 | 当前事实 |
 | --- | --- |
 | 总控集成目录 | `D:/deepseek-agent/research-agent-platform-chat-integration`；操作前用 `git status` 确认目录与已有改动 |
 | 分支 | `feature/openim-client-rebuild`；最新本地 SHA 用 `git log -1` 读取，不使用其他旧克隆代替 |
-| 已上线前端 | `a25ee9bdf1601f81fce78f6028216b9aed9db792`（20:34北京时间新增三种可添加的科研聊天Agent）；后续本地交接文档提交不改变线上软件 SHA |
-| 已上线 API / worker | `68d0592de941fa0f47907ba9df6e86fddd83f250`，本批未更新；镜像 `sha256:b9ecbbe826f4fa37126c98241b082cf780c370bb828596583226e60979c216fc`；纯文本聊天与个人模型隔离，总预算仍为输入与输出合计 4000 / 90 秒 |
+| 已上线前端 | `f8478d7b171d27fd0972787ddb8e599fdc89aec5`（21:45北京时间首版自然语言创建）；本地导航1c533c0尚未发，交接文档提交不改变线上软件 SHA |
+| 已上线 API / worker | `f8478d7b171d27fd0972787ddb8e599fdc89aec5`；镜像 `sha256:1e238ea6c6b96e3475290f30a43b4aa53f14670c60438197e02bb4447eb94d4b`；纯文本聊天与个人模型隔离，总预算仍为输入与输出合计 4000 / 90 秒 |
 | 新站 | `https://chat.acceptcat.com`，文件 `https://files.chat.acceptcat.com` |
 | 新 ECS | 广州 Ubuntu 22.04.5，4 vCPU / 8 GiB / 50 GiB；当前到期日 2026-11-04，未改续费设置 |
-| 运行与发布 | `/srv/research-openim`；后端 `/opt/research-openim/current` 仍指向 `/opt/research-openim/releases/68d0592de941fa0f47907ba9df6e86fddd83f250`；Nginx root 为 `/opt/research-openim/client-releases/a25ee9bdf1601f81fce78f6028216b9aed9db792/clients/openim/dist` |
-| 版本 | 契约 0.14.0、聊天 1.3.0、IM 桥 1.0.0、SQLite 迁移 016；显式迁移与激活前旧数据逐表核验通过 |
+| 运行与发布 | `/srv/research-openim`；后端 `/opt/research-openim/current` 指向 `/opt/research-openim/releases/f8478d7b171d27fd0972787ddb8e599fdc89aec5`；Nginx root 为该release下`clients/openim/dist` |
+| 版本 | 契约 0.15.0、聊天 1.4.0、IM 桥 1.0.0、SQLite 迁移 016；本批无新增迁移 |
 | 旧站 | `research.acceptcat.com` 独立保留；旧账号 / 模型配置不自动迁移，不在本轮升级范围 |
 | GitHub | 新 OpenIM 批次未推送。用户先看完成结果；不要把“本地已提交”写成“GitHub 已上传” |
 
