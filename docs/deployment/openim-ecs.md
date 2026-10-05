@@ -1,6 +1,16 @@
 # 新 ECS：OpenIM 科研微信（2026-10-05）
 
-## 最新更新：自然语言创建 Agent、自动私聊与连续回复
+## 最新更新：顶部加号和聊天扩展菜单
+
+2026-10-05 23:20北京时间，加号菜单前端 `e536e759a71f59f244d740d2bfe25f2e5812bf56` 已静态上线：顶部添加朋友 / 创建 Agent / 发起群聊，输入区图片 / 文件 / 语音展开。API / worker仍为0ea0516，契约0.15 / schema16不变；八服务与精确公网首页通过。本地九组实际组件检查、客户端类型 / Web / 四SDK资源与既有Edge八组入口打开 / 取消检查通过。媒体回调与麦克风拒绝仅本地合成，本批没有重测云文件 / 录音投递。
+
+- 新Nginx root为 `/opt/research-openim/client-releases/e536e759a71f59f244d740d2bfe25f2e5812bf56/clients/openim/dist`；后端 `/opt/research-openim/current`仍指向 `/opt/research-openim/releases/0ea0516d71d4f3c114f96ee0621ad463924a7a85`，API / worker镜像949cd650...与其余六镜像全部未变。服务运行 / 无OOM、API healthy、HTTPS ready0.15和公网精确index `ad9776effd48d619a731994b8e05dee5e4c7fe8315e0a803b711b4384fd8cdaa`实际核验。未重启容器或改数据库。
+- 外层hash `04fc169570fa6da1deb3f6f115a020807a488b26327ce536a1bf72c3ff62ac39`、执行helper `d8bd91ea0db53b3d86707941073bd19ec0e205c7b91940ebee7471474a92b65d`、source归档 `bc089883bac002a720e5b72c2d5192f89aa325175094c122dafa0c38cfbd9a44`、web归档 `d1e1f7675e346e97efaba68c6ee35afdc61c96d31ad427c721cbdbb6fd523d95`均核验。限定5成员外包、安全展开、release755 / www-data实际读index、nginx -t / reload与新旧首页守卫通过。
+- 回退配置 `/opt/research-openim/ops/plus-menus-e536e759a71f-20261005T152030Z/research-openim-production`；恢复该Nginx后 -t / reload，并核对旧首页SHA256 `7bcd46a2153093f56e69503a8c5339f66dca6d4e9409e2865dedd9a8521c76af`、ready0.15、八服务 / 全部镜像与后端current不变。只回退前端，不恢复旧数据库或迁移；原0ea后端 / schema16保持。本批成功未触发实际回退，不把helper语法核验称作恢复演练。
+- 现有Workbench正常免密登录同权限连接上传本批源码 / Web；无新SSH / 权限 / 公网端口变化。云回执在 `/root/plus-menus-e536e759a71f59f244d740d2bfe25f2e5812bf56/deployment-verified.json`及Nginx备份目录。Git外证据位于总控父目录 `.runtime/plus-menus-20261005`：`bundle-receipt.json`、`outer-verified.json`、`deployment-verified.json`、`root-verification.json`、九组本地报告、八组`live-ui-proof.json`及最终`live-plus-menus.png`。
+- 本批Edge只打开 / 取消菜单、表单和录音面板，没有新云测试账号、真实模型调用、联系人 / 群创建、云文件发送或麦克风录制。原菜单过早点击中止与本地fixture失败保留；历史云媒体证据仍为原受测版本。最终交接说明仅本地提交，不重新发布软件或推GitHub。
+
+## 上一批更新：自然语言创建 Agent、自动私聊与连续回复
 
 2026-10-05 22:25:01北京时间，最终前端 / API / worker软件`0ea0516d71d4f3c114f96ee0621ad463924a7a85`整体部署。current为`/opt/research-openim/releases/0ea0516d71d4f3c114f96ee0621ad463924a7a85`，Nginx root是该release下`clients/openim/dist`。API / worker镜像`sha256:949cd6501bdf286920db0f48b8ff23def262a534538f2226e010537667a45ac8`，其他六镜像未变；八服务运行 / 无OOM、API healthy / HTTPS ready0.15和schema16核验通过，没有迁移或新SSH。
 

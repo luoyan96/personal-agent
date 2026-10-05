@@ -145,3 +145,12 @@
 - 最终客户端类型 / Web构建 / 四个固定SDK资源通过。实际组件九组本地检查通过，API / SDK / 媒体均明确合成；pageerror0，React Router future、Antd WaveEffect弃用与故意旧文件拒绝日志保留。没有真人麦克风、云文件投递或新建群 / 联系人验收动作。证据在父目录 `.runtime/plus-menus-20261005/run-e79b8d07-2941-46b1-8aca-8964c3fa8d08/report.json` 和桌面 / 320px截图。
 - 原分页fixture缺nextCursor / 关系枚举错误、按钮选择器 / 嵌套Upload按钮、构建并行触发Windows wasm watcher EBUSY、fixture漏AntdGlobalComp和全局窄屏样式的中止证据均保留；修正产品的媒体单按钮后，补完整实际公共包裹才完成最终检查。不能把这些 failed 原报告改成 passed。
 - 只改完整客户端与说明，无共享契约、后端、runtime或SQLite变更，不要求重复根CI；对应后端0ea的共享CI457 + 2仍为历史证据。本节为发布候选，线上基线0ea / 949镜像 / 契约0.15 / schema16不变；静态发布完成后补确切源码和公网hash。未推GitHub。
+
+
+## 2026-10-05：加号菜单静态上线与Edge验收
+
+- 23:20:31北京时间，固定前端 `e536e759a71f59f244d740d2bfe25f2e5812bf56`实际上线；Nginx转到client-releases对应dist，后端0ea / API及worker949镜像、其余六镜像、schema16 / contract0.15保持。所有八服务running / 无OOM、API healthy / HTTPS ready0.15、www-data读取和公网精确index `ad9776effd48d619a731994b8e05dee5e4c7fe8315e0a803b711b4384fd8cdaa`通过。
+- 外层 / helper / 源码 / Web checksum、限定5成员展开、原后端current / 旧首页7bcd46及全部镜像守卫、nginx -t / reload / 最终新首页验证通过。Nginx备份 `/opt/research-openim/ops/plus-menus-e536e759a71f-20261005T152030Z/research-openim-production`；仅静态回退流程，保留现有数据库，不套用旧015恢复。没有迁移、容器重建、SSH授权、端口调整或GitHub推送。
+- 用户现有正常Edge登录的八组菜单验证完成：顶部三项、准确用户名查找自动聚焦、创建表单打开 / 取消刷新、实际建群选人窗、Agent私聊三媒体卡、语音控件显示 / 关闭。只打开 / 取消，没有创建联系人 / 群、发消息、调用模型、发送文件或真人麦克风。首次刷新后菜单选择过早中止保留；等待现有页面就绪再展开通过。代理Workbench已关闭，用户原终端保留，真实Agent页面保留两处菜单作为交付。
+- 本批最终客户端类型 / Web / 四SDK资源、本地九组合成API / SDK / 媒体检查与实际线上入口证据分别记录；pageerror0仅指本地报告，不冒称本轮云console全零。API对应根CI457 + 2是历史已通过证据，本批未重跑。旧fixture / watcher / 嵌套按钮失败均保留，真实媒体、原生客户端与自动科研执行范围没有扩大。
+- 总控父目录 `.runtime/plus-menus-20261005` 保存bundle / outer / deployment、root-verification、九组最终报告及八组live-ui-proof，最终截图 `live-plus-menus.png`。README、current-state、客户端与ECS说明同步，文档收尾仅本地提交，不改变e536软件归档。下一批继续自然聊天与已有联系人体验，需求编排暂缓；真实云媒体如后续改逻辑须另验。
