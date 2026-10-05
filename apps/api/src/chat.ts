@@ -10,11 +10,14 @@ import { personalModelRuntime } from './personal-models.js'
 import type { Config } from './config.js'
 import { fail } from './errors.js'
 import { ContactDirectory, directoryCommands } from './contact-directory.js'
+import { fileReadMetadata } from './agent-files.js'
+import type { FileDocument, ParsedAgentFile } from './agent-files.js'
+import type { AgentFileSelection } from '@research-agent-platform/contracts'
 import { isAgentCreationCommand, legacyTurnDocument } from './agent-creation.js'
 
 export type ChatCommand = keyof typeof chatRoutes | 'imCreateGroup' | 'imInviteContact'
 type Resource = z.infer<typeof ChatResource>
-export type TurnInput = { budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED' }
+export type TurnInput = { budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED'; fileDocument?:FileDocument; fileSource?:AgentFileSelection; fileRead?:AgentTurn['fileRead'] }
 export type ChatRequest = { params: { id?: string; contactId?: string }; query: { cursor?: string; limit?: number; search?: string; afterSequence?: number; view?: 'directory'|'mine'; direction?: 'all'|'incoming'|'outgoing'; status?: 'all'|'pending'; scope?: 'private_agent'|'conversation'|'local'|'global'; scopeId?: string }; headers: { 'Idempotency-Key'?: string }; body: unknown }
 type Request = ChatRequest
 const decode = (value: unknown) => JSON.parse(String(value))
@@ -187,6 +190,7 @@ export class ChatService {
       const agent=this.contact(turn.agentContactId),message=this.projectedMessage(turn.inputMessageId)
       if(!input.dailyChat||group.kind!=='personal'||group.ownerMemberId!==this.c.actor.id||agent.identity.kind!=='personal_agent'||agent.identity.ownerMemberId!==this.c.actor.id||agent.profile.role!=='coordinator'||message.origin!=='human'||message.senderContactId!==this.human().id||!isAgentCreationCommand(message.text??''))fail('FORBIDDEN')
     }
+    if(input.fileSource)this.fileDocument(input.fileSource.messageId,group.id)
     if (exact) this.c.checkVersion(group.version, input.conversationVersion)
     if(exact && input.modelSelectionFingerprint && input.modelSelectionFingerprint!==personalModelRuntime(this.db,this.c.actor,this.config).fingerprint)fail('VERSION_CONFLICT')
     if (exact && input.agentContextFingerprint && input.agentContextFingerprint!==this.directory.modelContext(turn.agentContactId,group.id).fingerprint)fail('VERSION_CONFLICT')
@@ -225,17 +229,18 @@ export class ChatService {
   }
   materializedTurn(row:Record<string,unknown>):AgentTurn {
     const input=decode(row.request_json) as TurnInput
-    return AgentTurn.parse({...decode(row.document),...(input.purpose==='create_agent'?{purpose:'create_agent',createdAgent:input.createdAgent??null,...(input.creationFailure?{failure:input.creationFailure}:{})}:{})})
+    return AgentTurn.parse({...decode(row.document),...(input.fileRead?{fileRead:input.fileRead}:{}),...(input.purpose==='create_agent'?{purpose:'create_agent',createdAgent:input.createdAgent??null,...(input.creationFailure?{failure:input.creationFailure}:{})}:{})})
   }
   saveTurn(turn: AgentTurn) {
     const input=decode(this.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(turn.id)!.request_json) as TurnInput
+    if(turn.fileRead)input.fileRead=turn.fileRead
     if(turn.purpose==='create_agent') {input.purpose='create_agent';input.createdAgent=turn.createdAgent??null;input.creationFailure=turn.failure==='AGENT_LIMIT_REACHED'?'AGENT_LIMIT_REACHED':undefined}
     this.db.prepare('UPDATE chat_turns SET status=?,document=?,request_json=? WHERE id=?').run(turn.status,encode(legacyTurnDocument(turn)),encode(input),turn.id)
   }
   message(groupId: string, value: Omit<ChatMessage, 'id' | 'conversationId' | 'sequence' | 'createdAt'>) {
     const group = this.rawConversation(groupId)
     const message = ChatMessage.parse({ ...value, id: randomUUID(), conversationId: groupId, sequence: group.lastSequence + 1, createdAt: instant() })
-    this.db.prepare('INSERT INTO chat_messages VALUES (?,?,?,?)').run(message.id, groupId, message.sequence, encode(message))
+    this.db.prepare('INSERT INTO chat_messages VALUES (?,?,?,?)').run(message.id, groupId, message.sequence, encode(legacyChatMessage(message)))
     group.lastSequence++; group.updatedAt = message.createdAt; this.saveConversation(group)
     return message
   }
@@ -243,9 +248,35 @@ export class ChatService {
     const row = this.db.prepare('SELECT document FROM chat_messages WHERE id=?').get(id); if (!row) fail('NOT_FOUND')
     const m = ChatMessage.parse(decode(row.document)); this.conversation(m.conversationId, false)
     if (m.origin === 'model' && m.turnId) this.checkTurnInput(m.turnId, false)
+    if(m.origin==='human'){const source=this.fileDocumentForMessage(m.id,m.conversationId);if(source)m.files=[source.metadata]}
     m.resources = m.resources.filter(ref => { try { this.checkResource(ref, m.conversationId); return true } catch { return false } })
     m.actionIds = m.actionIds.filter(actionId => { try { this.action(actionId); return true } catch { return false } })
     return m
+  }
+  assertDailyConversation(id:string){
+    const group=this.conversation(id,false),agents=group.members.filter(m=>m.status==='joined'&&this.contact(m.contactId).identity.kind!=='human')
+    if(group.kind==='group'||agents.length!==1||!group.members.some(m=>m.contactId===this.human().id&&m.status==='joined'))fail('FORBIDDEN')
+    this.joinedAgent(group,agents[0]!.contactId)
+    return group
+  }
+  fileDocumentForMessage(messageId:string,conversationId:string):FileDocument|undefined{
+    this.conversation(conversationId,false)
+    const message=this.db.prepare('SELECT document FROM chat_messages WHERE id=? AND conversation_id=?').get(messageId,conversationId)
+    if(!message)return undefined
+    const raw=ChatMessage.parse(decode(message.document))
+    if(raw.origin!=='human'||raw.senderContactId!==this.human().id)return undefined
+    const rows=this.db.prepare("SELECT request_json FROM chat_turns WHERE json_extract(document,'$.inputMessageId')=? AND conversation_id=? AND owner_id=? ORDER BY rowid").all(messageId,conversationId,this.c.actor.id)
+    for(const row of rows){const document=(decode(row.request_json) as TurnInput).fileDocument;if(document?.metadata.messageId===messageId)return document}
+    return undefined
+  }
+  fileDocument(messageId:string,conversationId:string):FileDocument{
+    const document=this.fileDocumentForMessage(messageId,conversationId);if(!document)fail('NOT_FOUND');return document
+  }
+  dailyFileSource(conversationId:string,selection?:AgentFileSelection):AgentFileSelection|undefined{
+    if(selection){this.fileDocument(selection.messageId,conversationId);return selection}
+    const rows=this.db.prepare('SELECT request_json FROM chat_turns WHERE conversation_id=? AND owner_id=? ORDER BY rowid DESC LIMIT 100').all(conversationId,this.c.actor.id)
+    for(const row of rows){const input=decode(row.request_json) as TurnInput;if(input.fileDocument){this.fileDocument(input.fileDocument.metadata.messageId,conversationId);return {messageId:input.fileDocument.metadata.messageId}}}
+    return undefined
   }
   action(id: string) {
     const row = this.db.prepare('SELECT * FROM chat_actions WHERE id=?').get(id); if (!row) fail('NOT_FOUND')
@@ -371,15 +402,16 @@ export class ChatService {
     else if (name === 'decideChatInvitation') this.invitation(id!)
     else if (id) {const group=this.conversation(id, false);if(name==='imInviteContact'&&(group.kind!=='group'||group.ownerMemberId!==this.c.actor.id))fail('FORBIDDEN')}
   }
-  run(name: ChatCommand, req: Request): unknown {
+  run(name: ChatCommand, req: Request, parsedFile?:ParsedAgentFile, onlyCached=false): unknown {
     this.ensureContacts(); this.authorize(name, req)
+    if(name==='agentFileMessage')this.assertDailyConversation(req.params.id!)
     const route = routes[name], resource = req.params.id ?? this.c.actor.labId, key = req.headers['Idempotency-Key'], fingerprint = hash(canonical(req))
     const cached = route.idempotent ? this.db.prepare('SELECT request_hash,response_json FROM idempotency_results WHERE actor_id=? AND command=? AND resource_id=? AND key=?').get(this.c.actor.id, name, resource, key!) : null
     if (cached) {
       if (cached.request_hash !== fingerprint) fail('IDEMPOTENCY_CONFLICT')
       const previous = decode(cached.response_json)
       const directoryReplay=this.directory.replay(name,previous);if(directoryReplay)return route.response.parse(directoryReplay)
-      if (name === 'sendChatMessage'||name==='agentChatMessage') {const message=this.projectedMessage(previous.data.message.id);return route.response.parse({ data: { message, turn: message.turnId ? this.turn(message.turnId) : null } })}
+      if (name === 'sendChatMessage'||name==='agentChatMessage'||name==='agentFileMessage') {const message=this.projectedMessage(previous.data.message.id);return route.response.parse({ data: { message, turn: message.turnId ? this.turn(message.turnId) : null } })}
       if (name === 'personalConversation') return { data: { conversation: this.conversation(previous.data.conversation.id), agent: this.contact(previous.data.agent.id) } }
       if (name === 'createDirectConversation' || name === 'imCreateGroup' || name === 'imInviteContact') return { data: this.conversation(previous.data.id) }
       if (name === 'markChatRead' || name === 'updateChatPreferences') return { data: this.viewerState(this.conversation(req.params.id!, false)) }
@@ -387,11 +419,12 @@ export class ChatService {
       if (name === 'retryChatTurn' || name === 'cancelChatTurn') return { data: this.turn(previous.data.id) }
       return route.response.parse(previous)
     }
-    const response = route.response.parse(this.handle(name, req))
+    if(onlyCached)return null
+    const response = route.response.parse(this.handle(name, req,parsedFile))
     if (route.idempotent) this.db.prepare('INSERT INTO idempotency_results VALUES (?,?,?,?,?,?,?,?)').run(this.c.actor.id, name, resource, key!, fingerprint, encode(response), route.status, instant())
     return response
   }
-  handle(name: ChatCommand, req: Request): unknown {
+  handle(name: ChatCommand, req: Request, parsedFile?:ParsedAgentFile): unknown {
     const id = req.params.id!, b = req.body
     if((directoryCommands as readonly string[]).includes(name))return this.directory.handle(name,req)
     if(name==='imCreateGroup'){
@@ -470,11 +503,11 @@ export class ChatService {
       if (req.query.cursor && req.query.afterSequence !== undefined) fail('VALIDATION_ERROR')
       return this.page(name, { ...req.query, search: id }, this.db.prepare('SELECT id FROM chat_messages WHERE conversation_id=? AND sequence>? ORDER BY sequence').all(id, req.query.afterSequence ?? 0).map(r => String(r.id)), id => this.projectedMessage(id))
     }
-    if (name === 'sendChatMessage'||name==='agentChatMessage') {
+    if (name === 'sendChatMessage'||name==='agentChatMessage'||name==='agentFileMessage') {
       const group=this.conversation(id)
       const agents=group.members.filter(m=>m.status==='joined'&&this.contact(m.contactId).identity.kind!=='human')
-      if(name==='agentChatMessage'&&(group.kind==='group'||agents.length!==1))fail('FORBIDDEN')
-      const input = SendChatMessage.parse(name==='agentChatMessage'?{text:(b as {text:string}).text,intent:'ask_agent',agentContactId:agents[0]!.contactId,budget:{maxTokens:4000,maxSeconds:90}}:b)
+      if(name!=='sendChatMessage'&&(group.kind==='group'||agents.length!==1))fail('FORBIDDEN')
+      const input = SendChatMessage.parse(name!=='sendChatMessage'?{text:(b as {text?:string}).text??'请阅读这个附件，概括要点并说明阅读范围。',intent:'ask_agent',agentContactId:agents[0]!.contactId,budget:{maxTokens:4000,maxSeconds:90}}:b)
       if (!group.members.some(m => m.contactId === this.human().id && m.status === 'joined')) fail('FORBIDDEN')
       for (const mention of input.mentions) {
         const contact = this.contact(mention.contactId)
@@ -484,10 +517,14 @@ export class ChatService {
       if (input.intent === 'ask_agent') this.joinedAgent(group, input.agentContactId!)
       const message = this.message(id, { senderContactId: this.human().id, origin: 'human', text: input.text, mentions: input.mentions, resources: input.context, actionIds: [], turnId: null })
       const agent=input.agentContactId?this.contact(input.agentContactId):null
-      const purpose=name==='agentChatMessage'&&group.kind==='personal'&&group.ownerMemberId===this.c.actor.id&&agent?.identity.kind==='personal_agent'&&agent.identity.ownerMemberId===this.c.actor.id&&agent.profile.role==='coordinator'&&isAgentCreationCommand(input.text)?'create_agent' as const:undefined
-      const turn = input.intent === 'ask_agent' ? this.newTurn(group, message, input.agentContactId!, { budget: input.budget!, context: input.context, conversationVersion: group.version, inputSequence: message.sequence,dailyChat:name==='agentChatMessage',...(purpose?{purpose}:{}) }) : null
-      if (turn) { message.turnId = turn.id; this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(message), message.id) }
-      return { data: { message, turn } }
+      const purpose=name==='agentChatMessage'&&!(b as {fileSelection?:AgentFileSelection}).fileSelection&&group.kind==='personal'&&group.ownerMemberId===this.c.actor.id&&agent?.identity.kind==='personal_agent'&&agent.identity.ownerMemberId===this.c.actor.id&&agent.profile.role==='coordinator'&&isAgentCreationCommand(input.text)?'create_agent' as const:undefined
+      let fileSource=name==='agentFileMessage'?{messageId:message.id}:name==='agentChatMessage'&&!purpose?this.dailyFileSource(group.id,(b as {fileSelection?:AgentFileSelection}).fileSelection):undefined
+      const fileDocument=name==='agentFileMessage'&&parsedFile?{...parsedFile,metadata:{...parsedFile.metadata,messageId:message.id}}:undefined
+      if(name==='agentFileMessage'&&!fileDocument)fail('INVALID_STATE')
+      if(fileSource){const document=fileDocument??this.fileDocument(fileSource.messageId,group.id);const questionPages=[...input.text.matchAll(/第\s*(\d+)\s*页|\bpage\s+(\d+)/gi)].map(match=>Number(match[1]??match[2]));const numbers=fileSource.pageNumbers??(questionPages.length?[...new Set(questionPages)]:undefined);if(numbers?.some(n=>!document.pages.some(page=>page.pageNumber===n)))fail('FILE_PAGE_UNAVAILABLE');fileSource={...fileSource,...(numbers?{pageNumbers:numbers}:{} )}}
+      const turn = input.intent === 'ask_agent' ? this.newTurn(group, message, input.agentContactId!, { budget: input.budget!, context: input.context, conversationVersion: group.version, inputSequence: message.sequence,dailyChat:name!=='sendChatMessage',...(purpose?{purpose}:{}),...(fileDocument?{fileDocument}:{}),...(fileSource?{fileSource,fileRead:fileReadMetadata(fileDocument??this.fileDocument(fileSource.messageId,group.id))}:{}) }) : null
+      if (turn) { message.turnId = turn.id; this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(legacyChatMessage(message)), message.id) }
+      return { data: { message:this.projectedMessage(message.id), turn } }
     }
     if (name === 'chatTurn') return { data: this.turn(id) }
     if (name === 'cancelChatTurn') {
@@ -510,7 +547,7 @@ export class ChatService {
       const projected=this.turn(id);if(!projected.allowedActions.includes('retry'))fail('INVALID_STATE')
       const message = this.projectedMessage(turn.inputMessageId)
       const retried=this.newTurn(group,message,turn.agentContactId,{...input,budget:body.budget,conversationVersion:group.version},String(row.root_id))
-      message.turnId=retried.id;this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(message),message.id)
+      message.turnId=retried.id;this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(legacyChatMessage(message)),message.id)
       return { data: retried }
     }
     if (name === 'chatActions') return this.page(name, { ...req.query, search: id }, this.db.prepare('SELECT id FROM chat_actions WHERE conversation_id=? ORDER BY rowid DESC').all(id).map(r => String(r.id)), id => this.action(id))
@@ -568,3 +605,5 @@ export class ChatService {
     fail('NOT_IMPLEMENTED')
   }
 }
+
+export function legacyChatMessage(message:ChatMessage){const {files:_files,...document}=message;return document}

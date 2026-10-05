@@ -21,6 +21,7 @@ import { register } from './registration.js'
 import { personalModelCommands, runPersonalModel } from './personal-models.js'
 import { isLabManager, managerInvites, createManagerInvite, revokeManagerInvite } from './invite-management.js'
 import { labAiRuntime, labAiSettings, updateLabAiSettings } from './lab-ai-settings.js'
+import { extractAgentFile } from './agent-files.js'
 import { ChatService } from './chat.js'
 import type { ChatCommand } from './chat.js'
 import { reconcileChat } from './chat-worker.js'
@@ -47,7 +48,8 @@ export function createServer(config: Config, options:{imClient?:OpenImClient}={}
   app.addHook('onSend', async (_request, reply) => { reply.header('Cache-Control', 'no-store'); reply.header('X-Contract-Version', contractVersion); reply.header('X-Content-Type-Options', 'nosniff') })
   const authValidationMessages={username:'用户名只能使用字母、数字、下划线或短横线，长度为 1 到 100 个字符。',password:'密码至少需要 8 个字符。',inviteCode:'请输入有效的邀请码。',displayName:'请输入 1 到 200 个字符的显示名称。'} satisfies Record<AuthValidationField,string>
   function error(code: keyof typeof errorStatus, requestId: string, field?:AuthValidationField) {
-    const message=code==='VALIDATION_ERROR'?(field?authValidationMessages[field]:'请检查填写内容和请求格式。'):code==='NOT_IMPLEMENTED'?'Endpoint is not implemented in B3.':'Request could not be completed.'
+    const fileErrors:Partial<Record<keyof typeof errorStatus,string>>={FILE_UNSUPPORTED:'仅支持 PDF、UTF8 txt、md 或 csv 文件。',FILE_TOO_LARGE:'文件不能超过 10 MiB。',FILE_INVALID_ENCODING:'文本文件必须为有效的 UTF8 编码。',FILE_ENCRYPTED:'无法读取加密 PDF，请解密后重新发送。',FILE_NO_TEXT:'文件没有可提取的文字；扫描 PDF 需要先做 OCR。',FILE_PARSE_FAILED:'文件损坏或无法解析，请换一个文件。',FILE_PARSE_TIMEOUT:'文件解析超时，请减少页数后重试。',FILE_EXTRACTION_LIMIT:'文件超过 200 页、20 万字符或解析资源上限。',FILE_PAGE_UNAVAILABLE:'选择的页码不在这个附件中。'}
+    const message=fileErrors[code]??(code==='VALIDATION_ERROR'?(field?authValidationMessages[field]:'请检查填写内容和请求格式。'):code==='NOT_IMPLEMENTED'?'Endpoint is not implemented in B3.':'Request could not be completed.')
     return ErrorResponse.parse({ error: { code, message, requestId } })
   }
   app.get('/api/v1/health/live', async () => data(Health).parse({ data: { status: 'ok', contractVersion, checks: { database: 'not_checked', storage: 'not_checked', authentication: 'not_checked', harness: 'not_verified' } } }))
@@ -72,7 +74,7 @@ export function createServer(config: Config, options:{imClient?:OpenImClient}={}
   })
   for (const [name, route] of Object.entries(routes)) {
     if (route.stage === 'B0') continue
-    app.route({ method: route.method, url: route.path.replace(/\{(\w+)\}/g, ':$1'), ...(name==='upload'?{bodyLimit:14000000}:name==='register'?{bodyLimit:8192}:{}), handler: async (request, reply) => {
+    app.route({ method: route.method, url: route.path.replace(/\{(\w+)\}/g, ':$1'), ...((name==='upload'||name==='agentFileMessage')?{bodyLimit:14000000}:name==='register'?{bodyLimit:8192}:{}), handler: async (request, reply) => {
       if (!route.implemented && name !== 'planRequest') fail('NOT_IMPLEMENTED')
       if (route.method !== 'GET' && request.headers.origin !== config.origin) fail('FORBIDDEN')
       const connection = database()
@@ -81,7 +83,8 @@ export function createServer(config: Config, options:{imClient?:OpenImClient}={}
       const query = { ...request.query as Record<string, unknown> }
       if ('limit' in query && typeof query.limit === 'string' && /^\d+$/.test(query.limit)) query.limit = Number(query.limit)
       if ('afterSequence' in query && typeof query.afterSequence === 'string' && /^\d+$/.test(query.afterSequence)) query.afterSequence = Number(query.afterSequence)
-      if(name==='upload' && typeof (request.body as {contentBase64?:unknown})?.contentBase64==='string' && (request.body as {contentBase64:string}).contentBase64.length>13981016) fail('PAYLOAD_TOO_LARGE')
+      if((name==='upload'||name==='agentFileMessage') && typeof (request.body as {contentBase64?:unknown})?.contentBase64==='string' && (request.body as {contentBase64:string}).contentBase64.length>13981016) fail(name==='agentFileMessage'?'FILE_TOO_LARGE':'PAYLOAD_TOO_LARGE')
+      if(name==='agentFileMessage'&&typeof (request.body as {mediaType?:unknown})?.mediaType==='string'&&!['application/pdf','text/plain','text/markdown','text/csv'].includes((request.body as {mediaType:string}).mediaType))fail('FILE_UNSUPPORTED')
       const parsed = route.request.safeParse({ params: request.params, query, headers: route.idempotent ? { 'Idempotency-Key': request.headers['idempotency-key'] } : {}, body: route.method === 'GET' ? null : request.body })
       if (!parsed.success) {
         const field=['login','register'].includes(name)?parsed.error.issues.find(issue=>issue.path[0]==='body'&&typeof issue.path[1]==='string'&&Object.hasOwn(authValidationMessages,issue.path[1]))?.path[1] as AuthValidationField|undefined:undefined
@@ -98,6 +101,16 @@ export function createServer(config: Config, options:{imClient?:OpenImClient}={}
           const actor = authenticate(connection, loggedIn.token)
           return routes.login.response.parse({ data: new Collaboration(connection, actor).member(loggedIn.memberId) })
         })
+      }
+      if(name==='agentFileMessage'){
+        const input=parsed.data as RequestFor<'agentFileMessage'>
+        const authorized=()=>{const actor=authenticate(connection,token);requireCsrf(actor,request.headers['x-csrf-token']);const runtime=labAiRuntime(connection,actor.labId,config);return new ChatService(new Collaboration(connection,actor,config.blobRoot,runtime),config)}
+        const initial=transaction(connection,()=>{const chat=authorized();return {cached:chat.run('agentFileMessage',input,undefined,true)}})
+        if(initial.cached)return routes.agentFileMessage.response.parse(initial.cached)
+        const controller=new AbortController();request.raw.once('aborted',()=>controller.abort());reply.raw.once('close',()=>{if(!reply.raw.writableEnded)controller.abort()})
+        const extraction=await extractAgentFile(input.body,controller.signal)
+        if(controller.signal.aborted)fail('INVALID_STATE')
+        return transaction(connection,()=>{const chat=authorized();const result=chat.run('agentFileMessage',input,extraction);reconcileChat(connection,config);return result})
       }
       if(route.stage==='IM1'&&!route.idempotent){
         const reauthorize=()=>authenticate(connection,token)
@@ -145,7 +158,7 @@ export function createServer(config: Config, options:{imClient?:OpenImClient}={}
   app.setNotFoundHandler((request, reply) => reply.code(404).send(error('NOT_FOUND', request.id)))
   app.setErrorHandler((err, request, reply) => {
     const status = (err as { statusCode?: number }).statusCode
-    const code = err instanceof ApiError ? err.code : status === 413 ? 'PAYLOAD_TOO_LARGE' : status === 400 || status === 415 ? 'VALIDATION_ERROR' : (err as { code?: string }).code === 'ERR_SQLITE_ERROR' && /locked|busy/i.test(String(err)) ? 'SERVICE_UNAVAILABLE' : 'INTERNAL_ERROR'
+    const code = err instanceof ApiError ? err.code : status === 413 ? request.url.includes('/agent-files')?'FILE_TOO_LARGE':'PAYLOAD_TOO_LARGE' : status === 400 || status === 415 ? 'VALIDATION_ERROR' : (err as { code?: string }).code === 'ERR_SQLITE_ERROR' && /locked|busy/i.test(String(err)) ? 'SERVICE_UNAVAILABLE' : 'INTERNAL_ERROR'
     if (code === 'RATE_LIMITED') reply.header('Retry-After', '900')
     reply.code(errorStatus[code]).send(error(code, request.id,err instanceof ApiError?err.validationField:undefined))
   })

@@ -42,6 +42,6 @@ export function applyAgentCreation(s:ChatService,turnId:string,generated:z.infer
 // Existing 0.14 workers/clients have strict schemas. New metadata belongs in
 // request_json; even a new limit code has a legacy-compatible persisted failure.
 export function legacyTurnDocument(turn:AgentTurn) {
-  const {purpose:_purpose,createdAgent:_createdAgent,...document}=turn
+  const {purpose:_purpose,createdAgent:_createdAgent,fileRead:_fileRead,...document}=turn
   return {...document,failure:document.failure==='AGENT_LIMIT_REACHED'?'INVALID_MODEL_OUTPUT':document.failure}
 }

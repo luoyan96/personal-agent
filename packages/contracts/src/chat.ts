@@ -32,7 +32,7 @@ export const AgentFileMediaType = z.enum(['application/pdf','text/plain','text/m
 export const AgentFileMetadata = z.strictObject({messageId:Id,filename:z.string().min(1).max(200),mediaType:AgentFileMediaType,byteLength:z.number().int().min(1).max(10485760),sha256:z.string().regex(/^[a-f0-9]{64}$/),pageCount:z.number().int().min(1).max(200),characterCount:z.number().int().min(1).max(200000)})
 export const AgentFileRead = AgentFileMetadata.pick({messageId:true,filename:true,pageCount:true,characterCount:true}).extend({ranges:z.array(z.strictObject({pageNumber:z.number().int().min(1).max(200),start:z.number().int().nonnegative(),end:z.number().int().positive()})).max(20),partial:z.boolean()})
 export const AgentFileSelection = z.strictObject({messageId:Id,pageNumbers:z.array(z.number().int().min(1).max(200)).min(1).max(10).optional(),query:z.string().trim().min(1).max(200).optional()})
-export const AgentFileMessage = z.strictObject({filename:z.string().min(1).max(200).regex(/^[^\\/\x00-\x1f]+$/),mediaType:AgentFileMediaType,contentBase64:z.string().min(4).max(13981016).regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/),text:Text.optional()})
+export const AgentFileMessage = z.strictObject({filename:z.string().min(1).max(200).regex(/^[^\\/\x00-\x1f]+$/),mediaType:AgentFileMediaType,contentBase64:z.string().min(4).max(13981016).regex(/^[A-Za-z0-9+/]*={0,2}$/).refine(value=>value.length%4===0,'Base64 length must be divisible by four'),text:Text.optional()})
 export type AgentFileMetadata = z.infer<typeof AgentFileMetadata>
 export type AgentFileRead = z.infer<typeof AgentFileRead>
 export type AgentFileSelection = z.infer<typeof AgentFileSelection>

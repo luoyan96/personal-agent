@@ -12,8 +12,9 @@
   },
   "dependencies": {
     "@research-agent-platform/contracts": "workspace:*",
+    "@research-agent-platform/research-core": "workspace:*",
     "fastify": "5.12.5",
-    "zod": "4.1.12",
-    "@research-agent-platform/research-core": "workspace:*"
+    "pdf-parse": "2.4.5",
+    "zod": "4.1.12"
   }
 }

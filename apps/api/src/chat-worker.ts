@@ -11,6 +11,7 @@ import { instant } from './ai.js'
 import type { Config } from './config.js'
 import { ApiError } from './errors.js'
 import { chatModelSystem, chatInputTokenBound, dailyChatSystem } from './chat-model-input.js'
+import { fileChatSystem,fileReadMetadata,selectFileExcerpts } from './agent-files.js'
 import { AgentCreationOutput, agentCreationSystem, applyAgentCreation, legacyTurnDocument } from './agent-creation.js'
 
 // Local model protocol: validated JSON, no model-side tools or business authority.
@@ -81,14 +82,16 @@ export class ChatWorker {
       const contactColumns=['id','displayName','identity','availability','profile']
       const selectedTasks=input.context.filter(ref=>ref.kind==='task').map(ref=>s.c.task(ref.ref.id))
       system=input.dailyChat?dailyChatSystem:chatModelSystem({group:group.kind==='personal'&&agentContext.agent.profile.role==='coordinator',inviteContact:group.kind==='group'&&group.ownerMemberId===s.c.actor.id,inviteTask:group.kind==='group'&&group.ownerMemberId===s.c.actor.id&&selectedTasks.some(task=>task.initiatorId===s.c.actor.id),runTask:group.kind==='group'&&selectedTasks.some(task=>task.leadId===s.c.actor.id)})
+      const document=input.fileSource?s.fileDocument(input.fileSource.messageId,group.id):undefined
+      if(document)system+=fileChatSystem
       // Lossless rows: budget selection may omit an oldest DAILY message, never
       // trim a retained message/profile/memory. Collaboration keeps its window.
-      const serialize=(selected:typeof messages,earlierMessagesOmitted=false)=>{
+      const serialize=(selected:typeof messages,earlierMessagesOmitted=false,read=document?fileReadMetadata(document):undefined,fileExcerpts:unknown[]=[])=>{
         const senderIds=[...new Set([...group.members.map(m=>m.contactId),...selected.map(m=>m.senderContactId).filter((id):id is string=>id!==null)])]
         const conversation={kind:group.kind,title:group.title,memberColumns:['sender','role','status'],members:group.members.map(m=>[senderIds.indexOf(m.contactId),m.role,m.status]),...(group.taskIds.length?{taskIds:group.taskIds}:{})}
         const messageColumns=['origin','sender','text',...(selected.some(m=>m.mentions.length)?['mentions']:[]),...(selected.some(m=>m.resources.length)?['resources']:[])]
         const messageRows=selected.map(m=>messageColumns.map(key=>key==='sender'?m.senderContactId===null?null:senderIds.indexOf(m.senderContactId):m[key as keyof typeof m]))
-        return JSON.stringify({ownerId:s.c.actor.id,labId:s.c.actor.labId,requestedAgent,conversation,contactColumns,contacts:contacts.map(c=>contactColumns.map(key=>c[key as keyof typeof c])),senderIds,messageColumns,messages:messageRows,...(agentContext.memories.length?{memories:agentContext.memories}:{}),...(context.length?{context}:{}),...(earlierMessagesOmitted?{earlierMessagesOmitted:true}:{})})
+        return JSON.stringify({ownerId:s.c.actor.id,labId:s.c.actor.labId,requestedAgent,conversation,contactColumns,contacts:contacts.map(c=>contactColumns.map(key=>c[key as keyof typeof c])),senderIds,messageColumns,messages:messageRows,...(agentContext.memories.length?{memories:agentContext.memories}:{}),...(context.length?{context}:{}),...(earlierMessagesOmitted?{earlierMessagesOmitted:true}:{}),...(read?{fileRead:read,fileExcerpts}:{})})
       }
       prompt=serialize(messages)
       if(input.dailyChat){
@@ -101,6 +104,20 @@ export class ChatWorker {
           const oldest=selected.findIndex(m=>m.id!==current.id)
           selected=selected.filter((_,i)=>i!==oldest)
           prompt=serialize(selected,true)
+        }
+        if(document){
+          const select=(rows:typeof selected)=>selectFileExcerpts(document,input.fileSource,current.text??'',system,(read,excerpts)=>serialize(rows,rows.length<messages.length,read,excerpts),input.budget.maxTokens)
+          const currentOnly=select([current])
+          const readBytes=(read:NonNullable<typeof turn.fileRead>)=>read.ranges.reduce((total,range)=>total+Buffer.byteLength(document.pages.find(page=>page.pageNumber===range.pageNumber)!.text.slice(range.start,range.end)),0)
+          const desiredBytes=Math.min(512,readBytes(currentOnly.read)),desiredOutput=Math.min(512,input.budget.maxTokens-chatInputTokenBound(system,currentOnly.prompt))
+          let result=select(selected)
+          while(selected.length>1&&(readBytes(result.read)<desiredBytes||input.budget.maxTokens-chatInputTokenBound(system,result.prompt)<desiredOutput)){
+            const oldest=selected.findIndex(message=>message.id!==current.id)
+            selected=selected.filter((_,index)=>index!==oldest);result=select(selected)
+          }
+          if(!result.read.ranges.length){turn.status='failed';turn.failure='BUDGET_EXCEEDED';turn.version++;turn.updatedAt=instant();s.saveTurn(turn);return null}
+          input.fileRead=result.read;turn.fileRead=result.read;prompt=result.prompt
+          this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(JSON.stringify(input),turn.id)
         }
       }
       }
