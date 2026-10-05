@@ -8,6 +8,7 @@ import { useConversationStore } from "@/store";
 import { researchApi, researchMode } from "./api";
 import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
+import { ResearchTurnStatus } from "./ResearchTurnStatus";
 
 export function useResearchComposer() {
   const conversation = useConversationStore((s) => s.currentConversation);
@@ -16,6 +17,8 @@ export function useResearchComposer() {
     s.mappings.find((m) => m.imConversationID === imID),
   );
   const contacts = useResearchStore((s) => s.contacts);
+  const actorGeneration = useResearchStore((s) => s.generation);
+  const manager = useResearchStore((s) => s.actor?.isLabManager || false);
   const canonical = useResearchRead(
     () =>
       researchApi("chatConversation", {
@@ -28,7 +31,11 @@ export function useResearchComposer() {
     [agentId, setAgentId] = useState(""),
     [maxTokens, setTokens] = useState(4000),
     [maxSeconds, setSeconds] = useState(90),
-    [turn, setTurn] = useState<AgentTurn>(),
+    [turnSnapshot, setTurn] = useState<{
+      generation: number;
+      imID?: string;
+      turn: AgentTurn;
+    }>(),
     [context, setContext] = useState<ChatResource[]>([]),
     [open, setOpen] = useState(false);
   const agents =
@@ -38,10 +45,14 @@ export function useResearchComposer() {
         const contact = contacts.find((c) => c.contact.id === m.contactId)?.contact;
         return contact && contact.identity.kind !== "human" ? [contact] : [];
       }) || [];
+  const turn =
+    turnSnapshot?.generation === actorGeneration && turnSnapshot.imID === imID
+      ? turnSnapshot.turn
+      : undefined;
   const turnRead = useResearchRead(
     () => researchApi("chatTurn", { params: { id: turn?.id || "" } }),
-    turn?.id || "",
-    !!turn,
+    `${imID}:${turn?.id || ""}`,
+    !!turn && turn.conversationId === mapping?.researchConversationId,
   );
   useEffect(() => {
     setContext([]);
@@ -50,7 +61,7 @@ export function useResearchComposer() {
     const peer = contacts.find((c) => c.userID === conversation?.userID)?.contact;
     setAgentId(peer && peer.identity.kind !== "human" ? peer.id : "");
     setMode(peer && peer.identity.kind !== "human" ? "ask_agent" : "chat");
-  }, [imID]);
+  }, [imID, actorGeneration]);
   const sendResearch = async (text: string) => {
     if (!researchMode || mode !== "ask_agent") return false;
     if (
@@ -59,6 +70,8 @@ export function useResearchComposer() {
       !agents.some((a) => a.id === agentId)
     )
       throw new Error("请确认当前会话权限，并选择实际已加入的 AI");
+    const generation = useResearchStore.getState().generation;
+    const memberId = useResearchStore.getState().actor?.member.id;
     const result = await researchApi("sendChatMessage", {
       params: { id: mapping.researchConversationId },
       body: {
@@ -70,8 +83,14 @@ export function useResearchComposer() {
         context,
       },
     });
-    if (useConversationStore.getState().currentConversation?.conversationID === imID)
-      setTurn(result.data.turn || undefined);
+    if (
+      useResearchStore.getState().generation === generation &&
+      useResearchStore.getState().actor?.member.id === memberId &&
+      useConversationStore.getState().currentConversation?.conversationID === imID
+    )
+      setTurn(
+        result.data.turn ? { generation, imID, turn: result.data.turn } : undefined,
+      );
     // Only the canonical backend outbox publishes the research pointer.
     return true;
   };
@@ -112,12 +131,26 @@ export function useResearchComposer() {
           </span>
         </div>
         {canonical.error && <Alert type="error" message={canonical.error} />}
-        {turnRead.data && (
-          <p className="mx-3 text-xs text-slate-600" role="status">
-            AI 请求：{turnRead.data.data.status}
-            {turnRead.data.data.failure ? ` · ${turnRead.data.data.failure}` : ""}
-          </p>
-        )}
+        {(turnRead.data?.data || turn) &&
+          turn?.conversationId === mapping.researchConversationId && (
+            <div className="mx-3 mt-1 max-h-32 overflow-y-auto">
+              {turnRead.error && (
+                <p className="text-red-700">
+                  当前状态无法确认，以下为上次记录。{turnRead.error}
+                </p>
+              )}
+              <ResearchTurnStatus
+                turn={turnRead.data?.data || turn!}
+                manager={manager}
+                onRetried={
+                  turnRead.data && !turnRead.error
+                    ? (next) =>
+                        setTurn({ generation: actorGeneration, imID, turn: next })
+                    : undefined
+                }
+              />
+            </div>
+          )}
         <Modal
           title="本次 AI 请求的范围"
           open={open}

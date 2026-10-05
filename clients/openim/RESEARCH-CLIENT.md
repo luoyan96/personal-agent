@@ -42,6 +42,11 @@
 2026-10-04 本地验证：客户端类型检查、Vite 构建、Windows x64 NSIS 生成、实际安装包隐藏启动（页面/preload/原生 SDK constructor）通过；服务地址验证 2 项通过。真实科研 API/SQLite/Edge 的 10 条检查记录覆盖登录、重连的真实未连接状态、320/390px、资料保存/轮询/刷新、模型停用、创建邀请码、注册与成员权限、退出和服务端会话失效。安装包额外 6 条检查覆盖首次连接表单、地址限制、离线重试、坏地址不持久化、成功地址跨进程保存、远程页面无法通过 IPC 改写或读取受保护的服务设置。
 
 证据在 Git 外 `.runtime/openim-client-rebuild`：`browser-review.mjs` / `browser-review.json` 与页面截图、`desktop-review.mjs` / `desktop-review.json`、`build-win-final-release.log`、`electron-smoke-final-release.log`。没有 Docker/OpenIM 服务，普通 IM、任意文件和语音的双账号真实传输仍待服务运行后验收；本批没有真实模型调用、安装到用户环境、推送或部署。浏览器记录含 Antd WaveEffect 的 findDOMNode 弃用提示、React Router future 警告和未登录/失效检查产生的 401 资源日志；没有未捕获页面异常。Windows 沙盒启动有 os_crypt_win 加密诊断，但真实页面和原生 SDK 桥接启动通过，正式运行时的桌面会话持久化仍需核验。
+2026-10-05 AI 请求反馈修复：输入区与科研指针回执共用实际 turn 的中文提示，区分等待、正在回复、需补充信息、模型不可用、用量或耗时超限、授权/输入变化和中断。历史模型不可用记录与当前 `availability` 分开说明，不因旧失败断言当前尚未配置。技术状态、编号、版本和实际预算/用量放在可展开的请求详情；未把失败改成成功。
+
+显式重试仅在新读的 `allowedActions` 允许、`remainingBudget` 非空且不是预算失败时出现；先确认本轮剩余预算，再提交准确 `expectedVersion` 与独立幂等键。同一次确认的失败可手动复用该键；取消不提交，预算失败引导减少材料、缩短需求后明确发送新请求，不增加预算、不自动重试。回执、轮询和重试响应核对账号世代、当前会话、路由及组件存活；旧作用域结果不写回。
+
+本批客户端类型、网页构建与四个 SDK 资源核验通过，已有五项 focused 检查通过。Git 外 `.runtime/ai-turn-feedback-review` 的 Edge/Playwright 合成 UI 检查十二组通过，覆盖中文反馈、展开详情、权限投影、确认/取消、剩余 500 Token/45 秒与原 4000 Token/90 秒的区别、版本冲突、迟返回守卫及 320px；没有真实 API、IM 登录或模型调用，也没有读取真实账号/Key。pageerror 为 0，保留 React Router future、Antd WaveEffect 弃用及预期 409 日志。初期运行目录/编码/选择器/合成错误 schema 与缺少 Go loader 的脚本失败记录保留，不计产品验收；与生产构建并行导致临时 Vite watcher EBUSY 的中止也保留。实际线上 AI 反馈另由总控验收。
 ## 首次会话与连接失败
 
 真实线上平台 5 首次验收发现：协调 Agent 的 SDK 本地会话尚未建好时，提前 `setConversation` 返回 `1004 RecordNotFoundError`；把它作为登录失败处理又触发自动换 Token，产生反复踢线。

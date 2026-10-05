@@ -29,6 +29,7 @@ type Options<K extends RouteName> = {
   params?: RequestFor<K>["params"];
   query?: RequestFor<K>["query"];
   signal?: AbortSignal;
+  idempotencyKey?: string;
 };
 export async function researchApi<K extends RouteName>(
   name: K,
@@ -62,8 +63,11 @@ export async function researchApi<K extends RouteName>(
     headers["X-CSRF-Token"] = csrfToken;
   const intent = JSON.stringify([name, options.params, options.query, body]);
   if (route.idempotent && route.method !== "GET") {
-    if (!slots.has(intent)) slots.set(intent, crypto.randomUUID());
-    headers["Idempotency-Key"] = slots.get(intent)!;
+    if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
+    else {
+      if (!slots.has(intent)) slots.set(intent, crypto.randomUUID());
+      headers["Idempotency-Key"] = slots.get(intent)!;
+    }
   }
   let response: Response;
   try {
