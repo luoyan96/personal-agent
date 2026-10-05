@@ -23,6 +23,8 @@
 
 ## 代码、线上与数据位置
 
+本地当前另在完成[自然语言创建Agent](development/natural-agent-creation-brief.md)：本人个人助理中的明确创建请求将生成真实联系人和私聊，并仅在原发送页面仍有效时自动打开。契约已为0.15 / chat1.4，SQLite仍16；下表线上仍为0.14，不能把本地候选当成已部署。旧0.14普通回复 / 持久文档兼容已实测，完整CI和实际页面 / 云验收收尾中。
+
 | 项目 | 当前事实 |
 | --- | --- |
 | 总控集成目录 | `D:/deepseek-agent/research-agent-platform-chat-integration`；操作前用 `git status` 确认目录与已有改动 |
