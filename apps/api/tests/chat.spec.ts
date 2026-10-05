@@ -164,6 +164,32 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
       history.push(text,answer)
     }
   })
+  it('deducts normalized cached input from the original total allowance and retry remainder',async()=>{
+    const s=await setup(true,1),total={maxTokens:4000,maxSeconds:90},agent=s.agent(s.accounts[0]!.memberId)
+    const sent=await s.call('sendChatMessage',{text:'缓存用量合成检查',intent:'ask_agent',agentContactId:agent.id,budget:total},{id:s.personal.id})
+    expect(sent.status,sent.raw).toBe(201)
+    // Runtime's real-adapter gate proves these disjoint counts are normalized;
+    // the worker contract receives aggregate input, never uncached input alone.
+    const inputTokens=233+640+128,outputTokens=100
+    await new ChatWorker(s.db,s.config,async()=>({text:'',failure:'synthetic_after_usage_failure',inputTokens,outputTokens,elapsedMs:10})).tick()
+    const failed=(await s.call('chatTurn',null,{id:sent.value.data.turn.id})).value.data
+    expect(failed).toMatchObject({status:'failed',budget:total,usage:{inputTokens:1001,outputTokens:100},remainingBudget:{maxTokens:2899,maxSeconds:89},allowedActions:['retry']})
+    const retried=await s.call('retryChatTurn',{expectedVersion:failed.version,budget:failed.remainingBudget},{id:failed.id})
+    expect(retried.status,retried.raw).toBe(202)
+    const retryText=JSON.stringify(reply('Here.')),retryOutput=Buffer.byteLength(retryText,'utf8')
+    let retryCap=0
+    await new ChatWorker(s.db,s.config,async input=>{
+      retryCap=input.maxTokens
+      expect(chatInputTokenBound(input.system,input.prompt)+input.maxTokens).toBeLessThanOrEqual(2899)
+      expect(retryOutput).toBeLessThanOrEqual(input.maxTokens)
+      return {text:retryText,failure:null,inputTokens,outputTokens:retryOutput,elapsedMs:10}
+    }).tick()
+    const finished=(await s.call('chatTurn',null,{id:retried.value.data.id})).value.data
+    expect(finished,JSON.stringify({failure:finished.failure,retryCap})).toMatchObject({status:'succeeded',budget:total,usage:{inputTokens:1001,outputTokens:retryOutput},remainingBudget:{maxTokens:4000-1101-1001-retryOutput,maxSeconds:89}})
+    expect(s.db.prepare('SELECT usage_json FROM chat_attempts').all().map(row=>JSON.parse(String(row.usage_json)))).toEqual([
+      expect.objectContaining({inputTokens:1001,outputTokens:100}),expect.objectContaining({inputTokens:1001,outputTokens:retryOutput})
+    ])
+  })
   it('persists owned agent profiles and requires independent human/private-agent contact acceptance',async()=>{
     const s=await setup(),body={displayName:'合成文献助理',introduction:'整理合成文献',capabilityDescription:'方法介绍，不是已验证工具',personality:'先列证据再给结论'},key=randomUUID()
     const created=await s.call('createPersonalAgent',body,{},0,'',key);expect(created.status,created.raw).toBe(201)
