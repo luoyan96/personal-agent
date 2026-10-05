@@ -4,7 +4,8 @@ import type { AgentTurn, RequestFor } from "@research-agent-platform/contracts";
 type ChatResource = NonNullable<
   RequestFor<"sendChatMessage">["body"]["context"]
 >[number];
-import { useConversationStore } from "@/store";
+import { useConversationStore, useUserStore } from "@/store";
+import { emit } from "@/utils/events";
 import { researchApi, researchMode } from "./api";
 import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
@@ -72,6 +73,7 @@ export function useResearchComposer() {
       throw new Error("请确认当前会话权限，并选择实际已加入的 AI");
     const generation = useResearchStore.getState().generation;
     const memberId = useResearchStore.getState().actor?.member.id;
+    const selfUserID = useUserStore.getState().selfInfo.userID;
     const result = await researchApi("sendChatMessage", {
       params: { id: mapping.researchConversationId },
       body: {
@@ -86,11 +88,21 @@ export function useResearchComposer() {
     if (
       useResearchStore.getState().generation === generation &&
       useResearchStore.getState().actor?.member.id === memberId &&
-      useConversationStore.getState().currentConversation?.conversationID === imID
-    )
+      useConversationStore.getState().currentConversation?.conversationID === imID &&
+      useUserStore.getState().selfInfo.userID === selfUserID
+    ) {
       setTurn(
         result.data.turn ? { generation, imID, turn: result.data.turn } : undefined,
       );
+      // The pointer still arrives through the canonical outbox and real SDK.
+      // Only successful persistence authorizes the UI to follow this request.
+      if (imID)
+        emit("CHAT_LIST_SCROLL_TO_BOTTOM", {
+          conversationID: imID,
+          actorGeneration: generation,
+          selfUserID,
+        });
+    }
     // Only the canonical backend outbox publishes the research pointer.
     return true;
   };
