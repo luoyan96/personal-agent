@@ -93,3 +93,22 @@
 - 本机父目录 `.runtime/personal-chat-20261005` 保留shared-ci-final / client-final / provider-focused日志及本地 / 云全部成功失败证据；主要回执deployment-verified.json、preparation-and-rollback.json、saved-snapshot-counts.json、live-natural-ui-proof.json与最终closure.json，真实截图live-natural-chat.png / live-model-settings.png和cloud-review各桌面 / 手机截图。Workbench上传Session到期及多文件chooser不接受记录保留，正常刷新已有免密会话后单文件上传；未扩访问权限或新加SSH。
 - README、current-state、追加日志、客户端与ECS说明同步当前部署；纯文档收尾只做内容 / diff检查，不重跑已通过根CI。下一批按用户优先自然联系人 / Agent体验，通义 / 豆包真实Key、自定义URL、长上下文精确计数、登录console诊断分别验证；媒体 / 原生Electron和真实科研编排暂未新验收，异地备份 / 全组件恢复未完成。
 - 17:54北京时间清理后再次实际helper verify通过（八服务 / 镜像 / 源 / 精确index / HTTPS / migration16）。最终closure已汇总发布、14门禁、两轮IFRC、逐表count与审计清理事实；两个已停用QA的本机临时密码文件已按确切路径删除，仅保留不含凭据的清理回执。最后内容检查139 Markdown / 10 skill定义与git diff --check通过；纯文档本地提交，不重新发布或推送。
+
+## 2026-10-05：纠正客户端交付重心
+
+- 用户质疑持续优化网页，明确其科研微信期望是桌面客户端与手机App。核对本地完整OpenIM React/Electron源码：已有Windows打包 / 隐藏启动历史证据，最新68d软件仅完成网页真实线上验收，未交付新版桌面与手机App。
+- 网页与Electron共享React界面，现有注册 / 联系人 / 模型设置改动可复用；桌面原生SDK、文件 / 录音、托盘 / 通知、重启会话及更新仍须对实际安装包验证。移动App需独立移动客户端 / SDK、设备后台与推送，不以320px网页代替。
+- 当前状态 / 路线图已将下一批主交付改为Windows安装版对当前ECS的真实端到端验收，随后接手机客户端；网页版作为联调与备用入口。此次仅调整交接优先级，没有构建新包、安装、发布、迁移、调用模型或推GitHub；线上仍为68d软件 / 契约0.14 / migration16。
+## 2026-10-05：先完善网页版与需求后的聊天形式
+
+- 用户接受先把网页版做好，随后复用到桌面 / 手机，并询问个人助理收到一件事后是否创建新的Agent联系人并开始聊天。
+- 只读核对现有源码：普通agentChatMessage是纯文本dailyChat，没有自动创建联系人 / 任务 / 群；createPersonalAgent接口与通讯录手动创建入口已有。自然需求到匹配 / 新建Agent / 开始专门会话的闭环尚未接通，不把手动基础当自动流程完成。
+- 当前状态 / 路线图按最新指示恢复网页版业务优先。讨论建议是助理先理解，复用已有Agent或提出缺少的专属Agent档案，确认后创建 / 打开；简单事情留在助理私聊，单专业工作可专属Agent私聊，多角色用任务群。持续联系人与一次任务分开，避免每个需求产生一个重复Agent；此为待实现的产品建议，未修改业务或执行自动建群。
+- 此次只读代码与交接文本更新，没有部署、迁移、模型调用、创建账号 / Agent或GitHub推送；线上仍为68d软件 / migration16。
+
+## 2026-10-05：补齐可直接添加的科研聊天 Agent（候选）
+
+- 用户指出没有可用成品 Agent，纠正此前仅讨论未来自动创建形式的缺项。本批添加文献阅读、论文修改、研究方案三卡及完整档案确认，从通讯录真实保存本人 specialist 并沿现有 direct / IM bridge 打开；不自动发消息、不为每次需求隐式新建。
+- 前端 `d18f73d` 整合 `a9fcb28`，总控完整客户端类型、build:web / 四固定 SDK 资源通过。候选完整字段复用、成功保存后保留 ID / 重试只开聊天，以及 actor / 路由 / 关闭重开迟响应守卫已审查；渲染交互另由前端执行。本批无共享后端源码、契约或数据库变更，无需重跑根共享 CI。
+- 既有后端 52 次真实 loopback HTTP / SQLite、七门禁 / 四合成 model callback 通过：三份精确档案进入 requestedAgent，主人私有记忆与跨空间获准访客 direct / 模型配置隔离，稳定 direct、未配置模型 / IM 明确 unavailable，plans / actions / tasks / jobs 均0。未调用真实厂商或实际 IM Server；不当作模型质量和 SDK 连通证据。
+- 证据在父目录 `.runtime/agent-starters-20261005`：`root-client-verification.json`、`VERIFICATION.md`、`local-http-KiLmLx/report.json` 与实际模块hash。云部署准备为只更新客户端 Nginx root，不改 backend current、八个容器、配置 / Key 或迁移；部署前实际baseline核对仍为68d / b9镜像 / 896450e2首页。本节尚未表示云发布完成，未推 GitHub。
