@@ -1,0 +1,35 @@
+# Agent 文件聊天
+
+用户反馈：文件已出现为 OpenIM 消息，文献阅读助手却没有响应。此前媒体只走 SDK 投递，未进入科研模型输入。本批把文件投递、解析、阅读范围和回复连接起来。
+
+## 用户流程与范围
+
+- 在本人个人助理或单个 Agent 私聊中发送文件：SDK 成功后使用本次选中的原始字节申请阅读；页面显示解析、等待回复、实际读取范围或明确失败。
+- 已发送文件提供“让 Agent 阅读”。只读取本站允许的文件地址，不跟随重定向或访问任意外部 URL。旧 SDK 对象网关需要签名跳转时，使用“从本机选择阅读”，选择同名同大小原文件；此动作只申请阅读，不重复发送 IM 文件。
+- 本轮支持含文字 PDF 和 UTF-8 的 TXT / Markdown / CSV，最大 10 MiB。PDF 最多 200 页、提取最多 200,000 字符；扫描 PDF 没有文字时明确提示，不宣称 OCR 已实现。图片和语音仍沿原 SDK 交互。
+- 后续文字可提问“第二页的局限是什么”。服务只使用当前对话、当前本人可读的文件；跨会话资料、他人私有记忆和 Key 不可读取。
+- 默认输入与输出总预算仍为 4,000 tokens / 90 秒。服务记录实际页码与字符区间；只读了部分时明确标记，不能称通读全文。
+
+## 技术与权限
+
+- 契约 0.16.0、聊天 1.5.0；`POST /chat/conversations/{id}/agent-files` 接收本次文件字节与元数据。公共响应 / IM 只带文件描述和阅读范围，提取正文保存在私有 `request_json`。
+- PDF 使用固定 `pdf-parse@2.4.5`（Apache-2.0），在隔离子进程中提取，限制时间、内存、并发与输入大小；子进程不接收模型 Key、数据库路径或登录信息。
+- 解析前后均验证本人权限；异步选文件、换会话、换账号及重试均有守卫。稳定幂等键防止生成重复模型 turn；模型重试不会再次发送 SDK 文件。
+- 文件是资料，不授予执行权限。正文中的提示、命令和创建 Agent 要求不会创建联系人、群聊或任务。
+- SQLite 仍为迁移 016，没有新增迁移。持久消息移除 `files`、持久 turn 移除 `fileRead`，由私有输入重新投影，保留旧严格文档的读取兼容性；回退代码时保留现有数据库。
+
+## 验证与失败记录
+
+- 首次固定软件 `802e0da0b4bfd20046f53799f3e220b2fc186d9a` 于 2026-10-06 00:53 北京时间上线；API / worker 镜像 `sha256:bad49f92b10709b49bc59c96fbe579e5a20b55fb4401bef2c166b173319f7e8e`。8 服务 / HTTPS / 源码 checksum / 精确首页均通过，不能把这当成真实模型验收通过。
+- 原共享 CI 因旧页面仍断言契约 0.15 而失败，修正到 0.16 后 467 项 + 2 项生产入口通过。安装无 TTY、错误 pnpm store 中止、前端 fixture / 选择器错误均保留；最终客户端 typecheck、Web 和 4 固定 SDK 资源通过。
+- 后端 203 局部测试，前端 13 实际组件组和 4 真实 HTTP / SQLite / PDF 解析组通过；其中 SDK / 模型为合成，不能代替真实服务调用。
+- 07:38 北京时间，现有正常 Edge 登录中发送独立合成两页 PDF：真实 SDK 投递、真实 Linux 解析 2 页 / 107 字符、两个完整读取区间通过；真实模型调用失败 `INVALID_MODEL_OUTPUT`，输入 840 / 输出 801 / 5,686 ms，无可用回复。原截图和安全诊断原样保留。
+- 固定官方 Harness 的 loopback SSE 可复现：默认 thinking enabled / effort high，reasoning-only 在 801 输出上限结束，被原 runtime 当成成功且正文为空。线上上述元数据支持这一原因，但首次实际返回正文未存储，因此空正文属于推断。后续修复与真实复验见统一状态及项目日志。
+
+证据位于 Git 外父目录 `.runtime/agent-files-20261005`，包括 `root-ci-verified.log`、`client-typecheck-verified.log`、`client-build-verified.log`、`deployment-verified.json`、`live-pdf-validation-failed.png`、`live-safe-diagnostic.json`；后续修复证据位于 `.runtime/agent-files-reply-20261006`。前后端独立目录中的原报告保留准确受测版本。
+
+## 部署与回退
+
+首版一致备份 `/srv/research-openim-backups/20261005T165333Z` 的 12 个 checksum、9 个 gzip、隔离 SQLite 恢复 integrity 和 16 迁移 checksum 通过；未做完整栈恢复或异地备份验证。后续发布仍核对当前代码 / 镜像 / 首页基线，并生成新的停写一致备份。
+
+回退恢复对应之前 API / worker 镜像、`current` 链接和 Nginx root；保留 schema16 的现有数据库，不使用旧 schema15 快照，不执行 `down -v`。真实模型验收、部署回执和本地测试分别记录；本批不推 GitHub。
