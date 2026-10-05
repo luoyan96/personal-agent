@@ -8,6 +8,8 @@
 
 ## 当前状态（2026-10-05）
 
+新 AI 或协作者先读[当前状态与接手说明](docs/current-state.md)和[项目进展日志](docs/project-log.md)，再按任务进入开发与部署记录。最新反馈正在修复注册校验与密码最少 8 位规则；完成后同步记录实际部署版本。
+
 完整 OpenIM 科研微信已独立部署至新 ECS：[chat.acceptcat.com](https://chat.acceptcat.com)，文件使用 `https://files.chat.acceptcat.com`。固定软件源码 `c3f58a4a88a3b0c0efdf2c868a556cc9d29f25ac`，契约 **0.13.0**、IM 桥 **1.0.0**、迁移 **015**；根 CI **398 项 + 2 项生产入口测试**通过，真实服务、HTTPS 权限、档案回调、双浏览器文字 / 文件 / 合成语音、窄屏、刷新历史、退出和三服务重启均有实际验收记录。完整 SDK 运行发现的历史就绪异常已修复，专项回归通过；原失败报告保留。已生成并校验一致备份、恢复服务、停用合成账号及撤销临时 SSH 权限。新 IFRC 实验室与旧站独立，负责人邀请码通过私有文件交接；真实 AI 理解和执行仍需负责人配置自己的模型并另行验收。详见[新 ECS 部署与验收](docs/deployment/openim-ecs.md)。本批未推 GitHub；下文旧部署状态指 `research.acceptcat.com`，历史验收不替代新站记录。
 
 此前以 [完整 OpenIM React/Electron 客户端](clients/openim/RESEARCH-CLIENT.md) 重建科研微信，源码位于 `clients/openim`。科研账号、人与 Agent 联系人、成员同意与任务权限使用现有权威 API，普通聊天和媒体接真实 SDK。契约 **0.13.0**、IM 桥协议 **1.0.0**、迁移 **015**；后端说明见 [桥接交接](docs/development/openim-bridge-backend-report.md)。[独立联调服务](deploy/openim/README.md)需要 Docker，包含派生身份校验服务。构建产物与服务连通分别验收，该批提交时尚未推 GitHub 或部署；实际新 ECS 状态以上段记录为准。

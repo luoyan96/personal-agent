@@ -1,5 +1,7 @@
 # 第一版开发交接
 
+**现有项目先读[当前状态](current-state.md)与[项目日志](project-log.md)。** 新 OpenIM 科研微信已部署至独立 ECS，本文保留初版整体范围和历史工程依据，不能用这里的旧契约 / 阶段替代当前软件版本。
+
 日期：2026-09-30。G1—G3 及 G4a 的人类协作、变化协调、真实规划/执行与授权复用已经共同复核；G5a 的账号、运行/恢复和首次使用准备也已通过；产品第一阶段尚未完成。当前执行范围与下一批以[第一阶段范围与当前状态](phase-one.md)为准，本文保留整体工程依据，不要求重新从 D0 开始。界面采用[对话中展开协作单](design/adaptive-responses.md)，总览与详情按需进入。
 
 前后端分工使用[分阶段开发索引](development/README.md)：分别提供[前端指南](development/frontend.md)、[后端指南](development/backend.md)、[共享契约](development/contracts.md)、[阶段验收](development/acceptance.md)和[可复制启动 prompt](development/prompts.md)。多人开发优先使用这些按批次限定的指令；本文保留整体范围和顺序。
