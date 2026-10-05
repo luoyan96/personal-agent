@@ -10,7 +10,7 @@ import { personalModelRuntime } from './personal-models.js'
 import type { Config } from './config.js'
 import { fail } from './errors.js'
 import { ContactDirectory, directoryCommands } from './contact-directory.js'
-import { fileReadMetadata } from './agent-files.js'
+import { fileReadMetadata,pageNumbersFromQuestion } from './agent-files.js'
 import type { FileDocument, ParsedAgentFile } from './agent-files.js'
 import type { AgentFileSelection } from '@research-agent-platform/contracts'
 import { isAgentCreationCommand, legacyTurnDocument } from './agent-creation.js'
@@ -521,7 +521,7 @@ export class ChatService {
       let fileSource=name==='agentFileMessage'?{messageId:message.id}:name==='agentChatMessage'&&!purpose?this.dailyFileSource(group.id,(b as {fileSelection?:AgentFileSelection}).fileSelection):undefined
       const fileDocument=name==='agentFileMessage'&&parsedFile?{...parsedFile,metadata:{...parsedFile.metadata,messageId:message.id}}:undefined
       if(name==='agentFileMessage'&&!fileDocument)fail('INVALID_STATE')
-      if(fileSource){const document=fileDocument??this.fileDocument(fileSource.messageId,group.id);const questionPages=[...input.text.matchAll(/第\s*(\d+)\s*页|\bpage\s+(\d+)/gi)].map(match=>Number(match[1]??match[2]));const numbers=fileSource.pageNumbers??(questionPages.length?[...new Set(questionPages)]:undefined);if(numbers?.some(n=>!document.pages.some(page=>page.pageNumber===n)))fail('FILE_PAGE_UNAVAILABLE');fileSource={...fileSource,...(numbers?{pageNumbers:numbers}:{} )}}
+      if(fileSource){const document=fileDocument??this.fileDocument(fileSource.messageId,group.id);const questionPages=pageNumbersFromQuestion(input.text);const numbers=fileSource.pageNumbers??(questionPages.length?[...new Set(questionPages)]:undefined);if(numbers?.some(n=>!document.pages.some(page=>page.pageNumber===n)))fail('FILE_PAGE_UNAVAILABLE');fileSource={...fileSource,...(numbers?{pageNumbers:numbers}:{} )}}
       const turn = input.intent === 'ask_agent' ? this.newTurn(group, message, input.agentContactId!, { budget: input.budget!, context: input.context, conversationVersion: group.version, inputSequence: message.sequence,dailyChat:name!=='sendChatMessage',...(purpose?{purpose}:{}),...(fileDocument?{fileDocument}:{}),...(fileSource?{fileSource,fileRead:fileReadMetadata(fileDocument??this.fileDocument(fileSource.messageId,group.id))}:{}) }) : null
       if (turn) { message.turnId = turn.id; this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(legacyChatMessage(message)), message.id) }
       return { data: { message:this.projectedMessage(message.id), turn } }
