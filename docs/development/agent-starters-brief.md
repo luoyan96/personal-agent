@@ -14,7 +14,8 @@
 
 - 前端候选 `d18f73d` 整合为 `a9fcb28`。共享后端仍为线上 `68d0592`，契约 0.14.0、迁移 016；本批不改 API、数据库或 worker。
 - 52 次真实本地 HTTP / SQLite 检查覆盖三个精确档案、稳定直接会话、真实不可用状态、主人和获准访客的记忆及模型隔离。4 次模型 callback 为合成上下文检查；任务、动作、计划、执行 job 均为 0。本地 IM Server 未配置的明确不可用不能当作 SDK 已连接。
-- 完整客户端类型、Web 构建 / SDK 静态资源和渲染交互另行核验；部署后的具体源码、公网 hash、真实 SDK / 模型验证以[当前状态](../current-state.md)、[日志](../project-log.md)与[ECS 记录](../deployment/openim-ecs.md)为准。
+- 总控完整客户端类型、Web 构建 / 四个 SDK 静态资源通过。前端实际 React / 真实本地 HTTP / SQLite 共16组事实闭合：首段8项通过后选择器中止，续跑同账号8项且额外创建0，覆盖三档案、取消、迟响应、未连接保留ID / 重试、刷新复用、资料入口、编辑保持ID、桌面 / 320px与退出。pageerror0；本地没有实际 IM 或模型调用。
+- 浏览器开发插件缺失，本地组件 QA 用既有 Playwright；真实生产与 Workbench 用 CUA。取消 / 记忆按钮空格及 regex 转义的旧失败报告保留；Git外 harness 早期 Tailwind 相对路径漏样式仅修测试配置，最终全样式图另存。没有把这些旧图或中止运行当成最终全部通过。部署后的具体源码、公网 hash、真实 SDK / 模型验证以[当前状态](../current-state.md)、[日志](../project-log.md)与[ECS 记录](../deployment/openim-ecs.md)为准。
 - 运行证据留在源码仓库外 `D:/deepseek-agent/.runtime/agent-starters-20261005`。源码不收录密钥、账号密码、运行数据库、截图或构建包；未推 GitHub。
 
 ## 后续
