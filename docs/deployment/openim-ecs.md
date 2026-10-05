@@ -1,6 +1,22 @@
 # 新 ECS：OpenIM 科研微信（2026-10-05）
 
-## 最新更新：真实 AI 连续回复与显示修复
+## 最新更新：个人注册、自然聊天与模型设置
+
+2026-10-05 17:33 北京时间发布固定软件 `68d0592de941fa0f47907ba9df6e86fddd83f250`，前端 / API / worker 同一源。当前指针 `/opt/research-openim/releases/68d0592de941fa0f47907ba9df6e86fddd83f250`，Nginx root为其 `clients/openim/dist`；API / worker镜像 `sha256:b9ecbbe826f4fa37126c98241b082cf780c370bb828596583226e60979c216fc`。契约0.14.0、聊天1.3.0、IM桥1.0.0、显式迁移016。
+
+- 个人注册只要求显示名、唯一用户名、原值最少8字符密码，邀请码自愿加入团队；个人空间与IFRC隔离。准确用户名发现 / 申请 / 同意后跨空间私聊，群、科研任务与材料仍按原权限。普通Agent输入直接发文本，档案 / 性格 / 获准记忆持续，科研协作折叠，不自动创建任务或群。
+- “模型设置”按本人管理DeepSeek / 通义千问 / 豆包多配置、启停 / 默认 / 加密Key，固定官方地址且不回显明文；明确个人选择后不静默回退团队Key。未选择个人配置的原IFRC保持原模型兼容。自定义地址与通义 / 豆包真实Key调用未验收。
+- 外层包SHA256 `fedc0bb093696493c25b47e13b808983247e6e4f01319b7072c3c3d587fc0a90`，源码归档 `9e73082537862c203db649610d4518a9ea170ef2890b46d80331c7e861ef76c1`，Web归档 `043b5bc48c66d2e9a83f485a64c2ff4e0fd8c8ea25e7d44a10c3d7cb9479543d`。云端离线从旧依赖镜像编译contracts / runtime / API，22份变更后端文件在镜像与归档逐hash一致；最终公网首页SHA256 `896450e229d810aef3ed8c5747efe5482a50118725aaf17deedb019cff3dc090`实际精确核验。
+- prepare只迁移线上只读一致快照，016重复两次和旧行哈希保持通过。最终激活停本项目API / worker / OpenIM，完整一致备份 `/srv/research-openim-backups/20261005T093246Z` 的12checksums / 9gzip / 隔离SQLite恢复integrity ok / 迁移15；正式显式016逐旧表行hash和准确键转换核对，70旧表 / 激活前2281行保持。更早prepare3136行与激活前差855，仅两保存v15副本的临时 `chat_pages` 2168→1313变化，其他69表计数不变，与旧代码15分钟快照过期清理一致；两阶段差不能混作016迁移丢数据。
+- 初始prepare白名单未允许contracts/package.json，拒绝后保留失败release / 日志并修正。首次activate即时读旧首页hash不匹配，原脚本恢复015 / 镜像 / current后最后health读取失败，按守卫核验数据库与旧backup一致后恢复旧八服务。第二次30秒公网门禁因新release根目录700、www-data不能读index而失败，自动完整回退成功。修正仅新release权限为755，真实以www-data读精确index成功后第三次activate成功。
+- 实际prepare helper SHA为 `c211a8` 前缀版本，实际成功activate / verify helper SHA256为 `67067eee5b4f7ad711eb9bc9b93027a4c2a03ce4621921e6e9d77f5e79ae1e1b`；本地后来增加mkdir后chmod与www-data提前门禁的 `3f136c4` helper未上传 / 未执行，不能混作线上成功源码。原失败v16数据库及WAL / SHM、一致副本均私有保留。回退必须同时恢复015数据库、旧镜像、current与Nginx，再核验ready及精确旧首页；禁止只回退镜像、down -v或删卷。
+- 根CI 34文件 / 446项与2项生产入口通过，精确完整客户端类型 / Web / 四SDK资源通过。线上两隔离个人账号14门禁闭合：桌面 / 320px八字符注册、SDK个人空间、普通Agent草稿 / 折叠、三家停用合成Key管理、本人配置隔离、准确用户名好友申请 / 接受、真实SDK101双向消息、UI退出和原RAP session401。首两注册门禁引用原通过运行，未新增第三人；双方clientMsgID / sendID / recvID一致、status2。pageerror0，console诊断保留，不声称全零。
+- 17:40 / 17:41 既有IFRC正常登录页面普通文本入口连续得到两轮真实自然回复：先自我介绍，再接上文改成口语短句；成功回复是普通气泡，编辑区可继续输入，协作折叠。没有读取 / 复制真实Key、密码或改变负责人配置与登录状态；普通输入不重放旧需求。该证据仅证明日常短对话，不代替科研编排 / 执行 / 交付、通义 / 豆包真实调用、媒体或原生Electron新验收。
+- 当前8服务实际运行，其他6镜像未变，HTTPS ready / contract0.14 / schema16 / 源码与首页verify通过。本轮沿用已有Workbench，仅正常会话刷新，未加新SSH或云权限，未推GitHub。备份仍在同ECS；没有异地 / 完整组件恢复演练。
+- 两名合成个人账号均已正常UI退出 / 原RAP session401，并通过既有审计CLI准确停用（version2），活跃RAP sessions及IM leases均0，历史保留；无邀请码使用或真实账号改动。窄console诊断分类为预期401、浏览器关闭窗口提示，以及已捕获但来源未分类的登录 `null.map`。后者未阻止14项实际流程，记录为后续定位限制，未据pageerror0冒称console零错误；未因日志扩展账号 / 模型测试。
+- 云回执 `/opt/research-openim/ops/personal-chat-68d0592de941/deployment-verified.json`；本机仓库外 `.runtime/personal-chat-20261005/{deployment-verified,preparation-and-rollback,saved-snapshot-counts,live-natural-ui-proof}.json`、`live-natural-chat.png`、`live-model-settings.png`，双浏览器报告 `cloud-review/runs/dce9b912-4378-4ef4-a688-e582f988748b/report.json`。原沙盒联网、IM登录次数假定、按钮图标选择器与报告状态序列化问题保留，按明确范围续跑，只修测试脚本。
+
+## 历史更新：真实 AI 连续回复与显示修复
 
 2026-10-05 13:58 北京时间，固定软件 `979b7c10afb0b75b2a72572431cc08fb5195cf47` 同时发布前端、API 和 worker；`/opt/research-openim/current` 指向该 release，Nginx root 为 `/opt/research-openim/releases/979b7c10afb0b75b2a72572431cc08fb5195cf47/clients/openim/dist`。API / worker 镜像 `sha256:e2402ee40c51e050e40e1ab0597dbd756f2e675e629e034c0b93c9cd77da0caa`。契约 0.13.1、IM 桥 1.0.0、迁移 015 不变。
 
@@ -42,7 +58,7 @@
 - 新主机：阿里云广州，Ubuntu 22.04.5、x86_64、4 vCPU / 8 GiB / 50 GiB、5 Mbps。
 - Docker Engine 29.8.2、Compose 5.6.0；科研 API / worker、OpenIM Server、MongoDB、Redis、etcd、Kafka、MinIO 分别运行。
 - 业务公网入口为 Nginx HTTP / HTTPS；组件、IM API / WebSocket、科研 API 和 MinIO 均在 Docker 网络或宿主机 loopback 上。
-- 当前科研契约 0.13.1、IM 桥 1.0.0、SQLite 迁移 015。生产入口不运行 seed、不自动创建测试账号、不隐式迁移。
+- 当前科研契约0.14.0、聊天1.3.0、IM桥1.0.0、SQLite迁移016。生产入口不运行seed、不自动创建测试账号、不隐式迁移；当前发布与回退按本文最新更新。
 - 测试在独立 `lab_sdk_qa_20261004_46c65a73` 完成，使用用户批准的虚构账号、随机密码、合成文件和合成录音。IFRC 开通码未用于测试。
 
 ## 来源和构建（初次部署基线）
