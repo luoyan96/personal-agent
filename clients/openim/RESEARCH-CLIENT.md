@@ -17,6 +17,8 @@
 
 本地证据位于 Git 外 `.runtime/agent-files-20261005`。客户端类型检查通过；总控独立整合构建与四固定 SDK 资源核验另记。Browser plugin 未提供，因此沿用已经批准的隔离 Edge / Playwright：
 
+请求详情补修：输入区“查看详情”原来复用消息气泡的默认关闭 `<details>`，弹窗打开后预算 / 用量 / 技术状态仍需第二次展开，且遗漏 `fileRead` 范围。现在弹窗直接显示已有 turn 的中文状态、失败代码、预算、确认的输入 / 回复 / 耗时（无 usage 则明确尚未确认）、文件 / 页数 / 实际读取页；逐页字符范围仍可展开。输入区保持原单行，气泡继续折叠。`.runtime/agent-files-20261005/component-9cbf22e3/report.json` 的 **3 组**实际 QueryChat / ChatFooter 详情检查通过，API / SDK / ModelCall 均明确合成：失败事实直接可见、320px 弹窗无横向溢出及关闭后编辑 / 发送、会话变化关闭详情、null usage 不猜用量。pageerror 0，类型通过；没有自动重试或增加预算。桌面和手机图为同目录 `turn-details-{desktop,mobile}.png`。
+
 - `component-059b5477/report.json` 的 **13 组实际 React 组件检查**通过：完整 QueryChat / ChatFooter / MessageItem，菜单与拖放、原字节 SHA、自动到旧气泡幂等重放、双点互斥、重试不重发、离开 / 返回各阶段守卫、真人 / 群 / 图片不调用模型、TXT / MD / CSV、可信旧文件读取、任意域拒绝与本机原件补救、禁止重定向、真实 chunked HTTP 超限、收到的文件不冒充本人发送、320px 三条失败状态。API、SDK、提取结果和模型回复在该组均明确合成；手机编辑器 **80px**，发送底部 **835px / 844px**。
 - 真实本地 HTTP / SQLite / `pdf-parse@2.4.5` 加实际 React 另 **4 组**通过。`real-ui-c1859560/report.json` 前两组验证实际 PDF 上传 / 合成 worker 回复及同 SDK 文件幂等重放，之后因不存在的 DOM 属性选择器而中止；保留原 failed。`real-ui-3155251a/report.json` 接续实际授权消息的文件元数据与两页读取范围、空白 PDF `FILE_NO_TEXT` 不增 turn / message、320px 输入 **101px**。SDK 传输、outbox 指针和 ModelCall 仍明确合成，不能替代真实 IM 或云端验收。
 - 桌面及手机图为 `real-ui-3155251a/real-parser-metadata-desktop.png`、`real-ui-3155251a/real-parser-failure-mobile.png`；三条失败状态图为 `component-059b5477/agent-file-error-mobile.png`。成功分组没有未捕获页面异常，日志仍包含 React Router future、Antd WaveEffect / findDOMNode 弃用、预期 422 / 503 与重定向失败。初始 fixture 循环导入、SDK 文件枚举误设和选择器失败的原报告保留，不计通过。

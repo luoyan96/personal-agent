@@ -97,7 +97,7 @@ export function ResearchTurnStatus({
       if (isCurrent()) setBusy(false);
     }
   };
-  const feedback = (
+  const alert = (
     <>
       <Alert
         type={guidance.tone}
@@ -108,19 +108,40 @@ export function ResearchTurnStatus({
       {failure?.scope === scope && (
         <p className="mt-1 text-red-700">{failure.message}</p>
       )}
-      <details className="mt-1 text-slate-600">
-        <summary className="cursor-pointer">请求详情</summary>
-        <div className="space-y-1 pt-1">
+    </>
+  );
+  const statusLabels: Record<AgentTurn["status"], string> = {
+    queued: "等待回复", running: "正在回复", waiting_input: "需要补充信息",
+    succeeded: "已回复", unavailable: "当时未能调用模型", failed: "回复失败",
+    interrupted: "回复已中断", cancelled: "已取消",
+  };
+  const read = turn.fileRead;
+  const readPages = [...new Set(read?.ranges.map(range => range.pageNumber) || [])];
+  const facts = (
+        <div className="space-y-2 pt-2 text-slate-700" data-ai-turn-facts>
+          <p>请求状态：{statusLabels[turn.status]}</p>
+          {turn.failure && <p className="break-all">失败代码：{turn.failure}</p>}
           <p>
             本次预算：上下文与回复合计 {turn.budget.maxTokens} Token，最多{" "}
             {turn.budget.maxSeconds} 秒。
           </p>
-          {turn.usage && (
+          {turn.usage ? (
             <p>
               实际用量：输入 {turn.usage.inputTokens ?? "未确认"} Token，回复{" "}
               {turn.usage.outputTokens ?? "未确认"} Token；耗时{" "}
               {(turn.usage.elapsedMs / 1000).toFixed(1)} 秒。
             </p>
+          ) : <p>实际用量：尚未确认。</p>}
+          {read && (
+            <div className="space-y-1 rounded-md bg-slate-50 p-2" data-ai-file-read-details>
+              <p className="break-all">附件：{read.filename}</p>
+              <p>可提取文字：{read.pageCount} 页 · {read.characterCount} 字符。</p>
+              <p>本次读取：{readPages.length ? `第 ${readPages.join("、")} 页${read.partial ? "的文字片段" : ""}` : "尚未确认读取片段"}。</p>
+              {read.partial && <p>受本次上下文预算限制，未使用完整文件。</p>}
+              {!!read.ranges.length && <details><summary className="cursor-pointer">每页读取范围</summary>
+                {read.ranges.map((range, index) => <p key={index}>第 {range.pageNumber} 页：字符 {range.start}–{range.end}</p>)}
+              </details>}
+            </div>
           )}
           <p className="break-all">
             请求编号：{turn.id} · 版本 {turn.version}
@@ -130,6 +151,13 @@ export function ResearchTurnStatus({
             {turn.failure ? ` · ${turn.failure}` : ""}
           </p>
         </div>
+  );
+  const feedback = (
+    <>
+      {alert}
+      <details className="mt-1 text-slate-600">
+        <summary className="cursor-pointer">请求详情</summary>
+        {facts}
       </details>
     </>
   );
@@ -196,7 +224,7 @@ export function ResearchTurnStatus({
         }
         destroyOnClose
       >
-        <div className="min-w-0 break-words">{feedback}</div>
+        <div className="max-h-[60dvh] min-w-0 overflow-y-auto break-words">{alert}{facts}</div>
       </Modal>
       <Modal
         title="使用本轮剩余预算重试？"
