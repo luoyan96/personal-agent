@@ -11,6 +11,7 @@ import { useState } from "react";
 import type { AgentTurn } from "@research-agent-platform/contracts";
 import styles from "@/pages/chat/queryChat/MessageItem/message-item.module.scss";
 import { CreatedAgentChatButton } from "./CreatedAgentChatButton";
+import { AgentFileReadSummary } from "./AgentFileReadSummary";
 
 export default function ResearchMessageRender({ message }: IMessageItemProps) {
   const imID = useConversationStore((s) => s.currentConversation?.conversationID);
@@ -85,6 +86,7 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
       {read.data && (
         <>
           <p className="whitespace-pre-wrap break-words">{read.data.fact.text}</p>
+          {read.data.fact.files?.map(file => <AgentFileReadSummary key={file.messageId} file={file} read={turn.data?.data.fileRead} />)}
           {!!read.data.fact.resources.length && (
             <details className="mt-2 text-xs">
               <summary>相关材料</summary>

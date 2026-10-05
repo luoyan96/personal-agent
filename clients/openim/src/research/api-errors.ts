@@ -8,6 +8,9 @@ export function validationMessage(issues: readonly ValidationIssue[]): string {
   if (field === "password") return "密码至少 8 个字符。";
   if (field === "inviteCode") return "请填写完整的实验室邀请码，并检查是否复制正确。";
   if (field === "displayName") return "请填写显示姓名，最多 200 个字符。";
+  if (field === "filename") return "文件名需为 1–200 个字符，不能包含路径。";
+  if (field === "mediaType") return "只支持含文字的 PDF、TXT、Markdown 和 CSV。";
+  if (field === "contentBase64") return "文件内容或大小不符合读取要求，请选择不超过 10 MiB 的原文件。";
   return "请检查必填内容、格式和长度后再试。";
 }
 

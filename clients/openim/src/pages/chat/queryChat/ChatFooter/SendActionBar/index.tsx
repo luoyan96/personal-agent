@@ -11,6 +11,8 @@ import rtc from "@/assets/images/chatFooter/rtc.png";
 import { researchMode } from "@/research/api";
 import { useConversationStore } from "@/store";
 import { feedbackToast } from "@/utils/common";
+import { useAgentChatOperation, type AgentChatOperation } from "@/research/useAgentChatOperation";
+import type { SelectedFileKind } from "@/research/useScopedFileSender";
 
 import { SendMessageParams } from "../useSendMessage";
 import CallPopContent from "./CallPopContent";
@@ -24,20 +26,19 @@ const actionClass = "flex h-20 w-full flex-col items-center justify-center gap-2
 
 const SendActionBar = ({
   sendMessage,
-  getImageMessage,
-  getFileMessage,
+  sendFile,
   getSoundMessage,
 }: {
   sendMessage: (params: SendMessageParams) => Promise<void>;
-  getImageMessage: (file: File) => Promise<MessageItem>;
-  getFileMessage: (file: File) => Promise<MessageItem>;
+  sendFile: (file: File, kind: SelectedFileKind, isCurrent?: () => boolean) => Promise<boolean>;
   getSoundMessage: (file: File, duration: number) => Promise<MessageItem>;
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [voiceVisible, setVoiceVisible] = useState(false);
   const panelId = useId();
   const mediaEpoch = useRef(0);
-  const fileIntent = useRef<{ conversationID: string; epoch: number }>();
+  const fileIntent = useRef<{ conversationID: string; epoch: number; operation: AgentChatOperation }>();
+  const captureOperation = useAgentChatOperation();
   const fileInputs = useRef<Partial<Record<"image" | "file", HTMLInputElement>>>({});
   const conversationID = useConversationStore((s) => s.currentConversation?.conversationID);
   const isGroupSession = useConversationStore((s) => Boolean(s.currentConversation?.groupID));
@@ -46,27 +47,26 @@ const SendActionBar = ({
     mediaEpoch.current++;
     setExpanded(false);
     setVoiceVisible(false);
+    fileIntent.current?.operation.dispose();
     fileIntent.current = undefined;
-    return () => { mediaEpoch.current++; };
+    return () => { mediaEpoch.current++; fileIntent.current?.operation.dispose(); };
   }, [conversationID]);
 
-  const fileHandle = (file: File, kind: "image" | "file") => {
+  const fileHandle = (files: File[], kind: "image" | "file") => {
     const conversation = useConversationStore.getState().currentConversation;
     const intent = fileIntent.current;
-    if (!conversation || !intent || intent.conversationID !== conversation.conversationID || intent.epoch !== mediaEpoch.current) {
+    if (!conversation || !intent || !intent.operation.isCurrent() || intent.conversationID !== conversation.conversationID || intent.epoch !== mediaEpoch.current) {
       const error = new Error("会话已切换，请在当前会话重新选择文件");
       feedbackToast({ error, msg: error.message });
       return;
     }
     void (async () => {
       try {
-        const message = await (kind === "image" ? getImageMessage(file) : getFileMessage(file));
-        if (intent.epoch !== mediaEpoch.current || useConversationStore.getState().currentConversation?.conversationID !== conversation.conversationID)
-          throw new Error("会话已切换，请在当前会话重新选择文件");
-        await sendMessage({ message, recvID: conversation.userID, groupID: conversation.groupID });
-      } catch (error) {
-        feedbackToast({ error, msg: "文件发送失败，请检查连接后重试" });
-      }
+        for (const file of files) {
+          if (!intent.operation.isCurrent()) break;
+          await sendFile(file, kind, intent.operation.isCurrent);
+        }
+      } finally { intent.operation.dispose(); }
     })();
   };
 
@@ -95,7 +95,8 @@ const SendActionBar = ({
               className={actionClass}
               onClick={() => {
                 const current = useConversationStore.getState().currentConversation;
-                fileIntent.current = current ? { conversationID: current.conversationID, epoch: mediaEpoch.current } : undefined;
+                fileIntent.current?.operation.dispose();
+                fileIntent.current = current ? { conversationID: current.conversationID, epoch: mediaEpoch.current, operation: captureOperation() } : undefined;
                 setExpanded(false);
                 fileInputs.current[action.key]?.click();
               }}
@@ -115,7 +116,7 @@ const SendActionBar = ({
               onChange={(event) => {
                 const files = Array.from(event.currentTarget.files ?? []);
                 event.currentTarget.value = "";
-                files.forEach((file) => fileHandle(file, action.key));
+                fileHandle(files, action.key);
               }}
             />
           </div>

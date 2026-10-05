@@ -16,6 +16,9 @@ import { feedbackToast } from "@/utils/common";
 import SendActionBar from "./SendActionBar";
 import { useFileMessage } from "./SendActionBar/useFileMessage";
 import { useSendMessage } from "./useSendMessage";
+import { useAgentFileReading } from "@/research/useAgentFileReading";
+import { useScopedFileSender } from "@/research/useScopedFileSender";
+import { useAgentChatOperation } from "@/research/useAgentChatOperation";
 
 const sendActions = [
   { label: t("placeholder.sendWithEnter"), key: "enter" },
@@ -49,6 +52,9 @@ const ChatFooter = () => {
 
   const { getImageMessage, getFileMessage, getSoundMessage } = useFileMessage();
   const { sendMessage } = useSendMessage();
+  const fileReading = useAgentFileReading();
+  const sendFile = useScopedFileSender({ getImageMessage, getFileMessage, sendMessage, onFileSent: fileReading.onFileSent });
+  const captureFileDrop = useAgentChatOperation();
 
   const onChange = (value: string) => {
     drafts.current.set(imID, value);
@@ -96,21 +102,13 @@ const ChatFooter = () => {
   };
 
   const droppedFiles = async (files: File[]) => {
-    const conversation = useConversationStore.getState().currentConversation;
-    if (!conversation) return;
-    for (const file of files)
-      try {
-        const message = await (file.type.startsWith("image/")
-          ? getImageMessage(file)
-          : getFileMessage(file));
-        await sendMessage({
-          message,
-          recvID: conversation.userID,
-          groupID: conversation.groupID,
-        });
-      } catch (error) {
-        feedbackToast({ error, msg: `文件 ${file.name} 发送失败` });
+    const operation = captureFileDrop();
+    try {
+      for (const file of files) {
+        if (!operation.isCurrent()) break;
+        await sendFile(file, "auto", operation.isCurrent);
       }
+    } finally { operation.dispose(); }
   };
 
   return (
@@ -130,8 +128,7 @@ const ChatFooter = () => {
       <div className="flex h-full flex-col border-t border-t-[var(--gap-text)]">
         <SendActionBar
           sendMessage={sendMessage}
-          getImageMessage={getImageMessage}
-          getFileMessage={getFileMessage}
+          sendFile={sendFile}
           getSoundMessage={getSoundMessage}
         />
         <div
@@ -139,6 +136,7 @@ const ChatFooter = () => {
           data-composer-controls
         >
           {composer.controls}
+          {fileReading.controls}
           {composer.advanced && composer.isCoordinator && !html && (
             <div className="px-3 py-1 text-xs">
               <p className="mb-1 text-slate-600">目标 · 材料 · 交付 · 截止时间</p>

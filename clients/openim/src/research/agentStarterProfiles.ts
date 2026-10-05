@@ -9,7 +9,7 @@ export type AgentStarter = {
 };
 
 // These are editable conversation profiles, not tools or verified research skills.
-export const agentStarters: readonly AgentStarter[] = [
+const legacyAgentStarters: readonly AgentStarter[] = [
   {
     id: "literature-reading",
     summary: "把文献片段读清楚，整理研究问题、方法、结果与局限。",
@@ -55,6 +55,20 @@ export const agentStarters: readonly AgentStarter[] = [
   },
 ];
 
+// Keep exact legacy profiles as a reuse option; never overwrite an edited Agent.
+export const agentStarters: readonly AgentStarter[] = legacyAgentStarters.map(starter => ({
+  ...starter,
+  input: starter.id === "literature-reading"
+    ? "粘贴摘要/正文，或上传含文字的 PDF、TXT、Markdown、CSV，并说明阅读问题。"
+    : `${starter.input} 也可上传含文字的 PDF、TXT、Markdown 或 CSV。`,
+  boundary: `${starter.id === "literature-reading" ? "只分析提供的文字与实际读取片段，不编造未提供内容。" : starter.boundary} 附件至多 10 MiB；不做扫描 OCR、联网检索或自动执行。`,
+  profile: {
+    ...starter.profile,
+    introduction: starter.profile.introduction.replace("论文摘要或正文片段", "论文摘要、正文片段或文字附件"),
+    capabilityDescription: `${starter.profile.capabilityDescription.replace("不联网检索、不自动读取 PDF", "不联网检索；附件仅使用本次实际读取的文字范围")}\n可阅读用户主动上传的含文字 PDF、TXT、Markdown、CSV（至多 10 MiB）；依据服务实际提供的页码与片段回答，不声称已读完整文件，不做扫描 OCR、联网检索或工具执行。`,
+  },
+}));
+
 export function findOwnedStarter(
   contacts: readonly Contact[],
   starter: AgentStarter,
@@ -65,9 +79,10 @@ export function findOwnedStarter(
       contact.identity.kind === "personal_agent" &&
       contact.identity.ownerMemberId === actorId &&
       contact.profile.role === "specialist" &&
-      contact.displayName === starter.profile.displayName &&
-      contact.profile.introduction === starter.profile.introduction &&
-      contact.profile.capabilityDescription === starter.profile.capabilityDescription &&
-      contact.profile.personality === starter.profile.personality,
+      [starter.profile, legacyAgentStarters.find(item => item.id === starter.id)?.profile].some(profile =>
+        profile && contact.displayName === profile.displayName &&
+        contact.profile.introduction === profile.introduction &&
+        contact.profile.capabilityDescription === profile.capabilityDescription &&
+        contact.profile.personality === profile.personality),
   );
 }

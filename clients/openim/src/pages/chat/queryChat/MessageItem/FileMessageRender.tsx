@@ -1,15 +1,29 @@
 import { MessageStatus } from "@openim/wasm-client-sdk";
 import { Button } from "antd";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import fileIcon from "@/assets/images/messageItem/file_icon.png";
 import { bytesToSize } from "@/utils/common";
 import { IMessageItemProps } from ".";
 import styles from "./message-item.module.scss";
+import { canReadSdkFile, useAgentFileReading } from "@/research/useAgentFileReading";
+import { useAgentChatOperation, type AgentChatOperation } from "@/research/useAgentChatOperation";
+import { useConversationStore, useUserStore } from "@/store";
+import { useResearchStore } from "@/research/store";
 
 export default function FileMessageRender({ message }: IMessageItemProps) {
   const [downloading, setDownloading] = useState(false), [error, setError] = useState("");
   const file = message.fileElem;
+  const reading = useAgentFileReading();
+  const capture = useAgentChatOperation();
+  const input = useRef<HTMLInputElement>(null);
+  const intent = useRef<AgentChatOperation>();
+  const generation = useResearchStore(s => s.generation);
+  const currentID = useConversationStore(s => s.currentConversation?.conversationID);
+  useUserStore(s => s.selfInfo.userID);
+  useResearchStore(s => s.contacts);
+  useResearchStore(s => s.mappings);
+  useEffect(() => { return () => intent.current?.dispose(); }, [generation, currentID]);
   if (!file) throw new Error("文件消息缺少 fileElem");
   const download = async () => {
     if (!file.sourceUrl || downloading) return;
@@ -24,6 +38,21 @@ export default function FileMessageRender({ message }: IMessageItemProps) {
   return <div className={`${styles.bubble} max-w-[290px]`} data-file-message>
     <div className="flex items-center gap-3"><img src={fileIcon} alt="" width={38} /><div className="min-w-0"><strong className="block break-all">{file.fileName}</strong><small>{bytesToSize(file.fileSize)}</small></div></div>
     <Button type="link" loading={downloading} disabled={message.status === MessageStatus.Sending || !file.sourceUrl} onClick={() => void download()} aria-label={`下载 ${file.fileName}`}>下载文件</Button>
+    {canReadSdkFile(message) && <div>
+      <Button type="link" loading={reading.busy} disabled={reading.busy || !file.sourceUrl} onClick={() => {
+        void reading.readExisting(message);
+      }}>让 Agent 阅读</Button>
+      <Button type="link" disabled={reading.busy} onClick={() => {
+        intent.current?.dispose(); intent.current = capture(); input.current?.click();
+      }}>从本机选择阅读</Button>
+      <input ref={input} type="file" className="hidden" accept=".pdf,.txt,.md,.csv" onChange={event => {
+        const selected = event.currentTarget.files?.[0], operation = intent.current;
+        event.currentTarget.value = "";
+        if (!selected || !operation?.isCurrent()) return;
+        void reading.readExisting(message, selected, operation.isCurrent).finally(() => operation.dispose());
+      }} />
+      {reading.controls}
+    </div>}
     {error && <div role="alert" className="text-xs text-red-700">{error}</div>}
   </div>;
 }
