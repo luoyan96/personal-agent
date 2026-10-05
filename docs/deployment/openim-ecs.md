@@ -1,6 +1,16 @@
 # 新 ECS：OpenIM 科研微信（2026-10-05）
 
-## 最新更新：注册修复已上线
+## 最新更新：默认需求入口已上线
+
+2026-10-05 09:58 北京时间，前端固定为 `d99c884dcc9c9dc3165949e82fd4568fdb4fa1b2`。登录就绪后打开实际“需求与协作”，用户可直接输入目标 / 材料 / 交付 / 截止时间；模板只填草稿。保留现有私聊 / 群聊深链接及刷新，主动导航不被轮询切走；320px 长介绍保持单行，标题可读。
+
+- 这是客户端静态更新。Nginx root 为 `/opt/research-openim/client-releases/d99c884dcc9c9dc3165949e82fd4568fdb4fa1b2/clients/openim/dist`；API / worker 镜像仍为下节 d7 的 b2f1edf，`/opt/research-openim/current` 仍指向 d7 后端 release。契约 / 迁移不变，未重建后端或重测媒体。
+- 源码与 Web 归档、外层包 SHA256 核验，公网 HTML 与精确最终构建一致；独立客户端整合类型、最终 Web 构建和四个 SDK 资源检查通过。隔离 Edge / 新合成实验室真实 HTTPS / SDK 七项通过，pageerror 0；默认需求、模板草稿、协调刷新、显式群刷新、通讯录导航、手机标题 / 输入 / 发送 / 返回列表可用。未发送测试消息或调用模型，未使用真实账号 / Key。
+- 回退配置 `/opt/research-openim/ops/demand-entry-20261005T015857Z/research-openim-production`，上一前端 b404 和原 d7 前端保留。先恢复该配置，再 `nginx -t` / reload；核对实际公网首页，不能只按 reload 命令返回判断切换完成。
+- 首次立即核对首页时得到旧 hash，脚本实际回退；增加 20 秒内的新首页收敛检查后成功，失败日志 `demand-entry-deploy.initial-failed.log` 保留。健康入口必须使用 `/api/v1/health/ready`；`/readyz` 会返回 SPA HTML，不能作为 API readiness。最终真实健康入口返回 HTTP 200 / status ok / 0.13.1。
+- 10:00 审计停用本批合成账号、撤销邀请码，RAP 活跃会话和 IM lease 0，测试历史保留；本机合成密码 / bootstrap 文件已移除。10:04 再核对八个服务运行、API healthy、无 OOM、精确首页、Nginx root 和后端镜像未变。云回执 `/opt/research-openim/ops/demand-entry-closure.json`，本机父目录 `.runtime/demand-entry-20261005/closure.json` 及桌面 / 手机截图。不推 GitHub；真实 AI 理解 / 协作安排 / 科研交付仍需另行验收。
+
+## 上次更新：注册修复已上线
 
 2026-10-05 08:26 北京时间发布固定软件 `d7cbe97abdd6271f459918727bf00f7c2bab154c`，`/opt/research-openim/current` 已指向该 release。当前科研契约 **0.13.1**、IM 桥 **1.0.0**、迁移 **015**。后续本地交接文档提交不改变软件归档。下文初次部署 / SDK 媒体结果保留受测基线 `c3f58a4`，本轮未重新做整套媒体或真实模型验收。
 

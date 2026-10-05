@@ -23,16 +23,18 @@
 | --- | --- |
 | 总控集成目录 | `D:/deepseek-agent/research-agent-platform-chat-integration`；操作前用 `git status` 确认目录与已有改动 |
 | 分支 | `feature/openim-client-rebuild`；最新本地 SHA 用 `git log -1` 读取，不使用其他旧克隆代替 |
-| 已上线固定软件 | `d7cbe97abdd6271f459918727bf00f7c2bab154c`（注册修复）；后续本地交接文档提交不改变线上软件 SHA |
+| 已上线前端 | `d99c884dcc9c9dc3165949e82fd4568fdb4fa1b2`（默认需求入口、聊天刷新恢复、窄屏标题）；后续本地文档提交不改变线上前端 SHA |
+| 已上线 API / worker | `d7cbe97abdd6271f459918727bf00f7c2bab154c`（注册修复）；本轮只有客户端变更，后端镜像未重建 |
 | 新站 | `https://chat.acceptcat.com`，文件 `https://files.chat.acceptcat.com` |
 | 新 ECS | 广州 Ubuntu 22.04.5，4 vCPU / 8 GiB / 50 GiB；当前到期日 2026-11-04，未改续费设置 |
-| 运行与发布 | `/srv/research-openim`；`/opt/research-openim/current` 指向固定软件 release |
+| 运行与发布 | `/srv/research-openim`；`/opt/research-openim/current` 仍指向后端 d7 release；Nginx 前端 root 为 `/opt/research-openim/client-releases/d99c884dcc9c9dc3165949e82fd4568fdb4fa1b2/clients/openim/dist` |
 | 版本 | 契约 0.13.1、IM 桥 1.0.0、SQLite 迁移 015；本轮注册修复没有数据库迁移 |
 | 旧站 | `research.acceptcat.com` 独立保留；旧账号 / 模型配置不自动迁移，不在本轮升级范围 |
 | GitHub | 新 OpenIM 批次未推送。用户先看完成结果；不要把“本地已提交”写成“GitHub 已上传” |
 
 ## 已完成、证据与边界
 
+- 需求入口修复于 2026-10-05 09:58 北京时间上线。真实 SDK 登录 / 连接 / 同步及当前账号一致后自动打开置顶协调会话；已有私聊 / 群聊深链接刷新恢复，主动导航不被轮询抢走，旧账号 / 旧会话迟返回不写回。模板只填空草稿，不自动发送。最终前端独立构建 / 四个 SDK 资源核验通过，整合入口类型检查通过；新站独立合成账号的七项 Edge HTTPS / 真实 SDK 验收通过，pageerror 0，未发送消息或调用模型。320px 编辑 / 发送 / 返回列表及标题不裁切通过。证据在父目录 `.runtime/demand-entry-20261005/{after-report,deployment-verified}.json`、`demand-desktop.png`、`demand-mobile.png`。本轮未重跑媒体或根共享 CI，API / 契约 / 数据迁移未变；d7 根 CI 仍是对应后端版本的历史证据。
 - 根 CI：当前固定软件 `d7cbe97` 的 400 项测试及 2 项生产入口测试通过；独立完整客户端类型、3 项 auth 测试和 Web 构建 / 四个 SDK 资源检查通过。
 - 注册修复：后端真实本地 HTTP 边界、两个前端真实本地 API 的 18 项浏览器分组和桌面 / 320px 稳定错误布局通过；新站真实 HTTPS 的 7 项注册 / 登录 / 退出校验通过。用户名 / 邀请码仅去首尾空白，非法字符显示中文，密码原值 min8。测试账号已停用、邀请码已撤销、活跃会话为 0。证据：父目录 `.runtime/openim-cloud-20261004/registration-closure.json` 和 `registration-public-min8.png`。
 - 新 ECS 的真实 API 权限 15 项、profile Ex 门禁 7 项、API / worker / OpenIM 实际重启恢复 4 项、后端平台 3 退出 7 项有证据。
@@ -50,14 +52,15 @@
 - IFRC 首次注册说明仅在本机受控 `.runtime/openim-cloud-20261004/IFRC-首次注册.txt`，不把内容粘贴到聊天、日志、截图或 Git。负责人自行设账号 / 密码，随后在“实验室设置”签发成员邀请码和配置模型。
 - 运行记录在总控父目录 `.runtime/openim-cloud-20261004` 和 `.runtime/openim-client-rebuild/sdk-media`。源码仓库不收录密码、邀请码、token、真实资料或录音。
 - 最新更新前一致备份：`/srv/research-openim-backups/20261005T002607Z`；12 份 checksum / 9 个 gzip 完整流通过、隔离 SQLite 恢复 integrity ok。上批 `20261004T184707Z` 也保留。注册验收清理后的八个服务实际运行，API healthy / HTTPS ready、无 OOM；尚未做异地备份或完整组件恢复演练。
+- 本轮静态发布保留原 d7 / b404 前端及 Nginx 回退配置；最终备份 `/opt/research-openim/ops/demand-entry-20261005T015857Z/research-openim-production`。需求验收账号已审计停用、邀请码撤销，活跃 RAP 会话及 IM lease 均为 0，合成历史保留。完整回执 `.runtime/demand-entry-20261005/closure.json`；没有读取或改动真实账号 / 模型 Key。
 - 两域证书实际换发至 2027-01-02 UTC，webroot 自动续期 dry-run 和 deploy hook 通过，timer 已启用。
 - 上批临时 SSH 公钥已撤销，独立新连接明确拒绝，本地专用密钥已删；不得继续假定该 key 可用。可用用户已有阿里云 Workbench 连接进行已授权维护。
 - 每次 Compose 操作包含 `compose.yaml`、`compose.production.yaml` 及服务器私有 `compose.production-images.yaml`；MinIO 使用已核验的官方源码自建镜像。禁止 `down -v` 或清空旧站 / 活跃卷。
 
 ## 当前工作与后续优先级
 
-1. 注册修复已在 2026-10-05 08:26 北京时间上线，08:29 完成真实 HTTPS 合成验收与清理。用户刷新页面后自行注册；本轮没有使用或修改 IFRC 开通码 / 真实账号。截图中的可见用户名合法，无法仅从截图断言隐藏字符的具体来源。
-2. 负责人自行注册与配置模型后，在明确凭据来源和授权输入范围下完成新站 AI 实际调用及任务闭环。
+1. 用户已反馈可以登录；默认需求入口与刷新恢复已上线，用户在 Edge 强制刷新即可看到新页面。注册规则仍为密码 min8、中文错误。源码、部署版本和测试分开记录，不把前端更新当成后端重建。
+2. 负责人在“实验室设置”完成模型配置后，在明确凭据来源和授权输入范围下完成新站 AI 实际调用及任务闭环。本轮只验证需求入口与导航，不把模板或 SDK 登录成功当成 AI 已完成科研任务。
 3. 按用户选择继续原生桌面包、剩余 SDK 权限 / mention 验证与真实小组试用。旧 SDK 媒体证据基于 `c3f58a4`；本轮目标为注册，未重新宣称全套媒体或真实 AI 验收。
 
 ## 后续 AI 更新规则
