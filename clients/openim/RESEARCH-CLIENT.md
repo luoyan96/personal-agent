@@ -43,6 +43,8 @@
 
 本轮 Git 外证据在父目录 `.runtime/agent-creation-20261005/`：`fixture-5999494d-5a17-4144-b0ee-1c545677ecda/report.json` 的前4组与 `fixture-b1be955e-32e6-4c0c-996a-ec73ee2a36d2/report.json` 的续5组、`http-6aa348af-171c-4a0c-8d45-719f477cca67/report.json` 的8组；真实服务截图为该 HTTP 目录的 `actual-contacts-desktop.png`、`actual-history-desktop.png`、`actual-unavailable-mobile.png`。首次空编辑器发送按钮 disabled 的测试假定、合成分页多带 `version` 被真实 strict schema 拒绝、未配置 IM 实际为 unavailable 而脚本预期 pending 的中止报告均保留，未计为产品通过。实际 SDK 自动进入新 Agent 私聊和真实模型生成效果由总控另外验收。
 
+随后真实线上创建已保存联系人与私聊，但自动选择后没有进入目标路由。单人会话的状态同步提交后，原切换钩子先等待 Promise，实际 QueryChat 在 `currentID` 与旧路由不匹配时卸载输入区，取消了操作；旧路由恢复又选回个人助理。修复 `6b8e8fd624931968d1f3efd469231467536b43f0` 在真实授权单人选择同步提交且账号、原路由和操作守卫仍有效时，同一 tick 导航后再等待；群聊保留原异步路径。新增实际 QueryChat / ChatFooter / useResearchChatEntry 父子路由配合明确合成 API / SDK 传输 **5 组**通过：自动打开后5.5秒稳定、320px草稿和发送、主动离开后返回取消迟响应、账号变化取消、pageerror0。证据为该运行目录 `query-route-efaf3986-ca5d-4049-86e1-717e65f63f96/report.json` 与 `query-auto-open-desktop.png` / `query-auto-open-mobile.png`。首段 `query-route-c1880fe9` 已自动打开，但合成传输漏掉新目标的会话读取路由导致手机发送禁用，failed报告保留；修复测试数据后才完成上述五项。该检查不是实际 IM 登录或真实模型调用，云端回归由总控另记。
+
 2026-10-05 个人聊天与模型设置使用共享契约 **0.14.0**。客户端实现提交为 `91a423a`、补修为 `008bb7f`，真实本地服务为后台提交 `979d314`；只在独立合成账号、隔离 SQLite、Edge 浏览器中检查，未读取真实账号或 Key，未部署或推送。
 
 - 真实 HTTP/SQLite 检查共 **17 项**：无邀请码的桌面和手机注册、8 位密码与账号规范化、独立个人空间、配置创建/编辑/删除/默认、空 Key 保留原密文、明确移除 Key、账号间配置隔离、完整用户名跨空间查询与申请、对方同意及实际直接会话授权。IM 未配置时真实返回不可用或待同步，不以生成的映射作为 SDK 已连接证据。
