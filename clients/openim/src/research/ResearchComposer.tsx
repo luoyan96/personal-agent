@@ -18,6 +18,19 @@ import {
 import { useResearchContactChat } from "./useResearchContactChat";
 import { CreatedAgentChatButton } from "./CreatedAgentChatButton";
 import { PersonalReceiptCard } from "./PersonalReceiptCard";
+import { registerAgentProgress } from "./agent-progress";
+
+export type PreparedResearchSend =
+  | {
+      route: "agentChatMessage";
+      conversationId: string;
+      body: RequestFor<"agentChatMessage">["body"];
+    }
+  | {
+      route: "sendChatMessage";
+      conversationId: string;
+      body: RequestFor<"sendChatMessage">["body"];
+    };
 
 export function useResearchComposer() {
   const captureOperation = useAgentChatOperation();
@@ -27,6 +40,7 @@ export function useResearchComposer() {
     operation: AgentChatOperation;
     attempted: boolean;
   }>();
+  const sendIntent = useRef(0);
   const [creationFailure, setCreationFailure] = useState<{
     turnId: string;
     message: string;
@@ -57,6 +71,7 @@ export function useResearchComposer() {
       generation: number;
       imID?: string;
       turn: AgentTurn;
+      continuous?: boolean;
     }>(),
     [context, setContext] = useState<ChatResource[]>([]),
     [open, setOpen] = useState(false);
@@ -73,7 +88,12 @@ export function useResearchComposer() {
   const external = isDirectAgent ? peer?.agentRuntime : undefined;
   const externalReady = !!external && peer?.availability.status === "available";
   const externalScope = `${imID}:${actorGeneration}:${external?.serviceOrigin}:${external?.callerAllowed}`;
-  useEffect(() => { setExternalConsent(false); setAdvanced(false); }, [externalScope]);
+  const consentAvailable = useRef(externalConsent);
+  consentAvailable.current = externalConsent;
+  useEffect(() => {
+    setExternalConsent(false);
+    setAdvanced(false);
+  }, [externalScope]);
   const turn =
     turnSnapshot?.generation === actorGeneration && turnSnapshot.imID === imID
       ? turnSnapshot.turn
@@ -105,10 +125,16 @@ export function useResearchComposer() {
       return;
     }
     if (currentTurn.status !== "succeeded") return;
-    const delegated = currentTurn.assistantReceipt?.kind === "delegate" ? currentTurn.assistantReceipt : undefined;
-    const created = currentTurn.purpose === "create_agent" ? currentTurn.createdAgent : delegated;
+    const delegated =
+      currentTurn.assistantReceipt?.kind === "delegate"
+        ? currentTurn.assistantReceipt
+        : undefined;
+    const created =
+      currentTurn.purpose === "create_agent" ? currentTurn.createdAgent : delegated;
     if (!created) {
-      fresh.operation.dispose(); freshCreation.current = undefined; return;
+      fresh.operation.dispose();
+      freshCreation.current = undefined;
+      return;
     }
     fresh.attempted = true;
     void openAgentChat(created.contactId, fresh.operation.isCurrent, {
@@ -136,71 +162,140 @@ export function useResearchComposer() {
     setMode("chat");
     setCreationFailure(undefined);
   }, [imID, actorGeneration]);
-  const sendResearch = async (text: string) => {
+  const prepareResearch = (text: string): PreparedResearchSend | undefined => {
     const advancedRequest = advanced && mode === "ask_agent";
-    if (external && (!external.callerAllowed || !externalConsent))
-      throw new Error(external.callerAllowed ? "请先明确授权将本条文字发送到外部服务。" : "主人未授权当前账号调用该外部服务。");
-    if (external && !externalReady) throw new Error("此 Agent 的外部连接当前不可用，请主人核对连接配置；不会改用个人模型。");
-    if (external && advancedRequest) throw new Error("本站外部接入只转发本条文字，不转发本站的协作、记忆或附件。");
-    if (!researchMode || (!isDirectAgent && !advancedRequest)) return false;
+    if (external && (!external.callerAllowed || !consentAvailable.current))
+      throw new Error(
+        external.callerAllowed
+          ? "请先明确授权将本条文字发送到外部服务。"
+          : "主人未授权当前账号调用该外部服务。",
+      );
+    if (external && !externalReady)
+      throw new Error(
+        "此 Agent 的外部连接当前不可用，请主人核对连接配置；不会改用个人模型。",
+      );
+    if (external && advancedRequest)
+      throw new Error("本站外部接入只转发本条文字，不转发本站的协作、记忆或附件。");
+    if (!researchMode || (!isDirectAgent && !advancedRequest)) return undefined;
     if (
       !mapping ||
       !canonical.data?.data.allowedActions.includes("send") ||
       (advancedRequest ? !agents.some((a) => a.id === agentId) : agents.length !== 1)
     )
       throw new Error("请确认当前会话权限，并选择实际已加入的 AI");
+    // Consume the external permission at the click, never for the next queued text.
+    if (external) {
+      consentAvailable.current = false;
+      setExternalConsent(false);
+    }
+    return advancedRequest
+      ? {
+          route: "sendChatMessage",
+          conversationId: mapping.researchConversationId,
+          body: {
+            text,
+            intent: "ask_agent",
+            agentContactId: agentId,
+            budget: { maxTokens, maxSeconds },
+            mentions: [],
+            context: [...context],
+          },
+        }
+      : {
+          route: "agentChatMessage",
+          conversationId: mapping.researchConversationId,
+          body: {
+            text,
+            ...(external ? { externalConsent: true } : { continuous: true }),
+          },
+        };
+  };
+  const acceptSendIntent = () => {
+    freshCreation.current?.operation.dispose();
+    freshCreation.current = undefined;
+    setCreationFailure(undefined);
+    return ++sendIntent.current;
+  };
+  const sendPrepared = async (
+    prepared: PreparedResearchSend,
+    idempotencyKey: string,
+    isCurrent: () => boolean,
+    intent: number,
+  ) => {
+    if (!isCurrent())
+      throw new Error("会话已切换，这条消息尚未发送，请返回原会话核对。");
+    if (mapping?.researchConversationId !== prepared.conversationId)
+      throw new Error("原会话映射已变化，请先核对原发送记录；不会转发到其他会话。");
     const generation = useResearchStore.getState().generation;
     const memberId = useResearchStore.getState().actor?.member.id;
     const selfUserID = useUserStore.getState().selfInfo.userID;
-    freshCreation.current?.operation.dispose();
     const operation = captureOperation();
     const fresh = {
       operation,
       attempted: false,
       turnId: undefined as string | undefined,
     };
-    freshCreation.current = fresh;
-    setCreationFailure(undefined);
+    if (intent === sendIntent.current) freshCreation.current = fresh;
     let result;
     try {
-      result = advancedRequest
-        ? await researchApi("sendChatMessage", {
-            params: { id: mapping.researchConversationId },
-            body: {
-              text,
-              intent: "ask_agent",
-              agentContactId: agentId,
-              budget: { maxTokens, maxSeconds },
-              mentions: [],
-              context,
-            },
-          })
-        : await researchApi("agentChatMessage", {
-            params: { id: mapping.researchConversationId },
-            body: { text, ...(external ? { externalConsent: true } : {}) },
-          });
+      result =
+        prepared.route === "sendChatMessage"
+          ? await researchApi("sendChatMessage", {
+              params: { id: prepared.conversationId },
+              body: prepared.body,
+              idempotencyKey,
+            })
+          : await researchApi("agentChatMessage", {
+              params: { id: prepared.conversationId },
+              body: prepared.body,
+              idempotencyKey,
+            });
     } catch (error) {
       operation.dispose();
       if (freshCreation.current === fresh) freshCreation.current = undefined;
-      if (external && error instanceof ResearchApiError && error.code === "MODEL_UNAVAILABLE") throw new Error("此 Agent 的外部连接当前不可用，请主人核对连接配置；不会改用个人模型。");
+      if (
+        external &&
+        error instanceof ResearchApiError &&
+        error.code === "MODEL_UNAVAILABLE"
+      )
+        throw new Error(
+          "此 Agent 的外部连接当前不可用，请主人核对连接配置；不会改用个人模型。",
+        );
       throw error;
     }
     if (
+      isCurrent() &&
       operation.isCurrent() &&
       useResearchStore.getState().generation === generation &&
       useResearchStore.getState().actor?.member.id === memberId &&
       useConversationStore.getState().currentConversation?.conversationID === imID &&
       useUserStore.getState().selfInfo.userID === selfUserID
     ) {
-      setTurn(
-        result.data.turn ? { generation, imID, turn: result.data.turn } : undefined,
-      );
-      if (external) setExternalConsent(false);
-      if (result.data.turn && (result.data.turn.purpose === "create_agent" || (mapping.kind === "personal" && !external)))
+      if (result.data.turn)
+        registerAgentProgress(generation, imID || "", result.data.turn);
+      if (intent === sendIntent.current)
+        setTurn(
+          result.data.turn
+            ? {
+                generation,
+                imID,
+                turn: result.data.turn,
+                continuous:
+                  prepared.route === "agentChatMessage" &&
+                  prepared.body.continuous === true,
+              }
+            : undefined,
+        );
+      if (
+        intent === sendIntent.current &&
+        result.data.turn &&
+        (result.data.turn.purpose === "create_agent" ||
+          (mapping?.kind === "personal" && !external))
+      )
         fresh.turnId = result.data.turn.id;
       else {
         operation.dispose();
-        freshCreation.current = undefined;
+        if (freshCreation.current === fresh) freshCreation.current = undefined;
       }
       // The pointer still arrives through the canonical outbox and real SDK.
       // Only successful persistence authorizes the UI to follow this request.
@@ -217,11 +312,36 @@ export function useResearchComposer() {
   const controls =
     researchMode && mapping ? (
       <>
-        {external && <div className="px-3 py-2 text-xs leading-5 text-slate-600">
-          <p className="truncate" title={external.serviceOrigin}>外部服务：{external.serviceOrigin} · 费用由主人连接的外部账号承担</p>
-          {external.callerAllowed ? externalReady ? <Checkbox checked={externalConsent} onChange={e => setExternalConsent(e.target.checked)}>授权发送本条文字（不含历史、记忆与附件）</Checkbox> : <p className="text-amber-700">{peer?.availability.status === "disabled" ? "外部连接已停用，请主人启用。" : "外部连接当前不可用，请主人核对连接配置。"}</p> : <p className="text-amber-700">主人尚未允许当前账号调用，请先联系主人。</p>}
-        </div>}
-        {currentTurn && <div className="mx-3"><PersonalReceiptCard turn={currentTurn} compact /></div>}
+        {external && (
+          <div className="px-3 py-2 text-xs leading-5 text-slate-600">
+            <p className="truncate" title={external.serviceOrigin}>
+              外部服务：{external.serviceOrigin} · 费用由主人连接的外部账号承担
+            </p>
+            {external.callerAllowed ? (
+              externalReady ? (
+                <Checkbox
+                  checked={externalConsent}
+                  onChange={(e) => setExternalConsent(e.target.checked)}
+                >
+                  授权发送本条文字（不含历史、记忆与附件）
+                </Checkbox>
+              ) : (
+                <p className="text-amber-700">
+                  {peer?.availability.status === "disabled"
+                    ? "外部连接已停用，请主人启用。"
+                    : "外部连接当前不可用，请主人核对连接配置。"}
+                </p>
+              )
+            ) : (
+              <p className="text-amber-700">主人尚未允许当前账号调用，请先联系主人。</p>
+            )}
+          </div>
+        )}
+        {currentTurn && (
+          <div className="mx-3">
+            <PersonalReceiptCard turn={currentTurn} compact />
+          </div>
+        )}
         {advanced && (
           <div className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs">
             <strong>需求与协作</strong>
@@ -259,8 +379,16 @@ export function useResearchComposer() {
           </div>
         )}
         {canonical.error && <Alert type="error" message={canonical.error} />}
-        {currentTurn?.assistantReceipt?.kind === "delegate" && creationFailure?.turnId === currentTurn.id &&
-          <div className="mx-3 mt-1"><CreatedAgentChatButton created={currentTurn.assistantReceipt} delegated initialFailure={creationFailure.message} /></div>}
+        {currentTurn?.assistantReceipt?.kind === "delegate" &&
+          creationFailure?.turnId === currentTurn.id && (
+            <div className="mx-3 mt-1">
+              <CreatedAgentChatButton
+                created={currentTurn.assistantReceipt}
+                delegated
+                initialFailure={creationFailure.message}
+              />
+            </div>
+          )}
         {currentTurn?.purpose === "create_agent" &&
           currentTurn.status === "succeeded" &&
           currentTurn.createdAgent &&
@@ -285,6 +413,12 @@ export function useResearchComposer() {
           )}
         {(turnRead.data?.data || turn) &&
           (advanced || (turnRead.data?.data || turn)?.status !== "succeeded") &&
+          !(
+            turnSnapshot?.continuous &&
+            !advanced &&
+            currentTurn?.purpose !== "create_agent" &&
+            (currentTurn?.status === "queued" || currentTurn?.status === "running")
+          ) &&
           turn?.conversationId === mapping.researchConversationId && (
             <div className="mx-3 mt-1">
               {turnRead.error && (
@@ -348,7 +482,9 @@ export function useResearchComposer() {
       </>
     ) : null;
   return {
-    sendResearch,
+    prepareResearch,
+    sendPrepared,
+    acceptSendIntent,
     controls,
     isCoordinator: mapping?.kind === "personal",
     advanced,
@@ -368,7 +504,9 @@ export function useResearchComposer() {
     invalid:
       researchMode &&
       ((advanced && mode === "ask_agent") || isDirectAgent) &&
-      ((!!external && (!external.callerAllowed || !externalReady || !externalConsent)) || !canonical.data?.data.allowedActions.includes("send") ||
+      ((!!external &&
+        (!external.callerAllowed || !externalReady || !externalConsent)) ||
+        !canonical.data?.data.allowedActions.includes("send") ||
         (advanced && mode === "ask_agent"
           ? !agents.some((a) => a.id === agentId)
           : agents.length !== 1)),

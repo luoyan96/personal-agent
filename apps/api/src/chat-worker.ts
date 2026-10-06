@@ -15,6 +15,7 @@ import { fileChatSystem,fileReadMetadata,selectFileExcerpts } from './agent-file
 import { AgentCreationOutput, agentCreationSystem, applyAgentCreation, legacyTurnDocument } from './agent-creation.js'
 import { externalForChat } from './agent-connections.js'
 import { callExternalAgent, externalAgentSystem, type ExternalAgentCall } from './external-agent-client.js'
+import { currentTurnText,registerChatCall,saveChatDelta } from './continuous-chat.js'
 import { personalMemoryContext } from './personal-memories.js'
 import { personalAssistantSystem,PersonalAssistantOutput,assistantCandidates,assistantPeople,rankedAssistantCandidates,assistantComplexRequest,delegateWork,AssistantBudgetError } from './personal-assistant.js'
 
@@ -44,11 +45,11 @@ export function reconcileChat(db: DatabaseSync, config: Config) {
 }
 export class ChatWorker {
   readonly owner = randomUUID()
-  constructor(readonly db: DatabaseSync, readonly config: Config, readonly call: ModelCall = callHarness, readonly externalCall:ExternalAgentCall=callExternalAgent) {}
+  constructor(readonly db: DatabaseSync, readonly config: Config, readonly call: ModelCall = callHarness, readonly externalCall:ExternalAgentCall=callExternalAgent,readonly clock:()=>number=Date.now) {}
   async tick() {
     const job = transaction(this.db, () => {
       reconcileChat(this.db, this.config)
-      const row = this.db.prepare("SELECT * FROM chat_turns WHERE status='queued' ORDER BY rowid LIMIT 1").get()
+      const row = this.db.prepare("SELECT * FROM chat_turns WHERE status='queued' AND (json_extract(request_json,'$.continuous.dueAt') IS NULL OR json_extract(request_json,'$.continuous.dueAt')<=?) ORDER BY rowid LIMIT 1").get(this.clock())
       if (!row) return null
       const s = service(this.db, String(row.owner_id), this.config), { turn, input, group } = s.checkTurnInput(String(row.id))
       let system:string,prompt:string
@@ -62,9 +63,9 @@ export class ChatWorker {
         // This new operation is authorized by exactly this owner's imperative,
         // not by any past message, profile, memory or proposed business action.
         system=agentCreationSystem
-        prompt=JSON.stringify({request:s.projectedMessage(turn.inputMessageId).text})
+        prompt=JSON.stringify({request:currentTurnText(s,turn.id)})
       } else if(input.assistantMode==='coordinate'){
-        const current=s.projectedMessage(turn.inputMessageId).text??'',agentContext=s.directory.modelContext(turn.agentContactId,group.id),personal=personalMemoryContext(s,agentContext.agent,group,current),complex=assistantComplexRequest(current)
+        const current=currentTurnText(s,turn.id),agentContext=s.directory.modelContext(turn.agentContactId,group.id),personal=personalMemoryContext(s,agentContext.agent,group,current),complex=assistantComplexRequest(current)
         system=personalAssistantSystem+(complex?'\nComplex collaboration: {kind:"collaborate",answer:string,group:Group}. Proposals need confirmation; humans accept independently. Share null or exactly currentRequest; no private memories/history.\n'+chatModelSystem({group:true,inviteContact:false,inviteTask:false,runTask:false}).split('\n').filter(line=>/^(Ref=|Group=|Item=|Schedule=)/.test(line)).join('\n'):'')
         const candidates=rankedAssistantCandidates(s,current),shown:typeof candidates=[]
         const serialize=()=>JSON.stringify({currentRequest:current,requestedAgent:{id:agentContext.agent.id,displayName:agentContext.agent.displayName,profile:Object.fromEntries(Object.entries(agentContext.agent.profile).filter(([key,value])=>key!=='version'&&value!==''))},...(personal.records.length?{personalMemories:personal.records}:{}),...(agentContext.memories.length?{memories:agentContext.memories}:{}),localSpecialists:shown,...(shown.length<candidates.length?{specialistsOmitted:true}:{}),...(complex?{labId:s.c.actor.labId,collaboratingHumans:assistantPeople(s)}:{})})
@@ -75,7 +76,7 @@ export class ChatWorker {
       } else {
       // Snapshot the context and bounded message window; normal chat never creates a job.
       let remainingText=32000
-      const messages = this.db.prepare('SELECT id FROM chat_messages WHERE conversation_id=? AND sequence<=? ORDER BY sequence DESC LIMIT 20').all(group.id, input.inputSequence).flatMap(r => {
+      const messages = this.db.prepare('SELECT id FROM chat_messages WHERE conversation_id=? AND sequence<=? ORDER BY sequence DESC LIMIT ?').all(group.id, input.inputSequence,Math.max(20,input.continuous?.messageIds.length??1)).flatMap(r => {
         try { const m = s.projectedMessage(String(r.id));if(!input.dailyChat&&(m.text?.length??0)>remainingText)return [];remainingText-=m.text?.length??0;return [{ id:m.id,origin: m.origin, text: m.text, senderContactId: m.senderContactId,mentions:m.mentions,resources:m.resources }] } catch { return [] }
       }).reverse()
       let context: unknown[]
@@ -96,7 +97,7 @@ export class ChatWorker {
       const candidates=input.dailyChat?group.members.map(m=>m.contactId).filter(id=>id!==turn.agentContactId):this.db.prepare('SELECT id FROM chat_contacts WHERE lab_id=? AND id<>? ORDER BY id').all(s.c.actor.labId,turn.agentContactId).map(r=>String(r.id))
       const contacts = candidates.flatMap(id => { try { return [publicContact(s.contact(id))] } catch { return [] } }).slice(0, 100)
       const agentContext=s.directory.modelContext(turn.agentContactId,group.id),requestedAgent=publicContact(agentContext.agent)
-      const personal=personalMemoryContext(s,agentContext.agent,group,s.projectedMessage(turn.inputMessageId).text??'')
+      const personal=personalMemoryContext(s,agentContext.agent,group,currentTurnText(s,turn.id))
       input.agentContextFingerprint=agentContext.fingerprint
       this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(JSON.stringify(input),turn.id)
       const contactColumns=['id','displayName','identity','availability','profile']
@@ -118,22 +119,24 @@ export class ChatWorker {
       if(input.dailyChat){
         const current=messages.find(m=>m.id===turn.inputMessageId)
         if(!current){turn.status='failed';turn.failure='INPUT_CHANGED';turn.version++;turn.updatedAt=instant();s.saveTurn(turn);return null}
-        const base=serialize([current],messages.length>1)
+        const required=new Set(input.continuous?.messageIds??[current.id]);const currentBatch=messages.filter(m=>required.has(m.id))
+        if(currentBatch.length!==required.size){turn.status='failed';turn.failure='INPUT_CHANGED';turn.version++;turn.updatedAt=instant();s.saveTurn(turn);return null}
+        const base=serialize(currentBatch,messages.length>currentBatch.length)
         const minimumOutput=input.budget.maxTokens-chatInputTokenBound(system,base)>=512?512:64
         let selected=messages
-        while(selected.length>1&&input.budget.maxTokens-chatInputTokenBound(system,prompt)<minimumOutput){
-          const oldest=selected.findIndex(m=>m.id!==current.id)
+        while(selected.length>currentBatch.length&&input.budget.maxTokens-chatInputTokenBound(system,prompt)<minimumOutput){
+          const oldest=selected.findIndex(m=>!required.has(m.id))
           selected=selected.filter((_,i)=>i!==oldest)
           prompt=serialize(selected,true)
         }
         if(document){
           const select=(rows:typeof selected)=>selectFileExcerpts(document,input.fileSource,current.text??'',system,(read,excerpts)=>serialize(rows,rows.length<messages.length,read,excerpts),input.budget.maxTokens)
-          const currentOnly=select([current])
+          const currentOnly=select(currentBatch)
           const readBytes=(read:NonNullable<typeof turn.fileRead>)=>read.ranges.reduce((total,range)=>total+Buffer.byteLength(document.pages.find(page=>page.pageNumber===range.pageNumber)!.text.slice(range.start,range.end)),0)
           const desiredBytes=Math.min(512,readBytes(currentOnly.read)),desiredOutput=Math.min(512,input.budget.maxTokens-chatInputTokenBound(system,currentOnly.prompt))
           let result=select(selected)
-          while(selected.length>1&&(readBytes(result.read)<desiredBytes||input.budget.maxTokens-chatInputTokenBound(system,result.prompt)<desiredOutput)){
-            const oldest=selected.findIndex(message=>message.id!==current.id)
+          while(selected.length>currentBatch.length&&(readBytes(result.read)<desiredBytes||input.budget.maxTokens-chatInputTokenBound(system,result.prompt)<desiredOutput)){
+            const oldest=selected.findIndex(message=>!required.has(message.id))
             selected=selected.filter((_,index)=>index!==oldest);result=select(selected)
           }
           if(!result.read.ranges.length){turn.status='failed';turn.failure='BUDGET_EXCEEDED';turn.version++;turn.updatedAt=instant();s.saveTurn(turn);return null}
@@ -160,15 +163,24 @@ export class ChatWorker {
       return { id: turn.id, ownerId: String(row.owner_id), fence, input,externalEndpoint:external?.endpoint, modelInput: { provider:selected.provider,...(selected.provider==='deepseek'&&input.dailyChat&&input.fileSource?{reasoningEffort:'off' as const}:{}),system, prompt, model:external?.model??selected.model, maxTokens: Math.min(4096,remainingOutput), timeoutMs: input.budget.maxSeconds * 1000 }, credential: { apiKey } }
     })
     if (!job) return false
-    const controller = new AbortController(), started = Date.now()
+    const controller = new AbortController(), started = Date.now(),unregister=registerChatCall(job.id,controller)
     const lease = setInterval(() => {
       try { transaction(this.db, () => { reconcileChat(this.db, this.config); const row = this.db.prepare('SELECT status,fence FROM chat_turns WHERE id=?').get(job.id)!; if (row.status !== 'running' || row.fence !== job.fence) controller.abort(); else this.db.prepare('UPDATE chat_turns SET lease_until=? WHERE id=?').run(Date.now() + 15000, job.id) }) } catch { controller.abort() }
-    }, 3000)
+    }, job.input.continuous?200:3000)
     let timeout: ReturnType<typeof setTimeout> | undefined
     const expired = new Promise<ModelResult>(resolve => { timeout = setTimeout(() => { controller.abort(); resolve({ text: '', failure: 'TIMEOUT', inputTokens: null, outputTokens: null, elapsedMs: Date.now() - started }) }, job.modelInput.timeoutMs) })
+    let draft='',lastPublished=0
+    // Plain local daily replies only. JSON workflows, tools and provider
+    // reasoning never enter this provisional channel, even if malformed.
+    const onDelta=job.input.continuous&&job.input.dailyChat&&!job.input.purpose&&!job.input.assistantMode&&!job.input.externalAgent?(text:string)=>{
+      if(controller.signal.aborted||typeof text!=='string')return
+      draft+=text
+      if(draft.length>8000||/^[\s]*[\[{`]/.test(draft)||Date.now()-lastPublished<80)return
+      try{transaction(this.db,()=>{if(!saveChatDelta(service(this.db,job.ownerId,this.config),job.id,job.fence,draft))controller.abort()});lastPublished=Date.now()}catch{controller.abort()}
+    }:undefined
     let result: ModelResult
-    try { result = await Promise.race([job.externalEndpoint?this.externalCall({endpoint:job.externalEndpoint,model:job.modelInput.model,apiKey:job.credential.apiKey,text:job.modelInput.prompt,maxTokens:job.modelInput.maxTokens,timeoutMs:job.modelInput.timeoutMs},controller.signal):this.call(job.modelInput, controller.signal, job.credential), expired]) } catch { result = { text: '', failure: 'MODEL_FAILED', inputTokens: null, outputTokens: null, elapsedMs: Date.now() - started } }
-    finally { clearInterval(lease); if (timeout) clearTimeout(timeout) }
+    try { result = await Promise.race([job.externalEndpoint?this.externalCall({endpoint:job.externalEndpoint,model:job.modelInput.model,apiKey:job.credential.apiKey,text:job.modelInput.prompt,maxTokens:job.modelInput.maxTokens,timeoutMs:job.modelInput.timeoutMs},controller.signal):this.call(job.modelInput, controller.signal, job.credential,onDelta), expired]) } catch { result = { text: '', failure: 'MODEL_FAILED', inputTokens: null, outputTokens: null, elapsedMs: Date.now() - started } }
+    finally { unregister();clearInterval(lease); if (timeout) clearTimeout(timeout) }
     transaction(this.db, () => {
       const usage = ModelUsage.parse({ inputTokens: result.inputTokens, outputTokens: result.outputTokens, elapsedMs: result.elapsedMs, cost: null, currency: null })
       // Actual returned usage survives cancellation even when output is fenced.
@@ -184,7 +196,14 @@ export class ChatWorker {
       diagnostic('returned')
       reconcileChat(this.db, this.config)
       const row = this.db.prepare('SELECT * FROM chat_turns WHERE id=?').get(job.id)!
-      if (row.status !== 'running' || row.fence !== job.fence || row.lease_owner !== this.owner) return
+      if (row.status !== 'running' || row.fence !== job.fence || row.lease_owner !== this.owner) {
+        const input=JSON.parse(String(row.request_json))
+        if(input.continuous?.supersededBy&&(result.inputTokens===null||result.outputTokens===null)){
+          const stopped=AgentTurn.parse(JSON.parse(String(row.document)));stopped.status='interrupted';stopped.failure='LEASE_EXPIRED_USAGE_UNCERTAIN';stopped.version++;stopped.updatedAt=instant()
+          this.db.prepare('UPDATE chat_turns SET status=?,document=? WHERE id=?').run(stopped.status,JSON.stringify(legacyTurnDocument(stopped)),job.id)
+        }
+        return
+      }
       const s = service(this.db, job.ownerId, this.config), { turn, group } = s.checkTurnInput(job.id)
       turn.usage = usage
       if (result.failure) { turn.status = 'failed'; turn.failure = result.failure==='OUTPUT_LIMIT'?'BUDGET_EXCEEDED':'MODEL_FAILED';diagnostic(result.failure==='OUTPUT_LIMIT'?'output_limit':'provider_error') }

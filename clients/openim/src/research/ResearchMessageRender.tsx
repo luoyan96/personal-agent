@@ -7,7 +7,12 @@ import { ResearchActionCard } from "./ResearchActionCard";
 import { ResearchTurnStatus } from "./ResearchTurnStatus";
 import { useResearchStore } from "./store";
 import { useConversationStore } from "@/store";
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import {
+  registerAgentProgress,
+  acknowledgeAgentReply,
+  AgentProgressHistory,
+} from "./agent-progress";
 import type { AgentTurn } from "@research-agent-platform/contracts";
 import styles from "@/pages/chat/queryChat/MessageItem/message-item.module.scss";
 import { CreatedAgentChatButton } from "./CreatedAgentChatButton";
@@ -15,6 +20,7 @@ import { AgentFileReadSummary } from "./AgentFileReadSummary";
 import { PersonalReceiptCard } from "./PersonalReceiptCard";
 
 export default function ResearchMessageRender({ message }: IMessageItemProps) {
+  const history = useContext(AgentProgressHistory);
   const imID = useConversationStore((s) => s.currentConversation?.conversationID);
   const manager = useResearchStore((s) => s.actor?.isLabManager || false);
   const actorGeneration = useResearchStore((s) => s.generation);
@@ -77,8 +83,38 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
   );
   const currentTurn = turn.data?.data || currentRetry;
   const fileRead = currentTurn?.fileRead;
+  useEffect(() => {
+    if (!imID || !read.data?.fact.turnId) return;
+    // Restore only active work from history; old terminal receipts must not
+    // manufacture a fresh temporary reply at the bottom of the conversation.
+    if (
+      currentTurn &&
+      (["queued", "running"].includes(currentTurn.status) ||
+        (read.data.fact.origin === "human" &&
+          read.data.fact.id === history.latestOwnId &&
+          currentTurn.outputMessageId &&
+          !history.messageIds.has(currentTurn.outputMessageId)))
+    )
+      registerAgentProgress(actorGeneration, imID, {
+        id: read.data.fact.turnId,
+        conversationId: read.data.fact.conversationId,
+      });
+    if (currentTurn?.outputMessageId === read.data.fact.id)
+      acknowledgeAgentReply(actorGeneration, imID, currentTurn.id, read.data.fact.id);
+  }, [
+    actorGeneration,
+    imID,
+    read.data?.fact,
+    currentTurn?.id,
+    currentTurn?.status,
+    currentTurn?.outputMessageId,
+    history,
+  ]);
   return (
-    <div className={`${styles.bubble} max-w-[620px] text-sm`}>
+    <div
+      data-canonical-message={read.data?.fact.id}
+      className={`${styles.bubble} max-w-[620px] text-sm`}
+    >
       {!pointer && <Alert type="warning" message="这条消息暂无法显示" />}
       {read.error && (
         <Alert type="warning" message="这条消息当前无法读取" description={read.error} />
@@ -89,9 +125,13 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
       {read.data && (
         <>
           <p className="whitespace-pre-wrap break-words">{read.data.fact.text}</p>
-          {read.data.fact.files?.map(file => <AgentFileReadSummary key={file.messageId} file={file} read={fileRead} />)}
-          {fileRead && !read.data.fact.files?.some(file => file.messageId === fileRead.messageId) &&
-            <AgentFileReadSummary read={fileRead} />}
+          {read.data.fact.files?.map((file) => (
+            <AgentFileReadSummary key={file.messageId} file={file} read={fileRead} />
+          ))}
+          {fileRead &&
+            !read.data.fact.files?.some(
+              (file) => file.messageId === fileRead.messageId,
+            ) && <AgentFileReadSummary read={fileRead} />}
           {!!read.data.fact.resources.length && (
             <details className="mt-2 text-xs">
               <summary>相关材料</summary>
@@ -143,7 +183,14 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
       {turn.error && (
         <p className="text-xs text-red-700">AI 请求状态暂时无法读取：{turn.error}</p>
       )}
-      {currentTurn && currentTurn.outputMessageId === read.data?.fact.id && <div className="mt-2"><PersonalReceiptCard turn={currentTurn} compact={!!currentTurn.memoryReceipt || !!currentTurn.followupReceipt} /></div>}
+      {currentTurn && currentTurn.outputMessageId === read.data?.fact.id && (
+        <div className="mt-2">
+          <PersonalReceiptCard
+            turn={currentTurn}
+            compact={!!currentTurn.memoryReceipt || !!currentTurn.followupReceipt}
+          />
+        </div>
+      )}
       {read.data?.fact.origin === "service" &&
         turn.data?.data.purpose === "create_agent" &&
         turn.data?.data.status === "succeeded" &&

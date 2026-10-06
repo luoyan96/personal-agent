@@ -10,7 +10,7 @@ export interface ModelResult { text: string; failure: string | null; inputTokens
 
 // A bounded official Harness composition. No shell, filesystem, discovery,
 // session-upload, credentials-store or local ArtifactStore plugins are mounted.
-export async function generate(input: ModelInput, signal?: AbortSignal): Promise<ModelResult> {
+export async function generate(input: ModelInput, signal?: AbortSignal, onTextDelta?: (text:string)=>void): Promise<ModelResult> {
   const ctx = new Context(), started = Date.now()
   const result: ModelResult = { text: '', failure: null, inputTokens: null, outputTokens: null, elapsedMs: 0 }
   try {
@@ -21,7 +21,7 @@ export async function generate(input: ModelInput, signal?: AbortSignal): Promise
     else if (provider === 'qwen' || provider === 'doubao') ctx.llm.registerAdapter([provider], new CompatibleChatAdapter(provider, process.env.MODEL_API_KEY ?? ''))
     else throw Object.assign(new Error('Unsupported provider'), {code: 'PROVIDER_UNAVAILABLE'})
     for await (const chunk of ctx.llm.stream({ provider: provider === 'deepseek' ? 'deepseek-official' : provider, model: input.model, system: input.system, messages: [{role:'user',content:[{type:'text',text:input.prompt}]}], tools: [], maxTokens: input.maxTokens, signal: signal ? AbortSignal.any([signal,AbortSignal.timeout(input.timeoutMs)]) : AbortSignal.timeout(input.timeoutMs) })) {
-      if (chunk.type === 'text-delta') result.text += chunk.text
+      if (chunk.type === 'text-delta') {result.text += chunk.text;if(result.text.length<=100000)onTextDelta?.(chunk.text)}
       if (chunk.type === 'usage') { Object.assign(result,normalizeUsage(chunk.usage)); if(result.inputTokens===null||result.outputTokens===null)result.failure='USAGE_UNCERTAIN' }
       if(chunk.type==='finish'){result.finishReason=chunk.reason.kind;if(chunk.reason.kind==='max-tokens')result.failure='OUTPUT_LIMIT'}
       if (chunk.type === 'finish' && (chunk.reason.kind === 'error' || chunk.reason.kind === 'aborted')) result.failure = chunk.reason.failure.code

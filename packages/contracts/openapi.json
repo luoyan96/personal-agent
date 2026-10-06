@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.18.0"
+    "version": "0.19.0"
   },
   "paths": {
     "/api/v1/me/memory-settings": {
@@ -21343,7 +21343,7 @@
     "/api/v1/chat/conversations/{id}/agent-messages": {
       "post": {
         "operationId": "agentChatMessage",
-        "description": "Natural personal/direct Agent chat, default4000/90. Platform Agent uses sender model and authorized context; only owner coordinator anchored current imperative permits atomic create_agent. External specialist requires externalConsent:true on each message and current owner/accepted-caller policy; sends only this current text to disclosed serviceOrigin, using agent owner credential. No external history/memory/files/tools/tasks or implicit fallback. File selection/attachment and advanced arrangement are not external v1 features. Human SDK messages never invoke this route.",
+        "description": "Natural personal/direct Agent chat, default4000/90. continuous:true opts into local private batching:1200ms sliding window,4s maximum; every human message persists. Queued additions share one turn/root/budget. New input supersedes running generation and authorizes a new root budget; old usage is retained, never refunded or automatically retried. External each-message consent/current-text scope is unchanged and is never batched. Final canonical messages/receipts require strict validation and current authority/fence.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -21422,6 +21422,9 @@
                     "additionalProperties": false
                   },
                   "externalConsent": {
+                    "type": "boolean"
+                  },
+                  "continuous": {
                     "type": "boolean"
                   }
                 },
@@ -24231,6 +24234,274 @@
                     "allowedActions": [],
                     "version": 1,
                     "createdAt": "2026-09-21T08:00:00+08:00",
+                    "updatedAt": "2026-09-21T08:00:00+08:00"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/turns/{id}/progress": {
+      "get": {
+        "operationId": "chatTurnProgress",
+        "description": "Original owner plus live conversation/input/model-context authority. Poll at500ms. Provisional text contains only user-visible provider answer deltas, never thinking/tools/planning JSON; it is not a successful canonical message. Superseded/stopped progress clears text. finalMessageId identifies a validated canonical reply, including a waiting_input clarification; phase final means reply finalized, not business/task completion.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "turnId": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                        },
+                        "conversationId": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                        },
+                        "inputMessageIds": {
+                          "minItems": 1,
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                          }
+                        },
+                        "revision": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "phase": {
+                          "type": "string",
+                          "enum": [
+                            "queued",
+                            "streaming",
+                            "final",
+                            "superseded",
+                            "stopped"
+                          ]
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 8000
+                        },
+                        "finalMessageId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "supersededByTurnId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "turnId",
+                        "conversationId",
+                        "inputMessageIds",
+                        "revision",
+                        "phase",
+                        "text",
+                        "finalMessageId",
+                        "supersededByTurnId",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "turnId": "synthetic",
+                    "conversationId": "synthetic",
+                    "inputMessageIds": [
+                      "synthetic"
+                    ],
+                    "revision": 1,
+                    "phase": "queued",
+                    "text": "synthetic",
+                    "finalMessageId": null,
+                    "supersededByTurnId": null,
                     "updatedAt": "2026-09-21T08:00:00+08:00"
                   }
                 }
@@ -28775,7 +29046,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.18.0"
+                          "const": "0.19.0"
                         },
                         "checks": {
                           "type": "object",
@@ -28834,7 +29105,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.18.0",
+                    "contractVersion": "0.19.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -29008,7 +29279,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.18.0"
+                          "const": "0.19.0"
                         },
                         "checks": {
                           "type": "object",
@@ -29067,7 +29338,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.18.0",
+                    "contractVersion": "0.19.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -29219,7 +29490,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.18.0"
+                          "const": "0.19.0"
                         },
                         "checks": {
                           "type": "object",
@@ -29278,7 +29549,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.18.0",
+                    "contractVersion": "0.19.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",

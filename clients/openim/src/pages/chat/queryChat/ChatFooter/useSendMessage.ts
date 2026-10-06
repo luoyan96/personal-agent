@@ -14,13 +14,22 @@ import { pushNewMessage, updateOneMessage } from "../useHistoryMessageList";
 export type SendMessageParams = Partial<Omit<SdkSendMessageParams, "message">> & {
   message: MessageItem;
   needPush?: boolean;
+  isCurrent?: () => boolean;
 };
 
 export function useSendMessage() {
   const sendMessage = useCallback(
-    async ({ recvID, groupID, message, needPush }: SendMessageParams) => {
+    async ({
+      recvID,
+      groupID,
+      message,
+      needPush,
+      isCurrent = () => true,
+    }: SendMessageParams) => {
+      if (!isCurrent()) throw new Error("会话已切换，请返回原会话核对后发送");
       const actor = useUserStore.getState().selfInfo.userID;
-      if (!actor || message.sendID !== actor) throw new Error("发送身份已变化，请重新选择文件或录音后发送");
+      if (!actor || message.sendID !== actor)
+        throw new Error("发送身份已变化，请重新选择文件或录音后发送");
       const currentConversation = useConversationStore.getState().currentConversation;
       const sourceID = recvID || groupID;
       const inCurrentConversation =
@@ -43,12 +52,13 @@ export function useSendMessage() {
 
       try {
         const { data: successMessage } = await IMSDK.sendMessage(options);
-        updateOneMessage(successMessage);
+        if (isCurrent()) updateOneMessage(successMessage);
       } catch (error) {
-        updateOneMessage({
-          ...message,
-          status: MessageStatus.Failed,
-        });
+        if (isCurrent())
+          updateOneMessage({
+            ...message,
+            status: MessageStatus.Failed,
+          });
         throw error;
       }
     },

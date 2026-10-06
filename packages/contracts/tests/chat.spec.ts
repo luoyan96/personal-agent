@@ -30,7 +30,7 @@ describe('CHAT1 dispatch and sharing boundaries', () => {
   })
   it('marks all CHAT1 endpoints implemented with the service milestone', () => {
     const chat = Object.values(routes).filter(r => r.stage === 'CHAT1')
-    expect(chat).toHaveLength(50)
+    expect(chat).toHaveLength(51)
     for (const r of chat) expect(r.implemented).toBe(true)
   })
 })
