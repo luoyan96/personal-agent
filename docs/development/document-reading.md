@@ -1,6 +1,6 @@
 # 文档阅读上下文修复
 
-日期：2026-10-06。分支 `fix/document-reading-context-20261006`，本地实现已验证，尚未部署。当前线上源码仍为 `2e696881583842eb0e251d222083bccd925524fe`；最新发布结果见[当前状态](../current-state.md)。
+日期：2026-10-06。固定实现及发布包源码 `94b26d1d4871c45ace12a86f93d4c19cce377c4d`，三平台检查通过，[PR5](https://github.com/luoyan96/personal-agent/pull/5)于19:37:28北京时间合入main，合并提交0a2070f；尚未部署。当前线上源码仍为 `2e696881583842eb0e251d222083bccd925524fe`；最新发布结果见[当前状态](../current-state.md)。后续交接文档提交不改变发布包。
 
 ## 问题与修复
 
@@ -21,12 +21,15 @@ worker先完整保留本轮输入、Agent档案和获准记忆，再选择文件
 ## 检查与证据
 
 - 根CI：44文件 / 537项通过，另2项生产入口、B0进程及生产fixture排除通过。
+- 固定94b26d1的[GitHub完整CI](https://github.com/luoyan96/personal-agent/actions/runs/37456957982)在Ubuntu Node22.19 / 24与Windows Node24全部通过；本地客户端独立验证仍单独记录。
 - 后端：23专项与最后3项页码去重 / 全文输出预留 / 原预算回归通过，源和测试类型检查通过。
 - 真实HTTP / SQLite / 实际PDF解析器：合成PDF正好13页 / 49622字符；完整13页文本逐字等于持久解析正文，摘要、方法、实验和第13页结论都进入模型输入。预算63336 / 90秒，prompt JSON56949字节，准入上界58226，输出上限4096。明确第13页追问包含该页3817字符全文、该文件仍标部分读取。模型是合成ModelCall；固定Harness的本地SSE回归也为合成，不是实际厂商验收。
 - 客户端类型、Web构建和四固定SDK资源通过。八组实际生产路由 / QueryChat / ChatFooter / CKEditor界面检查通过：全文、118字符片段、等待、失败详情、旧消息、重叠范围去重、空白页以及1440和320px。API / 身份 / SDK / 文件元数据 / 模型回复均合成；pageerror0，既有Router警告保留。
 - 部署助手沿用既有停写一致备份 / 源码及镜像hash / 78表内容守卫；路径归档、fingerprint及实际SQLite栅栏三项检查通过，尚未在云端执行。当前Workbench断开，待用户恢复原连接；没有新增端口或SSH授权。
 
 Git外证据目录 `D:/deepseek-agent/.runtime/document-reading-20261006`：根 `root-ci-final.log`；后端 `backend-review.json`、`thirteen-page-call-proof.json`、`synthetic-thirteen-pages.pdf`；前端 `summary.json`、`render-d9dbb750/report.json`及截图；发布准备 `release/helper-tests.log`。首轮不合格PDF排版只提取1265字符、合成用量字段遗漏与错误测试路由匹配的失败日志保留。没有将用户论文、凭据或运行数据提交到仓库。
+
+最终固定归档的路径 / 文件类型、Git blob和源 / Web / helper哈希均核验通过，收据在 `release/bundle-receipt.json` / `bundle-verified.json`。19:35:53公开健康仍ready0.19、首页与旧7df1377完全一致；没有执行新云部署或签发新发布标签。原Workbench连接仍需用户在Edge恢复，下一步使用已准备的包及下列真实验收门禁。
 
 ## 发布与恢复
 
