@@ -53,6 +53,6 @@ export default function FileMessageRender({ message }: IMessageItemProps) {
       }} />
       {reading.controls}
     </div>}
-    {error && <div role="alert" className="text-xs text-red-700">{error}</div>}
+    {error && <div role="alert" className="text-xs text-red-700">本次下载未完成：{error}。如已有解析或回复回执，可从回执继续阅读全文。</div>}
   </div>;
 }
