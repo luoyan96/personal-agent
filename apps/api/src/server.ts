@@ -23,14 +23,17 @@ import { isLabManager, managerInvites, createManagerInvite, revokeManagerInvite 
 import { labAiRuntime, labAiSettings, updateLabAiSettings } from './lab-ai-settings.js'
 import { extractAgentFile } from './agent-files.js'
 import { ChatService } from './chat.js'
+import { beginConnectionProbe, finishConnectionProbe } from './agent-connections.js'
+import { callExternalAgent, type ExternalAgentCall } from './external-agent-client.js'
 import type { ChatCommand } from './chat.js'
 import { reconcileChat } from './chat-worker.js'
 import { OpenImBridge } from './openim-bridge.js'
 import { OpenImClient } from './openim-client.js'
 import { OpenImCallbacks } from './openim-callback.js'
 
-export function createServer(config: Config, options:{imClient?:OpenImClient}={}) {
+export function createServer(config: Config, options:{imClient?:OpenImClient;externalCall?:ExternalAgentCall}={}) {
   if(options.imClient&&config.mode!=='test')throw new Error('Injected OpenIM clients are test-only')
+  if(options.externalCall&&config.mode!=='test')throw new Error('Injected external Agent clients are test-only')
   const imClient=options.imClient??new OpenImClient(config)
   const app = Fastify({ logger: false, bodyLimit: 1048576, genReqId: () => randomUUID(), requestTimeout: 10000 })
   let db: ReturnType<typeof openDatabase> | undefined
@@ -48,7 +51,7 @@ export function createServer(config: Config, options:{imClient?:OpenImClient}={}
   app.addHook('onSend', async (_request, reply) => { reply.header('Cache-Control', 'no-store'); reply.header('X-Contract-Version', contractVersion); reply.header('X-Content-Type-Options', 'nosniff') })
   const authValidationMessages={username:'用户名只能使用字母、数字、下划线或短横线，长度为 1 到 100 个字符。',password:'密码至少需要 8 个字符。',inviteCode:'请输入有效的邀请码。',displayName:'请输入 1 到 200 个字符的显示名称。'} satisfies Record<AuthValidationField,string>
   function error(code: keyof typeof errorStatus, requestId: string, field?:AuthValidationField) {
-    const fileErrors:Partial<Record<keyof typeof errorStatus,string>>={FILE_UNSUPPORTED:'仅支持 PDF、UTF8 txt、md 或 csv 文件。',FILE_TOO_LARGE:'文件不能超过 10 MiB。',FILE_INVALID_ENCODING:'文本文件必须为有效的 UTF8 编码。',FILE_ENCRYPTED:'无法读取加密 PDF，请解密后重新发送。',FILE_NO_TEXT:'文件没有可提取的文字；扫描 PDF 需要先做 OCR。',FILE_PARSE_FAILED:'文件损坏或无法解析，请换一个文件。',FILE_PARSE_TIMEOUT:'文件解析超时，请减少页数后重试。',FILE_EXTRACTION_LIMIT:'文件超过 200 页、20 万字符或解析资源上限。',FILE_PAGE_UNAVAILABLE:'选择的页码不在这个附件中。'}
+    const fileErrors:Partial<Record<keyof typeof errorStatus,string>>={EXTERNAL_CONSENT_REQUIRED:'请明确同意将本条文字发送至该 Agent 的外部服务。',EXTERNAL_FILES_UNSUPPORTED:'外部 Agent 暂不支持附件读取，请仅发送本条文字。',EXTERNAL_SCOPE_UNSUPPORTED:'外部 Agent 仅支持文字私聊，不支持任务安排。',EXTERNAL_ENDPOINT_UNSAFE:'外部服务须为公开 HTTPS 地址，不允许内部地址、重定向或 URL 凭据。',FILE_UNSUPPORTED:'仅支持 PDF、UTF8 txt、md 或 csv 文件。',FILE_TOO_LARGE:'文件不能超过 10 MiB。',FILE_INVALID_ENCODING:'文本文件必须为有效的 UTF8 编码。',FILE_ENCRYPTED:'无法读取加密 PDF，请解密后重新发送。',FILE_NO_TEXT:'文件没有可提取的文字；扫描 PDF 需要先做 OCR。',FILE_PARSE_FAILED:'文件损坏或无法解析，请换一个文件。',FILE_PARSE_TIMEOUT:'文件解析超时，请减少页数后重试。',FILE_EXTRACTION_LIMIT:'文件超过 200 页、20 万字符或解析资源上限。',FILE_PAGE_UNAVAILABLE:'选择的页码不在这个附件中。'}
     const message=fileErrors[code]??(code==='VALIDATION_ERROR'?(field?authValidationMessages[field]:'请检查填写内容和请求格式。'):code==='NOT_IMPLEMENTED'?'Endpoint is not implemented in B3.':'Request could not be completed.')
     return ErrorResponse.parse({ error: { code, message, requestId } })
   }
@@ -111,6 +114,16 @@ export function createServer(config: Config, options:{imClient?:OpenImClient}={}
         const extraction=await extractAgentFile(input.body,controller.signal)
         if(controller.signal.aborted)fail('INVALID_STATE')
         return transaction(connection,()=>{const chat=authorized();const result=chat.run('agentFileMessage',input,extraction);reconcileChat(connection,config);return result})
+      }
+      if(name==='probeAgentConnection'){
+        const input=parsed.data as RequestFor<'probeAgentConnection'>
+        const authorized=()=>{const actor=authenticate(connection,token);requireCsrf(actor,request.headers['x-csrf-token']);return new ChatService(new Collaboration(connection,actor,config.blobRoot,labAiRuntime(connection,actor.labId,config)),config)}
+        const prepared=transaction(connection,()=>beginConnectionProbe(authorized(),input))
+        if(prepared.cached)return route.response.parse(prepared.cached)
+        const job=prepared.job!,controller=new AbortController();request.raw.once('aborted',()=>controller.abort());reply.raw.once('close',()=>{if(!reply.raw.writableEnded)controller.abort()})
+        const result=await (options.externalCall??callExternalAgent)({endpoint:job.endpoint,model:job.model,apiKey:job.apiKey,text:'Connection check: reply briefly.',maxTokens:128,timeoutMs:15000},controller.signal)
+        if(controller.signal.aborted)fail('INVALID_STATE')
+        return transaction(connection,()=>finishConnectionProbe(authorized(),input,result))
       }
       if(route.stage==='IM1'&&!route.idempotent){
         const reauthorize=()=>authenticate(connection,token)

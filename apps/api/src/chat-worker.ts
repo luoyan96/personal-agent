@@ -13,6 +13,8 @@ import { ApiError } from './errors.js'
 import { chatModelSystem, chatInputTokenBound, dailyChatSystem } from './chat-model-input.js'
 import { fileChatSystem,fileReadMetadata,selectFileExcerpts } from './agent-files.js'
 import { AgentCreationOutput, agentCreationSystem, applyAgentCreation, legacyTurnDocument } from './agent-creation.js'
+import { externalForChat } from './agent-connections.js'
+import { callExternalAgent, externalAgentSystem, type ExternalAgentCall } from './external-agent-client.js'
 
 // Local model protocol: validated JSON, no model-side tools or business authority.
 export const ChatModelOutput = z.strictObject({
@@ -40,7 +42,7 @@ export function reconcileChat(db: DatabaseSync, config: Config) {
 }
 export class ChatWorker {
   readonly owner = randomUUID()
-  constructor(readonly db: DatabaseSync, readonly config: Config, readonly call: ModelCall = callHarness) {}
+  constructor(readonly db: DatabaseSync, readonly config: Config, readonly call: ModelCall = callHarness, readonly externalCall:ExternalAgentCall=callExternalAgent) {}
   async tick() {
     const job = transaction(this.db, () => {
       reconcileChat(this.db, this.config)
@@ -48,7 +50,13 @@ export class ChatWorker {
       if (!row) return null
       const s = service(this.db, String(row.owner_id), this.config), { turn, input, group } = s.checkTurnInput(String(row.id))
       let system:string,prompt:string
-      if(turn.purpose==='create_agent') {
+      const external=input.externalAgent?externalForChat(s,turn.agentContactId):null
+      if(input.externalAgent&&!external)throw new ApiError('FORBIDDEN')
+      if(external){
+        if(!input.externalConsent||!input.dailyChat||input.fileSource||input.context.length||group.kind!=='direct')throw new ApiError('FORBIDDEN')
+        const current=s.projectedMessage(turn.inputMessageId);if(current.origin!=='human'||current.senderContactId!==s.human().id)throw new ApiError('FORBIDDEN')
+        system=externalAgentSystem;prompt=current.text!
+      }else if(turn.purpose==='create_agent') {
         // This new operation is authorized by exactly this owner's imperative,
         // not by any past message, profile, memory or proposed business action.
         system=agentCreationSystem
@@ -126,7 +134,7 @@ export class ChatWorker {
         turn.status = 'failed'; turn.failure = 'BUDGET_EXCEEDED'; turn.version++; turn.updatedAt = instant(); s.saveTurn(turn); return null
       }
       let apiKey: string
-      try { apiKey = personalModelKey(this.db, s.c.actor, this.config) } catch {
+      try { apiKey = external?.apiKey??personalModelKey(this.db, s.c.actor, this.config) } catch {
         turn.status = 'unavailable'; turn.failure = 'MODEL_UNAVAILABLE'; turn.version++; turn.updatedAt = instant(); s.saveTurn(turn); return null
       }
       const fence = Number(row.fence) + 1
@@ -136,7 +144,7 @@ export class ChatWorker {
       const selected=personalModelRuntime(this.db,s.c.actor,this.config)
       // File reading needs a plain reply within the existing output allowance.
       // Only this DeepSeek path changes the provider's documented default.
-      return { id: turn.id, ownerId: String(row.owner_id), fence, input, modelInput: { provider:selected.provider,...(selected.provider==='deepseek'&&input.dailyChat&&input.fileSource?{reasoningEffort:'off' as const}:{}),system, prompt, model:selected.model, maxTokens: Math.min(4096,remainingOutput), timeoutMs: input.budget.maxSeconds * 1000 }, credential: { apiKey } }
+      return { id: turn.id, ownerId: String(row.owner_id), fence, input,externalEndpoint:external?.endpoint, modelInput: { provider:selected.provider,...(selected.provider==='deepseek'&&input.dailyChat&&input.fileSource?{reasoningEffort:'off' as const}:{}),system, prompt, model:external?.model??selected.model, maxTokens: Math.min(4096,remainingOutput), timeoutMs: input.budget.maxSeconds * 1000 }, credential: { apiKey } }
     })
     if (!job) return false
     const controller = new AbortController(), started = Date.now()
@@ -146,14 +154,14 @@ export class ChatWorker {
     let timeout: ReturnType<typeof setTimeout> | undefined
     const expired = new Promise<ModelResult>(resolve => { timeout = setTimeout(() => { controller.abort(); resolve({ text: '', failure: 'TIMEOUT', inputTokens: null, outputTokens: null, elapsedMs: Date.now() - started }) }, job.modelInput.timeoutMs) })
     let result: ModelResult
-    try { result = await Promise.race([this.call(job.modelInput, controller.signal, job.credential), expired]) } catch { result = { text: '', failure: 'MODEL_FAILED', inputTokens: null, outputTokens: null, elapsedMs: Date.now() - started } }
+    try { result = await Promise.race([job.externalEndpoint?this.externalCall({endpoint:job.externalEndpoint,model:job.modelInput.model,apiKey:job.credential.apiKey,text:job.modelInput.prompt,maxTokens:job.modelInput.maxTokens,timeoutMs:job.modelInput.timeoutMs},controller.signal):this.call(job.modelInput, controller.signal, job.credential), expired]) } catch { result = { text: '', failure: 'MODEL_FAILED', inputTokens: null, outputTokens: null, elapsedMs: Date.now() - started } }
     finally { clearInterval(lease); if (timeout) clearTimeout(timeout) }
     transaction(this.db, () => {
       const usage = ModelUsage.parse({ inputTokens: result.inputTokens, outputTokens: result.outputTokens, elapsedMs: result.elapsedMs, cost: null, currency: null })
       // Actual returned usage survives cancellation even when output is fenced.
       this.db.prepare('UPDATE chat_attempts SET usage_json=? WHERE turn_id=?').run(JSON.stringify(usage), job.id)
       const diagnostic=(stage:string,errorCategory?:string)=>{
-        if(!job.input.fileSource)return
+        if(!job.input.fileSource&&!job.input.externalAgent)return
         // Private operational metadata only: never retain provider text or keys.
         const input=JSON.parse(String(this.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(job.id)!.request_json))
         const text=typeof result.text==='string'?result.text:''

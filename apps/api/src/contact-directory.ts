@@ -5,9 +5,10 @@ import type { ChatService, ChatCommand, ChatRequest } from './chat.js'
 import { canonical, instant } from './ai.js'
 import { hash } from './auth.js'
 import { fail } from './errors.js'
+import { connectionCommands, ownedSpecialist, externalContact, handleConnection } from './agent-connections.js'
 import { isLabManager } from './invite-management.js'
 
-export const directoryCommands = ['chatContact','updateContactProfile','createPersonalAgent','requestContact','contactRequests','decideContactRequest','revokeContact','revokeContactRequest','chatMemories','createChatMemory','reviseChatMemory','revokeChatMemory','chatMemoryHistory'] as const
+export const directoryCommands = ['importAgentProfile','exportAgentProfile',...connectionCommands,'chatContact','updateContactProfile','createPersonalAgent','requestContact','contactRequests','decideContactRequest','revokeContact','revokeContactRequest','chatMemories','createChatMemory','reviseChatMemory','revokeChatMemory','chatMemoryHistory'] as const
 export class ContactDirectory {
   constructor(readonly chat: ChatService) {}
   get db() { return this.chat.db }
@@ -39,7 +40,7 @@ export class ContactDirectory {
     if (this.mayEdit(value)) value.allowedActions.push('edit_profile')
     if (value.identity.kind==='personal_agent' && own) value.allowedActions.push('manage_private_memory')
     if (value.identity.kind==='personal_agent' && relation?.status==='accepted') value.availability=this.chat.availability()
-    return Contact.parse(value)
+    return Contact.parse(externalContact(this.chat,value))
   }
   requireDirect(contact: Contact) { if (!contact.allowedActions.includes('chat')) fail('FORBIDDEN') }
   request(id: string): ContactRequest {
@@ -89,6 +90,7 @@ export class ContactDirectory {
   authorize(name:ChatCommand,req:ChatRequest) {
     if(!(directoryCommands as readonly string[]).includes(name))return false
     const id=req.params.id!
+    if((connectionCommands as readonly string[]).includes(name)||name==='exportAgentProfile'){ownedSpecialist(this.chat,id);return true}
     if(['chatContact','requestContact','revokeContact','updateContactProfile'].includes(name)) {
       const contact=this.contact(id); if(name==='updateContactProfile'&&!this.mayEdit(contact))fail('FORBIDDEN')
     } else if(['decideContactRequest','revokeContactRequest'].includes(name)) {
@@ -99,6 +101,7 @@ export class ContactDirectory {
     return true
   }
   replay(name:ChatCommand,previous:any) {
+    if(name==='importAgentProfile')return {data:{...previous.data,contact:this.contact(previous.data.contact.id),conversation:this.chat.conversation(previous.data.conversation.id)}}
     if(['chatContact','requestContact','revokeContact','updateContactProfile','createPersonalAgent'].includes(name)) return {data:this.contact(previous.data.id)}
     if(['decideContactRequest','revokeContactRequest'].includes(name))return {data:this.request(previous.data.id)}
     if(['createChatMemory','reviseChatMemory','revokeChatMemory'].includes(name))return {data:this.memory(previous.data.id,true)}
@@ -106,6 +109,17 @@ export class ContactDirectory {
   }
   handle(name:ChatCommand,req:ChatRequest):unknown {
     const id=req.params.id!,b=req.body
+    if((connectionCommands as readonly string[]).includes(name))return handleConnection(this.chat,name as typeof connectionCommands[number],req)
+    if(name==='exportAgentProfile'){const c=ownedSpecialist(this.chat,id);return {data:{format:'research-agent-profile/v1',profile:{displayName:c.displayName,introduction:c.profile.introduction,capabilityDescription:c.profile.capabilityDescription,personality:c.profile.personality}}}}
+    if(name==='importAgentProfile'){
+      const profile=(b as RequestFor<'importAgentProfile'>['body']).profile
+      const old=this.db.prepare("SELECT c.id FROM chat_contacts c JOIN chat_contact_profiles p ON p.contact_id=c.id WHERE c.owner_id=? AND c.kind='personal_agent' AND p.role='specialist' AND p.display_name=? AND p.introduction=? AND p.capability_description=? AND p.personality=? AND NOT EXISTS(SELECT 1 FROM agent_connections a WHERE a.contact_id=c.id AND a.configured=1) ORDER BY c.id LIMIT 1").get(this.actor.id,profile.displayName,profile.introduction,profile.capabilityDescription,profile.personality)
+      const key='import_'+hash(this.actor.id+':'+req.headers['Idempotency-Key']).slice(0,48)
+      const request=(body:unknown,part:string):ChatRequest=>({params:{},query:{},body,headers:{'Idempotency-Key':key+'_'+part}})
+      const contact=old?this.contact(String(old.id)):(this.chat.run('createPersonalAgent',request(profile,'profile')) as {data:Contact}).data
+      const conversation=(this.chat.run('createDirectConversation',request({contactId:contact.id},'direct')) as {data:import('@research-agent-platform/contracts').Conversation}).data
+      return {data:{contact,conversation,reused:!!old,mode:'profile_only'}}
+    }
     if(name==='chatContact')return {data:this.contact(id)}
     if(name==='updateContactProfile') {
       const contact=this.contact(id),body=b as RequestFor<'updateContactProfile'>['body'];this.chat.c.checkVersion(contact.profile.version,body.expectedVersion)

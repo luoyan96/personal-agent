@@ -1,11 +1,12 @@
 import { randomUUID, createHmac } from 'node:crypto'
 import { z } from 'zod'
-import { Contact, Conversation, ConversationMember, ConversationViewerState, ChatMessage, ChatAction, ChatActionPayload, AgentTurn, SendChatMessage, ChatResource, routes, chatRoutes } from '@research-agent-platform/contracts'
+import { Contact, Conversation, ConversationMember, ConversationViewerState, ChatMessage, ChatAction, ChatActionPayload, AgentTurn, SendChatMessage, ChatResource, routes, chatRoutes, agentIntegrationRoutes } from '@research-agent-platform/contracts'
 import type { RequestFor } from '@research-agent-platform/contracts'
 import { Collaboration } from './collaboration.js'
 import { AiService, canonical, instant } from './ai.js'
 import { hash, signingKey } from './auth.js'
 import { labAiRuntime } from './lab-ai-settings.js'
+import { chatModelFingerprint, connectionRow, connectionState as connectionStateForReplay } from './agent-connections.js'
 import { personalModelRuntime } from './personal-models.js'
 import type { Config } from './config.js'
 import { fail } from './errors.js'
@@ -15,9 +16,9 @@ import type { FileDocument, ParsedAgentFile } from './agent-files.js'
 import type { AgentFileSelection } from '@research-agent-platform/contracts'
 import { isAgentCreationCommand, legacyTurnDocument } from './agent-creation.js'
 
-export type ChatCommand = keyof typeof chatRoutes | 'imCreateGroup' | 'imInviteContact'
+export type ChatCommand = keyof typeof chatRoutes | keyof typeof agentIntegrationRoutes | 'imCreateGroup' | 'imInviteContact'
 type Resource = z.infer<typeof ChatResource>
-export type TurnInput = { budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED'; fileDocument?:FileDocument; fileSource?:AgentFileSelection; fileRead?:AgentTurn['fileRead']; modelOutputDiagnostic?:{stage:string;returnedTextLength:number;trimEmpty:boolean;maxOutputTokens:number;reasoningEffort:string;finishReason?:string;failure?:string;errorCategory?:string} }
+export type TurnInput = { budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; externalConsent?:boolean; externalAgent?:boolean; externalConnectionVersion?:number; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED'; fileDocument?:FileDocument; fileSource?:AgentFileSelection; fileRead?:AgentTurn['fileRead']; modelOutputDiagnostic?:{stage:string;returnedTextLength:number;trimEmpty:boolean;maxOutputTokens:number;reasoningEffort:string;finishReason?:string;failure?:string;errorCategory?:string} }
 export type ChatRequest = { params: { id?: string; contactId?: string }; query: { cursor?: string; limit?: number; search?: string; afterSequence?: number; view?: 'directory'|'mine'; direction?: 'all'|'incoming'|'outgoing'; status?: 'all'|'pending'; scope?: 'private_agent'|'conversation'|'local'|'global'; scopeId?: string }; headers: { 'Idempotency-Key'?: string }; body: unknown }
 type Request = ChatRequest
 const decode = (value: unknown) => JSON.parse(String(value))
@@ -161,7 +162,7 @@ export class ChatService {
     if (contact.identity.kind === 'human') fail('VALIDATION_ERROR')
     if (group.kind === 'personal' && (contact.identity.kind !== 'personal_agent'||contact.profile.role!=='coordinator'||contact.identity.ownerMemberId!==this.c.actor.id)) fail('FORBIDDEN')
     if (group.kind==='direct')this.directory.requireDirect(contact)
-    if (contact.identity.kind === 'personal_agent') contact.availability = this.availability()
+    if (contact.identity.kind === 'personal_agent'&&!contact.agentRuntime) contact.availability = this.availability()
     return contact
   }
   checkResource(ref: Resource, conversationId: string, exact = false, full = false) {
@@ -190,10 +191,11 @@ export class ChatService {
       const agent=this.contact(turn.agentContactId),message=this.projectedMessage(turn.inputMessageId)
       if(!input.dailyChat||group.kind!=='personal'||group.ownerMemberId!==this.c.actor.id||agent.identity.kind!=='personal_agent'||agent.identity.ownerMemberId!==this.c.actor.id||agent.profile.role!=='coordinator'||message.origin!=='human'||message.senderContactId!==this.human().id||!isAgentCreationCommand(message.text??''))fail('FORBIDDEN')
     }
+    if(input.externalAgent){const connection=connectionRow(this,turn.agentContactId);if(!input.dailyChat||!input.externalConsent||group.kind!=='direct'||!connection?.configured||connection.version!==input.externalConnectionVersion)fail('FORBIDDEN')}
     if(input.fileSource)this.fileDocument(input.fileSource.messageId,group.id)
     if (exact) this.c.checkVersion(group.version, input.conversationVersion)
-    if(exact && input.modelSelectionFingerprint && input.modelSelectionFingerprint!==personalModelRuntime(this.db,this.c.actor,this.config).fingerprint)fail('VERSION_CONFLICT')
-    if (exact && input.agentContextFingerprint && input.agentContextFingerprint!==this.directory.modelContext(turn.agentContactId,group.id).fingerprint)fail('VERSION_CONFLICT')
+    if(exact && input.modelSelectionFingerprint && input.modelSelectionFingerprint!==chatModelFingerprint(this,turn.agentContactId,personalModelRuntime(this.db,this.c.actor,this.config).fingerprint))fail('VERSION_CONFLICT')
+    if (exact && !input.externalAgent && input.agentContextFingerprint && input.agentContextFingerprint!==this.directory.modelContext(turn.agentContactId,group.id).fingerprint)fail('VERSION_CONFLICT')
     for (const ref of input.context) this.checkResource(ref, group.id, exact, true)
     return { row, turn, input, group }
   }
@@ -364,8 +366,9 @@ export class ChatService {
   }
   newTurn(group: Conversation, message: ChatMessage, agentId: string, input: TurnInput, root?: string) {
     const agent = this.joinedAgent(group, agentId)
-    input.agentContextFingerprint=this.directory.modelContext(agentId,group.id).fingerprint
-    input.modelSelectionFingerprint=personalModelRuntime(this.db,this.c.actor,this.config).fingerprint
+    if(connectionRow(this,agentId)?.configured!==1)input.agentContextFingerprint=this.directory.modelContext(agentId,group.id).fingerprint
+    input.modelSelectionFingerprint=chatModelFingerprint(this,agentId,personalModelRuntime(this.db,this.c.actor,this.config).fingerprint)
+    const connection=connectionRow(this,agentId);if(connection?.configured===1){input.externalAgent=true;input.externalConnectionVersion=connection.version}
     if(root&&this.db.prepare("SELECT 1 FROM chat_turns WHERE root_id=? AND status IN ('queued','running','waiting_input')").get(root))fail('INVALID_STATE')
     if (Number(this.db.prepare("SELECT count(*) n FROM chat_turns WHERE owner_id=? AND status IN ('queued','running')").get(this.c.actor.id)!.n) >= 5) fail('RATE_LIMITED')
     const availability = agent.availability
@@ -404,12 +407,13 @@ export class ChatService {
   }
   run(name: ChatCommand, req: Request, parsedFile?:ParsedAgentFile, onlyCached=false): unknown {
     this.ensureContacts(); this.authorize(name, req)
-    if(name==='agentFileMessage')this.assertDailyConversation(req.params.id!)
-    const route = routes[name], resource = req.params.id ?? this.c.actor.labId, key = req.headers['Idempotency-Key'], fingerprint = hash(canonical(req))
+    if(name==='agentFileMessage'){const group=this.assertDailyConversation(req.params.id!);const agent=group.members.find(m=>m.status==='joined'&&this.contact(m.contactId).identity.kind!=='human')!;if(connectionRow(this,agent.contactId)?.configured===1)fail('EXTERNAL_FILES_UNSUPPORTED')}
+    const route = routes[name], resource = req.params.id ?? this.c.actor.labId, key = req.headers['Idempotency-Key'], fingerprint = name==='updateAgentConnection'?createHmac('sha256',signingKey(this.db)).update(canonical(req)).digest('hex'):hash(canonical(req))
     const cached = route.idempotent ? this.db.prepare('SELECT request_hash,response_json FROM idempotency_results WHERE actor_id=? AND command=? AND resource_id=? AND key=?').get(this.c.actor.id, name, resource, key!) : null
     if (cached) {
       if (cached.request_hash !== fingerprint) fail('IDEMPOTENCY_CONFLICT')
       const previous = decode(cached.response_json)
+      if(['updateAgentConnection','disconnectAgentConnection'].includes(name))return route.response.parse({data:connectionStateForReplay(this,req.params.id!)})
       const directoryReplay=this.directory.replay(name,previous);if(directoryReplay)return route.response.parse(directoryReplay)
       if (name === 'sendChatMessage'||name==='agentChatMessage'||name==='agentFileMessage') {const message=this.projectedMessage(previous.data.message.id);return route.response.parse({ data: { message, turn: message.turnId ? this.turn(message.turnId) : null } })}
       if (name === 'personalConversation') return { data: { conversation: this.conversation(previous.data.conversation.id), agent: this.contact(previous.data.agent.id) } }
@@ -515,14 +519,16 @@ export class ChatService {
       }
       for (const resource of input.context) this.checkResource(resource, id, true)
       if (input.intent === 'ask_agent') this.joinedAgent(group, input.agentContactId!)
+      const external=input.agentContactId&&connectionRow(this,input.agentContactId)?.configured===1
+      if(external){if(name==='agentFileMessage'||(b as {fileSelection?:unknown}).fileSelection)fail('EXTERNAL_FILES_UNSUPPORTED');if(name!=='agentChatMessage'||group.kind!=='direct')fail('EXTERNAL_SCOPE_UNSUPPORTED');if((b as {externalConsent?:boolean}).externalConsent!==true)fail('EXTERNAL_CONSENT_REQUIRED');const contact=this.contact(input.agentContactId!);if(!contact.agentRuntime?.callerAllowed)fail('FORBIDDEN')}
       const message = this.message(id, { senderContactId: this.human().id, origin: 'human', text: input.text, mentions: input.mentions, resources: input.context, actionIds: [], turnId: null })
       const agent=input.agentContactId?this.contact(input.agentContactId):null
       const purpose=name==='agentChatMessage'&&!(b as {fileSelection?:AgentFileSelection}).fileSelection&&group.kind==='personal'&&group.ownerMemberId===this.c.actor.id&&agent?.identity.kind==='personal_agent'&&agent.identity.ownerMemberId===this.c.actor.id&&agent.profile.role==='coordinator'&&isAgentCreationCommand(input.text)?'create_agent' as const:undefined
-      let fileSource=name==='agentFileMessage'?{messageId:message.id}:name==='agentChatMessage'&&!purpose?this.dailyFileSource(group.id,(b as {fileSelection?:AgentFileSelection}).fileSelection):undefined
+      let fileSource=name==='agentFileMessage'?{messageId:message.id}:name==='agentChatMessage'&&!purpose&&!external?this.dailyFileSource(group.id,(b as {fileSelection?:AgentFileSelection}).fileSelection):undefined
       const fileDocument=name==='agentFileMessage'&&parsedFile?{...parsedFile,metadata:{...parsedFile.metadata,messageId:message.id}}:undefined
       if(name==='agentFileMessage'&&!fileDocument)fail('INVALID_STATE')
       if(fileSource){const document=fileDocument??this.fileDocument(fileSource.messageId,group.id);const questionPages=pageNumbersFromQuestion(input.text);const numbers=fileSource.pageNumbers??(questionPages.length?[...new Set(questionPages)]:undefined);if(numbers?.some(n=>!document.pages.some(page=>page.pageNumber===n)))fail('FILE_PAGE_UNAVAILABLE');fileSource={...fileSource,...(numbers?{pageNumbers:numbers}:{} )}}
-      const turn = input.intent === 'ask_agent' ? this.newTurn(group, message, input.agentContactId!, { budget: input.budget!, context: input.context, conversationVersion: group.version, inputSequence: message.sequence,dailyChat:name!=='sendChatMessage',...(purpose?{purpose}:{}),...(fileDocument?{fileDocument}:{}),...(fileSource?{fileSource,fileRead:fileReadMetadata(fileDocument??this.fileDocument(fileSource.messageId,group.id))}:{}) }) : null
+      const turn = input.intent === 'ask_agent' ? this.newTurn(group, message, input.agentContactId!, { budget: input.budget!, context: input.context, conversationVersion: group.version, inputSequence: message.sequence,dailyChat:name!=='sendChatMessage',...(external?{externalConsent:true}:{}),...(purpose?{purpose}:{}),...(fileDocument?{fileDocument}:{}),...(fileSource?{fileSource,fileRead:fileReadMetadata(fileDocument??this.fileDocument(fileSource.messageId,group.id))}:{}) }) : null
       if (turn) { message.turnId = turn.id; this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(legacyChatMessage(message)), message.id) }
       return { data: { message:this.projectedMessage(message.id), turn } }
     }
