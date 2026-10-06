@@ -1,4 +1,5 @@
 import type { AgentTurn } from "@research-agent-platform/contracts";
+import { serviceErrorMessage } from "./api-errors";
 
 type Guidance = {
   title: string;
@@ -51,6 +52,11 @@ function modelGuidance(turn: AgentTurn, manager: boolean): Guidance {
 
 /** Present only the actual turn state; never infer a reply or successful task. */
 export function turnGuidance(turn: AgentTurn, manager = false): Guidance {
+  if (turn.failure?.startsWith("EXTERNAL_")) return {
+    title: serviceErrorMessage(turn.failure, 0),
+    nextStep: "请核对外部服务状态与记录。不会自动重试，也不会改用发送者的模型；重新发送仍需逐条授权。",
+    tone: "warning",
+  };
   if (
     turn.purpose === "create_agent" &&
     (turn.status === "queued" || turn.status === "running")

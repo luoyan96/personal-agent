@@ -8,6 +8,7 @@ import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
 import { MemoryPanel } from "./MemoryPanel";
 import { useResearchContactChat } from "./useResearchContactChat";
+import { AgentConnectionPanel } from "./AgentConnectionPanel";
 
 export const ResearchUserCard = forwardRef<
   OverlayVisibleHandle,
@@ -33,6 +34,7 @@ export const ResearchUserCard = forwardRef<
   const contact = data?.data;
   const [editing, setEditing] = useState(false);
   const [memories, setMemories] = useState(false);
+  const [connection, setConnection] = useState(false), [shareLink, setShareLink] = useState(""), [shareStatus, setShareStatus] = useState(""), [exported, setExported] = useState("");
   const [form, setForm] = useState({
     displayName: "",
     introduction: "",
@@ -60,6 +62,7 @@ export const ResearchUserCard = forwardRef<
   useEffect(() => {
     setEditing(false);
     setMemories(false);
+    setConnection(false); setShareLink(""); setShareStatus(""); setExported("");
     setFailure("");
     setBusy(false);
   }, [scope]);
@@ -151,20 +154,19 @@ export const ResearchUserCard = forwardRef<
           {contact.identity.kind !== "human" && (
             <p className="text-xs text-slate-600">
               主人：
-              {contacts.find(
+              {contact.identity.ownerMemberId === actor?.member.id ? actor.member.displayName : contacts.find(
                 (c) =>
                   c.contact.identity.kind === "human" &&
                   c.contact.identity.memberId ===
                     (contact.identity.kind === "human"
                       ? ""
                       : contact.identity.ownerMemberId),
-              )?.contact.displayName || "对方的账号"}{" "}
-              ·{" "}
-              {contact.availability.status === "available"
-                ? "模型可用"
-                : "模型暂不可用"}
+              )?.contact.displayName || "此 Agent 的所属账号"}
             </p>
           )}
+          {contact.identity.kind !== "human" && <div className="rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+            {contact.agentRuntime ? <><strong>外部文字服务</strong><p className="break-all">{contact.agentRuntime.serviceOrigin}</p><p>仅发送逐条授权的当前文字；费用由主人连接的外部账号承担。{contact.agentRuntime.callerAllowed ? "当前账号获准调用。" : "当前账号不能调用，请联系主人。"}</p><p>连接验证：{contact.agentRuntime.verification === "passed" ? "最近测试通过" : contact.agentRuntime.verification === "failed" ? "最近测试失败" : "尚未确认可用"}。不包含原平台工具、记忆或附件能力。</p></> : <><strong>平台 Agent</strong><p>使用发送者的模型设置和获准记忆。能力描述是交流人设，不代表已配置联网、执行工具或已验证研究结果。</p></>}
+          </div>}
           {editing ? (
             <div className="space-y-2">
               {(
@@ -230,6 +232,12 @@ export const ResearchUserCard = forwardRef<
                 ))}
               </dl>
               <Space wrap>
+                <Button onClick={async () => {
+                  const ticket = epoch.current, link = `${window.location.origin}/#/contact?contact=${encodeURIComponent(contact.id)}`;
+                  setShareLink(link); setShareStatus("");
+                  try { await navigator.clipboard.writeText(link); if (ticket === epoch.current) setShareStatus("名片链接已复制；对方仍需按实际权限添加。"); }
+                  catch { if (ticket === epoch.current) setShareStatus("未能自动复制，请选择下方链接复制。"); }
+                }}>复制名片链接</Button>
                 {contact.allowedActions.includes("chat") && (
                   <Button
                     type="primary"
@@ -286,7 +294,18 @@ export const ResearchUserCard = forwardRef<
                 {contact.allowedActions.includes("manage_private_memory") && (
                   <Button onClick={() => setMemories(!memories)}>记忆</Button>
                 )}
+                {contact.identity.kind === "personal_agent" && contact.profile.role === "specialist" && contact.identity.ownerMemberId === actor?.member.id && <>
+                  <Button onClick={() => setConnection(!connection)}>外部服务</Button>
+                  <Button loading={busy} onClick={() => void command(async isCurrent => {
+                    const result = await researchApi("exportAgentProfile", { params: { id: contact.id } });
+                    if (isCurrent()) setExported(JSON.stringify(result.data, null, 2));
+                  })}>导出人设资料</Button>
+                </>}
               </Space>
+              {shareLink && <div className="space-y-1 text-xs text-slate-600"><p>{shareStatus}</p><Input aria-label="名片链接" readOnly value={shareLink} onFocus={e => e.target.select()} /><p>仅分享公开资料入口，不包含私有记忆或 API Key。</p></div>}
+              {exported && <div className="space-y-2"><p className="text-xs text-slate-600">只包含公开人设四项资料。导入会创建或复用对方自己的 Agent，不转移此联系人的身份或外部连接。</p><Input.TextArea aria-label="导出的人设 JSON" readOnly rows={6} value={exported} onFocus={e => e.target.select()} /><Button onClick={() => {
+                const url = URL.createObjectURL(new Blob([exported], { type: "application/json" })); const link = document.createElement("a"); link.href = url; link.download = "agent-profile.json"; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+              }}>保存资料 JSON</Button></div>}
             </>
           )}
           {memories && contact.allowedActions.includes("manage_private_memory") && (
@@ -297,6 +316,7 @@ export const ResearchUserCard = forwardRef<
               canManage
             />
           )}
+          {connection && contact.identity.kind === "personal_agent" && contact.profile.role === "specialist" && contact.identity.ownerMemberId === actor?.member.id && <AgentConnectionPanel key={`${contact.id}:${generation}`} contactId={contact.id} onChanged={refresh} />}
         </div>
       )}
     </Modal>

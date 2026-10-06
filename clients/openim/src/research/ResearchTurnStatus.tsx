@@ -29,6 +29,8 @@ export function ResearchTurnStatus({
   const actorGeneration = useResearchStore((s) => s.generation);
   const actorId = useResearchStore((s) => s.actor?.member.id);
   const imID = useConversationStore((s) => s.currentConversation?.conversationID);
+  const peerID = useConversationStore(s => s.currentConversation?.userID);
+  const external = useResearchStore(s => !!s.contacts.find(c => c.userID === peerID)?.contact.agentRuntime);
   const location = useLocation();
   const scope = `${actorGeneration}:${actorId}:${imID}:${location.pathname}:${turn.id}`;
   const latestScope = useRef(scope);
@@ -51,7 +53,7 @@ export function ResearchTurnStatus({
     setBusy(false);
   }, [scope]);
   const retryAllowed = Boolean(
-    onRetried &&
+    onRetried && !external &&
       turn.failure !== "BUDGET_EXCEEDED" &&
       turn.allowedActions.includes("retry") &&
       turn.remainingBudget,

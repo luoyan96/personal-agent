@@ -1,4 +1,4 @@
-import { Alert, Button, InputNumber, Modal, Select, Space } from "antd";
+import { Alert, Button, Checkbox, InputNumber, Modal, Select, Space } from "antd";
 import { useEffect, useRef, useState } from "react";
 import type { AgentTurn, RequestFor } from "@research-agent-platform/contracts";
 type ChatResource = NonNullable<
@@ -47,6 +47,7 @@ export function useResearchComposer() {
     researchMode && !!mapping,
   );
   const [advanced, setAdvanced] = useState(false);
+  const [externalConsent, setExternalConsent] = useState(false);
   const [mode, setMode] = useState<"chat" | "ask_agent">("chat"),
     [agentId, setAgentId] = useState(""),
     [maxTokens, setTokens] = useState(4000),
@@ -68,6 +69,9 @@ export function useResearchComposer() {
   const peer = contacts.find((c) => c.userID === conversation?.userID)?.contact;
   const isDirectAgent =
     !!mapping && mapping.kind !== "group" && !!peer && peer.identity.kind !== "human";
+  const external = isDirectAgent ? peer?.agentRuntime : undefined;
+  const externalScope = `${imID}:${actorGeneration}:${external?.serviceOrigin}:${external?.callerAllowed}`;
+  useEffect(() => { setExternalConsent(false); setAdvanced(false); }, [externalScope]);
   const turn =
     turnSnapshot?.generation === actorGeneration && turnSnapshot.imID === imID
       ? turnSnapshot.turn
@@ -128,6 +132,9 @@ export function useResearchComposer() {
   }, [imID, actorGeneration]);
   const sendResearch = async (text: string) => {
     const advancedRequest = advanced && mode === "ask_agent";
+    if (external && (!external.callerAllowed || !externalConsent))
+      throw new Error(external.callerAllowed ? "请先明确授权将本条文字发送到外部服务。" : "主人未授权当前账号调用该外部服务。");
+    if (external && advancedRequest) throw new Error("外部 Agent 仅支持本条文字聊天，不支持协作、记忆或附件。");
     if (!researchMode || (!isDirectAgent && !advancedRequest)) return false;
     if (
       !mapping ||
@@ -163,7 +170,7 @@ export function useResearchComposer() {
           })
         : await researchApi("agentChatMessage", {
             params: { id: mapping.researchConversationId },
-            body: { text },
+            body: { text, ...(external ? { externalConsent: true } : {}) },
           });
     } catch (error) {
       operation.dispose();
@@ -180,6 +187,7 @@ export function useResearchComposer() {
       setTurn(
         result.data.turn ? { generation, imID, turn: result.data.turn } : undefined,
       );
+      if (external) setExternalConsent(false);
       if (result.data.turn?.purpose === "create_agent")
         fresh.turnId = result.data.turn.id;
       else {
@@ -201,6 +209,10 @@ export function useResearchComposer() {
   const controls =
     researchMode && mapping ? (
       <>
+        {external && <div className="px-3 py-2 text-xs leading-5 text-slate-600">
+          <p className="truncate" title={external.serviceOrigin}>外部服务：{external.serviceOrigin} · 费用由主人连接的外部账号承担</p>
+          {external.callerAllowed ? <Checkbox checked={externalConsent} onChange={e => setExternalConsent(e.target.checked)}>授权发送本条文字（不含历史、记忆与附件）</Checkbox> : <p className="text-amber-700">主人尚未允许当前账号调用，请先联系主人。</p>}
+        </div>}
         {advanced && (
           <div className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs">
             <strong>需求与协作</strong>
@@ -330,7 +342,7 @@ export function useResearchComposer() {
     isCoordinator: mapping?.kind === "personal",
     advanced,
     advancedToggle:
-      researchMode && mapping && agents.length ? (
+      researchMode && mapping && agents.length && !external ? (
         <Button
           type="text"
           size="small"
@@ -345,7 +357,7 @@ export function useResearchComposer() {
     invalid:
       researchMode &&
       ((advanced && mode === "ask_agent") || isDirectAgent) &&
-      (!canonical.data?.data.allowedActions.includes("send") ||
+      ((!!external && (!external.callerAllowed || !externalConsent)) || !canonical.data?.data.allowedActions.includes("send") ||
         (advanced && mode === "ask_agent"
           ? !agents.some((a) => a.id === agentId)
           : agents.length !== 1)),

@@ -1,34 +1,39 @@
-import { Alert, Button, Input, Modal, Select, Space, Tag } from "antd";
+import { Alert, Button, Input, Modal, Segmented, Tabs } from "antd";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import OIMAvatar from "@/components/OIMAvatar";
+import { Id } from "@research-agent-platform/contracts";
 import { researchApi } from "./api";
 import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
 import { ResearchUserCard } from "./ResearchUserCard";
 import type { OverlayVisibleHandle } from "@/hooks/useOverlayVisible";
 import { AgentStarters } from "./AgentStarters";
+import { ContactRow } from "./ContactRow";
+import { ContactFinder } from "./ContactFinder";
+import { useResearchContactChat } from "./useResearchContactChat";
+import { AgentImport } from "./AgentImport";
 
 export function ResearchContacts() {
   const [params, setParams] = useSearchParams();
   const requestedView = params.get("view");
-  const view = requestedView === "search" || requestedView === "directory" ? requestedView : "mine";
+  const view = requestedView === "directory" ? "directory" : "mine";
   const [search, setSearch] = useState("");
-  const [accountQuery, setAccountQuery] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [addTab, setAddTab] = useState("friend");
+  const [pageFailure, setPageFailure] = useState("");
   const [selectedContact, setSelectedContact] = useState<string>();
   const profile = useRef<OverlayVisibleHandle>(null);
   const { data, error, refresh } = useResearchRead(
     () =>
       researchApi("chatContacts", {
-        query:
-          view === "search"
-            ? { view: "directory", scope: "global", search: accountQuery, limit: 100 }
-            : { view, scope: "local", limit: 100 },
+        query: { view, scope: "local", limit: 100 },
       }),
-    `${view}:${accountQuery}`,
-    view !== "search" || !!accountQuery,
+    view,
   );
   const generation = useResearchStore((s) => s.generation);
+  const actorId = useResearchStore(s => s.actor?.member.id);
+  const openChat = useResearchContactChat();
+  const [savedId, setSavedId] = useState<string>();
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
     displayName: "",
@@ -39,13 +44,26 @@ export function ResearchContacts() {
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState("");
   const epoch = useRef(0);
+  useLayoutEffect(() => {
+    setAdding(false); setCreating(false); setSelectedContact(undefined);
+    setSavedId(undefined); setPageFailure("");
+    setForm({ displayName: "", introduction: "", capabilityDescription: "", personality: "" });
+  }, [generation]);
   useEffect(() => {
-    if (params.get("action") !== "create-agent") return;
-    setCreating(true);
+    const action = params.get("action"), sharedId = params.get("contact");
+    if (!action && sharedId === null && requestedView !== "search") return;
     const next = new URLSearchParams(params);
     next.delete("action");
+    next.delete("contact");
+    if (requestedView === "search") next.delete("view");
     setParams(next, { replace: true });
-  }, [params, setParams]);
+    if (sharedId !== null) {
+      if (!Id.safeParse(sharedId).success) setPageFailure("联系人名片链接无效，请重新复制完整链接。");
+      else { setSelectedContact(sharedId); profile.current?.openOverlay(); }
+    } else {
+      setAdding(true); setAddTab(action === "create-agent" ? "agent" : "friend");
+    }
+  }, [params, requestedView, setParams]);
   useLayoutEffect(() => {
     epoch.current++;
     setBusy(false);
@@ -54,100 +72,49 @@ export function ResearchContacts() {
       epoch.current++;
     };
   }, [generation, creating]);
+  const openProfile = (id: string) => { setAdding(false); setSelectedContact(id); profile.current?.openOverlay(); };
+  const filtered = data?.data.filter(c => c.displayName.toLowerCase().includes(search.toLowerCase()) || c.username?.includes(search)) || [];
   return (
     <div className="h-full space-y-4 overflow-auto bg-white p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-bold">联系人</h2>
-        <Button onClick={() => setCreating(true)}>创建专属 Agent</Button>
+        <Button type="primary" onClick={() => { setAddTab("friend"); setAdding(true); }}>添加联系人</Button>
       </div>
-      <AgentStarters onChanged={refresh} />
-      <Space wrap>
-        <Select
+      <div className="flex flex-wrap items-center gap-3">
+        <Segmented
           value={view}
           onChange={(nextView) => {
             setSearch("");
-            setAccountQuery("");
             const next = new URLSearchParams(params);
             if (nextView === "mine") next.delete("view");
-            else next.set("view", nextView);
+            else next.set("view", String(nextView));
             setParams(next);
           }}
           options={[
             { value: "mine", label: "我的联系人" },
-            { value: "search", label: "添加朋友" },
             { value: "directory", label: "团队通讯录" },
           ]}
         />
-        {view === "search" ? (
-          <Input.Search
-            aria-label="查找账号"
-            autoFocus
-            placeholder="输入朋友的完整用户名"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            onSearch={(value) => setAccountQuery(value.trim())}
-            enterButton="查找"
-          />
-        ) : (
           <Input
+            className="max-w-[320px]"
             aria-label="搜索联系人"
             placeholder="搜索名称"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        )}
-      </Space>
+      </div>
+      {pageFailure && <Alert type="warning" message={pageFailure} closable onClose={() => setPageFailure("")} />}
       {error && <Alert type="error" message={error} />}
-      {data?.data
-        .filter(
-          (c) =>
-            view === "search" ||
-            c.displayName.toLowerCase().includes(search.toLowerCase()) ||
-            c.username?.includes(search),
-        )
-        .map((contact) => (
-          <button
-            type="button"
-            className="flex w-full items-center gap-3 border-b p-3 text-left hover:bg-slate-50"
-            key={contact.id}
-            onClick={() => {
-              setSelectedContact(contact.id);
-              profile.current?.openOverlay();
-            }}
-          >
-            <OIMAvatar text={contact.displayName} />
-            <div>
-              <strong>{contact.displayName}</strong>
-              {contact.username && (
-                <p className="text-xs text-slate-500">@{contact.username}</p>
-              )}
-              <p className="text-xs text-slate-600">
-                {contact.profile.introduction || "尚未填写介绍"}
-              </p>
-            </div>
-            <Tag className="ml-auto">
-              {contact.identity.kind === "human"
-                ? "真人"
-                : contact.profile.role === "coordinator" &&
-                  contact.relationship.status === "own"
-                ? "我的 AI"
-                : "AI"}
-            </Tag>
-          </button>
-        ))}
-      {data && !data.data.length && (
-        <p>
-          {view === "search"
-            ? "没有找到这个账号，请检查完整用户名。"
-            : "暂无可查看的联系人"}
-        </p>
-      )}
-      {view === "search" && !accountQuery && (
-        <p className="text-sm text-slate-500">
-          通过唯一用户名查找朋友；添加后需对方同意。
-        </p>
-      )}
+      <div className="divide-y divide-slate-100">{filtered.map(contact => <ContactRow key={contact.id} contact={contact} actorId={actorId} onOpen={() => openProfile(contact.id)} />)}</div>
+      {data && !filtered.length && <p className="py-10 text-center text-sm text-slate-500">{search ? "没有匹配的联系人" : "暂无联系人，从添加联系人开始。"}</p>}
       <ResearchUserCard contactId={selectedContact} ref={profile} />
+      <Modal title="添加联系人" open={adding} onCancel={() => setAdding(false)} footer={null} width={900} destroyOnClose>
+        <Tabs activeKey={addTab} onChange={setAddTab} items={[
+          { key: "friend", label: "朋友与已有 Agent", children: <ContactFinder onOpen={openProfile} /> },
+          { key: "agent", label: "创建 Agent", children: <div className="space-y-4"><AgentStarters onChanged={refresh} /><Button onClick={() => { setAdding(false); setSavedId(undefined); setCreating(true); }}>创建自定义 Agent</Button></div> },
+          { key: "import", label: "导入与接入", children: <AgentImport onProfile={openProfile} /> },
+        ]} />
+      </Modal>
       <Modal
         title="创建专属 Agent"
         open={creating}
@@ -156,11 +123,13 @@ export function ResearchContacts() {
           setCreating(false);
         }}
         footer={null}
+        destroyOnClose
       >
         <p className="mb-3 text-xs text-slate-600">
           创建后归你所有；别人添加时需你同意。能力描述用于交流，不授予工具执行权限。
         </p>
         {failure && <Alert type="error" message={failure} />}
+        {savedId && <Alert className="mb-3" type="info" message="Agent 已添加，资料已保存。再次打开只连接已有聊天，不会重复创建。" />}
         <div className="space-y-3">
           {(
             [
@@ -174,6 +143,7 @@ export function ResearchContacts() {
               {label}
               <Input.TextArea
                 value={form[key]}
+                disabled={!!savedId}
                 rows={key === "displayName" ? 1 : 3}
                 maxLength={
                   key === "displayName"
@@ -189,7 +159,7 @@ export function ResearchContacts() {
           <Button
             type="primary"
             loading={busy}
-            disabled={!form.displayName.trim()}
+            disabled={!savedId && !form.displayName.trim()}
             onClick={async () => {
               const requestEpoch = epoch.current;
               const isCurrent = () =>
@@ -198,13 +168,20 @@ export function ResearchContacts() {
               setBusy(true);
               setFailure("");
               try {
-                await researchApi("createPersonalAgent", { body: form });
+                let target = savedId;
+                if (!target) {
+                  const created = await researchApi("createPersonalAgent", { body: form });
+                  if (!isCurrent()) return;
+                  target = created.data.id; setSavedId(target);
+                }
                 if (!isCurrent()) return;
                 await useResearchStore.getState().refresh();
                 if (!isCurrent()) return;
                 await refresh();
                 if (!isCurrent()) return;
-                setCreating(false);
+                if (!await openChat(target, isCurrent)) return;
+                if (!isCurrent()) return;
+                setCreating(false); setSavedId(undefined);
                 setForm({
                   displayName: "",
                   introduction: "",
@@ -219,7 +196,7 @@ export function ResearchContacts() {
               }
             }}
           >
-            创建 Agent
+            {savedId ? "打开 Agent 聊天" : "创建并开始聊天"}
           </Button>
         </div>
       </Modal>

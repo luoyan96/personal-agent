@@ -150,7 +150,7 @@ const TopSearchBar = () => {
 
   const actionClick = (idx: number) => {
     if (researchMode) {
-      if (idx === 0) navigate("/contact?view=search");
+      if (idx === 0) navigate("/contact?action=add-contact");
       if (idx === 1) navigate("/contact?action=create-agent");
       if (idx === 2) {
         setChooseModalState({ type: "CRATE_GROUP" });
@@ -241,8 +241,7 @@ i18n.on("languageChanged", () => {
 });
 
 const researchActionMenuList = [
-  { idx: 0, title: "添加朋友", icon: add_friend },
-  { idx: 1, title: "创建 Agent", icon: null },
+  { idx: 0, title: "添加联系人", icon: add_friend },
   { idx: 2, title: "发起群聊", icon: create_group },
 ];
 

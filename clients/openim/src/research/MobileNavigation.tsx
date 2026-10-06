@@ -22,13 +22,11 @@ export function MobileNavigation() {
         trigger={["click"]}
         menu={{
           items: [
-            { key: "friend", label: "添加朋友" },
-            { key: "agent", label: "创建 Agent" },
+            { key: "friend", label: "添加联系人" },
             { key: "group", label: "发起群聊" },
           ],
           onClick: ({ key }) => {
-            if (key === "friend") navigate("/contact?view=search");
-            else if (key === "agent") navigate("/contact?action=create-agent");
+            if (key === "friend") navigate("/contact?action=add-contact");
             else emit("OPEN_CHOOSE_MODAL", { type: "CRATE_GROUP" });
           },
         }}

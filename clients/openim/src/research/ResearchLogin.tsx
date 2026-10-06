@@ -10,6 +10,7 @@ import { ResearchUserCard } from "./ResearchUserCard";
 import { OverlayVisibleHandle } from "@/hooks/useOverlayVisible";
 import { routes } from "@research-agent-platform/contracts";
 import { validationMessage } from "./api-errors";
+import { contactReturnState } from "./contactDestination";
 
 const authRule = (field: "username" | "password" | "inviteCode") => ({
   validator: async (_rule: unknown, value: unknown) => {
@@ -30,6 +31,12 @@ export default function ResearchLogin() {
   const [serviceAddress, setServiceAddress] = useState("");
   const navigate = useNavigate();
   const routeLocation = useLocation();
+  const returnDestination = useRef(contactReturnState(routeLocation.state));
+  const enterApp = () => {
+    const target = returnDestination.current || "/chat";
+    returnDestination.current = undefined;
+    navigate(target, { replace: true, state: null });
+  };
   const connectionError = useResearchStore((s) => s.error);
   const actor = useResearchStore((s) => s.actor);
   const imReason = useResearchStore((s) => s.session?.reason);
@@ -63,7 +70,7 @@ export default function ResearchLogin() {
       imToken: session.user.imToken,
       userID: session.user.userID,
     });
-    navigate("/chat");
+    enterApp();
   };
   useEffect(() => {
     if (location.protocol === "file:") {
@@ -78,6 +85,7 @@ export default function ResearchLogin() {
     }
     const expired = () => {
       useResearchStore.getState().clear();
+      returnDestination.current = undefined;
       setSettings(false);
       profile.current?.closeOverlay();
     };
@@ -107,7 +115,7 @@ export default function ResearchLogin() {
             userID: session.user.userID,
           });
           if (authenticatedGeneration === useResearchStore.getState().generation)
-            navigate("/chat");
+            enterApp();
         }
       })
       .catch(() => {});

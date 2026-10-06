@@ -49,13 +49,14 @@ export function useScopedFileSender({
     const peer = research.contacts.find((item) => item.userID === conversation.userID)?.contact;
     const agentConversationId =
       researchMode && mapping && mapping.kind !== "group" && peer &&
-      peer.identity.kind !== "human" && peer.allowedActions.includes("chat")
+      peer.identity.kind !== "human" && !peer.agentRuntime && peer.allowedActions.includes("chat")
         ? mapping.researchConversationId
         : undefined;
     const image = kind === "image" || (kind === "auto" && file.type.startsWith("image/"));
     try {
       const message = await (image ? getImageMessage(file) : getFileMessage(file));
       if (!isCurrent()) return false;
+      if (peer?.agentRuntime) feedbackToast({ msg: "文件已发送；此 Agent 的外部服务只读取逐条授权的文字，不读取图片、语音或附件。" });
       await sendMessage({
         message,
         recvID: conversation.userID,

@@ -103,6 +103,7 @@ const SendActionBar = ({
         <button type="button" className={toolbarClass} aria-label="发送图片" title="图片" onClick={() => chooseFile("image")}><PictureOutlined /></button>
         <button type="button" className={toolbarClass} aria-label="发送文件" title="文件" onClick={() => chooseFile("file")}><FileOutlined /></button>
         <button type="button" className={toolbarClass} aria-label="打开语音面板" title="语音消息" onClick={() => { setEmojiMode(undefined); setVoiceVisible(true); }}><AudioOutlined /></button>
+        {!researchMode && !isGroupSession && <Popover content={<CallPopContent closeAllPop={() => setExpanded(false)} />} trigger="click" arrow={false} placement="top"><button type="button" className={toolbarClass} aria-label={t("placeholder.call")}><img src={rtc} width={20} alt="" /></button></Popover>}
       </div>
       <Button
         type="text"

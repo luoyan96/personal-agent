@@ -2,6 +2,7 @@ import { getWithRenderProcess } from "@openim/electron-client-sdk/lib/render";
 import { AllowType } from "@openim/wasm-client-sdk";
 import { useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { contactDestination } from "@/research/contactDestination";
 
 import { useConversationStore, useUserStore } from "@/store";
 import { emit } from "@/utils/events";
@@ -26,17 +27,21 @@ export const MainContentWrap = () => {
   const location = useLocation();
 
   useEffect(() => {
+    let cancelled = false;
     const loginCheck = async () => {
       const IMToken = await getIMToken();
       const IMUserID = await getIMUserID();
+      if (cancelled) return;
       if (!IMToken || !IMUserID) {
-        navigate("/login");
+        const destination = contactDestination(location.pathname, location.search);
+        navigate("/login", { replace: true, state: destination ? { contactDestination: destination } : null });
         return;
       }
     };
 
     void loginCheck();
-  }, [location.pathname, navigate]);
+    return () => { cancelled = true; };
+  }, [location.pathname, location.search, navigate]);
 
   useEffect(() => {
     window.userClick = (userID?: string, groupID?: string) => {
