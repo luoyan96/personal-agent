@@ -213,7 +213,10 @@ function AgentFileReadingStatus({ entry, onRetry }: { entry: Reading; onRetry: (
           {entry.canRetry && <Button size="small" onClick={onRetry}>重试阅读（不重复发送文件）</Button>}
         </div>
       )}
-      {metadata && <AgentFileReadSummary file={metadata} read={turn?.fileRead} />}
+      {metadata && <>
+        <p className="text-slate-500">附件上传阅读回执</p>
+        <AgentFileReadSummary file={metadata} read={turn?.fileRead} />
+      </>}
       {entry.phase === "accepted" && turn && (
         turn.status === "succeeded" ? <p className="text-slate-600">AI 已回复，请查看聊天消息。</p> : <ResearchTurnStatus turn={turn} compact />
       )}

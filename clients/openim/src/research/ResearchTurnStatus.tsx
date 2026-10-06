@@ -136,8 +136,8 @@ export function ResearchTurnStatus({
             <div className="space-y-1 rounded-md bg-slate-50 p-2" data-ai-file-read-details>
               <p className="break-all">附件：{read.filename}</p>
               <p>可提取文字：{read.pageCount} 页 · {read.characterCount} 字符。</p>
-              <p>本次读取：{readPages.length ? `第 ${readPages.join("、")} 页${read.partial ? "的文字片段" : ""}` : "尚未确认读取片段"}。</p>
-              {read.partial && <p>受本次上下文预算限制，未使用完整文件。</p>}
+              <p>本次读取：{readPages.length ? `第 ${readPages.join("、")} 页` : "尚未确认读取片段"}。</p>
+              {read.partial && <p>本次未使用完整文件；回答依据列出的页码与范围。</p>}
               {!!read.ranges.length && <details><summary className="cursor-pointer">每页读取范围</summary>
                 {read.ranges.map((range, index) => <p key={index}>第 {range.pageNumber} 页：字符 {range.start}–{range.end}</p>)}
               </details>}

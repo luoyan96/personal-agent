@@ -74,6 +74,8 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
     `${imID}:${turnId || ""}`,
     !!turnId,
   );
+  const currentTurn = turn.data?.data || currentRetry;
+  const fileRead = currentTurn?.fileRead;
   return (
     <div className={`${styles.bubble} max-w-[620px] text-sm`}>
       {!pointer && <Alert type="warning" message="这条消息暂无法显示" />}
@@ -86,7 +88,9 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
       {read.data && (
         <>
           <p className="whitespace-pre-wrap break-words">{read.data.fact.text}</p>
-          {read.data.fact.files?.map(file => <AgentFileReadSummary key={file.messageId} file={file} read={turn.data?.data.fileRead} />)}
+          {read.data.fact.files?.map(file => <AgentFileReadSummary key={file.messageId} file={file} read={fileRead} />)}
+          {fileRead && !read.data.fact.files?.some(file => file.messageId === fileRead.messageId) &&
+            <AgentFileReadSummary read={fileRead} />}
           {!!read.data.fact.resources.length && (
             <details className="mt-2 text-xs">
               <summary>相关材料</summary>
