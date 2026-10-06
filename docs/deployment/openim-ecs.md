@@ -1,6 +1,18 @@
-# 新 ECS：OpenIM 科研微信（2026-10-05）
+# 新 ECS：OpenIM 科研微信（2026-10-06）
 
-## 最新更新：顶部加号和聊天扩展菜单
+## 最新更新：Agent 文件阅读与真实回复
+
+2026-10-06，Agent 文件聊天最终软件 `3b18c6883428f2f00bfbd61d8cce51195011b842` 已上线。个人 / 专属 Agent 私聊发送含文字 PDF 或 UTF-8 TXT / Markdown / CSV 后，真实 SDK 成功才开始解析和模型阅读；范围、部分读取与失败明确显示。默认总预算仍为 4000 / 90 秒。旧 SDK 对象网关需要重定向时，可使用“从本机选择阅读”，只重读原附件，不重复 IM 投递。详见[文件聊天交接](../development/agent-file-chat.md)。
+
+最终共享 CI 473 项 + 2 生产入口、客户端类型 / Web / 四 SDK 资源通过；原首版两页 PDF 的真实模型失败保留。最终线上合成验收结果：0977381版本真实 SDK 上传936字节合成两页PDF后自动回复成功；最终3b18c68版本沿同一合成附件追问第2页，真实模型回复明确该页提取文字完整并指出tiny sample，当前消息范围第2页0–54与服务记录一致。没有读取、复制或改变真实 Key / 密码，没有新增云测试账号或推 GitHub。
+
+- 已上线 source `3b18c6883428f2f00bfbd61d8cce51195011b842`，API / worker `sha256:83797932607e2490c42c6ad1a434cca766fb909ad96ab6382eed1943b9904afc`，current 与 Nginx root 均为 `/opt/research-openim/releases/3b18c6883428f2f00bfbd61d8cce51195011b842` 下对应目录。公网 index SHA256 `4816189592b6af038ed4ff46204447db51a7b76afa44e4212049719345f28d0d`，8 服务 / API healthy / HTTPS ready0.16、本批变更源码 checksum、其他六镜像不变核验通过。
+- 更新前一致备份 `/srv/research-openim-backups/20261006T003325Z`，12 checksums / 9 gzip / 隔离 SQLite 恢复 integrity / 16迁移 checksum 通过；完整栈恢复与异地备份未验。Nginx 回退配置 `/opt/research-openim/ops/agent-files-3b18c6883428/activate-20261006T003324Z/research-openim-production`。
+- 当前回退基线为 source `a5360e9eac6ceab5cc1f716f174b826b3431285b`、API / worker `sha256:0c4b07fbe463e63ebe3ba1f8f6b9c2ecd7816532cc51ac16c79ef336ea1d9eda`、Nginx `/opt/research-openim/releases/a5360e9eac6ceab5cc1f716f174b826b3431285b/clients/openim/dist`、首页 `4816189592b6af038ed4ff46204447db51a7b76afa44e4212049719345f28d0d`。恢复这些软件配置后保留当前schema16数据库，禁止旧015数据库恢复或 down -v。
+- 固定依赖离线构建及 network-none Linux PDF smoke通过；不新增依赖版本、SQL迁移、SSH授权或端口。原802首版调用失败 / 旧CI断言 / 安装中止与复现原证据保留。
+- 证据在Git外父目录 `.runtime/agent-file-scope-final-20261006` 的 bundle / outer / prepared / deployment、root-verification、live-ui-proof 和最终截图。
+
+## 历史更新：顶部加号和聊天扩展菜单
 
 2026-10-05 23:20北京时间，加号菜单前端 `e536e759a71f59f244d740d2bfe25f2e5812bf56` 已静态上线：顶部添加朋友 / 创建 Agent / 发起群聊，输入区图片 / 文件 / 语音展开。API / worker仍为0ea0516，契约0.15 / schema16不变；八服务与精确公网首页通过。本地九组实际组件检查、客户端类型 / Web / 四SDK资源与既有Edge八组入口打开 / 取消检查通过。媒体回调与麦克风拒绝仅本地合成，本批没有重测云文件 / 录音投递。
 

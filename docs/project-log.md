@@ -154,3 +154,15 @@
 - 用户现有正常Edge登录的八组菜单验证完成：顶部三项、准确用户名查找自动聚焦、创建表单打开 / 取消刷新、实际建群选人窗、Agent私聊三媒体卡、语音控件显示 / 关闭。只打开 / 取消，没有创建联系人 / 群、发消息、调用模型、发送文件或真人麦克风。首次刷新后菜单选择过早中止保留；等待现有页面就绪再展开通过。代理Workbench已关闭，用户原终端保留，真实Agent页面保留两处菜单作为交付。
 - 本批最终客户端类型 / Web / 四SDK资源、本地九组合成API / SDK / 媒体检查与实际线上入口证据分别记录；pageerror0仅指本地报告，不冒称本轮云console全零。API对应根CI457 + 2是历史已通过证据，本批未重跑。旧fixture / watcher / 嵌套按钮失败均保留，真实媒体、原生客户端与自动科研执行范围没有扩大。
 - 总控父目录 `.runtime/plus-menus-20261005` 保存bundle / outer / deployment、root-verification、九组最终报告及八组live-ui-proof，最终截图 `live-plus-menus.png`。README、current-state、客户端与ECS说明同步，文档收尾仅本地提交，不改变e536软件归档。下一批继续自然聊天与已有联系人体验，需求编排暂缓；真实云媒体如后续改逻辑须另验。
+
+
+## 2026-10-06：文件发送、Agent 阅读、范围与真实回复
+
+2026-10-06，Agent 文件聊天最终软件 `3b18c6883428f2f00bfbd61d8cce51195011b842` 已上线。个人 / 专属 Agent 私聊发送含文字 PDF 或 UTF-8 TXT / Markdown / CSV 后，真实 SDK 成功才开始解析和模型阅读；范围、部分读取与失败明确显示。默认总预算仍为 4000 / 90 秒。旧 SDK 对象网关需要重定向时，可使用“从本机选择阅读”，只重读原附件，不重复 IM 投递。详见[文件聊天交接](development/agent-file-chat.md)。
+
+最终共享 CI 473 项 + 2 生产入口、客户端类型 / Web / 四 SDK 资源通过；原首版两页 PDF 的真实模型失败保留。最终线上合成验收结果：0977381版本真实 SDK 上传936字节合成两页PDF后自动回复成功；最终3b18c68版本沿同一合成附件追问第2页，真实模型回复明确该页提取文字完整并指出tiny sample，当前消息范围第2页0–54与服务记录一致。没有读取、复制或改变真实 Key / 密码，没有新增云测试账号或推 GitHub。
+
+- source `3b18c6883428f2f00bfbd61d8cce51195011b842` / API-worker `sha256:83797932607e2490c42c6ad1a434cca766fb909ad96ab6382eed1943b9904afc` / index `4816189592b6af038ed4ff46204447db51a7b76afa44e4212049719345f28d0d`。上线后8服务、healthy/ready0.16、schema16、源/镜像/运行容器checksum与其他六镜像不变通过；无迁移、新SSH或GitHub推送。
+- 原802首版00:53上线健康但07:38实际模型 `INVALID_MODEL_OUTPUT`：2页107chars完整提取，usage840+801/5686ms，没有可用回复。固定official Harness loopback确认默认thinking/high的reasoning-only max_tokens会被旧runtime误当成功空正文；线上原正文未存，原空正文原因明确为推断。最终DS daily文件阅读以公开off配置直接回复；任何max-tokens结束不当完整答复，保留usage并显示预算失败。只记录private阶段/字数/finish/cap，不存模型原文或凭据日志。
+- 最终共享CI、客户端类型/Web/四SDK、本地后端203原测试+修复专项、前端13原组+4真实HTTP解析组+3详情组与真实云模型/SDK分别记录；SDK/ModelCall合成的本地报告不当厂商调用证明。所有failed/aborted报告保留。
+- 停写一致备份 `/srv/research-openim-backups/20261006T003325Z` 的12checksum/9gzip/隔离SQLite恢复及16迁移校验通过。回退a536/0c4b07/旧Nginx保留当前schema16数据；完整栈恢复未测。范围修正新增每页实际提取字数，partial指整份文件；每轮消息展示自身读取范围，上传回执单独标识，实际最终页码/完整性追问另证。源候选c459 / root0e728完整CI473+2，前端f927 / roota536类型/Web/四SDK通过；原3范围组件组第三选择器失败保留，接续3组成功。097在08:02实际上线，SDK/PDF/两轮模型成功但范围语义问题原样记录；a536在08:20上线后真实模型仍误称第2页未完整读取，f5095fdb及失败截图保留在 agent-file-scope-20261006。最终改为后端计算每页完整性和自然语言范围，当前范围事实明确覆盖历史错误回复；最终真实复验见 live-ui-proof.json；上传NoSuchKey/Session过期通过正常连接恢复。证据与最终页面截图见Git外 `.runtime/agent-file-scope-final-20261006/live-ui-proof.json`。

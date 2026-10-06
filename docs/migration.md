@@ -68,3 +68,8 @@
 追加 `015-openim-bridge.sql`，不改 001—014。契约 0.13.0、IM 桥 1.0.0。新增稳定 IM 身份、会话映射、Token lease、回调去重与持久消息 outbox；既有科研成员、同意、材料、任务、运行、交付和验收仍是权威事实。科研消息只同步可重新授权的定位指针，旧私人消息不回填 outbox。升级和撤销细节见 [后端交接](development/openim-bridge-backend-report.md)。
 
 服务配置改编自固定 `openim-docker`；固定 OpenIM Server 源码提交增加发送身份与可信回调上下文补丁，源码来源和原许可见 [服务构建说明](../deploy/openim/server/README.md)。本地实际 HTTP/SQLite 验收包含重启持久化与独立入群授权；真实 IM Server/SDK 消息和媒体须在实际服务环境另外验收。生产当前未迁移到 015。
+
+
+## 2026-10-06：聊天附件阅读
+
+契约0.16 / chat1.5新增文件元数据与读取范围，SQLite仍迁移016。固定pdf-parse2.4.5 Apache-2.0及其锁定依赖用于隔离正文提取，来源见NOTICE.md；不复制上游Harness源。OpenIM仍负责文件消息，科研私有request_json保存提取正文，旧严格持久消息/turn格式保持兼容。默认4000/90不变，DS普通文件聊天通过固定官方provider公开off配置生成正文，max-tokens截断保留用量并失败，不自动重试。具体源码、部署、证据与回退见统一状态及文件聊天交接。
