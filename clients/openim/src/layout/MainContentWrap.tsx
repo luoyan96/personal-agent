@@ -26,8 +26,13 @@ export const MainContentWrap = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const isLoginRoute = location.pathname === "/login";
 
   useEffect(() => {
+    if (isLoginRoute) {
+      setHasStoredProfile(false);
+      return;
+    }
     let cancelled = false;
     const loginCheck = async () => {
       const IMToken = await getIMToken();
@@ -44,7 +49,7 @@ export const MainContentWrap = () => {
 
     void loginCheck();
     return () => { cancelled = true; };
-  }, [location.pathname, location.search, navigate]);
+  }, [isLoginRoute, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     window.userClick = (userID?: string, groupID?: string) => {
@@ -82,5 +87,5 @@ export const MainContentWrap = () => {
     void initSettingStore();
   }, [updateAppSettings]);
 
-  return hasStoredProfile ? <Outlet /> : null;
+  return isLoginRoute || hasStoredProfile ? <Outlet /> : null;
 };
