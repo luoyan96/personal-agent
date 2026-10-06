@@ -6,7 +6,7 @@ import type { MessageItem } from "@openim/wasm-client-sdk";
 import { useResearchComposer } from "@/research/ResearchComposer";
 import { useResearchStore } from "@/research/store";
 
-import CKEditor from "@/components/CKEditor";
+import CKEditor, { type CKEditorRef } from "@/components/CKEditor";
 import { getCleanText } from "@/components/CKEditor/utils";
 import i18n from "@/i18n";
 import { IMSDK } from "@/layout/MainContentWrap";
@@ -34,6 +34,7 @@ const ChatFooter = () => {
   const imID = useConversationStore((s) => s.currentConversation?.conversationID || "");
   const actor = useResearchStore((s) => s.actor?.member.id);
   const drafts = useRef(new Map<string, string>());
+  const editor = useRef<CKEditorRef>(null);
   const [html, setHtml] = useState("");
   const latestHtml = useLatest(html);
   const [pending, setPending] = useState(false);
@@ -130,6 +131,7 @@ const ChatFooter = () => {
           sendMessage={sendMessage}
           sendFile={sendFile}
           getSoundMessage={getSoundMessage}
+          insertEmoji={(emoji) => editor.current?.insertText(emoji)}
         />
         <div
           className="max-h-[40%] min-h-0 shrink overflow-y-auto"
@@ -166,6 +168,7 @@ const ChatFooter = () => {
           data-composer-editor
         >
           <CKEditor
+            ref={editor}
             key={imID}
             value={html}
             placeholder="发送消息…"

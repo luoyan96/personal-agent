@@ -13,6 +13,7 @@ import {
 
 export type CKEditorRef = {
   focus: (moveToEnd?: boolean) => void;
+  insertText: (text: string) => void;
 };
 
 interface CKEditorProps {
@@ -102,6 +103,14 @@ const Index: ForwardRefRenderFunction<CKEditorRef, CKEditorProps> = (
     ref,
     () => ({
       focus,
+      insertText: (text) => {
+        const editor = ckEditor.current;
+        if (!editor) return;
+        editor.model.change((writer) => {
+          editor.model.insertContent(writer.createText(text), editor.model.document.selection);
+        });
+        editor.editing.view.focus();
+      },
     }),
     [],
   );

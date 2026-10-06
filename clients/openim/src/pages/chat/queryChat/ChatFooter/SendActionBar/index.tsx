@@ -1,4 +1,4 @@
-import { AudioOutlined, CloseOutlined, PlusOutlined } from "@ant-design/icons";
+import { AudioOutlined, CloseOutlined, FileOutlined, PictureOutlined, PlusOutlined, SmileOutlined } from "@ant-design/icons";
 import { MessageItem } from "@openim/wasm-client-sdk";
 import { Button, Popover } from "antd";
 import clsx from "clsx";
@@ -12,6 +12,7 @@ import { researchMode } from "@/research/api";
 import { useConversationStore } from "@/store";
 import { feedbackToast } from "@/utils/common";
 import { useAgentChatOperation, type AgentChatOperation } from "@/research/useAgentChatOperation";
+import { useResearchStore } from "@/research/store";
 import type { SelectedFileKind } from "@/research/useScopedFileSender";
 
 import { SendMessageParams } from "../useSendMessage";
@@ -23,34 +24,57 @@ const mediaActions = [
   { key: "file", title: "文件", icon: fileIcon, accept: "*" },
 ] as const;
 const actionClass = "flex h-20 w-full flex-col items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-700 hover:border-blue-300 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500";
+const toolbarClass = "flex h-8 w-8 items-center justify-center rounded text-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500";
+const emojis = ["🙂", "😊", "👍", "👏", "🙏", "🤝", "💡", "✅", "🎉", "❤️", "🤔", "👀", "📚", "📝", "🔬", "🌱"];
 
 const SendActionBar = ({
   sendMessage,
   sendFile,
   getSoundMessage,
+  insertEmoji,
 }: {
   sendMessage: (params: SendMessageParams) => Promise<void>;
   sendFile: (file: File, kind: SelectedFileKind, isCurrent?: () => boolean) => Promise<boolean>;
   getSoundMessage: (file: File, duration: number) => Promise<MessageItem>;
+  insertEmoji: (emoji: string) => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [voiceVisible, setVoiceVisible] = useState(false);
+  const [emojiMode, setEmojiMode] = useState<"desktop" | "mobile">();
   const panelId = useId();
   const mediaEpoch = useRef(0);
   const fileIntent = useRef<{ conversationID: string; epoch: number; operation: AgentChatOperation }>();
   const captureOperation = useAgentChatOperation();
   const fileInputs = useRef<Partial<Record<"image" | "file", HTMLInputElement>>>({});
   const conversationID = useConversationStore((s) => s.currentConversation?.conversationID);
+  const actorGeneration = useResearchStore((s) => s.generation);
   const isGroupSession = useConversationStore((s) => Boolean(s.currentConversation?.groupID));
 
   useLayoutEffect(() => {
     mediaEpoch.current++;
     setExpanded(false);
     setVoiceVisible(false);
+    setEmojiMode(undefined);
     fileIntent.current?.operation.dispose();
     fileIntent.current = undefined;
     return () => { mediaEpoch.current++; fileIntent.current?.operation.dispose(); };
-  }, [conversationID]);
+  }, [conversationID, actorGeneration]);
+
+  const chooseFile = (kind: "image" | "file") => {
+    const current = useConversationStore.getState().currentConversation;
+    fileIntent.current?.operation.dispose();
+    fileIntent.current = current ? { conversationID: current.conversationID, epoch: mediaEpoch.current, operation: captureOperation() } : undefined;
+    setExpanded(false);
+    setEmojiMode(undefined);
+    fileInputs.current[kind]?.click();
+  };
+  const emojiContent = <div className="grid grid-cols-4 gap-1" role="group" aria-label="选择表情">
+    {emojis.map(emoji => <button key={emoji} type="button" className="h-9 w-10 rounded text-xl hover:bg-slate-100 focus-visible:outline focus-visible:outline-blue-500" aria-label={`插入表情 ${emoji}`} onClick={() => {
+      const operation = captureOperation();
+      if (operation.isCurrent()) insertEmoji(emoji);
+      operation.dispose(); setEmojiMode(undefined); setExpanded(false);
+    }}>{emoji}</button>)}
+  </div>;
 
   const fileHandle = (files: File[], kind: "image" | "file") => {
     const conversation = useConversationStore.getState().currentConversation;
@@ -71,10 +95,18 @@ const SendActionBar = ({
   };
 
   return (
-    <div className="px-4.5 pt-2">
+    <div className="px-3 pt-1">
+      <div className="hidden items-center gap-1 min-[601px]:flex" role="toolbar" aria-label="聊天工具栏">
+        <Popover content={emojiContent} open={emojiMode === "desktop"} placement="topLeft" onOpenChange={open => setEmojiMode(open ? "desktop" : undefined)} trigger="click">
+          <button type="button" className={toolbarClass} aria-label="表情" title="表情"><SmileOutlined /></button>
+        </Popover>
+        <button type="button" className={toolbarClass} aria-label="发送图片" title="图片" onClick={() => chooseFile("image")}><PictureOutlined /></button>
+        <button type="button" className={toolbarClass} aria-label="发送文件" title="文件" onClick={() => chooseFile("file")}><FileOutlined /></button>
+        <button type="button" className={toolbarClass} aria-label="打开语音面板" title="语音消息" onClick={() => { setEmojiMode(undefined); setVoiceVisible(true); }}><AudioOutlined /></button>
+      </div>
       <Button
         type="text"
-        className="!flex !h-9 !w-9 !items-center !justify-center !rounded-full !border !border-slate-300 !text-xl"
+        className="!flex !h-9 !w-9 !items-center !justify-center !rounded-full !border !border-slate-300 !text-xl min-[601px]:!hidden"
         aria-label="更多聊天功能"
         aria-expanded={expanded}
         aria-controls={panelId}
@@ -85,21 +117,18 @@ const SendActionBar = ({
         id={panelId}
         role="group"
         aria-label="聊天扩展功能"
-        className={clsx("my-2 max-w-[360px] grid-cols-3 gap-2 rounded-xl bg-slate-50 p-3", expanded ? "grid" : "hidden")}
+        className={clsx("my-2 max-w-[360px] grid-cols-4 gap-2 rounded-xl bg-slate-50 p-2 min-[601px]:!hidden", expanded ? "grid" : "hidden")}
       >
+        <Popover content={emojiContent} open={emojiMode === "mobile"} placement="topLeft" onOpenChange={open => setEmojiMode(open ? "mobile" : undefined)} trigger="click">
+          <button type="button" aria-label="表情" className={actionClass}><SmileOutlined className="text-2xl" /><span>表情</span></button>
+        </Popover>
         {mediaActions.map((action) => (
           <div key={action.key}>
             <button
               type="button"
               aria-label={`发送${action.title}`}
               className={actionClass}
-              onClick={() => {
-                const current = useConversationStore.getState().currentConversation;
-                fileIntent.current?.operation.dispose();
-                fileIntent.current = current ? { conversationID: current.conversationID, epoch: mediaEpoch.current, operation: captureOperation() } : undefined;
-                setExpanded(false);
-                fileInputs.current[action.key]?.click();
-              }}
+              onClick={() => chooseFile(action.key)}
             >
               <img src={action.icon} width={24} alt="" />
               <span>{action.title}</span>
