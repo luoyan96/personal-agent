@@ -2,7 +2,7 @@
 
 **最终目标是以个人为中心的Personal Agent：采用类似微信的交流方式，人与Agent共用通讯录；个人助理根据任务类型和难度组织协作，积累获准的长期记忆，持续推进、主动跟进并从反馈中改进。** 科研小组是第一个验证场景，个人可以独立使用。
 
-2026-10-06当前已上线API / worker57d059e、客户端aa3c0f1、contract0.17 / schema17：统一联系人、自然聊天、显式创建并开聊、手动获准记忆、个人模型管理和有限外部文字接入。自动任务组织、行为记忆学习和个人主动跟进尚未形成完整真实闭环；本次目标更新只修改规划，不改变运行软件。新AI先读[当前状态](docs/current-state.md)、[产品规划v0.7](docs/product-plan.md)与[Personal Agent开发主线](docs/roadmap.md)。
+2026-10-06正在整合 Personal Agent 第一批实际功能：本人长期偏好的保存 / 纠正 / 撤回、专项工作转交站内 Agent、服务端一次性提醒及“关于我”管理。契约0.18 / 聊天1.7 / 显式迁移018；当前线上仍为API / worker57d059e、客户端aa3c0f1、contract0.17 / schema17，发布和线上验收完成后单独更新准确版本。完整行为学习、跨个人空间任务群、条件触发 / 周期跟进与策略自我改进仍在后续。新AI先读[当前状态](docs/current-state.md)、[产品规划v0.7](docs/product-plan.md)与[Personal Agent开发主线](docs/roadmap.md)。
 
 ## 历史更新：文件聊天
 

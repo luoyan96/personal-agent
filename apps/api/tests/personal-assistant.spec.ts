@@ -166,12 +166,12 @@ describe('personal assistant actual HTTP/SQLite; model callbacks are synthetic',
   expect(await new PersonalFollowupWorker(s.db,s.config,()=>Date.parse(created.nextDeliveryAt)+1).tick()).toBe(false);expect(s.count('chat_messages')).toBe(0)
  })
  it('dispatches default4000 with five complete existing profiles and preferences, and updates the parent receipt after child retry',async()=>{
-  const s=await setup(),own=await s.own(),targets=[]
+  const s=await setup(),own=await s.own(),targets:{id:string}[]=[]
   for(const [index,name] of ['论文结构','阅读文献','项目分析','研究设计','代码讨论'].entries())targets.push((await s.call('createPersonalAgent',{...profile,displayName:`合成${name}助手`,introduction:`讨论用户提供的${name}文字。`,capabilityDescription:`仅讨论${name}。\n${agentCreationBoundary}`,personality:'先结论，说明未知。'})).value.data)
   for(const [topic,content] of [['回复方式','先给结论，再简要解释。'],['称呼','叫我小罗。'],['语言','使用中文。']])await s.call('createPersonalMemory',{topic,content,scope:'general'})
   const sent=await s.send(own.conversation.id,'帮我修改论文结构')
   let reserve=0,cap=0
-  await s.tick(async input=>{const p=JSON.parse(input.prompt);expect(p).not.toHaveProperty('messages');expect(p).not.toHaveProperty('contacts');expect(p.personalMemories).toHaveLength(3);expect(p.specialistsOmitted).toBe(true);expect(p.localSpecialists[0].id).toBe(targets[0].id);expect(p.localSpecialists[0].profile.capabilityDescription).toContain(agentCreationBoundary);reserve=chatInputTokenBound(input.system,input.prompt);cap=input.maxTokens;expect(cap).toBeGreaterThanOrEqual(512);return modelResult(JSON.stringify({kind:'delegate',contactId:targets[0].id,profile:null}))})
+  await s.tick(async input=>{const p=JSON.parse(input.prompt);expect(p).not.toHaveProperty('messages');expect(p).not.toHaveProperty('contacts');expect(p.personalMemories).toHaveLength(3);expect(p.specialistsOmitted).toBe(true);expect(p.localSpecialists[0].id).toBe(targets[0]!.id);expect(p.localSpecialists[0].profile.capabilityDescription).toContain(agentCreationBoundary);reserve=chatInputTokenBound(input.system,input.prompt);cap=input.maxTokens;expect(cap).toBeGreaterThanOrEqual(512);return modelResult(JSON.stringify({kind:'delegate',contactId:targets[0]!.id,profile:null}))})
   const receipt=(await s.turn(sent.turn.id)).assistantReceipt
   await s.tick(async()=>modelResult('',{failure:'MODEL_FAILED'}))
   const failed=await s.turn(receipt.turnId);expect(failed.status).toBe('failed');expect(failed.remainingBudget.maxTokens).toBe(3600)
