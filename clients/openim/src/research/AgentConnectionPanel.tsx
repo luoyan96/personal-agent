@@ -54,6 +54,7 @@ export function AgentConnectionPanel({ contactId, onChanged, active = true }: { 
     finally { if (current()) setBusy(false); }
   };
   const state = read.data?.data, probe = state?.lastProbe;
+  const formDisabled = busy || !initialized || !active;
   const confirm = (action: "probe" | "disconnect") => {
     const ticket = epoch.current;
     Modal.confirm({ title: action === "probe" ? "测试外部文字接口？" : "移除外部连接？", content: action === "probe" ? "会向已保存的接口发送一条合成测试文字，可能消耗你在该服务的额度。不发送聊天历史、记忆或文件。" : "移除加密 Key 和接口绑定；资料与聊天仍保留。以后使用发送者的模型。",
@@ -65,12 +66,12 @@ export function AgentConnectionPanel({ contactId, onChanged, active = true }: { 
     {(read.error || failure) && <Alert type="error" message={failure || read.error} />}
     {saved && <Alert type="info" message={saved} />}
     {state?.connection && <div className="flex flex-wrap gap-2 text-xs"><Tag>{state.connection.enabled ? "已配置，待逐条授权" : "连接已停用"}</Tag>{probe && probe.version === version && <span>最近测试：{probe.status === "passed" ? "通过" : probe.status === "failed" ? "失败" : "结果不确定"}{probe.failure ? ` · ${serviceErrorMessage(probe.failure, 0)}` : ""}</span>}</div>}
-    <label className="block">完整接口地址<Input aria-label="外部接口地址" placeholder="https://服务域名/v1/chat/completions" value={form.endpoint} disabled={busy} onChange={e => change({ endpoint: e.target.value })} /></label>
-    <label className="block">模型<Input aria-label="外部模型" value={form.model} disabled={busy} onChange={e => change({ model: e.target.value })} /></label>
-    <label className="block">API Key {state?.connection?.hasApiKey && <Tag>已保存</Tag>}<Input.Password aria-label="外部 API Key" autoComplete="new-password" value={form.apiKey} disabled={busy || form.removeApiKey} placeholder={state?.connection?.hasApiKey ? "留空保留，不会回显" : "填写此服务的 Key"} onChange={e => change({ apiKey: e.target.value })} /></label>
-    <Checkbox checked={form.enabled} disabled={busy || form.removeApiKey} onChange={e => change({ enabled: e.target.checked })}>启用外部文字聊天</Checkbox>
-    <Checkbox checked={form.allowAcceptedContacts} disabled={busy} onChange={e => change({ allowAcceptedContacts: e.target.checked })}>允许已添加的联系人调用（消耗我的外部账号额度）</Checkbox>
-    {state?.connection?.hasApiKey && <Checkbox checked={form.removeApiKey} disabled={busy} onChange={e => change({ removeApiKey: e.target.checked, ...(e.target.checked ? { enabled: false, apiKey: "" } : {}) })}>明确移除已保存的 Key</Checkbox>}
+    <label className="block">完整接口地址<Input aria-label="外部接口地址" placeholder="https://服务域名/v1/chat/completions" value={form.endpoint} disabled={formDisabled} onChange={e => change({ endpoint: e.target.value })} /></label>
+    <label className="block">模型<Input aria-label="外部模型" value={form.model} disabled={formDisabled} onChange={e => change({ model: e.target.value })} /></label>
+    <label className="block">API Key {state?.connection?.hasApiKey && <Tag>已保存</Tag>}<Input.Password aria-label="外部 API Key" autoComplete="new-password" value={form.apiKey} disabled={formDisabled || form.removeApiKey} placeholder={state?.connection?.hasApiKey ? "留空保留，不会回显" : "填写此服务的 Key"} onChange={e => change({ apiKey: e.target.value })} /></label>
+    <Checkbox checked={form.enabled} disabled={formDisabled || form.removeApiKey} onChange={e => change({ enabled: e.target.checked })}>启用外部文字聊天</Checkbox>
+    <Checkbox checked={form.allowAcceptedContacts} disabled={formDisabled} onChange={e => change({ allowAcceptedContacts: e.target.checked })}>允许已添加的联系人调用（消耗我的外部账号额度）</Checkbox>
+    {state?.connection?.hasApiKey && <Checkbox checked={form.removeApiKey} disabled={formDisabled} onChange={e => change({ removeApiKey: e.target.checked, ...(e.target.checked ? { enabled: false, apiKey: "" } : {}) })}>明确移除已保存的 Key</Checkbox>}
     <div className="flex flex-wrap gap-2"><Button type="primary" loading={busy} disabled={!initialized} onClick={() => void command("save")}>保存连接配置</Button>
       <Button disabled={busy || dirty || !state?.connection?.hasApiKey || !state.connection.enabled} onClick={() => confirm("probe")}>测试连接</Button>
       {state?.connection && <Button danger disabled={busy || dirty} onClick={() => confirm("disconnect")}>移除连接</Button>}
