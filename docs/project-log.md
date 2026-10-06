@@ -224,3 +224,14 @@
 - 原802首版00:53上线健康但07:38实际模型 `INVALID_MODEL_OUTPUT`：2页107chars完整提取，usage840+801/5686ms，没有可用回复。固定official Harness loopback确认默认thinking/high的reasoning-only max_tokens会被旧runtime误当成功空正文；线上原正文未存，原空正文原因明确为推断。最终DS daily文件阅读以公开off配置直接回复；任何max-tokens结束不当完整答复，保留usage并显示预算失败。只记录private阶段/字数/finish/cap，不存模型原文或凭据日志。
 - 最终共享CI、客户端类型/Web/四SDK、本地后端203原测试+修复专项、前端13原组+4真实HTTP解析组+3详情组与真实云模型/SDK分别记录；SDK/ModelCall合成的本地报告不当厂商调用证明。所有failed/aborted报告保留。
 - 停写一致备份 `/srv/research-openim-backups/20261006T003325Z` 的12checksum/9gzip/隔离SQLite恢复及16迁移校验通过。回退a536/0c4b07/旧Nginx保留当前schema16数据；完整栈恢复未测。范围修正新增每页实际提取字数，partial指整份文件；每轮消息展示自身读取范围，上传回执单独标识，实际最终页码/完整性追问另证。源候选c459 / root0e728完整CI473+2，前端f927 / roota536类型/Web/四SDK通过；原3范围组件组第三选择器失败保留，接续3组成功。097在08:02实际上线，SDK/PDF/两轮模型成功但范围语义问题原样记录；a536在08:20上线后真实模型仍误称第2页未完整读取，f5095fdb及失败截图保留在 agent-file-scope-20261006。最终改为后端计算每页完整性和自然语言范围，当前范围事实明确覆盖历史错误回复；最终真实复验见 live-ui-proof.json；上传NoSuchKey/Session过期通过正常连接恢复。证据与最终页面截图见Git外 `.runtime/agent-file-scope-final-20261006/live-ui-proof.json`。
+
+## 2026-10-06：连续 Agent 私聊与自然回复（本地完成，未部署）
+
+用户确认微信式连续文字交流：可以连发补充、实际渐进输出、运行中调整方向。软件提交 `1eb9f8d42e39031442a79c663f400c7facf1dda1`，分支 `feature/continuous-agent-chat`，父基线0bb8562包含附件临时回执修复；后续文档提交不改变此软件SHA。contract0.19 / chat1.8，SQLite仍18，无迁移。本批没有合并、云部署、真实提供商Key操作或生产IM消息；线上仍API / worker787ca2314b24320ae0b90da4db4d1401b209f719、客户端27c3279f7dc6584ebde905fd821e21f7166e5c74、contract0.18。
+
+- 后端每条human消息先保存，queued1200ms滑动合并、最多4秒，同批一个turn/root/4000/90预算；运行中明确新输入使旧生成失效、新批独立默认预算，旧actual/unknown usage保留、不refund/自动retry。当前批全部文字参与，明确创建意图切换与撤销仍检查，不让迟到旧建联系人 / 计划落库。外部每条先验同意，仅当前文字、不合并外传历史/记忆/文件。
+- Harness保持固定0.2.0-rc.1公开接口，CLI可选NDJSON delta/result和IPC AbortSignal；StringDecoder保留UTF-8碎片，仅公开text-delta。progress重新检查original owner/ACL/上下文；暂存正文不是业务成功，结构化创建/协作只在完整校验后展示。canonical/outbox仍为最终记录。waiting_input澄清的已校验回复phase=final，但任务状态仍waiting_input。
+- 前端连续入口按原key/body顺序提交，早期失败保留并暂停后续；不会锁住编辑器等待模型。暂存回复按finalMessageId与SDK locator去重，刷新从实际当前human指针恢复。本人标签页sessionStorage有界512KiB UTF-8/50项/24小时；恢复为paused、无自动发送，UI手动核对原请求。退出/换账号清除，损坏或保存失败提示。普通重复等待行从输入区移到聊天区。
+- 最终完整根CI44文件534项+2生产入口/B0进程/生产fixture排除通过；客户端最终typecheck/build:web/四固定SDK资源exit0。后端12最终专项（10实际HTTP/SQLite+2实际固定Harness/CLI本地合成SSE）及此前233回归通过；总控新dist四项实际HTTP/SQLite通过，progress revision从4到7，旧输出拒绝、旧usage保留、他人404、持久final恢复。前端8项必要组分阶段闭合，实际生产HashRouter/QueryChat/CKEditor、loopback HTTP/SQLite/worker，ModelCall与SDK/映射明确合成，不当作一次全套浏览器或云模型/IM验收。
+- Git外索引 `D:/deepseek-agent/.runtime/continuous-chat-20261006/{backend-review.json,root-ci-final.log,http-b302661a/report.json,frontend/summary.json}`。首轮root-ci.log为533pass/1fail：旧CHAT1数量50，新增progress后修51；之后完整CI通过。原backend fixture断言、重复合成回答文本计数、Router/SDK fixture hydration、新账号初始化、CKEditor空白换行、桌面菜单选择器及关闭harness失败均保留。最终pageerror0，既有Antd/Router与注入失败/匿名401仍在console，不能称console0。
+- 自有API helper/Vite/Playwright已关闭，两个隔离测试账号UI退出完成；运行证据与临时私有凭据均Git外保留。真实模型语气与流式质量、生产OpenIM投递、完整Muse并行任务/语音/原生App另验。下一步发布须API/worker先升0.19，再升客户端，保留schema18数据，并另录精确镜像/公网/恢复与隔离账号线上证据。

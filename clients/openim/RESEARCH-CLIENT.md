@@ -6,7 +6,20 @@
 
 正式新入口的完整网页资源、Nginx 同源反代、HTTPS/WSS/媒体配置和验收顺序见[部署说明](deploy/README.md)。新地址准备状态不等于服务已连接；真实双账号 SDK 验收结果另行记录。
 
-## 当前本地候选：个人助理、长期记忆与跟进（2026-10-06）
+## 当前本地候选：连续 Agent 私聊（2026-10-06，未部署）
+
+统一软件 `1eb9f8d42e39031442a79c663f400c7facf1dda1` / `feature/continuous-agent-chat`，共享契约0.19 / chat1.8 / schema18。生产仍为顶部0.18组合，新客户端须先接同版新API / worker，不能静态单独上线。
+
+- 文本发送捕获当次草稿、目标和请求，使用独立幂等键顺序提交。输入和发送不等待模型；早一条入站失败会保留并暂停后续消息，明确重试或不发送，保持原请求及顺序。离开会话不会自动重放。
+- 实际受权progress在聊天区渐进展示，不重新挂载编辑器 / 抢焦点；正在生成时可继续补充。旧轮失效后清除暂存回复，最终消息按canonical ID去重；只从实际当前human locator恢复未完工作，历史终态不制造新暂存气泡。
+- 当前活跃页读取进度；未同步final每5秒重新受权，返回页面重新校验。读取失败清除旧暂存文本并提供重新读取，不继续显示失去权限的缓存。普通等待行收至聊天区，输入区保留真实失败、重试、创建连接失败及可选协作。
+- sessionStorage绑定明确本人member / sessionActorId，仅在当前标签页存草稿与待发记录，无凭据，限制512KiB UTF-8 / 50项 / 24小时。刷新只恢复paused；手动重试沿原key / body。退出 / 换账号清除；损坏、过期、不可保存有中文提示。媒体上传和原桌面工具保持原通路，本批刷新恢复范围为文本待发。
+
+客户端最终类型 / Web / 四固定SDK资源通过，日志在Git外 `.runtime/continuous-chat-20261006/frontend/{typecheck-final.log,build-web-final.log,summary.json}`。实际生产HashRouter / QueryChat / CKEditor和loopback HTTP / SQLite的必要场景分阶段闭合，ModelCall / SDK与映射明确合成：连发、编辑焦点、纠正 / fence、canonical只一次、失败暂停 / 同key重试、离开返回、整页刷新及320px；最终actual-58545307另确认刷新无自动POST、原key/body不变、SQLite仅两条人类消息，实际UI退出 / 第二账号不见旧草稿与待发、损坏缓存安全。actual-7a7cc85a确认桌面 / 320进度行不重复、编辑器189px及UI退出。
+
+原failed报告保留：同样synthetic回答文本计数、fixture新账号初始化 / hydration / 空白换行、桌面“更多”选择器、关闭路由harness等；修正后通过证据另存，不宣称一次完整浏览器套件通过。有既有Router / Antd日志及故意网络拒绝 / 匿名401；pageerror0不等于console0。自有浏览器与Vite已关闭。本批没有云端模型 / IM投递、原生安装包或生产发布。
+
+## 上一批本地候选：个人助理、长期记忆与跟进（2026-10-06）
 
 客户端代码 `b4aa0c67b814b2ffbfa789aa575b33b2ee8b472e` 接共享契约 **0.18.0 / chat 1.7.0**。本段是客户端本地交接；是否部署、服务版本及真实模型 / SDK 结果由总控另记。
 

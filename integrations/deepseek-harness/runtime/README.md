@@ -8,6 +8,8 @@
 
 调用会得到类型化 finish/usage；错误只保留稳定 code，原始 provider 错误和 stderr 不对外打印。没有 usage 时为 null，费用仍为 null；应用测量 elapsedMs。运行成功还需 Schema 与原文引文验证，不能用文本中的“完成”改变任务状态。
 
+2026-10-06连续私聊增量：`generate` / API `ModelCall` 可选公开文字delta回调，CLI显式 `stream:true` 时使用NDJSON delta / result帧；未启用时仍返回原单个JSON结果。仅转发Harness的 `text-delta`，不转发reasoning / thinking，跨stdout碎片使用UTF-8解码。取消经IPC传给已有AbortSignal，保留实际返回的usage，宽限后才终止子进程；未知用量不视为免费调用。实际固定Harness / CLI与本地合成Messages SSE已验证增量先于final、UTF-8碎片、缓存总用量、截断失败和取消；本批没有调用真实厂商。服务侧批次、权限、预算与最终canonical消息见[连续私聊说明](../../../docs/development/continuous-chat.md)。
+
 ```powershell
 pnpm install --frozen-lockfile
 pnpm build
