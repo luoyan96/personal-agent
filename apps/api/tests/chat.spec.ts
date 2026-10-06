@@ -313,7 +313,7 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     await s.call('sendChatMessage',{text:'旧013真人聊天'},{id:direct.id});await s.call('updateChatPreferences',{expectedVersion:1,pinned:true},{id:direct.id})
     s.db.prepare('UPDATE chat_conversations SET scope_key=? WHERE id=?').run('direct:lab_synthetic:member_A:member_B',direct.id)
     const previous=s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(direct.id)!.document
-    s.db.exec('DROP INDEX chat_contact_owner; DROP TABLE personal_model_settings; DROP TABLE personal_model_configurations; DROP TABLE personal_spaces; DROP TRIGGER im_queue_research_message; DROP TABLE im_callback_receipts; DROP TABLE im_message_outbox; DROP TABLE im_token_leases; DROP TABLE im_conversations; DROP TABLE im_identities; DROP TABLE chat_memory_revisions; DROP TABLE chat_memories; DROP TABLE chat_contact_requests; DROP TABLE chat_contact_profiles; DELETE FROM schema_migrations WHERE version>=14')
+    s.db.exec('DROP TABLE agent_connections; DROP INDEX chat_contact_owner; DROP TABLE personal_model_settings; DROP TABLE personal_model_configurations; DROP TABLE personal_spaces; DROP TRIGGER im_queue_research_message; DROP TABLE im_callback_receipts; DROP TABLE im_message_outbox; DROP TABLE im_token_leases; DROP TABLE im_conversations; DROP TABLE im_identities; DROP TABLE chat_memory_revisions; DROP TABLE chat_memories; DROP TABLE chat_contact_requests; DROP TABLE chat_contact_profiles; DELETE FROM schema_migrations WHERE version>=14')
     migrate(s.db);migrate(s.db)
     expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(17)
     expect(s.db.prepare('SELECT count(*) n FROM chat_contact_requests').get()!.n).toBe(1)
@@ -335,7 +335,7 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     const message = s.db.prepare('SELECT document FROM chat_messages WHERE conversation_id=?').get(s.personal.id)!.document
     // Reconstruct the exact 012 shape by removing only the new 013 table/history.
     // Existing applied checksums and all chat rows remain untouched.
-    s.db.exec('DROP INDEX chat_contact_owner; DROP TABLE personal_model_settings; DROP TABLE personal_model_configurations; DROP TABLE personal_spaces; DROP TRIGGER im_queue_research_message; DROP TABLE im_callback_receipts; DROP TABLE im_message_outbox; DROP TABLE im_token_leases; DROP TABLE im_conversations; DROP TABLE im_identities; DROP TABLE chat_memory_revisions; DROP TABLE chat_memories; DROP TABLE chat_contact_requests; DROP TABLE chat_contact_profiles; DROP TABLE chat_viewer_states; DELETE FROM schema_migrations WHERE version>=13')
+    s.db.exec('DROP TABLE agent_connections; DROP INDEX chat_contact_owner; DROP TABLE personal_model_settings; DROP TABLE personal_model_configurations; DROP TABLE personal_spaces; DROP TRIGGER im_queue_research_message; DROP TABLE im_callback_receipts; DROP TABLE im_message_outbox; DROP TABLE im_token_leases; DROP TABLE im_conversations; DROP TABLE im_identities; DROP TABLE chat_memory_revisions; DROP TABLE chat_memories; DROP TABLE chat_contact_requests; DROP TABLE chat_contact_profiles; DROP TABLE chat_viewer_states; DELETE FROM schema_migrations WHERE version>=13')
     migrate(s.db); migrate(s.db)
     expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(17)
     expect(s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(s.personal.id)!.document).toBe(previous)
