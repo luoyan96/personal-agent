@@ -6,7 +6,7 @@ type ChatResource = NonNullable<
 >[number];
 import { useConversationStore, useUserStore } from "@/store";
 import { emit } from "@/utils/events";
-import { researchApi, researchMode } from "./api";
+import { researchApi, researchMode, ResearchApiError } from "./api";
 import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
 import { ResearchTurnStatus } from "./ResearchTurnStatus";
@@ -70,6 +70,7 @@ export function useResearchComposer() {
   const isDirectAgent =
     !!mapping && mapping.kind !== "group" && !!peer && peer.identity.kind !== "human";
   const external = isDirectAgent ? peer?.agentRuntime : undefined;
+  const externalReady = !!external && peer?.availability.status === "available";
   const externalScope = `${imID}:${actorGeneration}:${external?.serviceOrigin}:${external?.callerAllowed}`;
   useEffect(() => { setExternalConsent(false); setAdvanced(false); }, [externalScope]);
   const turn =
@@ -134,7 +135,8 @@ export function useResearchComposer() {
     const advancedRequest = advanced && mode === "ask_agent";
     if (external && (!external.callerAllowed || !externalConsent))
       throw new Error(external.callerAllowed ? "请先明确授权将本条文字发送到外部服务。" : "主人未授权当前账号调用该外部服务。");
-    if (external && advancedRequest) throw new Error("外部 Agent 仅支持本条文字聊天，不支持协作、记忆或附件。");
+    if (external && !externalReady) throw new Error("此 Agent 的外部连接当前不可用，请主人核对连接配置；不会改用个人模型。");
+    if (external && advancedRequest) throw new Error("本站外部接入只转发本条文字，不转发本站的协作、记忆或附件。");
     if (!researchMode || (!isDirectAgent && !advancedRequest)) return false;
     if (
       !mapping ||
@@ -175,6 +177,7 @@ export function useResearchComposer() {
     } catch (error) {
       operation.dispose();
       if (freshCreation.current === fresh) freshCreation.current = undefined;
+      if (external && error instanceof ResearchApiError && error.code === "MODEL_UNAVAILABLE") throw new Error("此 Agent 的外部连接当前不可用，请主人核对连接配置；不会改用个人模型。");
       throw error;
     }
     if (
@@ -211,7 +214,7 @@ export function useResearchComposer() {
       <>
         {external && <div className="px-3 py-2 text-xs leading-5 text-slate-600">
           <p className="truncate" title={external.serviceOrigin}>外部服务：{external.serviceOrigin} · 费用由主人连接的外部账号承担</p>
-          {external.callerAllowed ? <Checkbox checked={externalConsent} onChange={e => setExternalConsent(e.target.checked)}>授权发送本条文字（不含历史、记忆与附件）</Checkbox> : <p className="text-amber-700">主人尚未允许当前账号调用，请先联系主人。</p>}
+          {external.callerAllowed ? externalReady ? <Checkbox checked={externalConsent} onChange={e => setExternalConsent(e.target.checked)}>授权发送本条文字（不含历史、记忆与附件）</Checkbox> : <p className="text-amber-700">{peer?.availability.status === "disabled" ? "外部连接已停用，请主人启用。" : "外部连接当前不可用，请主人核对连接配置。"}</p> : <p className="text-amber-700">主人尚未允许当前账号调用，请先联系主人。</p>}
         </div>}
         {advanced && (
           <div className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs">
@@ -357,7 +360,7 @@ export function useResearchComposer() {
     invalid:
       researchMode &&
       ((advanced && mode === "ask_agent") || isDirectAgent) &&
-      ((!!external && (!external.callerAllowed || !externalConsent)) || !canonical.data?.data.allowedActions.includes("send") ||
+      ((!!external && (!external.callerAllowed || !externalReady || !externalConsent)) || !canonical.data?.data.allowedActions.includes("send") ||
         (advanced && mode === "ask_agent"
           ? !agents.some((a) => a.id === agentId)
           : agents.length !== 1)),

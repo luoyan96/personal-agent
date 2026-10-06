@@ -1,6 +1,6 @@
 import { getWithRenderProcess } from "@openim/electron-client-sdk/lib/render";
 import { AllowType } from "@openim/wasm-client-sdk";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { contactDestination } from "@/research/contactDestination";
 
@@ -21,6 +21,7 @@ const openIMSDK = instance;
 export const IMSDK = openIMSDK;
 
 export const MainContentWrap = () => {
+  const [hasStoredProfile, setHasStoredProfile] = useState(false);
   const updateAppSettings = useUserStore((state) => state.updateAppSettings);
 
   const navigate = useNavigate();
@@ -33,10 +34,12 @@ export const MainContentWrap = () => {
       const IMUserID = await getIMUserID();
       if (cancelled) return;
       if (!IMToken || !IMUserID) {
+        setHasStoredProfile(false);
         const destination = contactDestination(location.pathname, location.search);
         navigate("/login", { replace: true, state: destination ? { contactDestination: destination } : null });
         return;
       }
+      setHasStoredProfile(true);
     };
 
     void loginCheck();
@@ -79,5 +82,5 @@ export const MainContentWrap = () => {
     void initSettingStore();
   }, [updateAppSettings]);
 
-  return <Outlet />;
+  return hasStoredProfile ? <Outlet /> : null;
 };

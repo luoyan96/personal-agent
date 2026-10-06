@@ -165,7 +165,7 @@ export const ResearchUserCard = forwardRef<
             </p>
           )}
           {contact.identity.kind !== "human" && <div className="rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">
-            {contact.agentRuntime ? <><strong>外部文字服务</strong><p className="break-all">{contact.agentRuntime.serviceOrigin}</p><p>仅发送逐条授权的当前文字；费用由主人连接的外部账号承担。{contact.agentRuntime.callerAllowed ? "当前账号获准调用。" : "当前账号不能调用，请联系主人。"}</p><p>连接验证：{contact.agentRuntime.verification === "passed" ? "最近测试通过" : contact.agentRuntime.verification === "failed" ? "最近测试失败" : "尚未确认可用"}。不包含原平台工具、记忆或附件能力。</p></> : <><strong>平台 Agent</strong><p>使用发送者的模型设置和获准记忆。能力描述是交流人设，不代表已配置联网、执行工具或已验证研究结果。</p></>}
+            {contact.agentRuntime ? <><strong>外部文字服务</strong><p className="break-all">{contact.agentRuntime.serviceOrigin}</p><p>仅发送逐条授权的当前文字；费用由主人连接的外部账号承担。{contact.agentRuntime.callerAllowed ? "当前账号获准调用。" : "当前账号不能调用，请联系主人。"}</p><p>连接验证：{contact.agentRuntime.verification === "passed" ? "最近测试通过" : contact.agentRuntime.verification === "failed" ? "最近测试失败" : "尚未确认可用"}。本站的记忆、附件与协作不会转发；远端自身功能以该服务为准，本站不作验证。</p></> : <><strong>平台 Agent</strong><p>使用发送者的模型设置和获准记忆。能力描述是交流人设，不代表已配置联网、执行工具或已验证研究结果。</p></>}
           </div>}
           {editing ? (
             <div className="space-y-2">

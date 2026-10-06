@@ -56,7 +56,7 @@ export function useScopedFileSender({
     try {
       const message = await (image ? getImageMessage(file) : getFileMessage(file));
       if (!isCurrent()) return false;
-      if (peer?.agentRuntime) feedbackToast({ msg: "文件已发送；此 Agent 的外部服务只读取逐条授权的文字，不读取图片、语音或附件。" });
+      if (peer?.agentRuntime) feedbackToast({ msg: "文件已发送；本站外部接入只转发逐条授权的文字，不会读取或转发本站的图片、语音或附件。" });
       await sendMessage({
         message,
         recvID: conversation.userID,

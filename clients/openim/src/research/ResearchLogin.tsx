@@ -241,6 +241,7 @@ export default function ResearchLogin() {
                     try {
                       await researchApi("logout");
                     } finally {
+                      returnDestination.current = undefined;
                       await clearIMProfile();
                       clearResearchSession();
                       useResearchStore.getState().clear();
