@@ -256,3 +256,9 @@
 - 根CI44文件 / 537项，另2项生产入口、B0和生产fixture排除通过；后端23专项 + 3最终边界 / 源和测试类型通过。客户端类型 / Web / 四固定SDK资源通过，八组实际生产路由 / CKEditor界面检查覆盖全文、118字符部分、失败 / 等待 / 旧数据、去重、空白页及1440 / 320px；此组API / SDK / 提取元数据 / 模型均合成。pageerror0，Router警告及首轮排版 / fixture / 路由失败保留。
 - contract0.19 / chat1.8 / schema18无变化，无迁移和依赖变更。发布助手以线上2e69688 / 镜像63915f4 / 首页7df1377为严格基线，保留现有数据和计量；归档、78表fingerprint及SQLite栅栏三项本地检查通过。现有Workbench断开，自动审批把返回入口识别为VNC并拦下，改用原SSH入口仍未恢复；已请用户恢复原连接，不索要凭据，尚未在云端执行。
 - Git外 `.runtime/document-reading-20261006` 保存根CI、`backend/backend-review.json` / `thirteen-page-call-proof.json`、`frontend/summary.json` / `render-d9dbb750/report.json`和发布准备日志。下一步固定源码PR、同版客户端 / API / worker发布，再用该13页合成样本验证真实厂商 / SDK、范围、用量及刷新去重。既有旧论文回复不会追溯改成全文；发布后需新发明确全文追问。
+
+### 2026-10-06 19:37 文档修复合入主线，发布包已准备
+
+- 软件固定提交 `94b26d1d4871c45ace12a86f93d4c19cce377c4d`、[PR5](https://github.com/luoyan96/personal-agent/pull/5)已合入main0a2070f；[同一源码三平台完整CI](https://github.com/luoyan96/personal-agent/actions/runs/37456957982)全部通过。后续仅交接文档更新，不重跑已通过的共享本地CI。
+- 发布包固定94b26d1，归档SHA256801e674d、helperfdeb01df、候选首页a33adc48；源 / Web / helper哈希、canonical Git blob和所有归档成员守卫通过。收据 `.runtime/document-reading-20261006/release/{github-ci,software-merge,bundle-receipt,bundle-verified}.json`。19:35:53公网ready0.19正常，首页仍旧7df1377，证据 `public-pending.json`。
+- **尚未上线**。现有Workbench终端仍断开，已请用户在Edge恢复原SSH连接，无需提供密码或Key；没有执行云部署、变更端口 / 授权、调用真实厂商或发布新版本标签。恢复后须完成13页样本真实SDK / 模型验收再登记部署结果，不能把三平台CI或合成模型当成线上读完全文。

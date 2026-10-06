@@ -4,7 +4,7 @@
 
 主代码仓库为 [luoyan96/personal-agent](https://github.com/luoyan96/personal-agent)，`main` 是共同开发主线。每个人 / AI 用独立分支提交 PR，开发环境、客户端检查和版本回退见[协作说明](CONTRIBUTING.md)。当前发布标签 `personal-agent-2026-10-06.2` 指向已部署2e69688；此前协作基线 `.1` 与初始导入标签保留。GitHub代码更新和阿里云部署分别记录。
 
-2026-10-06本地完成[文档阅读上下文修复](docs/development/document-reading.md)，**尚未上线**：新附件阅读使用有界的独立预算，全文优先于旧聊天历史；界面直接区分全部可提取文字与部分片段。真实解析13页 / 49,622字符的合成PDF并逐页送入合成模型的检查通过，根CI537 + 2与客户端检查通过；不代表真实厂商或云端验收。普通聊天仍为4000 / 90秒，旧请求预算不追溯增加。发布状态以[当前状态](docs/current-state.md)为准。
+2026-10-06[文档阅读上下文修复](docs/development/document-reading.md)已合入main，**尚未上线**：固定源码 `94b26d1d4871c45ace12a86f93d4c19cce377c4d`、[PR5](https://github.com/luoyan96/personal-agent/pull/5)、三平台完整CI537 + 2与客户端检查通过。新附件阅读使用有界的独立预算，全文优先于旧聊天历史；界面直接区分全部可提取文字与部分片段。真实解析13页 / 49,622字符合成PDF并逐页送入合成模型的检查通过，不代表真实厂商或云端验收。普通聊天仍为4000 / 90秒，旧请求预算不追溯增加。发布包已准备，待恢复既有Workbench连接；状态以[当前状态](docs/current-state.md)为准。
 
 2026-10-06 18:16:59北京时间，[连续Agent私聊](docs/development/continuous-chat.md)已上线：可以连发补充、模型实际公开文字逐步显示、生成中调整方向；草稿 / 待发记录可在当前账号标签页刷新恢复，原请求手动重试。客户端、API / worker均为 `2e696881583842eb0e251d222083bccd925524fe`，contract0.19 / chat1.8 / schema18无迁移。同一源码三平台完整CI与客户端检查通过；真实模型增量、运行中补充、OpenIM投递和刷新去重已线上验收。长文仍可能触及4000 / 90秒预算，失败记录保留。精确镜像、证据与恢复步骤见[当前状态](docs/current-state.md)。
 

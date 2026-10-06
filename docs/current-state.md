@@ -23,9 +23,9 @@
 - 普通个人 / Agent 私聊默认只输入文本并发送；使用本人默认模型，保留真实档案、性格和授权记忆。任务、材料、预算与需求模板收在可选协作中；普通聊天不创建计划、群、任务或执行动作。主标题显示真实 Agent 名称，沿用原协调身份和置顶映射。
 - 设置入口改为“模型设置”，每个人管理自己的 DeepSeek / 通义千问 / 豆包配置、加密 Key、启用及默认选择。朋友使用本人 Key 与当前对话记忆，不能读取 Agent 主人的 Key 或私有记忆。既有 IFRC 未选择个人配置时兼容旧模型；明确作个人选择后不静默回退。
 
-## 本地候选：文档阅读上下文修复（尚未上线）
+## 待发布：文档阅读上下文修复（尚未上线）
 
-2026-10-06，`fix/document-reading-context-20261006` 修复“解析了13页、约5万字符，模型却只看到第一页118字符”的问题。原因是文件阅读沿用4000总预算，旧聊天历史又优先占用输入；解析成功并不等于模型获得全文。详见[文档阅读交接](development/document-reading.md)。当前线上仍为下节2e69688，以下是本地实现与准备状态。
+2026-10-06，固定源码 `94b26d1d4871c45ace12a86f93d4c19cce377c4d` 修复“解析了13页、约5万字符，模型却只看到第一页118字符”的问题。[PR5](https://github.com/luoyan96/personal-agent/pull/5)于19:37:28北京时间合入main，软件合并提交 `0a2070f03492d8dee598aa71c90c7d87719c9be0`。原因是文件阅读沿用4000总预算，旧聊天历史又优先占用输入；解析成功并不等于模型获得全文。详见[文档阅读交接](development/document-reading.md)。当前线上仍为下节2e69688，以下是本地实现与发布准备状态，后续文档提交不改变固定发布包源码。
 
 - 新上传或明确追问附件使用所选正文JSON UTF-8字节数 + 8192的保守预算，限制4000–64000 / 90秒。当前完整输入、档案与获准记忆保留，先选择文件文字，再用剩余空间放入旧历史；所选全文至少容纳512输出token时，不为扩大回复上限而裁正文。
 - 普通无附件聊天仍4000 / 90秒；连续同源同页批次保留首份预算，换附件 / 页码开启新批，旧4000轮次和重试不隐式升额。旧轮被栅栏，实际或未知用量保留，未知用量不自动重试。契约0.19 / chat1.8 / schema18均不变，没有迁移或依赖调整。
@@ -33,6 +33,7 @@
 - 根CI44文件 / 537项、另2项生产入口 / B0 / 生产fixture排除通过；客户端类型 / Web / 四固定SDK资源通过。后端23专项 + 3最终边界通过。真实HTTP / SQLite / PDF解析13页49622字符，逐页完整文本及末页结论进入模型输入；预算63336，输入预留58226、输出上限4096；指定第13页追问含3817字符全文。模型为合成ModelCall / 本地合成SSE，未调用真实厂商。
 - 八组实际生产HashRouter / QueryChat / CKEditor界面检查覆盖全文、118字符部分、等待、失败、旧消息、重叠范围去重、空白页与1440 / 320px；该组API / SDK / 文档元数据 / 模型均合成。pageerror0，Router警告及原样本 / fixture失败保留。Git外证据 `D:/deepseek-agent/.runtime/document-reading-20261006`：`root-ci-final.log`、`backend/backend-review.json`、`backend/thirteen-page-call-proof.json`、`frontend/summary.json`及`frontend/render-d9dbb750/report.json`。
 - 发布助手以线上2e69688 / 镜像63915f4 / 首页7df1377为严格基线，沿用schema18并核验78表及停写一致备份。归档、表fingerprint及保留未知用量的栅栏三项本地检查通过；尚未执行。既有Workbench终端断开，返回入口曾被自动审批识别为VNC并拦下；改用原SSH入口仍未恢复。已请求用户重新连接 `launch-advisor-20261004`，无需发送凭据；没有新增SSH授权或端口。
+- 同一固定源码的[GitHub三平台完整CI](https://github.com/luoyan96/personal-agent/actions/runs/37456957982)全部通过：Windows Node24、Ubuntu Node22.19 / 24。发布归档 `document-reading-94b26d1d4871c45ace12a86f93d4c19cce377c4d.tar.gz` SHA256 `801e674d5dfa56ac46c534165a3c81aa8ed8e1fd54611f01598ded49ec4e72d0`；helper `fdeb01dff345abae4fca5c290785b10faca668fa5712bac7abbe5f5e02b1ab3d`，候选首页 `a33adc48e575ba827899fc055ad077228332b3fdc66ce4a5f0c35c37c02d6d2b`。包内固定Git blob、源 / Web / helper哈希及归档路径 / 类型均通过；19:35:53公网ready0.19正常、首页仍旧7df1377。证据另在 `release/{github-ci,software-merge,bundle-receipt,bundle-verified,public-pending}.json`。没有新发布标签或云部署成功记录。
 
 ## 最新发布：连续 Agent 私聊（已上线）
 
