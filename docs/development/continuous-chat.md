@@ -1,6 +1,6 @@
 # 连续 Agent 私聊
 
-2026-10-06 用户确认改造：微信式连续交流、自然语气、可以连发补充、逐步显示回复，并在回答期间调整方向。已实现软件 `1eb9f8d42e39031442a79c663f400c7facf1dda1`，分支 `feature/continuous-agent-chat` 从附件回执修复0bb8562开始；生产基线仍API787ca23 / 客户端27c3279 / schema18。此文件为实现与验收说明，完成结果另录 current-state / project-log。
+2026-10-06用户确认微信式连续交流、自然语气、可以连发补充、逐步显示回复，并在回答期间调整方向。实现提交1eb9f8d从附件回执修复0bb8562开始；最终固定源码 `2e696881583842eb0e251d222083bccd925524fe` 已于18:16:59北京时间上线客户端、API及worker，contract0.19 / chat1.8 / schema18无迁移。PR3 / PR2已合并，发布标签 `personal-agent-2026-10-06.2` 指向部署源码。
 
 ## 本批用户流程
 
@@ -42,8 +42,10 @@
 
 后端专项使用实际HTTP / SQLite / worker及合成模型；流式Harness链路可用本地合成SSE验证。前端使用实际React生产组件与隔离浏览器，API / SDK合成与实际HTTP必须分别注明。完整根CI与客户端类型 / Web / 四SDK资源均须通过；真实提供商质量、云IM及生产版本另行验收。
 
-## 后续发布
+## 2026-10-06发布与恢复
 
 本地最终完整根CI44文件 / 534项及2生产入口通过，客户端类型 / Web / 四SDK资源通过。后端实际Harness / CLI接本地合成SSE、总控最新dist实际HTTP / SQLite四项及实际React生产路由的必要场景分阶段闭合。完整索引在Git外 `.runtime/continuous-chat-20261006/{backend-review.json,root-ci-final.log,http-b302661a/report.json,frontend/summary.json}`，首轮旧接口数量断言和所有原fixture失败保持；不要将合成ModelCall / SDK当真实厂商 / IM。
 
-本批不自动部署。发布时先升级API与worker至同一0.19构建，再发布客户端；旧0.18客户端仍可访问新后端，新客户端不能接旧0.18严格body或缺少progress的后端。SQLite保持18，不应新增无关迁移。需使用隔离账号实际验证厂商增量、运行中补充与OpenIM最终消息去重，再记录精确镜像 / 客户端SHA及恢复步骤。本文本地合成验收不代表线上通过。
+用户明确授权后已按API / worker先升0.19、再启用同版客户端的顺序发布。停写一致备份 `/srv/research-openim-backups/20261006T101640Z`，78表SQL及全部行hash保持，无迁移。Windows24、Ubuntu22.19 / 24同一源码CI通过；最初Linux测试私钥0644触发生产守卫，2e69688仅修正测试写入为0600及成功断言，守卫不变。实际镜像 / 首页 / 恢复组合见[ECS记录](../deployment/openim-ecs.md)。
+
+真实验收使用既有已登录用户个人助理与合成文字，沿用已有模型配置，没有新建隔离账号、读取或修改Key / 密码。两条快速输入合并一次真实调用；生成中补充使旧轮失效、保留未知用量，新轮成功；final前实际出现公开增量“ M”，最终revision9、OpenIM sent，刷新仅1份回复 / 临时气泡0。800字及250字长文预算失败保留，后续短请求成功，4000 / 90秒不变。Git外证据 `D:/deepseek-agent/.runtime/continuous-chat-release-20261006` 包含部署 / 公网 / CI、实际turn计量、流式AX、刷新及截图；原selector中止与三次准备失败未删除。完整Muse并行、实时语音、原生App、云完整恢复演练仍未验收。
