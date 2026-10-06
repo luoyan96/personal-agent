@@ -5,3 +5,5 @@ export * from './openim.js'
 export * from './authentication.js'
 export * from './personal-models.js'
 export * from './agent-connections.js'
+
+export * from './personal-assistant.js'

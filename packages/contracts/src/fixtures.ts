@@ -60,6 +60,7 @@ function sample(s: JsonShape, key = ''): unknown {
   if (s.format === 'date') return '2026-09-21'
   if (s.format === 'date-time') return at
   if (s.format === 'uri') return 'http://synthetic.invalid'
+  if (key === 'timeZone') return 'Asia/Shanghai'
   if (key === 'sha256') return 'a'.repeat(64)
   if (key === 'contentBase64') return 'eA=='
   if (key === 'Idempotency-Key') return 'synthetic_command_0001'
