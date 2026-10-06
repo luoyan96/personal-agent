@@ -4,6 +4,7 @@ import { chatRoutes } from './chat.js'
 import { openImRoutes } from './openim.js'
 import { AccountUsername, AccountPassword, RegistrationCode } from './authentication.js'
 import { personalModelRoutes } from './personal-models.js'
+import { agentIntegrationRoutes } from './agent-connections.js'
 
 const empty = z.strictObject({})
 const id = z.strictObject({ id: m.Id })
@@ -24,6 +25,7 @@ function route<P extends z.ZodType, Q extends z.ZodType, B extends z.ZodType, R 
     errors: m.ErrorResponse, errorStatuses: m.errorStatus, idempotent: keyed }
 }
 export const routes = {
+  ...agentIntegrationRoutes,
   ...personalModelRoutes,
   ...openImRoutes,
   ...chatRoutes,

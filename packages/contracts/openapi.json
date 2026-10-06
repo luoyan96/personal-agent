@@ -2,9 +2,2686 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.16.0"
+    "version": "0.17.0"
   },
   "paths": {
+    "/api/v1/chat/agents/import": {
+      "post": {
+        "operationId": "importAgentProfile",
+        "description": "Owner profile JSON only. Exact four-field existing local specialist is reused; otherwise create an owned specialist and canonical direct atomically. No private memory, credentials, external connection, tools or capability hosting imported; max20 specialists. Idempotent replay returns authorized current identities.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "const": "research-agent-profile/v1"
+                  },
+                  "profile": {
+                    "type": "object",
+                    "properties": {
+                      "displayName": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "introduction": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "capabilityDescription": {
+                        "type": "string",
+                        "maxLength": 4000
+                      },
+                      "personality": {
+                        "type": "string",
+                        "maxLength": 2000
+                      }
+                    },
+                    "required": [
+                      "displayName",
+                      "introduction",
+                      "capabilityDescription",
+                      "personality"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "format",
+                  "profile"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "format": "research-agent-profile/v1",
+                "profile": {
+                  "displayName": "synthetic",
+                  "introduction": "synthetic",
+                  "capabilityDescription": "synthetic",
+                  "personality": "synthetic"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "contact": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            "labId": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            "displayName": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "username": {
+                              "default": null,
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "identity": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "human"
+                                    },
+                                    "memberId": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "memberId"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "personal_agent"
+                                    },
+                                    "ownerMemberId": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "ownerMemberId"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "public_agent"
+                                    },
+                                    "ownerMemberId": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    "capability": {
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                        },
+                                        "version": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "visibility": {
+                                          "type": "string",
+                                          "const": "lab_public"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "version",
+                                        "visibility"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "ownerMemberId",
+                                    "capability"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "agentRuntime": {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "external"
+                                },
+                                "protocol": {
+                                  "type": "string",
+                                  "const": "chat_completions"
+                                },
+                                "serviceOrigin": {
+                                  "type": "string",
+                                  "format": "uri"
+                                },
+                                "scope": {
+                                  "type": "string",
+                                  "const": "current_message"
+                                },
+                                "credentialPayer": {
+                                  "type": "string",
+                                  "const": "agent_owner"
+                                },
+                                "allowAcceptedContacts": {
+                                  "type": "boolean"
+                                },
+                                "callerAllowed": {
+                                  "type": "boolean"
+                                },
+                                "requiresConsent": {
+                                  "type": "boolean",
+                                  "const": true
+                                },
+                                "verification": {
+                                  "type": "string",
+                                  "enum": [
+                                    "unverified",
+                                    "passed",
+                                    "failed"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "protocol",
+                                "serviceOrigin",
+                                "scope",
+                                "credentialPayer",
+                                "allowAcceptedContacts",
+                                "callerAllowed",
+                                "requiresConsent",
+                                "verification"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "availability": {
+                              "type": "object",
+                              "properties": {
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "available",
+                                    "unavailable",
+                                    "disabled"
+                                  ]
+                                },
+                                "reason": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "platform_disabled",
+                                        "lab_disabled",
+                                        "missing_credentials",
+                                        "capability_unavailable",
+                                        "owner_authorization_required",
+                                        "not_connected"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "status",
+                                "reason"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "profile": {
+                              "default": {
+                                "role": "human",
+                                "introduction": "",
+                                "capabilityDescription": "",
+                                "personality": "",
+                                "version": 1
+                              },
+                              "type": "object",
+                              "properties": {
+                                "role": {
+                                  "type": "string",
+                                  "enum": [
+                                    "human",
+                                    "coordinator",
+                                    "specialist",
+                                    "public_capability"
+                                  ]
+                                },
+                                "introduction": {
+                                  "type": "string",
+                                  "maxLength": 2000
+                                },
+                                "capabilityDescription": {
+                                  "type": "string",
+                                  "maxLength": 4000
+                                },
+                                "personality": {
+                                  "type": "string",
+                                  "maxLength": 2000
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "role",
+                                "introduction",
+                                "capabilityDescription",
+                                "personality",
+                                "version"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "relationship": {
+                              "default": {
+                                "status": "none",
+                                "requestId": null,
+                                "version": 0
+                              },
+                              "type": "object",
+                              "properties": {
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "own",
+                                    "none",
+                                    "pending_outbound",
+                                    "pending_inbound",
+                                    "accepted",
+                                    "declined",
+                                    "revoked"
+                                  ]
+                                },
+                                "requestId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "status",
+                                "requestId",
+                                "version"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "allowedActions": {
+                              "default": [],
+                              "maxItems": 5,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "chat",
+                                  "request",
+                                  "remove",
+                                  "edit_profile",
+                                  "manage_private_memory"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "labId",
+                            "displayName",
+                            "username",
+                            "identity",
+                            "availability",
+                            "version",
+                            "profile",
+                            "relationship",
+                            "allowedActions"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "conversation": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            "labId": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "personal",
+                                "direct",
+                                "group"
+                              ]
+                            },
+                            "title": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "ownerMemberId": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "members": {
+                              "maxItems": 100,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "contactId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "role": {
+                                    "type": "string",
+                                    "enum": [
+                                      "owner",
+                                      "member"
+                                    ]
+                                  },
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "invited",
+                                      "joined",
+                                      "declined",
+                                      "revoked"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "contactId",
+                                  "role",
+                                  "status",
+                                  "version"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "taskIds": {
+                              "maxItems": 100,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              }
+                            },
+                            "lastSequence": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "updatedAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "allowedActions": {
+                              "maxItems": 4,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "send",
+                                  "invite",
+                                  "manage",
+                                  "manage_memory"
+                                ]
+                              }
+                            },
+                            "viewerState": {
+                              "default": {
+                                "readSequence": 0,
+                                "unreadCount": 0,
+                                "pinned": false,
+                                "version": 1
+                              },
+                              "type": "object",
+                              "properties": {
+                                "readSequence": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "unreadCount": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "pinned": {
+                                  "type": "boolean"
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "readSequence",
+                                "unreadCount",
+                                "pinned",
+                                "version"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "labId",
+                            "kind",
+                            "title",
+                            "ownerMemberId",
+                            "version",
+                            "members",
+                            "taskIds",
+                            "lastSequence",
+                            "createdAt",
+                            "updatedAt",
+                            "allowedActions",
+                            "viewerState"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "reused": {
+                          "type": "boolean"
+                        },
+                        "mode": {
+                          "type": "string",
+                          "const": "profile_only"
+                        }
+                      },
+                      "required": [
+                        "contact",
+                        "conversation",
+                        "reused",
+                        "mode"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "contact": {
+                      "id": "synthetic",
+                      "labId": "synthetic",
+                      "displayName": "synthetic",
+                      "username": null,
+                      "identity": {
+                        "kind": "human",
+                        "memberId": "synthetic"
+                      },
+                      "availability": {
+                        "status": "available",
+                        "reason": null
+                      },
+                      "version": 1,
+                      "profile": {
+                        "role": "human",
+                        "introduction": "",
+                        "capabilityDescription": "",
+                        "personality": "",
+                        "version": 1
+                      },
+                      "relationship": {
+                        "status": "none",
+                        "requestId": null,
+                        "version": 0
+                      },
+                      "allowedActions": []
+                    },
+                    "conversation": {
+                      "id": "synthetic",
+                      "labId": "synthetic",
+                      "kind": "personal",
+                      "title": "synthetic",
+                      "ownerMemberId": "synthetic",
+                      "version": 1,
+                      "members": [],
+                      "taskIds": [],
+                      "lastSequence": 0,
+                      "createdAt": "2026-09-21T08:00:00+08:00",
+                      "updatedAt": "2026-09-21T08:00:00+08:00",
+                      "allowedActions": [],
+                      "viewerState": {
+                        "readSequence": 0,
+                        "unreadCount": 0,
+                        "pinned": false,
+                        "version": 1
+                      }
+                    },
+                    "reused": false,
+                    "mode": "profile_only"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/agents/{id}/export": {
+      "get": {
+        "operationId": "exportAgentProfile",
+        "description": "Owned specialist profile only, no secret, endpoint, memory, account identity or executable capability. Reimporting a profile does not connect a remote service.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "format": {
+                          "type": "string",
+                          "const": "research-agent-profile/v1"
+                        },
+                        "profile": {
+                          "type": "object",
+                          "properties": {
+                            "displayName": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "introduction": {
+                              "type": "string",
+                              "maxLength": 2000
+                            },
+                            "capabilityDescription": {
+                              "type": "string",
+                              "maxLength": 4000
+                            },
+                            "personality": {
+                              "type": "string",
+                              "maxLength": 2000
+                            }
+                          },
+                          "required": [
+                            "displayName",
+                            "introduction",
+                            "capabilityDescription",
+                            "personality"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "format",
+                        "profile"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "format": "research-agent-profile/v1",
+                    "profile": {
+                      "displayName": "synthetic",
+                      "introduction": "synthetic",
+                      "capabilityDescription": "synthetic",
+                      "personality": "synthetic"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/agents/{id}/connection": {
+      "get": {
+        "operationId": "agentConnection",
+        "description": "Owned specialist only. Exact endpoint/model/options and hasApiKey; no key or ciphertext. Platform contacts retain legacy shape; external public runtime reveals only service origin, consent, caller policy and who pays.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "connection": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "contactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "protocol": {
+                                  "type": "string",
+                                  "const": "chat_completions"
+                                },
+                                "endpoint": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 512
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                                },
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "allowAcceptedContacts": {
+                                  "type": "boolean"
+                                },
+                                "hasApiKey": {
+                                  "type": "boolean"
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                },
+                                "updatedAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "contactId",
+                                "protocol",
+                                "endpoint",
+                                "model",
+                                "enabled",
+                                "allowAcceptedContacts",
+                                "hasApiKey",
+                                "version",
+                                "updatedAt"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "lastProbe": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "contactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "passed",
+                                    "failed",
+                                    "uncertain"
+                                  ]
+                                },
+                                "failure": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "EXTERNAL_ENDPOINT_UNSAFE",
+                                        "EXTERNAL_AUTH_FAILED",
+                                        "EXTERNAL_SERVICE_FAILED",
+                                        "EXTERNAL_RESPONSE_INVALID",
+                                        "EXTERNAL_TIMEOUT",
+                                        "OUTPUT_LIMIT",
+                                        "USAGE_UNCERTAIN",
+                                        "EXTERNAL_OUTCOME_UNCERTAIN",
+                                        "INTERRUPTED"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "usage": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "inputTokens": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "outputTokens": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "elapsedMs": {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        "cost": {
+                                          "anyOf": [
+                                            {
+                                              "type": "number",
+                                              "minimum": 0
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "currency": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "maxLength": 10
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "inputTokens",
+                                        "outputTokens",
+                                        "elapsedMs",
+                                        "cost",
+                                        "currency"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "contactId",
+                                "version",
+                                "status",
+                                "failure",
+                                "usage",
+                                "at"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "connection",
+                        "version",
+                        "lastProbe"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "connection": null,
+                    "version": 0,
+                    "lastProbe": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "updateAgentConnection",
+        "description": "Owned specialist only, expectedVersion0 for initial configuration. Fixed chat-completions protocol, HTTPS443 public DNS pinned per request, no redirects/proxy/URL credentials. Endpoint change requires fresh key or explicit removal. Enabled configuration is not a proven connection. Default owner-only; allowAcceptedContacts explicitly authorizes accepted callers to spend this owner external credential. No fallback to another model.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "protocol": {
+                    "type": "string",
+                    "const": "chat_completions"
+                  },
+                  "endpoint": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "model": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "allowAcceptedContacts": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "apiKey": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 512
+                  },
+                  "removeApiKey": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "protocol",
+                  "endpoint",
+                  "model",
+                  "enabled",
+                  "allowAcceptedContacts"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "expectedVersion": 0,
+                "protocol": "chat_completions",
+                "endpoint": "https://agent.synthetic.invalid/v1/chat/completions",
+                "model": "deepseek-flash",
+                "enabled": false,
+                "allowAcceptedContacts": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "connection": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "contactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "protocol": {
+                                  "type": "string",
+                                  "const": "chat_completions"
+                                },
+                                "endpoint": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 512
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                                },
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "allowAcceptedContacts": {
+                                  "type": "boolean"
+                                },
+                                "hasApiKey": {
+                                  "type": "boolean"
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                },
+                                "updatedAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "contactId",
+                                "protocol",
+                                "endpoint",
+                                "model",
+                                "enabled",
+                                "allowAcceptedContacts",
+                                "hasApiKey",
+                                "version",
+                                "updatedAt"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "lastProbe": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "contactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "passed",
+                                    "failed",
+                                    "uncertain"
+                                  ]
+                                },
+                                "failure": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "EXTERNAL_ENDPOINT_UNSAFE",
+                                        "EXTERNAL_AUTH_FAILED",
+                                        "EXTERNAL_SERVICE_FAILED",
+                                        "EXTERNAL_RESPONSE_INVALID",
+                                        "EXTERNAL_TIMEOUT",
+                                        "OUTPUT_LIMIT",
+                                        "USAGE_UNCERTAIN",
+                                        "EXTERNAL_OUTCOME_UNCERTAIN",
+                                        "INTERRUPTED"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "usage": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "inputTokens": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "outputTokens": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "elapsedMs": {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        "cost": {
+                                          "anyOf": [
+                                            {
+                                              "type": "number",
+                                              "minimum": 0
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "currency": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "maxLength": 10
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "inputTokens",
+                                        "outputTokens",
+                                        "elapsedMs",
+                                        "cost",
+                                        "currency"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "contactId",
+                                "version",
+                                "status",
+                                "failure",
+                                "usage",
+                                "at"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "connection",
+                        "version",
+                        "lastProbe"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "connection": null,
+                    "version": 0,
+                    "lastProbe": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/agents/{id}/connection/disconnect": {
+      "post": {
+        "operationId": "disconnectAgentConnection",
+        "description": "Owner exact version; remove encrypted credential and remote binding, retaining monotonic configuration version. Reverts future local text chat to sender model. Fences outstanding external turns, which never fall back or auto-retry.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "expectedVersion"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "expectedVersion": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "connection": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "contactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "protocol": {
+                                  "type": "string",
+                                  "const": "chat_completions"
+                                },
+                                "endpoint": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 512
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                                },
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "allowAcceptedContacts": {
+                                  "type": "boolean"
+                                },
+                                "hasApiKey": {
+                                  "type": "boolean"
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                },
+                                "updatedAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "contactId",
+                                "protocol",
+                                "endpoint",
+                                "model",
+                                "enabled",
+                                "allowAcceptedContacts",
+                                "hasApiKey",
+                                "version",
+                                "updatedAt"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "lastProbe": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "contactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "passed",
+                                    "failed",
+                                    "uncertain"
+                                  ]
+                                },
+                                "failure": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "EXTERNAL_ENDPOINT_UNSAFE",
+                                        "EXTERNAL_AUTH_FAILED",
+                                        "EXTERNAL_SERVICE_FAILED",
+                                        "EXTERNAL_RESPONSE_INVALID",
+                                        "EXTERNAL_TIMEOUT",
+                                        "OUTPUT_LIMIT",
+                                        "USAGE_UNCERTAIN",
+                                        "EXTERNAL_OUTCOME_UNCERTAIN",
+                                        "INTERRUPTED"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "usage": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "inputTokens": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "outputTokens": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "elapsedMs": {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        "cost": {
+                                          "anyOf": [
+                                            {
+                                              "type": "number",
+                                              "minimum": 0
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "currency": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "maxLength": 10
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "inputTokens",
+                                        "outputTokens",
+                                        "elapsedMs",
+                                        "cost",
+                                        "currency"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "contactId",
+                                "version",
+                                "status",
+                                "failure",
+                                "usage",
+                                "at"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "connection",
+                        "version",
+                        "lastProbe"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "connection": null,
+                    "version": 0,
+                    "lastProbe": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/agents/{id}/connection/probe": {
+      "post": {
+        "operationId": "probeAgentConnection",
+        "description": "Owner explicit bounded synthetic connection check; no user history/profile/memory/file sent. Owner external account bears provider charges. Writes uncertain idempotency receipt before external I/O; process interruption or lost response never triggers an automatic second probe. Reauthorize session/owner/version after network. Passed proves only this protocol call at this time, not hosted tools or research accuracy.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "expectedVersion"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "expectedVersion": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "contactId": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "passed",
+                            "failed",
+                            "uncertain"
+                          ]
+                        },
+                        "failure": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "EXTERNAL_ENDPOINT_UNSAFE",
+                                "EXTERNAL_AUTH_FAILED",
+                                "EXTERNAL_SERVICE_FAILED",
+                                "EXTERNAL_RESPONSE_INVALID",
+                                "EXTERNAL_TIMEOUT",
+                                "OUTPUT_LIMIT",
+                                "USAGE_UNCERTAIN",
+                                "EXTERNAL_OUTCOME_UNCERTAIN",
+                                "INTERRUPTED"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "usage": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "inputTokens": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 9007199254740991
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "outputTokens": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 9007199254740991
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "elapsedMs": {
+                                  "type": "number",
+                                  "minimum": 0
+                                },
+                                "cost": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number",
+                                      "minimum": 0
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "currency": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 10
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "inputTokens",
+                                "outputTokens",
+                                "elapsedMs",
+                                "cost",
+                                "currency"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "contactId",
+                        "version",
+                        "status",
+                        "failure",
+                        "usage",
+                        "at"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "contactId": "synthetic",
+                    "version": 1,
+                    "status": "passed",
+                    "failure": null,
+                    "usage": null,
+                    "at": "2026-09-21T08:00:00+08:00"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me/model-configurations": {
       "get": {
         "operationId": "personalModels",
@@ -2217,6 +4894,61 @@
                                         "additionalProperties": false
                                       }
                                     ]
+                                  },
+                                  "agentRuntime": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "external"
+                                      },
+                                      "protocol": {
+                                        "type": "string",
+                                        "const": "chat_completions"
+                                      },
+                                      "serviceOrigin": {
+                                        "type": "string",
+                                        "format": "uri"
+                                      },
+                                      "scope": {
+                                        "type": "string",
+                                        "const": "current_message"
+                                      },
+                                      "credentialPayer": {
+                                        "type": "string",
+                                        "const": "agent_owner"
+                                      },
+                                      "allowAcceptedContacts": {
+                                        "type": "boolean"
+                                      },
+                                      "callerAllowed": {
+                                        "type": "boolean"
+                                      },
+                                      "requiresConsent": {
+                                        "type": "boolean",
+                                        "const": true
+                                      },
+                                      "verification": {
+                                        "type": "string",
+                                        "enum": [
+                                          "unverified",
+                                          "passed",
+                                          "failed"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "protocol",
+                                      "serviceOrigin",
+                                      "scope",
+                                      "credentialPayer",
+                                      "allowAcceptedContacts",
+                                      "callerAllowed",
+                                      "requiresConsent",
+                                      "verification"
+                                    ],
+                                    "additionalProperties": false
                                   },
                                   "availability": {
                                     "type": "object",
@@ -4534,6 +7266,61 @@
                               }
                             ]
                           },
+                          "agentRuntime": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "external"
+                              },
+                              "protocol": {
+                                "type": "string",
+                                "const": "chat_completions"
+                              },
+                              "serviceOrigin": {
+                                "type": "string",
+                                "format": "uri"
+                              },
+                              "scope": {
+                                "type": "string",
+                                "const": "current_message"
+                              },
+                              "credentialPayer": {
+                                "type": "string",
+                                "const": "agent_owner"
+                              },
+                              "allowAcceptedContacts": {
+                                "type": "boolean"
+                              },
+                              "callerAllowed": {
+                                "type": "boolean"
+                              },
+                              "requiresConsent": {
+                                "type": "boolean",
+                                "const": true
+                              },
+                              "verification": {
+                                "type": "string",
+                                "enum": [
+                                  "unverified",
+                                  "passed",
+                                  "failed"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "protocol",
+                              "serviceOrigin",
+                              "scope",
+                              "credentialPayer",
+                              "allowAcceptedContacts",
+                              "callerAllowed",
+                              "requiresConsent",
+                              "verification"
+                            ],
+                            "additionalProperties": false
+                          },
                           "availability": {
                             "type": "object",
                             "properties": {
@@ -4994,6 +7781,61 @@
                               "additionalProperties": false
                             }
                           ]
+                        },
+                        "agentRuntime": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "external"
+                            },
+                            "protocol": {
+                              "type": "string",
+                              "const": "chat_completions"
+                            },
+                            "serviceOrigin": {
+                              "type": "string",
+                              "format": "uri"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "const": "current_message"
+                            },
+                            "credentialPayer": {
+                              "type": "string",
+                              "const": "agent_owner"
+                            },
+                            "allowAcceptedContacts": {
+                              "type": "boolean"
+                            },
+                            "callerAllowed": {
+                              "type": "boolean"
+                            },
+                            "requiresConsent": {
+                              "type": "boolean",
+                              "const": true
+                            },
+                            "verification": {
+                              "type": "string",
+                              "enum": [
+                                "unverified",
+                                "passed",
+                                "failed"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "protocol",
+                            "serviceOrigin",
+                            "scope",
+                            "credentialPayer",
+                            "allowAcceptedContacts",
+                            "callerAllowed",
+                            "requiresConsent",
+                            "verification"
+                          ],
+                          "additionalProperties": false
                         },
                         "availability": {
                           "type": "object",
@@ -5537,6 +8379,61 @@
                             }
                           ]
                         },
+                        "agentRuntime": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "external"
+                            },
+                            "protocol": {
+                              "type": "string",
+                              "const": "chat_completions"
+                            },
+                            "serviceOrigin": {
+                              "type": "string",
+                              "format": "uri"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "const": "current_message"
+                            },
+                            "credentialPayer": {
+                              "type": "string",
+                              "const": "agent_owner"
+                            },
+                            "allowAcceptedContacts": {
+                              "type": "boolean"
+                            },
+                            "callerAllowed": {
+                              "type": "boolean"
+                            },
+                            "requiresConsent": {
+                              "type": "boolean",
+                              "const": true
+                            },
+                            "verification": {
+                              "type": "string",
+                              "enum": [
+                                "unverified",
+                                "passed",
+                                "failed"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "protocol",
+                            "serviceOrigin",
+                            "scope",
+                            "credentialPayer",
+                            "allowAcceptedContacts",
+                            "callerAllowed",
+                            "requiresConsent",
+                            "verification"
+                          ],
+                          "additionalProperties": false
+                        },
                         "availability": {
                           "type": "object",
                           "properties": {
@@ -6063,6 +8960,61 @@
                             }
                           ]
                         },
+                        "agentRuntime": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "external"
+                            },
+                            "protocol": {
+                              "type": "string",
+                              "const": "chat_completions"
+                            },
+                            "serviceOrigin": {
+                              "type": "string",
+                              "format": "uri"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "const": "current_message"
+                            },
+                            "credentialPayer": {
+                              "type": "string",
+                              "const": "agent_owner"
+                            },
+                            "allowAcceptedContacts": {
+                              "type": "boolean"
+                            },
+                            "callerAllowed": {
+                              "type": "boolean"
+                            },
+                            "requiresConsent": {
+                              "type": "boolean",
+                              "const": true
+                            },
+                            "verification": {
+                              "type": "string",
+                              "enum": [
+                                "unverified",
+                                "passed",
+                                "failed"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "protocol",
+                            "serviceOrigin",
+                            "scope",
+                            "credentialPayer",
+                            "allowAcceptedContacts",
+                            "callerAllowed",
+                            "requiresConsent",
+                            "verification"
+                          ],
+                          "additionalProperties": false
+                        },
                         "availability": {
                           "type": "object",
                           "properties": {
@@ -6568,6 +9520,61 @@
                               "additionalProperties": false
                             }
                           ]
+                        },
+                        "agentRuntime": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "external"
+                            },
+                            "protocol": {
+                              "type": "string",
+                              "const": "chat_completions"
+                            },
+                            "serviceOrigin": {
+                              "type": "string",
+                              "format": "uri"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "const": "current_message"
+                            },
+                            "credentialPayer": {
+                              "type": "string",
+                              "const": "agent_owner"
+                            },
+                            "allowAcceptedContacts": {
+                              "type": "boolean"
+                            },
+                            "callerAllowed": {
+                              "type": "boolean"
+                            },
+                            "requiresConsent": {
+                              "type": "boolean",
+                              "const": true
+                            },
+                            "verification": {
+                              "type": "string",
+                              "enum": [
+                                "unverified",
+                                "passed",
+                                "failed"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "protocol",
+                            "serviceOrigin",
+                            "scope",
+                            "credentialPayer",
+                            "allowAcceptedContacts",
+                            "callerAllowed",
+                            "requiresConsent",
+                            "verification"
+                          ],
+                          "additionalProperties": false
                         },
                         "availability": {
                           "type": "object",
@@ -7702,6 +10709,61 @@
                               "additionalProperties": false
                             }
                           ]
+                        },
+                        "agentRuntime": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "external"
+                            },
+                            "protocol": {
+                              "type": "string",
+                              "const": "chat_completions"
+                            },
+                            "serviceOrigin": {
+                              "type": "string",
+                              "format": "uri"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "const": "current_message"
+                            },
+                            "credentialPayer": {
+                              "type": "string",
+                              "const": "agent_owner"
+                            },
+                            "allowAcceptedContacts": {
+                              "type": "boolean"
+                            },
+                            "callerAllowed": {
+                              "type": "boolean"
+                            },
+                            "requiresConsent": {
+                              "type": "boolean",
+                              "const": true
+                            },
+                            "verification": {
+                              "type": "string",
+                              "enum": [
+                                "unverified",
+                                "passed",
+                                "failed"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "protocol",
+                            "serviceOrigin",
+                            "scope",
+                            "credentialPayer",
+                            "allowAcceptedContacts",
+                            "callerAllowed",
+                            "requiresConsent",
+                            "verification"
+                          ],
+                          "additionalProperties": false
                         },
                         "availability": {
                           "type": "object",
@@ -10352,6 +13414,61 @@
                                   "additionalProperties": false
                                 }
                               ]
+                            },
+                            "agentRuntime": {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "external"
+                                },
+                                "protocol": {
+                                  "type": "string",
+                                  "const": "chat_completions"
+                                },
+                                "serviceOrigin": {
+                                  "type": "string",
+                                  "format": "uri"
+                                },
+                                "scope": {
+                                  "type": "string",
+                                  "const": "current_message"
+                                },
+                                "credentialPayer": {
+                                  "type": "string",
+                                  "const": "agent_owner"
+                                },
+                                "allowAcceptedContacts": {
+                                  "type": "boolean"
+                                },
+                                "callerAllowed": {
+                                  "type": "boolean"
+                                },
+                                "requiresConsent": {
+                                  "type": "boolean",
+                                  "const": true
+                                },
+                                "verification": {
+                                  "type": "string",
+                                  "enum": [
+                                    "unverified",
+                                    "passed",
+                                    "failed"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "protocol",
+                                "serviceOrigin",
+                                "scope",
+                                "credentialPayer",
+                                "allowAcceptedContacts",
+                                "callerAllowed",
+                                "requiresConsent",
+                                "verification"
+                              ],
+                              "additionalProperties": false
                             },
                             "availability": {
                               "type": "object",
@@ -13759,7 +16876,7 @@
     "/api/v1/chat/conversations/{id}/agent-messages": {
       "post": {
         "operationId": "agentChatMessage",
-        "description": "Natural personal/direct Agent chat. Server selects the unique joined Agent and bounded default budget4000/90, uses sender personal model. Only an anchored explicit creation command to the current owner personal coordinator permits purpose=create_agent: the model generates a strict profile or clarification from this complete request alone, then the service atomically creates/reuses the owner specialist and its direct. createdAgent is an authorized factual receipt, not SDK readiness. Other daily chat uses authorized history/memories, with no plans/actions/implicit execution. Human SDK messaging never uses this route.",
+        "description": "Natural personal/direct Agent chat, default4000/90. Platform Agent uses sender model and authorized context; only owner coordinator anchored current imperative permits atomic create_agent. External specialist requires externalConsent:true on each message and current owner/accepted-caller policy; sends only this current text to disclosed serviceOrigin, using agent owner credential. No external history/memory/files/tools/tasks or implicit fallback. File selection/attachment and advanced arrangement are not external v1 features. Human SDK messages never invoke this route.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -13836,6 +16953,9 @@
                       "messageId"
                     ],
                     "additionalProperties": false
+                  },
+                  "externalConsent": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -19968,7 +23088,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.16.0"
+                          "const": "0.17.0"
                         },
                         "checks": {
                           "type": "object",
@@ -20027,7 +23147,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.16.0",
+                    "contractVersion": "0.17.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -20201,7 +23321,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.16.0"
+                          "const": "0.17.0"
                         },
                         "checks": {
                           "type": "object",
@@ -20260,7 +23380,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.16.0",
+                    "contractVersion": "0.17.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -20412,7 +23532,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.16.0"
+                          "const": "0.17.0"
                         },
                         "checks": {
                           "type": "object",
@@ -20471,7 +23591,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.16.0",
+                    "contractVersion": "0.17.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -72594,7 +75714,11 @@
                   "FILE_PARSE_FAILED",
                   "FILE_PARSE_TIMEOUT",
                   "FILE_EXTRACTION_LIMIT",
-                  "FILE_PAGE_UNAVAILABLE"
+                  "FILE_PAGE_UNAVAILABLE",
+                  "EXTERNAL_CONSENT_REQUIRED",
+                  "EXTERNAL_FILES_UNSUPPORTED",
+                  "EXTERNAL_SCOPE_UNSUPPORTED",
+                  "EXTERNAL_ENDPOINT_UNSAFE"
                 ]
               },
               "message": {
