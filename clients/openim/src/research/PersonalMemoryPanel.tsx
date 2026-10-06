@@ -1,4 +1,4 @@
-import { Alert, Button, Checkbox, Input, Modal, Select, Space, Tag } from "antd";
+import { Alert, App, Button, Checkbox, Input, Select, Space, Tag } from "antd";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { PersonalMemory, PersonalMemorySettings } from "@research-agent-platform/contracts";
 import { researchApi } from "./api";
@@ -9,6 +9,7 @@ const origins = { explicit: "你明确保存", feedback: "来自你的纠正", i
 const statuses = { confirmed: "已确认", candidate: "待你确认", revoked: "已移除" };
 
 export function PersonalMemoryPanel({ active }: { active: boolean }) {
+  const { modal } = App.useApp();
   const operation = usePersonalOperation(active, "personal-memory");
   const [filter, setFilter] = useState<"all" | "confirmed" | "candidate" | "revoked">("confirmed");
   const [pages, setPages] = useState<(string | undefined)[]>([undefined]);
@@ -44,8 +45,8 @@ export function PersonalMemoryPanel({ active }: { active: boolean }) {
     const submit = () => current.isCurrent() ? run(() => researchApi("decidePersonalMemory", {
       params: { id: memory.id }, body: { expectedVersion: memory.version, decision: value },
     })) : undefined;
-    Modal.confirm(value === "revoke" ? { title: "移除这条长期记忆？", content: "历史记录保留；之后的聊天不再使用这条偏好。", onOk: submit } : {
-      title: "确认这条偏好？", content: `确认“${memory.topic}”后，将替代同主题的旧记忆。请先核对内容；不会同时保留两条冲突偏好用于回答。`, onOk: submit,
+    modal.confirm(value === "revoke" ? { title: "移除这条长期记忆？", content: "历史记录保留；之后的聊天不再使用这条偏好。", okText: "确定", cancelText: "取消", onOk: submit } : {
+      title: "确认这条偏好？", content: `确认“${memory.topic}”后，将替代同主题的旧记忆。请先核对内容；不会同时保留两条冲突偏好用于回答。`, okText: "确定", cancelText: "取消", onOk: submit,
     });
   };
   const ready = !!list.data && !!settings.data && active;

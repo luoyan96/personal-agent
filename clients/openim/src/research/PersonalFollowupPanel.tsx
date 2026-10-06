@@ -1,4 +1,4 @@
-import { Alert, Button, Checkbox, Input, Modal, Select, Space, Tag } from "antd";
+import { Alert, App, Button, Checkbox, Input, Select, Space, Tag } from "antd";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { PersonalFollowup } from "@research-agent-platform/contracts";
 import { researchApi } from "./api";
@@ -14,6 +14,7 @@ const states = { active: "进行中", paused: "已暂停", completed: "已完成
 const actions = { pause: "暂停", resume: "恢复", complete: "完成", cancel: "取消跟进" };
 
 export function PersonalFollowupPanel({ active }: { active: boolean }) {
+  const { modal } = App.useApp();
   const operation = usePersonalOperation(active, "personal-followups");
   const [filter, setFilter] = useState<"all" | "active" | "paused" | "completed" | "cancelled">("active");
   const [pages, setPages] = useState<(string | undefined)[]>([undefined]);
@@ -52,7 +53,7 @@ export function PersonalFollowupPanel({ active }: { active: boolean }) {
   const stateChange = (item: PersonalFollowup, action: "pause" | "resume" | "complete" | "cancel") => {
     const current = operation.capture();
     const submit = () => current.isCurrent() ? run(() => researchApi("changePersonalFollowup", { params: { id: item.id }, body: { expectedVersion: item.version, action } })) : undefined;
-    if (action === "complete" || action === "cancel") Modal.confirm({ title: `${actions[action]}这条跟进？`, content: "此后不会再为该事项发出提醒；已有聊天记录保留。", onOk: submit });
+    if (action === "complete" || action === "cancel") modal.confirm({ title: `${actions[action]}这条跟进？`, content: "此后不会再为该事项发出提醒；已有聊天记录保留。", okText: "确定", cancelText: "取消", onOk: submit });
     else void submit();
   };
   const save = () => void run(() => {
