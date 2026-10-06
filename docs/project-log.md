@@ -248,3 +248,11 @@
 - 800字及250字长文两次 `BUDGET_EXCEEDED`，真实计量及失败保留，无伪造完整答复；后续明确短请求成功，默认4000 / 90秒未增。当前浏览器日志捕获为空，仅描述本轮范围，不表示历史SDK map(null)问题全部修复。完整Muse并行 / 实时语音 / 原生App / 第三方Agent流式未计完成。
 - 恢复保持当前schema18，停API / worker / OpenIM写入者、核对迁移并栅栏不兼容未完轮次；保留actual / unknown usage、消息 / 记忆 / outbox，再恢复原787ca23镜像e632d1c、current及27c3279前端 / 精确首页 / ready0.18，不覆盖旧库。Nginx副本 `/opt/research-openim/ops/continuous-chat-2e6968815838/activate-20261006T101638Z/research-openim-production`。详见[ECS当前恢复](deployment/openim-ecs.md)。
 - Git外证据 `D:/deepseek-agent/.runtime/continuous-chat-release-20261006`：部署、prepare、公网、CI / merge收据、helper验证、`cloud-turns-final.json`、`live-stream-actual.json`、`live-refresh-proof.json`及`live-chat-final.png`；原准备失败、CRLF修正收据、selector中止均保留。本地实现证据仍在 `.runtime/continuous-chat-20261006`。后续优先完善长文预算体验与日常自然聊天，再逐步推进任务组织 / 长期行为记忆闭环。
+
+### 2026-10-06 文档阅读上下文修复：本地通过，尚未上线
+
+- 用户13页 / 49622字符论文仅读到第一页118字符：不是解析失败，而是普通4000预算和旧历史占满输入。分支 `fix/document-reading-context-20261006` 以main38c8849为基线，修复文件阅读独立预算、正文优先及实际范围展示。新文件或明确追问按所选JSON字节数 + 8192，限制4000–64000 / 90秒；普通聊天不变，同批沿原预算，换源 / 页码开启新批，旧轮 / 重试 / 未知用量不隐式扩额。
+- 真实HTTP / SQLite / PDF解析13页49622字符的合成样本，逐页全文和末页结论全部进入合成模型输入。预算63336、准入58226、输出4096；第13页追问完整3817字符，整份partial。大文件均匀选至多20个非空页并如实标部分；没有OCR / 图表理解。没有实际厂商或云端模型验收。
+- 根CI44文件 / 537项，另2项生产入口、B0和生产fixture排除通过；后端23专项 + 3最终边界 / 源和测试类型通过。客户端类型 / Web / 四固定SDK资源通过，八组实际生产路由 / CKEditor界面检查覆盖全文、118字符部分、失败 / 等待 / 旧数据、去重、空白页及1440 / 320px；此组API / SDK / 提取元数据 / 模型均合成。pageerror0，Router警告及首轮排版 / fixture / 路由失败保留。
+- contract0.19 / chat1.8 / schema18无变化，无迁移和依赖变更。发布助手以线上2e69688 / 镜像63915f4 / 首页7df1377为严格基线，保留现有数据和计量；归档、78表fingerprint及SQLite栅栏三项本地检查通过。现有Workbench断开，自动审批把返回入口识别为VNC并拦下，改用原SSH入口仍未恢复；已请用户恢复原连接，不索要凭据，尚未在云端执行。
+- Git外 `.runtime/document-reading-20261006` 保存根CI、`backend/backend-review.json` / `thirteen-page-call-proof.json`、`frontend/summary.json` / `render-d9dbb750/report.json`和发布准备日志。下一步固定源码PR、同版客户端 / API / worker发布，再用该13页合成样本验证真实厂商 / SDK、范围、用量及刷新去重。既有旧论文回复不会追溯改成全文；发布后需新发明确全文追问。

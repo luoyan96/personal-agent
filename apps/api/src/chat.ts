@@ -11,7 +11,7 @@ import { personalModelRuntime } from './personal-models.js'
 import type { Config } from './config.js'
 import { fail } from './errors.js'
 import { ContactDirectory, directoryCommands } from './contact-directory.js'
-import { fileReadMetadata,pageNumbersFromQuestion } from './agent-files.js'
+import { fileReadMetadata,pageNumbersFromQuestion,fileReadingBudget } from './agent-files.js'
 import type { FileDocument, ParsedAgentFile } from './agent-files.js'
 import type { AgentFileSelection } from '@research-agent-platform/contracts'
 import { personalCommands,handleMemory,memory,memorySettings,ownLocalMemoryScope,personalMemoryContext,memoryCommand } from './personal-memories.js'
@@ -547,8 +547,8 @@ export class ChatService {
       const external=input.agentContactId&&connectionRow(this,input.agentContactId)?.configured===1
       if(external){if(name==='agentFileMessage'||(b as {fileSelection?:unknown}).fileSelection)fail('EXTERNAL_FILES_UNSUPPORTED');if(name!=='agentChatMessage'||group.kind!=='direct')fail('EXTERNAL_SCOPE_UNSUPPORTED');if((b as {externalConsent?:boolean}).externalConsent!==true)fail('EXTERNAL_CONSENT_REQUIRED');const contact=this.contact(input.agentContactId!);if(!contact.agentRuntime?.callerAllowed)fail('FORBIDDEN')}
       const continuous=name==='agentChatMessage'&&(b as {continuous?:boolean}).continuous===true
-      const active=continuous?this.db.prepare("SELECT * FROM chat_turns WHERE owner_id=? AND conversation_id=? AND status IN ('queued','running','waiting_input') ORDER BY rowid DESC").all(this.c.actor.id,id):[]
-      let pending=!external?active.find(row=>row.status==='queued'&&(decode(row.request_json) as TurnInput).continuous&&this.clock()<=(decode(row.request_json) as TurnInput).continuous!.dueAt&&(decode(row.request_json) as TurnInput).continuous!.messageIds.length<100):undefined
+      const active=continuous||name==='agentFileMessage'?this.db.prepare("SELECT * FROM chat_turns WHERE owner_id=? AND conversation_id=? AND status IN ('queued','running','waiting_input') ORDER BY rowid DESC").all(this.c.actor.id,id):[]
+      let pending=continuous&&!external?active.find(row=>row.status==='queued'&&(decode(row.request_json) as TurnInput).continuous&&this.clock()<=(decode(row.request_json) as TurnInput).continuous!.dueAt&&(decode(row.request_json) as TurnInput).continuous!.messageIds.length<100):undefined
       for(const row of active)if(row!==pending)supersedeTurn(this,String(row.id))
       const message = this.message(id, { senderContactId: this.human().id, origin: 'human', text: input.text, mentions: input.mentions, resources: input.context, actionIds: [], turnId: null })
       const agent=input.agentContactId?this.contact(input.agentContactId):null
@@ -562,13 +562,19 @@ export class ChatService {
       let fileSource=name==='agentFileMessage'?{messageId:message.id}:name==='agentChatMessage'&&!purpose&&!external?this.dailyFileSource(group.id,(b as {fileSelection?:AgentFileSelection}).fileSelection):undefined
       const fileDocument=name==='agentFileMessage'&&parsedFile?{...parsedFile,metadata:{...parsedFile.metadata,messageId:message.id}}:undefined
       if(name==='agentFileMessage'&&!fileDocument)fail('INVALID_STATE')
-      if(fileSource){const document=fileDocument??this.fileDocument(fileSource.messageId,group.id);const questionPages=pageNumbersFromQuestion(input.text);const numbers=fileSource.pageNumbers??(questionPages.length?[...new Set(questionPages)]:undefined);if(numbers?.some(n=>!document.pages.some(page=>page.pageNumber===n)))fail('FILE_PAGE_UNAVAILABLE');fileSource={...fileSource,...(numbers?{pageNumbers:numbers}:{} )}}
+      if(fileSource){const document=fileDocument??this.fileDocument(fileSource.messageId,group.id);const questionPages=pageNumbersFromQuestion(input.text),requested=fileSource.pageNumbers??(questionPages.length?questionPages:undefined),numbers=requested?[...new Set(requested)]:undefined;if(numbers?.some(n=>!document.pages.some(page=>page.pageNumber===n)))fail('FILE_PAGE_UNAVAILABLE');fileSource={...fileSource,...(numbers?{pageNumbers:numbers}:{} )}}
+      if(fileSource)input.budget=fileReadingBudget(fileDocument??this.fileDocument(fileSource.messageId,group.id),fileSource)
       const nextInput:TurnInput={budget:input.budget!,context:input.context,conversationVersion:group.version,inputSequence:message.sequence,dailyChat:name!=='sendChatMessage',...(external?{externalConsent:true}:{}),...(purpose?{purpose}:{}),...(name==='agentChatMessage'&&!purpose&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(input.text)?{personalAssistant:true,assistantMode:'coordinate' as const}:{}),...(fileDocument?{fileDocument}:{}),...(fileSource?{fileSource,fileRead:fileReadMetadata(fileDocument??this.fileDocument(fileSource.messageId,group.id))}:{})}
       let turn:AgentTurn|null=null
       let merge=pending
       if(merge){try{this.checkTurnInput(String(merge.id))}catch{supersedeTurn(this,String(merge.id));merge=undefined}}
+      if(merge){const previous=decode(merge.request_json) as TurnInput;if(encode(previous.fileSource??null)!==encode(fileSource??null)){supersedeTurn(this,String(merge.id));merge=undefined}}
       if(merge){
         const previous=decode(merge.request_json) as TurnInput
+        // A queued supplement is the original authorized batch: retain its
+        // budget, including old4000 file turns. Changing source/pages starts a
+        // new batch above instead of silently raising/lowering this one.
+        nextInput.budget=previous.budget
         nextInput.continuous=extendContinuous(previous.continuous!,message.id,this.clock())
         // New current submissions can retract a pending instruction. Explicit
         // negation/correction wins over a creation/work imperative in this batch.
@@ -590,7 +596,7 @@ export class ChatService {
         if(continuous){nextInput.continuous=startContinuous(message.id,this.clock());if(external)nextInput.continuous.dueAt=this.clock()}
         turn=this.newTurn(group,message,input.agentContactId!,nextInput)
       }
-      if(turn&&continuous)for(const row of active)if(String(row.id)!==turn.id){const old=decode(this.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(row.id!)!.request_json) as TurnInput;if(old.continuous){old.continuous.supersededBy=turn.id;old.continuous.revision++;old.continuous.text='';old.continuous.updatedAt=instant();this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(encode(old),row.id!)}}
+      if(turn&&(continuous||name==='agentFileMessage'))for(const row of active)if(String(row.id)!==turn.id){const old=decode(this.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(row.id!)!.request_json) as TurnInput;if(old.continuous){old.continuous.supersededBy=turn.id;old.continuous.revision++;old.continuous.text='';old.continuous.updatedAt=instant();this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(encode(old),row.id!)}}
 
       if (turn) { message.turnId = turn.id; this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(legacyChatMessage(message)), message.id) }
       return { data: { message:this.projectedMessage(message.id), turn } }

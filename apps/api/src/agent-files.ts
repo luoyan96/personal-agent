@@ -60,30 +60,49 @@ export function pageNumbersFromQuestion(question:string):number[]{
   return [...new Set([...question.matchAll(/第\s*([\d零〇一二两三四五六七八九十百]+)\s*页|\bpage\s*(\d+)/gi)].map(match=>decode(match[1]??match[2]!)))]
 }
 
-// Select explicit source ranges under the SAME total budget; no whole-document
-// truncation is hidden. Current human text/profile/memories stay in serialize().
+function fileExcerpt(page:FileDocument['pages'][number],range:AgentFileRead['ranges'][number]){
+  const complete=range.start===0&&range.end===page.text.length
+  return {...range,pageCharacterCount:page.text.length,pageTextCoverage:complete?'complete' as const:'partial' as const,scope:complete?`Page ${page.pageNumber}: all extracted text is here.`:`Page ${page.pageNumber}: partial extracted text here.`,text:page.text.slice(range.start,range.end)}
+}
+function selectedFilePages(document:FileDocument,selection?:AgentFileSelection){
+  const numbers=selection?.pageNumbers?[...new Set(selection.pageNumbers)]:undefined
+  if(numbers?.some(n=>!document.pages.some(p=>p.pageNumber===n)))fail('FILE_PAGE_UNAVAILABLE')
+  const pages=(numbers?numbers.map(n=>document.pages.find(p=>p.pageNumber===n)!):document.pages).filter(page=>page.text.trim())
+  if(pages.length<=20)return pages
+  // The public receipt permits20 ranges. Spread them through longer files so
+  // the last page is represented; never describe this subset as the full file.
+  return Array.from({length:20},(_,index)=>pages[Math.round(index*(pages.length-1)/19)]!)
+}
+export function fileReadingBudget(document:FileDocument,selection?:AgentFileSelection){
+  const pages=selectedFilePages(document,selection)
+  const ranges=pages.map(page=>({pageNumber:page.pageNumber,start:0,end:page.text.length}))
+  // Include JSON escaping/labels in the conservative content allowance. The
+  // extra8192 covers identity, authorized context and a bounded plain reply;
+  // the worker still checks the actual full prompt and measured total usage.
+  const bytes=Buffer.byteLength(JSON.stringify({fileRead:fileReadMetadata(document,ranges),fileExcerpts:pages.map((page,index)=>fileExcerpt(page,ranges[index]!))}),'utf8')
+  return {maxTokens:Math.min(64000,Math.max(4000,bytes+8192)),maxSeconds:90}
+}
+
+// Document content is selected before old chat history, within the turn's
+// already persisted budget. Whole pages are preferred over query snippets.
 export function selectFileExcerpts(document:FileDocument,selection:AgentFileSelection|undefined,question:string,system:string,serialize:(read:AgentFileRead,excerpts:unknown[])=>string,maxTokens:number){
   let numbers=selection?.pageNumbers
   if(!numbers){const found=pageNumbersFromQuestion(question);if(found.length)numbers=found}
-  if(numbers?.some(n=>!document.pages.some(p=>p.pageNumber===n)))fail('FILE_PAGE_UNAVAILABLE')
+  const pages=selectedFilePages(document,{...selection,messageId:document.metadata.messageId,...(numbers?{pageNumbers:numbers}:{})}).filter(page=>page.text.trim())
   const query=(selection?.query??question).toLocaleLowerCase(),terms=(query.match(/[\p{L}\p{N}]{2,}/gu)??[]).slice(0,20)
-  const candidates=document.pages.filter(p=>!numbers||numbers.includes(p.pageNumber)).map(p=>{const lower=p.text.toLocaleLowerCase(),hits=terms.flatMap(t=>{const index=lower.indexOf(t);return index<0?[]:[index]});return {...p,score:hits.length,start:numbers||!hits.length?0:Math.max(0,Math.min(...hits)-120)}}).sort((a,b)=>numbers?numbers.indexOf(a.pageNumber)-numbers.indexOf(b.pageNumber):b.score-a.score||a.pageNumber-b.pageNumber)
-  const excerpt=(page:FileDocument['pages'][number],range:AgentFileRead['ranges'][number])=>{
-    const complete=range.start===0&&range.end===page.text.length
-    return {...range,pageCharacterCount:page.text.length,pageTextCoverage:complete?'complete' as const:'partial' as const,scope:complete?`Page ${page.pageNumber}: all extracted text is here.`:`Page ${page.pageNumber}: partial extracted text here.`,text:page.text.slice(range.start,range.end)}
-  }
-  const ranges:AgentFileRead['ranges']=[],excerpts:ReturnType<typeof excerpt>[]=[]
   const empty=serialize(fileReadMetadata(document),[])
   const available=maxTokens-chatInputTokenBound(system,empty)
-  const reserve=available>=576?512:64
-  for(const page of candidates){
-    if(!page.text.trim()||ranges.length>=20)continue
-    let start=page.start;if(start>0&&/[\uDC00-\uDFFF]/.test(page.text[start]!))start--
-    let low=0,high=page.text.length-start,best=0
-    while(low<=high){const middle=Math.floor((low+high)/2);let end=start+middle;if(end<page.text.length&&/[\uD800-\uDBFF]/.test(page.text[end-1]??''))end--;const range={pageNumber:page.pageNumber,start,end};const next=[...ranges,range];const prompt=serialize(fileReadMetadata(document,next),[...excerpts,excerpt(page,range)]);if(end>start&&maxTokens-chatInputTokenBound(system,prompt)>=reserve){best=end-start;low=middle+1}else high=middle-1}
-    if(!best)continue
-    const range={pageNumber:page.pageNumber,start,end:start+best};ranges.push(range);excerpts.push(excerpt(page,range))
-  }
-  const read=fileReadMetadata(document,ranges)
-  return {read,prompt:serialize(read,excerpts)}
+  const reserve=available>=4160?4096:available>=576?512:64
+  const materialize=(ranges:AgentFileRead['ranges'])=>{const read=fileReadMetadata(document,ranges),excerpts=ranges.map(range=>fileExcerpt(document.pages.find(page=>page.pageNumber===range.pageNumber)!,range));return {read,excerpts,prompt:serialize(read,excerpts)}}
+  const full=materialize(pages.map(page=>({pageNumber:page.pageNumber,start:0,end:page.text.length})))
+  // Complete selected text wins over the preferred4096-token reply cap. If
+  // it leaves at least512 output tokens, do not cut text to enlarge the reply.
+  if(maxTokens-chatInputTokenBound(system,full.prompt)>=(available>=576?512:64))return full
+  const candidates=pages.map(page=>{const lower=page.text.toLocaleLowerCase(),hits=terms.flatMap(term=>{const index=lower.indexOf(term);return index<0?[]:[index]});let start=numbers||!hits.length?0:Math.max(0,Math.min(...hits)-120);if(start>0&&/[\uDC00-\uDFFF]/.test(page.text[start]!))start--;return {...page,start}})
+  // Under the cap, allocate a common text allowance to every selected page,
+  // rather than exhausting the budget on a cover/title page first.
+  const at=(characters:number)=>materialize(candidates.flatMap(page=>{let end=Math.min(page.text.length,page.start+characters);if(end<page.text.length&&/[\uD800-\uDBFF]/.test(page.text[end-1]??''))end--;return end>page.start?[{pageNumber:page.pageNumber,start:page.start,end}]:[]}))
+  let low=1,high=Math.max(0,...candidates.map(page=>page.text.length-page.start)),best=materialize([])
+  while(low<=high){const middle=Math.floor((low+high)/2),trial=at(middle);if(maxTokens-chatInputTokenBound(system,trial.prompt)>=reserve){best=trial;low=middle+1}else high=middle-1}
+  return best
 }

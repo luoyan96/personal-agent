@@ -6,6 +6,7 @@ import { useConversationStore } from "@/store";
 import { researchApi } from "./api";
 import { useResearchStore } from "./store";
 import { turnGuidance } from "./turn-guidance";
+import { AgentFileReadSummary } from "./AgentFileReadSummary";
 
 type RetryConfirmation = {
   turnId: string;
@@ -29,8 +30,10 @@ export function ResearchTurnStatus({
   const actorGeneration = useResearchStore((s) => s.generation);
   const actorId = useResearchStore((s) => s.actor?.member.id);
   const imID = useConversationStore((s) => s.currentConversation?.conversationID);
-  const peerID = useConversationStore(s => s.currentConversation?.userID);
-  const external = useResearchStore(s => !!s.contacts.find(c => c.userID === peerID)?.contact.agentRuntime);
+  const peerID = useConversationStore((s) => s.currentConversation?.userID);
+  const external = useResearchStore(
+    (s) => !!s.contacts.find((c) => c.userID === peerID)?.contact.agentRuntime,
+  );
   const location = useLocation();
   const scope = `${actorGeneration}:${actorId}:${imID}:${location.pathname}:${turn.id}`;
   const latestScope = useRef(scope);
@@ -53,7 +56,8 @@ export function ResearchTurnStatus({
     setBusy(false);
   }, [scope]);
   const retryAllowed = Boolean(
-    onRetried && !external &&
+    onRetried &&
+      !external &&
       turn.failure !== "BUDGET_EXCEEDED" &&
       turn.allowedActions.includes("retry") &&
       turn.remainingBudget,
@@ -113,46 +117,46 @@ export function ResearchTurnStatus({
     </>
   );
   const statusLabels: Record<AgentTurn["status"], string> = {
-    queued: "等待回复", running: "正在回复", waiting_input: "需要补充信息",
-    succeeded: "已回复", unavailable: "当时未能调用模型", failed: "回复失败",
-    interrupted: "回复已中断", cancelled: "已取消",
+    queued: "等待回复",
+    running: "正在回复",
+    waiting_input: "需要补充信息",
+    succeeded: "已回复",
+    unavailable: "当时未能调用模型",
+    failed: "回复失败",
+    interrupted: "回复已中断",
+    cancelled: "已取消",
   };
   const read = turn.fileRead;
-  const readPages = [...new Set(read?.ranges.map(range => range.pageNumber) || [])];
   const facts = (
-        <div className="space-y-2 pt-2 text-slate-700" data-ai-turn-facts>
-          <p>请求状态：{statusLabels[turn.status]}</p>
-          {turn.failure && <p className="break-all">失败代码：{turn.failure}</p>}
-          <p>
-            本次预算：上下文与回复合计 {turn.budget.maxTokens} Token，最多{" "}
-            {turn.budget.maxSeconds} 秒。
-          </p>
-          {turn.usage ? (
-            <p>
-              实际用量：输入 {turn.usage.inputTokens ?? "未确认"} Token，回复{" "}
-              {turn.usage.outputTokens ?? "未确认"} Token；耗时{" "}
-              {(turn.usage.elapsedMs / 1000).toFixed(1)} 秒。
-            </p>
-          ) : <p>实际用量：尚未确认。</p>}
-          {read && (
-            <div className="space-y-1 rounded-md bg-slate-50 p-2" data-ai-file-read-details>
-              <p className="break-all">附件：{read.filename}</p>
-              <p>可提取文字：{read.pageCount} 页 · {read.characterCount} 字符。</p>
-              <p>本次读取：{readPages.length ? `第 ${readPages.join("、")} 页` : "尚未确认读取片段"}。</p>
-              {read.partial && <p>本次未使用完整文件；回答依据列出的页码与范围。</p>}
-              {!!read.ranges.length && <details><summary className="cursor-pointer">每页读取范围</summary>
-                {read.ranges.map((range, index) => <p key={index}>第 {range.pageNumber} 页：字符 {range.start}–{range.end}</p>)}
-              </details>}
-            </div>
-          )}
-          <p className="break-all">
-            请求编号：{turn.id} · 版本 {turn.version}
-          </p>
-          <p className="break-all">
-            技术状态：{turn.status}
-            {turn.failure ? ` · ${turn.failure}` : ""}
-          </p>
+    <div className="space-y-2 pt-2 text-slate-700" data-ai-turn-facts>
+      <p>请求状态：{statusLabels[turn.status]}</p>
+      {turn.failure && <p className="break-all">失败代码：{turn.failure}</p>}
+      <p>
+        本次预算：上下文与回复合计 {turn.budget.maxTokens} Token，最多{" "}
+        {turn.budget.maxSeconds} 秒。
+      </p>
+      {turn.usage ? (
+        <p>
+          实际用量：输入 {turn.usage.inputTokens ?? "未确认"} Token，回复{" "}
+          {turn.usage.outputTokens ?? "未确认"} Token；耗时{" "}
+          {(turn.usage.elapsedMs / 1000).toFixed(1)} 秒。
+        </p>
+      ) : (
+        <p>实际用量：尚未确认。</p>
+      )}
+      {read && (
+        <div className="space-y-1 rounded-md bg-slate-50 p-2" data-ai-file-read-details>
+          <AgentFileReadSummary read={read} status={turn.status} />
         </div>
+      )}
+      <p className="break-all">
+        请求编号：{turn.id} · 版本 {turn.version}
+      </p>
+      <p className="break-all">
+        技术状态：{turn.status}
+        {turn.failure ? ` · ${turn.failure}` : ""}
+      </p>
+    </div>
   );
   const feedback = (
     <>
@@ -226,7 +230,10 @@ export function ResearchTurnStatus({
         }
         destroyOnClose
       >
-        <div className="max-h-[60dvh] min-w-0 overflow-y-auto break-words">{alert}{facts}</div>
+        <div className="max-h-[60dvh] min-w-0 overflow-y-auto break-words">
+          {alert}
+          {facts}
+        </div>
       </Modal>
       <Modal
         title="使用本轮剩余预算重试？"
