@@ -130,17 +130,18 @@ export class ChatWorker {
           prompt=serialize(selected,true)
         }
         if(document){
-          const select=(rows:typeof selected)=>selectFileExcerpts(document,input.fileSource,current.text??'',system,(read,excerpts)=>serialize(rows,rows.length<messages.length,read,excerpts),input.budget.maxTokens)
-          const currentOnly=select(currentBatch)
-          const readBytes=(read:NonNullable<typeof turn.fileRead>)=>read.ranges.reduce((total,range)=>total+Buffer.byteLength(document.pages.find(page=>page.pageNumber===range.pageNumber)!.text.slice(range.start,range.end)),0)
-          const desiredBytes=Math.min(512,readBytes(currentOnly.read)),desiredOutput=Math.min(512,input.budget.maxTokens-chatInputTokenBound(system,currentOnly.prompt))
-          let result=select(selected)
-          while(selected.length>currentBatch.length&&(readBytes(result.read)<desiredBytes||input.budget.maxTokens-chatInputTokenBound(system,result.prompt)<desiredOutput)){
+          // Select the best authorized file content with only the complete
+          // current batch. Old history may use spare room, never displace that
+          // content or reduce the bounded reply allowance.
+          const result=selectFileExcerpts(document,input.fileSource,currentTurnText(s,turn.id),system,(read,excerpts)=>serialize(currentBatch,currentBatch.length<messages.length,read,excerpts),input.budget.maxTokens)
+          const desiredOutput=Math.min(4096,input.budget.maxTokens-chatInputTokenBound(system,result.prompt))
+          prompt=serialize(selected,selected.length<messages.length,result.read,result.excerpts)
+          while(selected.length>currentBatch.length&&input.budget.maxTokens-chatInputTokenBound(system,prompt)<desiredOutput){
             const oldest=selected.findIndex(message=>!required.has(message.id))
-            selected=selected.filter((_,index)=>index!==oldest);result=select(selected)
+            selected=selected.filter((_,index)=>index!==oldest);prompt=serialize(selected,true,result.read,result.excerpts)
           }
           if(!result.read.ranges.length){turn.status='failed';turn.failure='BUDGET_EXCEEDED';turn.version++;turn.updatedAt=instant();s.saveTurn(turn);return null}
-          input.fileRead=result.read;turn.fileRead=result.read;prompt=result.prompt
+          input.fileRead=result.read;turn.fileRead=result.read
           this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(JSON.stringify(input),turn.id)
         }
       }

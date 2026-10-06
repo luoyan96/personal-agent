@@ -126,12 +126,17 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
         <>
           <p className="whitespace-pre-wrap break-words">{read.data.fact.text}</p>
           {read.data.fact.files?.map((file) => (
-            <AgentFileReadSummary key={file.messageId} file={file} read={fileRead} />
+            <AgentFileReadSummary
+              key={file.messageId}
+              file={file}
+              read={fileRead}
+              status={currentTurn?.status}
+            />
           ))}
           {fileRead &&
             !read.data.fact.files?.some(
               (file) => file.messageId === fileRead.messageId,
-            ) && <AgentFileReadSummary read={fileRead} />}
+            ) && <AgentFileReadSummary read={fileRead} status={currentTurn?.status} />}
           {!!read.data.fact.resources.length && (
             <details className="mt-2 text-xs">
               <summary>相关材料</summary>
