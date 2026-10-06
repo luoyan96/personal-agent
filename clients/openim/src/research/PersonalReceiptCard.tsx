@@ -33,7 +33,7 @@ export function PersonalReceiptCard({ turn, compact = false }: { turn: AgentTurn
   const content = <div className="space-y-3 text-sm">
     {memory && <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
       <strong>{memoryTitle}</strong>{memory.topic && <p className="break-words">{memory.topic}</p>}
-      <p className="text-xs text-slate-600">{memory.operation === "candidate" ? "只有你确认后才会用于后续聊天。" : memory.operation === "forgotten" ? "之后的聊天不再使用这条偏好；来源记录仍保留。" : memory.operation === "clarify" ? memory.question : "已保存，适用于后续获准的本地 Agent 聊天。"}</p>
+      <p className="text-xs text-slate-600">{memory.operation === "candidate" ? "只有你确认后才会用于后续聊天；确认后替代同主题的旧记忆。" : memory.operation === "forgotten" ? "之后的聊天不再使用这条偏好；来源记录仍保留。" : memory.operation === "clarify" ? memory.question : "已保存，仅用于你自己的站内 Agent 私聊；群聊、他人的 Agent、接入的外部 Agent 不使用。"}</p>
       {memory.memoryId && <Button size="small" onClick={() => setPanel("memory")}>查看我的记忆</Button>}
     </div>}
     {followup && <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
