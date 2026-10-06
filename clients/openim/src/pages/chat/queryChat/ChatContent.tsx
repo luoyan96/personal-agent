@@ -23,9 +23,14 @@ const ChatContent = () => {
   const scope = JSON.stringify([actorGeneration, selfUserID, conversationID]);
   const currentScope = useRef(scope);
   currentScope.current = scope;
-  const followLatest = useRef(true);
+  // User intent is a latch. A short loading row or viewport resize must not
+  // turn history reading back into following merely because geometry is bottom.
+  const historyPaused = useRef(false);
   const frame = useRef<number>();
   const touchY = useRef<number>();
+  const downwardIntentUntil = useRef(0);
+  const pointerScrolling = useRef(false);
+  const lastScrollTop = useRef(0);
   const pointerHistory = useMemo(() => {
     const messageIds = new Set<string>();
     let sequence = 0,
@@ -49,16 +54,17 @@ const ChatContent = () => {
   }, [loadState.messageList, selfUserID]);
 
   const stopFollowing = useCallback(() => {
-    followLatest.current = false;
+    historyPaused.current = true;
+    downwardIntentUntil.current = 0;
     if (frame.current !== undefined) cancelAnimationFrame(frame.current);
     frame.current = undefined;
   }, []);
   const scrollToBottom = useCallback(() => {
-    if (!followLatest.current || frame.current !== undefined) return;
+    if (historyPaused.current || frame.current !== undefined) return;
     frame.current = requestAnimationFrame(() => {
       frame.current = undefined;
       if (
-        followLatest.current &&
+        !historyPaused.current &&
         currentScope.current === scope &&
         useResearchStore.getState().generation === actorGeneration &&
         useUserStore.getState().selfInfo.userID === selfUserID &&
@@ -74,12 +80,15 @@ const ChatContent = () => {
   }, [scope, actorGeneration, selfUserID, conversationID]);
 
   useLayoutEffect(() => {
-    followLatest.current = true;
+    historyPaused.current = false;
     touchY.current = undefined;
+    downwardIntentUntil.current = 0;
+    pointerScrolling.current = false;
+    lastScrollTop.current = 0;
     return () => {
       if (frame.current !== undefined) cancelAnimationFrame(frame.current);
       frame.current = undefined;
-      followLatest.current = false;
+      historyPaused.current = true;
     };
   }, [scope]);
 
@@ -98,7 +107,8 @@ const ChatContent = () => {
           request.selfUserID !== selfUserID)
       )
         return;
-      followLatest.current = true;
+      historyPaused.current = false;
+      downwardIntentUntil.current = 0;
       scrollToBottom();
     };
     emitter.on("CHAT_LIST_SCROLL_TO_BOTTOM", followOwnSend);
@@ -106,6 +116,28 @@ const ChatContent = () => {
       emitter.off("CHAT_LIST_SCROLL_TO_BOTTOM", followOwnSend);
     };
   }, [conversationID, actorGeneration, selfUserID, scrollToBottom]);
+
+  useEffect(() => {
+    const finishPointerScroll = () => {
+      pointerScrolling.current = false;
+    };
+    window.addEventListener("pointerup", finishPointerScroll);
+    window.addEventListener("pointercancel", finishPointerScroll);
+    return () => {
+      window.removeEventListener("pointerup", finishPointerScroll);
+      window.removeEventListener("pointercancel", finishPointerScroll);
+    };
+  }, []);
+
+  const markDownwardIntent = () => {
+    downwardIntentUntil.current = performance.now() + 500;
+    const scroller = document.getElementById("chat-list");
+    if (
+      scroller &&
+      scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop <= 4
+    )
+      historyPaused.current = false;
+  };
 
   const components = useMemo(
     () => ({
@@ -137,6 +169,7 @@ const ChatContent = () => {
       id="chat-main"
       onWheelCapture={(event) => {
         if (event.deltaY < 0) stopFollowing();
+        else if (event.deltaY > 0) markDownwardIntent();
       }}
       onTouchStartCapture={(event) => {
         touchY.current = event.touches[0]?.clientY;
@@ -149,19 +182,49 @@ const ChatContent = () => {
           nextY > touchY.current
         )
           stopFollowing();
+        else if (
+          nextY !== undefined &&
+          touchY.current !== undefined &&
+          nextY < touchY.current
+        )
+          markDownwardIntent();
         touchY.current = nextY;
       }}
       onKeyDownCapture={(event) => {
         if (["Home", "PageUp", "ArrowUp"].includes(event.key)) stopFollowing();
         if (event.key === "End") {
-          followLatest.current = true;
+          historyPaused.current = false;
+          downwardIntentUntil.current = 0;
           scrollToBottom();
-        }
+        } else if (["PageDown", "ArrowDown"].includes(event.key)) markDownwardIntent();
       }}
       onPointerDownCapture={(event) => {
         // Native scrollbar dragging is also an explicit history-reading action.
         const scroller = document.getElementById("chat-list");
-        if (event.target === scroller) stopFollowing();
+        if (event.target === scroller) {
+          stopFollowing();
+          pointerScrolling.current = true;
+          lastScrollTop.current = scroller.scrollTop;
+        }
+      }}
+      onScrollCapture={(event) => {
+        const scroller = document.getElementById("chat-list");
+        if (!scroller || event.target !== scroller) return;
+        const previousTop = lastScrollTop.current;
+        lastScrollTop.current = scroller.scrollTop;
+        if (pointerScrolling.current && scroller.scrollTop < previousTop)
+          stopFollowing();
+        if (
+          historyPaused.current &&
+          scroller.scrollTop > previousTop &&
+          (pointerScrolling.current ||
+            performance.now() < downwardIntentUntil.current) &&
+          scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop <= 4
+        ) {
+          historyPaused.current = false;
+          downwardIntentUntil.current = 0;
+          scrollToBottom();
+        }
       }}
     >
       {loadState.initLoading ? (
@@ -175,11 +238,9 @@ const ChatContent = () => {
             id="chat-list"
             tabIndex={0}
             className="w-full overflow-x-hidden"
-            followOutput={() => (followLatest.current ? "auto" : false)}
-            atBottomThreshold={4}
-            atBottomStateChange={(atBottom) => {
-              if (atBottom) followLatest.current = true;
-            }}
+            // A function prop remains truthy in Virtuoso's internal resize
+            // traps even when it returns false. Only our scoped intent follows.
+            followOutput={false}
             // Authorized facts and turn cards hydrate later than Virtuoso's
             // short resize trap. Follow their actual measured height while the
             // user is waiting at the latest message, never while reading history.

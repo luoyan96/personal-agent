@@ -7,6 +7,7 @@ import { researchApi, researchMode } from "./api";
 import { useResearchStore } from "./store";
 import { useAgentChatOperation } from "./useAgentChatOperation";
 import { registerAgentProgress } from "./agent-progress";
+import { emit } from "@/utils/events";
 
 type ReadingRequest = {
   scope: string;
@@ -139,6 +140,12 @@ export function ContinueAgentFileReadingButton({
         throw new Error("阅读响应与这份附件不一致，请刷新核对；不要重复发送文件。");
       setRequest({ ...next, result });
       if (result.turn && imID) registerAgentProgress(generation, imID, result.turn);
+      if (imID)
+        emit("CHAT_LIST_SCROLL_TO_BOTTOM", {
+          conversationID: imID,
+          actorGeneration: generation,
+          selfUserID: useUserStore.getState().selfInfo.userID,
+        });
     } catch (error) {
       if (isCurrent())
         setRequest({
