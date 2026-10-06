@@ -1,5 +1,17 @@
 # 项目进展日志
 
+## 2026-10-06：Agent 联系人、三种添加、外部接入与桌面工具上线
+
+- 09:33:52北京发布固定软件 `57d059e5201fc54c53bfcaeaa28765ea34397615`，API / worker镜像 `sha256:837c4e89fa03d7253207f5c3c223d1ee62daee7ce609afa4e2a8d3c7e622b7c6`；contract0.17 / chat1.6 / schema017。09:57:55补发客户端 `aa3c0f13e257c8ac463ee5800cccdea255e6a07b`，公网index `7db7867121af9a3aedf29e9505f936049c085aead02ae7500ac82e2a717049c2`，后台current / 八镜像不变。准确位置见[current-state](current-state.md)及[部署记录](deployment/openim-ecs.md)。
+- 统一通讯录先显示真实联系人；准确用户名发现真人及其可见Agent，稳定名片分享，申请 / 同意后聊。本人四项资料创建或public profile导入原子保存身份 / direct并开聊，IM不可用重试同ID，失响应复用不重复建；同名已连接Agent不覆盖。公开导出仅名称 / 介绍 / 能力 / 性格，不带Key / 记忆 / 工具。
+- 已实现外部HTTPS443 Chat Completions文字服务绑定、加密Key、版本并发、显式合成探测与断开；默认本人，开放给已接受联系人需主人设置并承担外部费用。每条发送重新同意，仅当前文字；无历史 / 文件 / 私人记忆 / 任务 / 内部身份转出，无工具执行 / 失败平台回退。公网DNS及实际socket IP / TLS固定、redirect / proxy / 私网拒绝；返回正文和用量严格校验。此兼容协议不是任意个人Agent、MCP / A2A自动接入。
+- 桌面直接显示真实表情 / 图片 / 文件 / 语音工具，手机窄屏加号；emoji只填草稿，媒体沿原SDK回调与会话 / 账号世代守卫。名片打开仅看资料，登录后回名片，取消消费参数，不自动申请 / 发送；连接GET初始化完成前锁编辑，避免迟返回覆盖输入。
+- 共享CI41文件 / 491项 + 2生产入口、B0实际进程、构建 / 类型 / 契约和生产fixture隔离通过。首轮3失败为两旧迁移fixture重建未移除新017表及旧CHAT1路由计数，修测试后通过且原日志保留。最终57d及aa3客户端类型 / Web / 四SDK通过；初次generated contracts缓存缺新module失败保留，校正生成dist不改锁文件。
+- 前端15项组件、6项真实loopback HTTP / SQLite和3项实际production createHashRouter门禁分段闭合；合成SDK / API / no-network探测 / 合成录音设备明确，不宣称单次全UI套件或云vendor成功。真实HTTP保存加密Key不回显、默认owner-only、uncertain探测、disconnect保留身份通过；实际CKEditor emoji、合成SDK文件、真实MediaRecorder取消未发送及320布局通过。旧选择器 / harness、初始化覆盖等failed报告保留。
+- 主批72旧表SQL / 全行hash完全保持；一致备份 `/srv/research-openim-backups/20261006T013331Z` 12checksum / 9gzip / 隔离SQLite完整性及schema16通过。schema17兼容旧业务镜像与外部请求fence / network-none smoke备妥，保留现有DB与实际外部用量、不静默调用平台。helper5专项及后端审查修复恢复顺序为停3写入者 / 验schema及ready / 再启OpenIM；旧失败证据保持。完整组件恢复 / 异地备份未验。
+- 线上已登录实际核验统一通讯录、三添加入口、四资料 / 导入 / 外部表单、本人名片连接、既有SDK私聊及桌面工具；没有新增联系人 / 消息 / 真实Key / vendor probe / 录音。切窄屏遇其他设备登录提示并退出，触发来源未定；生产手机聊天未计通过。随后发现退出后login空白：前端门禁挡住实际位于MainContentWrap内的login，而旧harness把login放门外漏检。root修aa3，3实际production树门禁确认login/register、分享回跳消费、实际UserStore logout清IMprofile并reload可登录；静态补发后实际Edge登录 / 注册 / 可选邀请码 / 至少8字符提示确认，未填或提交凭据。
+- Git外 `.runtime/agent-experience-20261006` 保存主批及public-login部署回执、root验证、`frontend-review/{summary,route-summary}.json`、`live-ui-proof.json` / `live-public-login-proof.json` / 实际通讯录和登录截图；空白chat截图保留且不当成功图片。Workbench上传到期、自动审批超时和一次重试均记录；正常免密恢复原授权，无新增SSH / 端口 / 云权限。前端本地服务 / 隔离浏览器已关闭；本批未推GitHub、未构建原生安装包或验证真实外部Agent工具。
+
 ## 2026-10-05：自然语言创建 Agent、自动开聊与连续回复上线
 
 - 最终软件`0ea0516d71d4f3c114f96ee0621ad463924a7a85`于22:25北京时间整体发布前端 / API / worker，镜像`sha256:949cd6501bdf286920db0f48b8ff23def262a534538f2226e010537667a45ac8`，公网index `7bcd46a2153093f56e69503a8c5339f66dca6d4e9409e2865dedd9a8521c76af`；contract0.15 / chat1.4 / schema16无迁移。八服务运行、API healthy / HTTPS ready、三变更源文件hash一致、其他六镜像未变。

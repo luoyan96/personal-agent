@@ -21,7 +21,19 @@
 - 普通个人 / Agent 私聊默认只输入文本并发送；使用本人默认模型，保留真实档案、性格和授权记忆。任务、材料、预算与需求模板收在可选协作中；普通聊天不创建计划、群、任务或执行动作。主标题显示真实 Agent 名称，沿用原协调身份和置顶映射。
 - 设置入口改为“模型设置”，每个人管理自己的 DeepSeek / 通义千问 / 豆包配置、加密 Key、启用及默认选择。朋友使用本人 Key 与当前对话记忆，不能读取 Agent 主人的 Key 或私有记忆。既有 IFRC 未选择个人配置时兼容旧模型；明确作个人选择后不静默回退。
 
-## 最新文件聊天批次
+## 最新批次：Agent 联系人、添加与外部接入
+
+2026-10-06 09:33 北京时间，软件 `57d059e5201fc54c53bfcaeaa28765ea34397615` 已发布前端、API / worker及显式迁移017。09:57补发客户端 `aa3c0f13e257c8ac463ee5800cccdea255e6a07b`，修复未登录 / 退出后的登录页空白；后端及八镜像保持57d版本。详见[本轮设计与接入范围](development/agent-contact-experience.md)。
+
+- 通讯录优先显示真实联系人，人与Agent保留稳定身份。添加分为准确用户名 / 名片链接发现、四项资料创建、公开人设导入或外部服务接入。本人Agent创建 / 导入后保存到通讯录并打开专属私聊；IM未就绪重试同一身份，不重复创建。
+- 外部服务第一版仅支持公开HTTPS443、完整 `/chat/completions` 地址的兼容文字接口。Key加密、默认本人使用，显式探测；每条消息同意后仅传当前文字。公开人设导入不迁移远端工具 / Key / 记忆。不是任意Agent、MCP或A2A自动接入；真实第三方服务尚未提供凭据做线上探测。
+- 桌面输入区直接展示表情 / 图片 / 文件 / 语音；手机窄屏保留加号展开。分享名片仅查看，登录回跳保留名片，不自动添加或发送。模型设置与现有授权记忆保留。
+- 共享CI41文件 / 491项 + 2生产入口通过；最终客户端类型 / Web / 四固定SDK资源通过。前端15项组件、6项真实loopback HTTP / SQLite和3项实际生产路由树门禁分段闭合；API / SDK或模型合成范围见报告，不宣称单次完整UI套件或真实外部工具验收。
+- 线上实际核验通讯录、添加三入口、名片 / 连接表单、既有SDK私聊与桌面工具。切窄屏时出现其他设备登录提示并退出，原因未定；随后发现公共登录被父路由挡住，已修复 / 补发并实际确认登录、注册、返回入口与八字符 / 自愿邀请码提示。没有提交真实凭据、新联系人、消息、探测或真实录音；本批不计生产手机聊天通过。
+- 迁移仅新增绑定表：激活前72个旧表SQL及全部行hash一致，原有数据保留。schema17恢复须用下文兼容镜像保留现有数据库，禁止用旧schema16备份覆盖后续聊天。失败CI、路由harness误把login放父门外、上传过期 / 审批超时、空白截图等记录保留。
+- Git外证据：`D:/deepseek-agent/.runtime/agent-experience-20261006/{root-verification,deployment-verified,public-login-deployment-verified,live-ui-proof,live-public-login-proof}.json`，`frontend-review/{summary,route-summary}.json`；后端专项与恢复资料在 `.runtime/agent-integration-20261006`。尚未推GitHub，未新建原生桌面 / 手机安装包。
+
+## 历史批次：文件聊天
 
 2026-10-06，Agent 文件聊天最终软件 `3b18c6883428f2f00bfbd61d8cce51195011b842` 已上线。个人 / 专属 Agent 私聊发送含文字 PDF 或 UTF-8 TXT / Markdown / CSV 后，真实 SDK 成功才开始解析和模型阅读；范围、部分读取与失败明确显示。默认总预算仍为 4000 / 90 秒。旧 SDK 对象网关需要重定向时，可使用“从本机选择阅读”，只重读原附件，不重复 IM 投递。详见[文件聊天交接](development/agent-file-chat.md)。
 
@@ -37,23 +49,24 @@
 | --- | --- |
 | 总控集成目录 | `D:/deepseek-agent/research-agent-platform-chat-integration`；操作前用 `git status` 确认目录与已有改动 |
 | 分支 | `feature/openim-client-rebuild`；最新本地 SHA 用 `git log -1` 读取，不使用其他旧克隆代替 |
-| 已上线前端 | `3b18c6883428f2f00bfbd61d8cce51195011b842`；与 API / worker 同软件版本，交接文档提交不改变线上软件 SHA |
-| 已上线 API / worker | `3b18c6883428f2f00bfbd61d8cce51195011b842`；镜像 `sha256:83797932607e2490c42c6ad1a434cca766fb909ad96ab6382eed1943b9904afc`；总预算仍为输入与输出合计 4000 / 90 秒 |
+| 已上线前端 | `aa3c0f13e257c8ac463ee5800cccdea255e6a07b`；公网index SHA256 `7db7867121af9a3aedf29e9505f936049c085aead02ae7500ac82e2a717049c2`；后续文档提交不改变软件版本 |
+| 已上线 API / worker | `57d059e5201fc54c53bfcaeaa28765ea34397615`；镜像 `sha256:837c4e89fa03d7253207f5c3c223d1ee62daee7ce609afa4e2a8d3c7e622b7c6`；总预算仍为输入与输出合计 4000 / 90 秒 |
 | 新站 | `https://chat.acceptcat.com`，文件 `https://files.chat.acceptcat.com` |
 | 新 ECS | 广州 Ubuntu 22.04.5，4 vCPU / 8 GiB / 50 GiB；当前到期日 2026-11-04，未改续费设置 |
-| 运行与发布 | `/srv/research-openim`；`/opt/research-openim/current` 指向 `/opt/research-openim/releases/3b18c6883428f2f00bfbd61d8cce51195011b842`；Nginx root 为对应 `clients/openim/dist` |
-| 版本 | 契约 0.16.0、聊天 1.5.0、IM 桥 1.0.0、SQLite 迁移 016；无新增迁移 |
+| 运行与发布 | `/srv/research-openim`；backend current为 `/opt/research-openim/releases/57d059e5201fc54c53bfcaeaa28765ea34397615`；Nginx root为 `/opt/research-openim/client-releases/aa3c0f13e257c8ac463ee5800cccdea255e6a07b/clients/openim/dist` |
+| 版本 | 契约 0.17.0、聊天 1.6.0、IM 桥 1.0.0、SQLite 迁移 017；新增私有外部绑定表 |
+| 本批安全恢复 | 保留现有schema17数据库；兼容旧业务镜像 `sha256:ebcb6ba7d86dbed7caa68b40c57e928e775971d147c23c7e7de5533d70e1c6c4`，恢复步骤及外部请求栅栏见部署记录。不要直接启动未适配schema17的旧镜像 |
 | 旧站 | `research.acceptcat.com` 独立保留；旧账号 / 模型配置不自动迁移，不在本轮升级范围 |
 | GitHub | 新 OpenIM 批次未推送。用户先看完成结果；不要把“本地已提交”写成“GitHub 已上传” |
 
 ## 已完成、证据与边界
 
-- 最新加号菜单批次：桌面与320px导航新增同样三项入口，朋友直接进入准确用户名查找，Agent创建表单取消 / 刷新不重新打开，群聊沿用ChooseModal。输入区三张卡片沿既有消息构造 / 发送回调，单按钮可键盘操作，语音面板仅显式录制时申请麦克风。文件选择与异步构造捕获会话世代，换走再回来也不发送旧结果。
+- 历史加号菜单批次：桌面与320px导航新增同样三项入口，朋友直接进入准确用户名查找，Agent创建表单取消 / 刷新不重新打开，群聊沿用ChooseModal。输入区三张卡片沿既有消息构造 / 发送回调，单按钮可键盘操作，语音面板仅显式录制时申请麦克风。文件选择与异步构造捕获会话世代，换走再回来也不发送旧结果。
 - 最终客户端类型 / Web / 四固定SDK资源和本地九组检查通过，API / SDK / 媒体明确合成；pageerror0，Antd / Router弃用和故意旧文件拒绝日志保留。本批无共享代码变化，不重复根CI。原分页fixture错误、嵌套Upload按钮、Windows wasm watcher EBUSY及fixture漏公共Antd / 全局样式的 failed 报告均保留，最终修正后再验。
 - 23:20静态上线前后后端current、八个镜像不变，API healthy / HTTPS ready0.15、www-data读index与精确公网首页SHA256 `ad9776effd48d619a731994b8e05dee5e4c7fe8315e0a803b711b4384fd8cdaa`通过。Nginx回退配置 `/opt/research-openim/ops/plus-menus-e536e759a71f-20261005T152030Z/research-openim-production`；本批只恢复旧客户端root并核对旧首页7bcd46、健康与镜像，不回退schema16数据库。没有重启容器、迁移、SSH授权或GitHub推送。
 - 既有IFRC的正常Edge登录页面八组菜单检查通过：三个入口、创建取消 / 刷新、实际Agent聊天扩展、语音显示 / 关闭。只打开并取消，无新增联系人 / 群 / 消息、模型调用、云媒体或真实麦克风。刷新后第一轮菜单选择中止保留，等页面就绪重新展开后群窗成功。父目录 `.runtime/plus-menus-20261005` 的bundle / outer / deployment回执、root-verification、`run-e79b8d07-2941-46b1-8aca-8964c3fa8d08/report.json`、`live-ui-proof.json`与`live-plus-menus.png`为本批证据；代理云终端标签已关闭，用户原标签保留。
 
-- 最新自然语言创建批次：明确当前命令仅在本人个人助理内有效；生成四项简洁档案、原子保存本人联系人 / direct / 回执，完全相同本人档案复用。当前有效发送页自动开聊，主动离开 / 换账号取消，历史回执手动打开；创建成功但IM未就绪重试仅打开既有聊天。首版21:45 f847真实创建，自动导航失败；最终22:25 0ea修复Single同tick导航与连续聊天历史预算。生成档案限制60 / 80 / 200 / 80字，服务追加固定能力边界；手动资料上限保持。普通聊天按4000预算选取最多20条完整最近消息，完整保留当前输入、档案与所有获准记忆，过长当前或记忆仍明确拒绝。
+- 历史自然语言创建批次：明确当前命令仅在本人个人助理内有效；生成四项简洁档案、原子保存本人联系人 / direct / 回执，完全相同本人档案复用。当前有效发送页自动开聊，主动离开 / 换账号取消，历史回执手动打开；创建成功但IM未就绪重试仅打开既有聊天。首版21:45 f847真实创建，自动导航失败；最终22:25 0ea修复Single同tick导航与连续聊天历史预算。生成档案限制60 / 80 / 200 / 80字，服务追加固定能力边界；手动资料上限保持。普通聊天按4000预算选取最多20条完整最近消息，完整保留当前输入、档案与所有获准记忆，过长当前或记忆仍明确拒绝。
 - 最终共享CI35文件 / 457项 + 2生产入口、客户端类型 / Web / 四SDK资源通过；后端47原针对项与10新连续预算组、客户端17原组与5父子路由组分别记录。模型和SDK的本地合成检查不能替代真实调用。实际22:26本人助理收到完整四项档案请求，服务回执“已找到你已有的联系人”，未手动点击即自动进入链研直言SDK私聊；22:27 / 22:28两轮真实模型回复，第二轮接上第一轮，历史回执重开同SDK URL且消息保留。沿用正常登录，不读Key或密码，不增云测试账号。
 - 最终公网首页精确SHA256 `7bcd46a2153093f56e69503a8c5339f66dca6d4e9409e2865dedd9a8521c76af`，源与API / worker三份变更文件逐hash一致；八服务运行 / API healthy / HTTPS ready，其余六镜像未变，schema16无迁移。更新前一致备份 `/srv/research-openim-backups/20261005T142440Z`：12checksums / 9gzip / 隔离SQLite恢复integrity及16迁移校验通过。回退恢复f847代码、镜像、current与Nginx，保留现有schema16，禁止套用更早015数据库回退。证据在父目录`.runtime/agent-creation-20261005`的`continuous-{bundle-receipt,outer-verified,prepared,deployment-verified}.json`、`live-ui-closure.json`、`live-final-agent-chat.png`及构建 / 局部报告。首版失败、上传会话到期与过早UI断言保留，等待实际就绪后无重复动作即成功。独立导航包未上传 / 激活；未推GitHub，未验新原生客户端或工具执行。
 

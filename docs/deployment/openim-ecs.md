@@ -1,6 +1,29 @@
 # 新 ECS：OpenIM 科研微信（2026-10-06）
 
-## 最新更新：Agent 文件阅读与真实回复
+## 最新更新：Agent 联系人、接入与公共登录修复
+
+2026-10-06 09:33:52 北京时间，固定软件 `57d059e5201fc54c53bfcaeaa28765ea34397615` 整体上线；09:57:55 静态补发 `aa3c0f13e257c8ac463ee5800cccdea255e6a07b` 修复嵌套公共登录路由。当前API / worker为57d，契约0.17.0 / chat1.6 / schema17；前端为aa3。
+
+| 位置 | 实际值 |
+| --- | --- |
+| 后端current | `/opt/research-openim/releases/57d059e5201fc54c53bfcaeaa28765ea34397615` |
+| API / worker镜像 | `sha256:837c4e89fa03d7253207f5c3c223d1ee62daee7ce609afa4e2a8d3c7e622b7c6` |
+| 当前Nginx root | `/opt/research-openim/client-releases/aa3c0f13e257c8ac463ee5800cccdea255e6a07b/clients/openim/dist` |
+| 当前公网index SHA256 | `7db7867121af9a3aedf29e9505f936049c085aead02ae7500ac82e2a717049c2` |
+| 主批一致备份 | `/srv/research-openim-backups/20261006T013331Z` |
+| 主批Nginx备份 | `/opt/research-openim/ops/agent-experience-57d059e5201f/activate-20261006T013330Z/research-openim-production` |
+| 登录补发Nginx备份 | `/opt/research-openim/ops/public-login-aa3c0f13e257-20261006T015754Z/research-openim-production` |
+| schema17兼容恢复镜像 | `sha256:ebcb6ba7d86dbed7caa68b40c57e928e775971d147c23c7e7de5533d70e1c6c4` |
+| 兼容恢复源 | `/opt/research-openim/releases/3b18c6883428f2f00bfbd61d8cce51195011b842-schema17-57d059e5201f` |
+
+- 主归档outer SHA256 `9f3f6bd28c9c27f17aca992c615df8b9663e486d03c0bc497eaefe3c68059afc`，执行helper `5a1e0e4015bee97be43d40d539f3e07cb70af37ef9f018e41a27b4114588f1ec`。云端锁定旧依赖离线编译、API / worker源hash核对、network-none PDF smoke、显式017和逐旧表指纹检查通过。迁移新增绑定表，72旧表SQL / 全行hash完全一致；新绑定数0。
+- 停本项目API / worker / OpenIM取得一致备份；12checksums / 9gzip、隔离恢复SQLite integrity ok / 原迁移16通过。其他六镜像未变，八服务运行、API healthy / HTTPS ready0.17、主批精确首页d06af406通过。备份仍在同ECS，未验收异地及完整组件恢复。
+- 补发outer `c45d0fe9b80bfb281c7691fbd65d25a50790a0cea8ee66648419ab4cd96d5513`，helper `622de75eea061da1f3195c37d6c9724d9a3abf9cf27e8be7a08cd35a8203bf09`。只切换Nginx静态root；www-data读index / nginx-t / reload / 精确公网hash与ready通过，backend current和全部八镜像不变。实际Edge公共登录 / 注册表单 / 返回登录已恢复，没有填凭据或提交注册。
+- **当前schema17不能采用下文历史schema16回退。** 保留现有数据库及新用户记录；兼容恢复时停API / worker / OpenIM三个写入者，核实current及数据库，运行固定 `rollback-fence.mjs --database /data/platform.sqlite --source-root /app --writers-stopped`，停用外部绑定、撤销活跃外部turn并保留实际用量；切兼容镜像 / source / Nginx，核对schema17及ready后再启动OpenIM。离线实际Docker smoke验证旧外部请求 / retry不走平台模型、原协调聊天可用、用量保留。不要把017前的数据库副本覆盖在线数据，也不要直接运行原3b18镜像。登录补发的Nginx备份只回到57d客户端（已知登录空白），仅用于应急静态恢复，优先保留修复版。
+- 根CI491 + 2、客户端类型 / Web / 四SDK、15组件 / 6真实本地HTTP / 3实际生产路由树检查通过，各范围与失败报告分开。线上已登录桌面通联 / 表单核验完成；320生产聊天被其他设备登录提示中断，原因未定，不计通过。初始错误路由harness、上传会话到期 / 自动审批超时、空白截图均保留；本批无真实外部vendor探测、云录音、原生安装包、权限扩展或GitHub推送。
+- 本机Git外回执在 `D:/deepseek-agent/.runtime/agent-experience-20261006/{bundle-receipt,outer-verified,prepared,deployment-verified,public-login-bundle-receipt,public-login-outer-verified,public-login-deployment-verified,root-verification,live-ui-proof,live-public-login-proof}.json`；前端证据 `frontend-review/{summary,route-summary}.json`，恢复overlay / fence / smoke在 `.runtime/agent-integration-20261006`。此前0ef候选包保留且未上传；后续交接文档提交不改变上述软件SHA。
+
+## 历史更新：Agent 文件阅读与真实回复
 
 2026-10-06，Agent 文件聊天最终软件 `3b18c6883428f2f00bfbd61d8cce51195011b842` 已上线。个人 / 专属 Agent 私聊发送含文字 PDF 或 UTF-8 TXT / Markdown / CSV 后，真实 SDK 成功才开始解析和模型阅读；范围、部分读取与失败明确显示。默认总预算仍为 4000 / 90 秒。旧 SDK 对象网关需要重定向时，可使用“从本机选择阅读”，只重读原附件，不重复 IM 投递。详见[文件聊天交接](../development/agent-file-chat.md)。
 

@@ -38,4 +38,6 @@
 
 冻结共享契约 0.17 / chat 1.6 见 [外部接入契约](../../packages/contracts/agent-connection-protocol.md)。迁移 017 只新增私有绑定表，旧账号、联系人、消息和用量保留。schema16 代码不能直接启动 schema17 数据库；部署恢复需保留新用户记录并使用明确验证过的兼容恢复镜像，不能恢复旧数据库覆盖后续聊天。
 
-本批实际源码、共享检查、客户端检查、合成外部服务证据与线上状态，在完成时记录到 [current-state](../current-state.md) 和 [project-log](../project-log.md)。协议参考：[Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)、[A2A 1.0](https://a2a-protocol.org/v1.0.0/specification)；本批不宣称 A2A 已实现。
+2026-10-06本批已上线：API / worker为57d059e，前端为公共登录修复aa3c0f1，契约0.17 / schema17。实际源码、共享491 + 2、客户端构建、分段UI检查与线上状态记录在 [current-state](../current-state.md) 和 [project-log](../project-log.md)。首次路由harness没有使用实际login父门位置，漏掉退出后空白；修复及真实production树3门禁 / 线上登录表单验收另列，不覆盖原失败证据。真实外部服务凭据 / 工具尚未验收。
+
+协议参考：[Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)、[A2A 1.0](https://a2a-protocol.org/v1.0.0/specification)；本批不宣称 A2A 已实现。
