@@ -240,4 +240,6 @@ it('upgrades exact populated015 twice, preserving IFRC accounts, sessions, chat 
  expect(db.prepare('SELECT relation_key FROM chat_contact_requests').get()!.relation_key).toBe('human:member_old_A:member_old_B')
  expect(db.prepare('SELECT scope_key FROM chat_conversations').get()!.scope_key).toBe('direct:member_old_A:member_old_B')
  expect(db.prepare('SELECT count(*) n FROM personal_spaces').get()!.n).toBe(0);expect(db.prepare('SELECT count(*) n FROM personal_model_configurations').get()!.n).toBe(0)
-})
+// This integration check runs fifteen file-backed migrations, password hashing,
+// and two upgrades; Windows hosted-runner disk latency can exceed the 5s default.
+},20000)

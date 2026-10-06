@@ -64,7 +64,7 @@
 | 项目 | 当前事实 |
 | --- | --- |
 | 总控集成目录 | `D:/deepseek-agent/research-agent-platform-chat-integration`；操作前用 `git status` 确认目录与已有改动 |
-| 分支 | `feature/openim-client-rebuild`；最新本地 SHA 用 `git log -1` 读取，不使用其他旧克隆代替 |
+| 分支 | GitHub共同主线为main；每个本地副本用 `git branch --show-current` 和 `git log -1` 读取当前分支 / SHA，不使用其他旧克隆代替 |
 | 已上线前端 | `27c3279f7dc6584ebde905fd821e21f7166e5c74`；公网index SHA256 `ff018ec1ecaea9c079a877d5358fac7223a8e9f9124d8b3a73568fbb879b3a0b`；后续文档提交不改变软件版本 |
 | 已上线 API / worker | `787ca2314b24320ae0b90da4db4d1401b209f719`；镜像 `sha256:e632d1c79499b113983bfa2d4995ff1059b518a06a6e2e4a67901c9661d91c41`；父子请求仍共用输入与输出合计4000 / 90秒预算 |
 | 新站 | `https://chat.acceptcat.com`，文件 `https://files.chat.acceptcat.com` |
@@ -73,7 +73,7 @@
 | 版本 | 契约0.18.0、聊天1.7.0、IM桥1.0.0、SQLite迁移018；新增本人设置 / 记忆 / 修订 / 跟进4表 |
 | 本批安全恢复 | 保留现有schema18数据库；兼容57d业务镜像 `sha256:8ef9b682466d1cfd9aef7d18521db598dd42d236f28dc72c69bf9efdbba9d6fc`。schema18栅栏、暂停提醒及恢复步骤见部署记录；不要直接运行旧schema17镜像或覆盖新数据 |
 | 旧站 | `research.acceptcat.com` 独立保留；旧账号 / 模型配置不自动迁移，不在本轮升级范围 |
-| GitHub | 新主仓库 `https://github.com/luoyan96/personal-agent` 已导入完整历史，协作主线 `main`；初始main与基线标签 `personal-agent-2026-10-06` 均实际核对为 `3540e0c1d0247bffd711c21734b8d083c5fe3323`。此后main可继续推进，标签保留基线；本地分支仍为 `feature/openim-client-rebuild`，旧仓库远端为legacy。历史“未推送”只表示其当时状态 |
+| GitHub | 新主仓库 `https://github.com/luoyan96/personal-agent` 已导入完整历史，协作主线 `main`；初始main与基线标签 `personal-agent-2026-10-06` 均实际核对为 `3540e0c1d0247bffd711c21734b8d083c5fe3323`。此后main可继续推进，标签保留基线；旧仓库远端为legacy。历史“未推送”只表示其当时状态 |
 
 ## 已完成、证据与边界
 

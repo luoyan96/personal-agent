@@ -22,7 +22,7 @@ const context={selectedText:null,artifactRefs:[]}
 async function setup(configured=true){
   const dir=mkdtempSync(join(tmpdir(),'rap-im-'));cleanup.push(()=>rmSync(dir,{recursive:true,force:true}))
   const secret=join(dir,'synthetic-im.secret'),key=join(dir,'synthetic-callback.key'),credential=join(dir,'synthetic-model.key'),callbackKey=randomBytes(32).toString('hex')
-  writeFileSync(secret,'synthetic-management-secret-not-real');writeFileSync(key,callbackKey);writeFileSync(credential,randomBytes(32).toString('hex'))
+  writeFileSync(secret,'synthetic-management-secret-not-real',{mode:0o600});writeFileSync(key,callbackKey,{mode:0o600});writeFileSync(credential,randomBytes(32).toString('hex'),{mode:0o600})
   const config=readConfig({NODE_ENV:'test',DATABASE_PATH:join(dir,'im.sqlite'),BLOB_ROOT:join(dir,'blobs'),APP_ORIGIN:'http://127.0.0.1:4317',B3_AI_ENABLED:'1',LAB_CREDENTIAL_KEY_FILE:credential,
     ...(configured?{OPENIM_API_URL:'http://127.0.0.1:15002',OPENIM_PUBLIC_API_URL:'http://127.0.0.1:15002',OPENIM_PUBLIC_WS_URL:'ws://127.0.0.1:15001',OPENIM_SECRET_FILE:secret,OPENIM_CALLBACK_KEY_FILE:key,OPENIM_POLICY_ENFORCED:'1'}:{})})
   mkdirSync(config.blobRoot);const db=openDatabase(config.databasePath,true);cleanup.push(()=>db.close());migrate(db);seed(db,'test')
@@ -224,7 +224,8 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
   })
   it('mirrors controlled research messages as authorized pointers, never copies AI private answer, and handles unknown send outcomes',async()=>{
     const s=await setup();await s.request('imSession',{platformID:5})
-    await s.request('updateLabAiSettings',{expectedVersion:0,enabled:true,model:'deepseek-flash',apiKey:'sk-synthetic-only'}, {id:'lab_synthetic'})
+    const settings=await s.request('updateLabAiSettings',{expectedVersion:0,enabled:true,model:'deepseek-flash',apiKey:'sk-synthetic-only'}, {id:'lab_synthetic'})
+    expect(settings.status,settings.raw).toBe(200)
     const personal=(await s.request('personalConversation',{})).value.data.conversation
     await s.request('sendChatMessage',{text:'显式科研请求',intent:'ask_agent',agentContactId:s.agent('member_A').id,budget:{maxTokens:25000,maxSeconds:10},context:[]},{id:personal.id})
     await new ChatWorker(s.db,s.config,async()=>({text:JSON.stringify({answer:'PRIVATE SYNTHETIC ANSWER',waitingInput:false,group:null,actions:[]}),failure:null,inputTokens:4,outputTokens:6,elapsedMs:10})).tick()
