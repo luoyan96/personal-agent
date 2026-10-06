@@ -8,7 +8,11 @@
 
 ## 验证
 
-列出实际运行的检查与结果，区分基础代码检查、Harness 联调和科研效果评测。
+列出实际运行的检查与结果，区分合成模型、真实模型、真实 IM 和线上验收。共享代码执行根 `pnpm run ci`；完整客户端另做 `typecheck`、`test:service`、`test:auth`、`build:web` 和目标界面验证。纯文档执行内容与 diff 检查。
+
+## 交接与部署
+
+是否更新 `docs/current-state.md` 和 `docs/project-log.md`？若涉及迁移、权限或线上行为，说明兼容 / 回退方法和实际部署 SHA。合并 PR 不自动部署。
 
 ## 尚未完成
 

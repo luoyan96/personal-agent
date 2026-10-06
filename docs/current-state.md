@@ -73,7 +73,7 @@
 | 版本 | 契约0.18.0、聊天1.7.0、IM桥1.0.0、SQLite迁移018；新增本人设置 / 记忆 / 修订 / 跟进4表 |
 | 本批安全恢复 | 保留现有schema18数据库；兼容57d业务镜像 `sha256:8ef9b682466d1cfd9aef7d18521db598dd42d236f28dc72c69bf9efdbba9d6fc`。schema18栅栏、暂停提醒及恢复步骤见部署记录；不要直接运行旧schema17镜像或覆盖新数据 |
 | 旧站 | `research.acceptcat.com` 独立保留；旧账号 / 模型配置不自动迁移，不在本轮升级范围 |
-| GitHub | 新 OpenIM 批次未推送。用户先看完成结果；不要把“本地已提交”写成“GitHub 已上传” |
+| GitHub | 用户指定的新主仓库为 `https://github.com/luoyan96/personal-agent`，协作主线 `main`，初始基线标签 `personal-agent-2026-10-06`；本地分支仍为 `feature/openim-client-rebuild`，发布实际远端 SHA 另核对。历史日志中的“未推送”保留其当时事实 |
 
 ## 已完成、证据与边界
 

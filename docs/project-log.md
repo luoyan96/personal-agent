@@ -1,5 +1,12 @@
 # 项目进展日志
 
+## 2026-10-06：GitHub 版本管理与多人协作入口
+
+- 用户指定 `luoyan96/personal-agent` 作为项目协作仓库。读取仓库确认公开且初始无分支，当前源码75ab9b2包含240个历史提交 / 902文件；按首次空仓库导入建立main并保留既有历史，旧research-agent-platform远端另名保留，不覆盖其代码。
+- CONTRIBUTING补齐克隆、独立副本 / 分支、前后端契约、PR审核、撤销提交和部署边界；README与当前状态给出新主仓库，PR模板增加客户端及交接检查。既有根Actions在main / PR运行，完整OpenIM客户端仍要单独类型 / 服务 / auth / Web / 界面验证，不把根CI等同客户端验证。
+- 初始协作基线标签 `personal-agent-2026-10-06`。本批只更新协作 / 交接文件与Git远端，不改变软件行为、线上787后端 / 27前端或数据库18，不重复已通过的软件全量CI、不自动部署。
+- Git外 `.runtime/personal-agent-20261006/github-publication-audit.json` 保留全部可达历史blob的高置信凭据 / 私钥格式和大文件检查；唯一私钥命中为精确公开合成TLS测试fixture，生产不引用。扫描不保证覆盖所有凭据格式。真实凭据、SQLite / 运行材料、构建产物不在本次tracked树中；GitHub远端实际SHA与检查运行状态在后续发布回执核对。
+
 ## 2026-10-06：Personal Agent 第一批开发、发布与验收
 
 - 发布收尾：11:09:21后端 / 首版前端787ca2314b24320ae0b90da4db4d1401b209f719上线，镜像e632d1c、contract0.18 / chat1.7 / schema18。备份 `/srv/research-openim-backups/20261006T030859Z` 的12hash / 9gzip / 隔离SQLite17通过，73旧表结构及全部行保持一致；源 / 容器hash、八服务 / 其他六镜像不变及精确首页通过。兼容57d-schema18镜像8ef9b682在无外网容器实际HTTP / SQLite smoke通过，不是生产全栈恢复演练。
