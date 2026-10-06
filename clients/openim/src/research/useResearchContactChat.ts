@@ -49,7 +49,7 @@ export function useResearchContactChat() {
     if (options?.requireOwnLocal && (target.contact.identity.kind !== "personal_agent" ||
       target.contact.identity.ownerMemberId !== state.actor?.member.id ||
       target.contact.profile.role !== "specialist" || target.contact.agentRuntime))
-      throw new Error("本次安排的本地 Agent 状态已变化，请从联系人资料核对后打开聊天。");
+      throw new Error("本次安排的站内 Agent 状态已变化，请从联系人资料核对后打开聊天。");
     if (
       !target.contact.allowedActions.includes("chat") ||
       target.userID !== mapping.data.peerUserID

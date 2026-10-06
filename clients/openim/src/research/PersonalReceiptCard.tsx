@@ -11,7 +11,7 @@ import { CreatedAgentChatButton } from "./CreatedAgentChatButton";
 function DelegateCard({ receipt }: { receipt: Extract<PersonalAssistantReceipt, { kind: "delegate" }> }) {
   const read = useResearchRead(() => researchApi("chatTurn", { params: { id: receipt.turnId } }), `delegated:${receipt.conversationId}:${receipt.turnId}`);
   const turn = read.data?.data;
-  const verified = turn?.conversationId === receipt.conversationId && turn.inputMessageId === receipt.messageId;
+  const verified = !!turn && turn.conversationId === receipt.conversationId && turn.inputMessageId === receipt.messageId;
   const status = verified && turn ? ({ queued: "等待 Agent 回复", running: "Agent 正在回复", succeeded: "Agent 已回复", waiting_input: "还需补充信息", unavailable: "回复服务暂不可用", failed: "本次回复失败", interrupted: "本次回复已中断", cancelled: "本次回复已取消" }[turn.status]) : receipt.status === "unavailable" ? "回复服务暂不可用" : "已安排，等待回复";
   return <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
     <p>已将本次需求安排给 <strong>{receipt.displayName}</strong>。</p>
