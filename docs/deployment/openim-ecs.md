@@ -1,6 +1,31 @@
 # 新 ECS：OpenIM 科研微信（2026-10-06）
 
-## 最新更新：Agent 联系人、接入与公共登录修复
+## 最新更新：Personal Agent 第一批流程
+
+2026-10-06 11:09:21北京时间，固定源码 `787ca2314b24320ae0b90da4db4d1401b209f719` 发布前端 / API / worker及显式018；11:16:43静态补发 `27c3279f7dc6584ebde905fd821e21f7166e5c74`，个人回执仅在助理输出显示一次、记忆 / 提醒默认简短。contract0.18 / chat1.7 / schema18；八服务运行，其他六组件镜像不变。没有新SSH、端口调整或GitHub推送。
+
+| 位置 | 实际值 |
+| --- | --- |
+| 后端current | `/opt/research-openim/releases/787ca2314b24320ae0b90da4db4d1401b209f719` |
+| API / worker镜像 | `sha256:e632d1c79499b113983bfa2d4995ff1059b518a06a6e2e4a67901c9661d91c41` |
+| 最终Nginx root | `/opt/research-openim/client-releases/27c3279f7dc6584ebde905fd821e21f7166e5c74/clients/openim/dist` |
+| 最终公网index | `ff018ec1ecaea9c079a877d5358fac7223a8e9f9124d8b3a73568fbb879b3a0b` |
+| 主批一致备份 | `/srv/research-openim-backups/20261006T030859Z` |
+| 主批Nginx备份 | `/opt/research-openim/ops/personal-agent-787ca2314b24/activate-20261006T030858Z/research-openim-production` |
+| 静态补发Nginx备份 | `/opt/research-openim/ops/compact-receipt-27c3279f7dc6-20261006T031643Z/research-openim-production` |
+| schema18兼容旧业务镜像 | `sha256:8ef9b682466d1cfd9aef7d18521db598dd42d236f28dc72c69bf9efdbba9d6fc` |
+| schema18兼容旧业务源 | `/opt/research-openim/releases/57d059e5201fc54c53bfcaeaa28765ea34397615-schema18-787ca2314b24` |
+
+- 主归档outer `849e352b75a07ae79038d247eb6c66c0a1bab5f194b7b682762591158ee01222` / helper `613ca7eb17019d7f131e17f5f27f0f6bc240de981ac3ce353ab02631557f983a`；限定6成员及内层hash、旧current / API镜像 / 前端root / 首页守卫通过。沿锁文件在既有镜像无外网构建，源 / 运行镜像hash及PDF smoke通过，无升级依赖。
+- 停本项目写入者取得八组件一致备份，12文件hash / 9gzip流CRC / 隔离SQLite恢复integrity ok及17checksums通过。018仅新增设置 / 记忆 / 修订 / 跟进4表及索引；73旧表SQL和全部行hash一致，新4表初始0行。源 / 容器hash、八服务 / healthy / HTTPS ready0.18 / 精确首页通过。同ECS备份，异地和完整组件恢复未验证。
+- schema18兼容57d镜像在network-none容器通过实际loopbackHTTP / SQLite smoke：新助手及记忆消费请求不能被旧模型重试 / 解释、用量 / 新聊天 / 记忆 / 修订保留、未发提醒暂停、旧普通聊天可用。ModelCall合成，未实际切生产演练回退。
+- **schema18禁止直接运行旧17镜像或用17备份覆盖新数据。** 全业务恢复先停API / worker / OpenIM三个写入者，核对018历史和上述固定兼容镜像；仅挂载 `/srv/research-openim/research` 为 `/data`，执行镜像内 `/app/rollback-fence.mjs --database /data/platform.sqlite --source-root /app --writers-stopped`，确认actualUsagePreserved / personalRecordsPreserved / databaseRestored=false、跟进暂停 / 个人请求栅栏。再切production镜像标签、current和Compose来源至上述兼容源 / 镜像，恢复主批Nginx备份的aa3客户端，核对schema18 / ready0.17 / 旧精确首页及其他六镜像，再启动OpenIM。实际回退代码及参数保留在 `/root/personal-agent-787ca2314b24320ae0b90da4db4d1401b209f719/deploy-personal-agent.py`；不使用 `down -v` 或覆盖当前库。
+- 仅静态展示恢复：恢复静态补发Nginx备份并test / reload，回到787首版客户端、index `c218ced4289772e30fe9a3c3195bf4c4400c1b98aa62879fa49244eee019aeb2`，保留后端0.18 / schema18及八镜像。补发outer `f27ff8fd5a3d0790addda53ad8e280f00c33e2df4dca292556418ab329a3b701` / helper `7996753351d583e404d6d54bcdc3bec3d42476680e1b1bec05618375c4fa5a43` 的限定5成员、源 / index / www-data / 八镜像不变核验通过。
+- 云端独立合成账号12门禁通过：真实HTTPS / React / OpenIM SDK，无Key聊天记忆保存、UI保存、版本纠正、设置、可见提醒；关闭页面到期canonical写入一次、IM实际sent、SDK重开可见、完成并退出。最终静态3项通过：回执仅输出一次且简短、详情可打开、重新登录看到纠正的偏好。未调用真实厂商，未改用户Key / 账号；模型匹配 / 复杂群质量、手机push、云重启 / 双worker、原生安装包仍另验。
+- 本地13组实际路由 / HTTP / SQLite界面、后端17专项 + 同空间协作1项通过，SDK / ModelCall合成；共享CI521 + 2、客户端类型 / Web / 四SDK通过。所有failed和harness修正保留。线上pageerror0，SDK worker的map(null) console错误仍记录、原因未定，不称console干净。
+- 唯一合成账号用既有维护CLI精确停用，活跃会话 / IM lease / 未发active提醒均0，测试历史保留。本地helper和隔离浏览器停止。Git外 `.runtime/personal-agent-20261006/{deployment-verified,compact-deployment-verified,prepared,cloud-cleanup-verified}.json`、`cloud-1022cfe0/report.json`及`cloud-compact/report.json` / 截图。后续文档提交不改变软件SHA。
+
+## 历史更新：Agent 联系人、接入与公共登录修复
 
 2026-10-06 09:33:52 北京时间，固定软件 `57d059e5201fc54c53bfcaeaa28765ea34397615` 整体上线；09:57:55 静态补发 `aa3c0f13e257c8ac463ee5800cccdea255e6a07b` 修复嵌套公共登录路由。当前API / worker为57d，契约0.17.0 / chat1.6 / schema17；前端为aa3。
 

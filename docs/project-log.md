@@ -1,6 +1,12 @@
 # 项目进展日志
 
-## 2026-10-06：Personal Agent 第一批功能整合与发布准备
+## 2026-10-06：Personal Agent 第一批开发、发布与验收
+
+- 发布收尾：11:09:21后端 / 首版前端787ca2314b24320ae0b90da4db4d1401b209f719上线，镜像e632d1c、contract0.18 / chat1.7 / schema18。备份 `/srv/research-openim-backups/20261006T030859Z` 的12hash / 9gzip / 隔离SQLite17通过，73旧表结构及全部行保持一致；源 / 容器hash、八服务 / 其他六镜像不变及精确首页通过。兼容57d-schema18镜像8ef9b682在无外网容器实际HTTP / SQLite smoke通过，不是生产全栈恢复演练。
+- 云端独立合成账号12门禁通过：真实HTTPS / React / SDK，无Key聊天记忆、UI保存 / API纠正 / 设置、提醒可见；关闭页面到期canonical写一次、实际IMsent、SDK重开可见、完成并退出。未借用用户Key / 调用厂商模型，任务匹配真实质量未验证。
+- 首轮线上截图发现回执在人与助理两端重复，改为只在输出显示，偏好 / 提醒简短并保留详情。27c3279f7dc6584ebde905fd821e21f7166e5c74在11:16:43静态上线，后端与八镜像不变，无迁移 / 重启。新客户端类型 / Web / 四SDK及线上3定向复验通过：只显示一次、详情可访问、纠正偏好重新登录仍在；纯客户端展示改动不重复已通过根CI。
+- 线上pageerror0；SDK worker `Cannot read properties of null (reading 'map')` console错误保留，原因未定。当前消息 / 提醒流程实际通过，后续凭证据定位，不称console干净。唯一合成账号退出并精确停用，活跃会话0 / IM lease0 / 未发active提醒0、历史保留。真实账号 / 密码 / Key未读或改，本地helper与测试浏览器停止，代理云标签收尾关闭；无原生包 / GitHub推送 / SSH或端口变更。
+- 精确版本及恢复方法见[当前状态](current-state.md)和[ECS记录](deployment/openim-ecs.md)。后续优先跨个人空间好友任务群的共享 / 同意 / 材料边界，再验证真实模型匹配、长期偏好效果及反馈复用；完整Personal Agent主线仍未全部完成。
 
 - 用户授权开始改造；继续由既有前端 / 后端AI分工，整合实际本人记忆、专项转交、服务端一次性提醒与“关于我”界面，contract0.18 / chat1.7 / schema018。没有新建外部AI窗口、模型提供商、权限或Codex定时任务。
 - 后端来源ab6d25d / 293d707 / 9f1be41，前端来源3723d90 / 1ba8919 / 434a16e / b4aa0c6及说明cde7393。总控根CI第一次被新测试隐式数组类型挡住；补数组类型后又需非空索引，随后发现旧apps/web版本断言仍为0.17，均只修测试声明并保留失败日志。
@@ -8,7 +14,7 @@
 - 后端17项最终专项、同空间协作1项与实际worker / HTTP / SQLite通过，ModelCall合成。完整已有档案5项 + 偏好3项在原4000预算内reserve2679 / output cap1321；当前请求、档案、记忆不截断，省略候选明确标识。父子请求共用root ledger，child重试后父回执引用最新实际turn。独立偏好并存、纠正 / 撤回、来源保留、任务版本 / 完成 / ACL、重启 / 双worker提醒去重和旧017文档兼容均有证据。
 - 前端13个必要场景分阶段通过：真实生产HashRouter / React / loopbackHTTP / SQLite，SDK / session / mapping和模型合成。桌面 / 320、版本管理、候选明确确认、关闭 / 换tab / 换账号的迟响应、同身份回执与实际路由闭合。Antd选择器、fixture分页 / 顶部标识、候选origin和反复本地登录429等harness原失败保留；无未捕获pageerror，库警告保留。超过30条UI游标遍历、真实厂商 / 云IM与设备推送不据此计通过。
 - schema18兼容旧业务源57d的实际HTTP / SQLite回退验证通过：保留用量、个人记忆 / 修订 / 新聊天；暂停未发提醒并栅栏个人流程及记忆消费请求；旧普通聊天仍可用。5个部署helper守卫通过。当前库不能回退覆盖成017；新版本激活会显式备份和迁移，云端实际结果随后追加，不预写上线成功。
-- 总控证据 `.runtime/personal-agent-20261006`，后端证据 `.runtime/personal-assistant-20261006/backend-review.json`，前端 `frontend-review/summary.json`。当前线上仍57d API / aa3前端；未推GitHub、未构建原生安装包。跨工作空间任务群、完整行为 / 性格学习、条件 / 周期跟进及策略改善继续后续，不将本批有限文字流程称为完整Personal Agent。
+- 总控证据 `.runtime/personal-agent-20261006`，后端证据 `.runtime/personal-assistant-20261006/backend-review.json`，前端 `frontend-review/summary.json`。发布前线上为57d API / aa3前端，最终发布事实见上文；未推GitHub、未构建原生安装包。跨工作空间任务群、完整行为 / 性格学习、条件 / 周期跟进及策略改善继续后续，不将本批有限文字流程称为完整Personal Agent。
 
 ## 2026-10-06：明确Personal Agent最终目标（仅规划与交接）
 
