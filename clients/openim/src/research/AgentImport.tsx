@@ -6,7 +6,7 @@ import { useResearchStore } from "./store";
 import { useResearchContactChat } from "./useResearchContactChat";
 
 /** Portable public personality only; importing never transmits credentials. */
-export function AgentImport({ onProfile }: { onProfile: (id: string) => void }) {
+export function AgentImport({ onProfile, active = true }: { onProfile: (id: string) => void; active?: boolean }) {
   const [json, setJson] = useState("");
   const [target, setTarget] = useState<{ id: string; name: string; reused: boolean }>();
   const [busy, setBusy] = useState(false), [failure, setFailure] = useState("");
@@ -16,8 +16,9 @@ export function AgentImport({ onProfile }: { onProfile: (id: string) => void }) 
     ++epoch.current; setTarget(undefined); setJson(""); setFailure(""); setBusy(false);
     return () => { ++epoch.current; };
   }, [generation]);
+  useLayoutEffect(() => { ++epoch.current; setBusy(false); return () => { ++epoch.current; }; }, [active]);
   const run = async () => {
-    if (busy) return;
+    if (busy || !active) return;
     const ticket = epoch.current, actor = useResearchStore.getState().actor?.member.id;
     const isCurrent = () => ticket === epoch.current && generation === useResearchStore.getState().generation && actor === useResearchStore.getState().actor?.member.id;
     setBusy(true); setFailure("");

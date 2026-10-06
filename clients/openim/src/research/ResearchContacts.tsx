@@ -12,6 +12,7 @@ import { ContactRow } from "./ContactRow";
 import { ContactFinder } from "./ContactFinder";
 import { useResearchContactChat } from "./useResearchContactChat";
 import { AgentImport } from "./AgentImport";
+import { ExternalAgentSetup } from "./ExternalAgentSetup";
 
 export function ResearchContacts() {
   const [params, setParams] = useSearchParams();
@@ -20,6 +21,7 @@ export function ResearchContacts() {
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const [addTab, setAddTab] = useState("friend");
+  const [integration, setIntegration] = useState("profile");
   const [pageFailure, setPageFailure] = useState("");
   const [selectedContact, setSelectedContact] = useState<string>();
   const profile = useRef<OverlayVisibleHandle>(null);
@@ -111,8 +113,8 @@ export function ResearchContacts() {
       <Modal title="添加联系人" open={adding} onCancel={() => setAdding(false)} footer={null} width={900} destroyOnClose>
         <Tabs activeKey={addTab} onChange={setAddTab} items={[
           { key: "friend", label: "朋友与已有 Agent", children: <ContactFinder onOpen={openProfile} /> },
-          { key: "agent", label: "创建 Agent", children: <div className="space-y-4"><AgentStarters onChanged={refresh} /><Button onClick={() => { setAdding(false); setSavedId(undefined); setCreating(true); }}>创建自定义 Agent</Button></div> },
-          { key: "import", label: "导入与接入", children: <AgentImport onProfile={openProfile} /> },
+          { key: "agent", label: "创建 Agent", children: <div className="space-y-4"><AgentStarters active={adding && addTab === "agent"} onChanged={refresh} /><Button onClick={() => { setAdding(false); setSavedId(undefined); setCreating(true); }}>创建自定义 Agent</Button></div> },
+          { key: "import", label: "导入与接入", children: <div className="space-y-4"><Segmented value={integration} onChange={value => setIntegration(String(value))} options={[{ value: "profile", label: "导入人设" }, { value: "external", label: "接入外部 Agent" }]} />{integration === "profile" ? <AgentImport active={adding && addTab === "import"} onProfile={openProfile} /> : <ExternalAgentSetup active={adding && addTab === "import"} onProfile={openProfile} />}</div> },
         ]} />
       </Modal>
       <Modal

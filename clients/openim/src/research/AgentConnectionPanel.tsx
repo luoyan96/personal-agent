@@ -6,13 +6,17 @@ import { serviceErrorMessage } from "./api-errors";
 import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
 
-export function AgentConnectionPanel({ contactId, onChanged }: { contactId: string; onChanged: () => Promise<void> }) {
+export function AgentConnectionPanel({ contactId, onChanged, active = true }: { contactId: string; onChanged: () => Promise<void>; active?: boolean }) {
   const generation = useResearchStore(s => s.generation), epoch = useRef(0);
-  const read = useResearchRead(() => researchApi("agentConnection", { params: { id: contactId } }), contactId);
+  const read = useResearchRead(() => researchApi("agentConnection", { params: { id: contactId } }), contactId, active);
   const [form, setForm] = useState({ endpoint: "", model: "", apiKey: "", enabled: true, allowAcceptedContacts: false, removeApiKey: false });
   const [version, setVersion] = useState(0), [initialized, setInitialized] = useState(false);
   const [dirty, setDirty] = useState(false), [busy, setBusy] = useState(false), [failure, setFailure] = useState(""), [saved, setSaved] = useState("");
-  useLayoutEffect(() => { ++epoch.current; return () => { ++epoch.current; }; }, [contactId, generation]);
+  useLayoutEffect(() => {
+    ++epoch.current; setForm({ endpoint: "", model: "", apiKey: "", enabled: true, allowAcceptedContacts: false, removeApiKey: false });
+    setInitialized(false); setVersion(0); setDirty(false); setBusy(false); setFailure(""); setSaved("");
+    return () => { ++epoch.current; };
+  }, [contactId, generation, active]);
   useLayoutEffect(() => {
     if (!read.data || initialized) return;
     const c = read.data.data.connection;
@@ -21,7 +25,7 @@ export function AgentConnectionPanel({ contactId, onChanged }: { contactId: stri
   }, [read.data, initialized]);
   const change = (patch: Partial<typeof form>) => { setForm(s => ({ ...s, ...patch })); setDirty(true); setSaved(""); };
   const command = async (action: "save" | "probe" | "disconnect") => {
-    if (busy || !initialized) return;
+    if (busy || !initialized || !active) return;
     const ticket = epoch.current, actorId = useResearchStore.getState().actor?.member.id;
     const current = () => ticket === epoch.current && useResearchStore.getState().generation === generation && useResearchStore.getState().actor?.member.id === actorId;
     setBusy(true); setFailure(""); setSaved("");

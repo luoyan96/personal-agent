@@ -316,7 +316,7 @@ export const ResearchUserCard = forwardRef<
               canManage
             />
           )}
-          {connection && contact.identity.kind === "personal_agent" && contact.profile.role === "specialist" && contact.identity.ownerMemberId === actor?.member.id && <AgentConnectionPanel key={`${contact.id}:${generation}`} contactId={contact.id} onChanged={refresh} />}
+          {connection && contact.identity.kind === "personal_agent" && contact.profile.role === "specialist" && contact.identity.ownerMemberId === actor?.member.id && <AgentConnectionPanel key={`${contact.id}:${generation}`} active={isOverlayOpen} contactId={contact.id} onChanged={refresh} />}
         </div>
       )}
     </Modal>

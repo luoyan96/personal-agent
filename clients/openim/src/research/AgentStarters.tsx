@@ -11,11 +11,11 @@ import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
 import { useResearchContactChat } from "./useResearchContactChat";
 
-export function AgentStarters({ onChanged }: { onChanged: () => Promise<void> }) {
+export function AgentStarters({ onChanged, active = true }: { onChanged: () => Promise<void>; active?: boolean }) {
   const actorId = useResearchStore((state) => state.actor?.member.id);
   const generation = useResearchStore((state) => state.generation);
   const location = useLocation();
-  const scope = `${generation}:${actorId}:${location.pathname}`;
+  const scope = `${generation}:${actorId}:${location.pathname}:${active}`;
   const currentScope = useRef(scope);
   currentScope.current = scope;
   const epoch = useRef(0);
