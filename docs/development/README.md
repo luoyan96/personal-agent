@@ -1,9 +1,9 @@
 # 前后端分工与阶段验收
 
-2026-10-06最新本地批次：[连续Agent私聊](continuous-chat.md)，软件1eb9f8d，站内连发合并、实际渐进回复、运行中调整与刷新待发恢复已验收。contract0.19 / chat1.8 / schema18无迁移；完整根CI534 + 2、客户端类型 / Web / 四SDK资源通过。真实HTTP / SQLite与合成模型 / SDK边界见统一状态，本批未部署，生产仍contract0.18 / schema18。
+2026-10-06最新发布：[连续Agent私聊](continuous-chat.md)，固定源码 `2e696881583842eb0e251d222083bccd925524fe` 已上线，contract0.19 / chat1.8 / schema18无迁移。同一源码三平台完整CI534 + 2及客户端类型 / Web / 四SDK资源通过；既有登录账号合成文字的真实模型连发、运行中补充、实际渐进、OpenIM最终投递与刷新去重通过。长文预算失败及原中止证据保留，准确范围与恢复见[统一状态](../current-state.md)。
 
 
-2026-10-06最新交接：最终产品为以个人为中心的Personal Agent，统一人 / Agent联系人，按任务类型 / 难度组织协作，积累获准长期记忆并主动跟进 / 持续改进。先读[产品规划v0.7](../product-plan.md)、[PA1—PA4主线](../roadmap.md)与[统一状态](../current-state.md)。已上线API / worker57d059e、客户端aa3c0f1、contract0.17 / schema17；本次仅更新目标文档。每批再冻结前后端范围 / 契约 / 验收，自动记忆和个人主动跟进未计完成。下文旧“最新 / 当前”保留其日期基线。
+历史规划交接（2026-10-06早期基线）：最终产品为以个人为中心的Personal Agent，统一人 / Agent联系人，按任务类型 / 难度组织协作，积累获准长期记忆并主动跟进 / 持续改进。先读[产品规划v0.7](../product-plan.md)、[PA1—PA4主线](../roadmap.md)与[统一状态](../current-state.md)。已上线API / worker57d059e、客户端aa3c0f1、contract0.17 / schema17；本次仅更新目标文档。每批再冻结前后端范围 / 契约 / 验收，自动记忆和个人主动跟进未计完成。下文旧“最新 / 当前”保留其日期基线。
 
 2026-10-05 当前接手先读[统一状态](../current-state.md)与[进展日志](../project-log.md)。新 OpenIM 客户端和服务已在独立 ECS 实际部署，详见[新站验收](../deployment/openim-ecs.md)；下文保留此前批次。当前注册反馈按最新用户要求统一为最少 8 位密码，前后端分别修复和验收。
 

@@ -1,14 +1,14 @@
 # 科研微信完整 OpenIM 客户端
 
-2026-10-06当前发布：API / worker787ca23、最终客户端27c3279、contract0.18 / chat1.7 / schema18。个人助理顶部“关于我”管理本人长期偏好、候选和一次性跟进。偏好 / 提醒回执只在助理输出出现一次、默认简短，详情仍可打开；专项安排保留真实Agent / 会话 / child状态。云端独立合成账号的记忆保存 / 持久纠正、关闭页面后的后台提醒实际IMsent / SDK重开可见、最终回执3项复验通过；模型匹配本批仍为本地合成，手机push / 原生包另验。精确镜像、备份及边界见[统一状态](../../docs/current-state.md)。
+2026-10-06当前发布：客户端、API / worker均为 `2e696881583842eb0e251d222083bccd925524fe`，contract0.19 / chat1.8 / schema18无迁移，18:16:59北京时间上线。真实模型连发合并、生成中补充、公开文字渐进、最终OpenIM投递与刷新去重通过。既有长期偏好 / 一次性提醒保留；长文仍可能触及4000 / 90秒预算。精确版本、证据、恢复方法及原生App限制见[统一状态](../../docs/current-state.md)。
 
 此目录保留 OpenIM `62d7ca7` 的完整 React/Electron 工程，来源与修改位置见 [ORIGIN.md](./ORIGIN.md)。原 README 和许可原文保留；科研功能说明以本文件为准。
 
 正式新入口的完整网页资源、Nginx 同源反代、HTTPS/WSS/媒体配置和验收顺序见[部署说明](deploy/README.md)。新地址准备状态不等于服务已连接；真实双账号 SDK 验收结果另行记录。
 
-## 当前本地候选：连续 Agent 私聊（2026-10-06，未部署）
+## 当前发布：连续 Agent 私聊（2026-10-06，已上线）
 
-统一软件 `1eb9f8d42e39031442a79c663f400c7facf1dda1` / `feature/continuous-agent-chat`，共享契约0.19 / chat1.8 / schema18。生产仍为顶部0.18组合，新客户端须先接同版新API / worker，不能静态单独上线。
+统一部署软件 `2e696881583842eb0e251d222083bccd925524fe`，实现源1eb9f8d，PR3 / PR2已合并；共享契约0.19 / chat1.8 / schema18。API / worker先成对升级后启用客户端，当前线上已全部同版。
 
 - 文本发送捕获当次草稿、目标和请求，使用独立幂等键顺序提交。输入和发送不等待模型；早一条入站失败会保留并暂停后续消息，明确重试或不发送，保持原请求及顺序。离开会话不会自动重放。
 - 实际受权progress在聊天区渐进展示，不重新挂载编辑器 / 抢焦点；正在生成时可继续补充。旧轮失效后清除暂存回复，最终消息按canonical ID去重；只从实际当前human locator恢复未完工作，历史终态不制造新暂存气泡。
@@ -17,7 +17,7 @@
 
 客户端最终类型 / Web / 四固定SDK资源通过，日志在Git外 `.runtime/continuous-chat-20261006/frontend/{typecheck-final.log,build-web-final.log,summary.json}`。实际生产HashRouter / QueryChat / CKEditor和loopback HTTP / SQLite的必要场景分阶段闭合，ModelCall / SDK与映射明确合成：连发、编辑焦点、纠正 / fence、canonical只一次、失败暂停 / 同key重试、离开返回、整页刷新及320px；最终actual-58545307另确认刷新无自动POST、原key/body不变、SQLite仅两条人类消息，实际UI退出 / 第二账号不见旧草稿与待发、损坏缓存安全。actual-7a7cc85a确认桌面 / 320进度行不重复、编辑器189px及UI退出。
 
-原failed报告保留：同样synthetic回答文本计数、fixture新账号初始化 / hydration / 空白换行、桌面“更多”选择器、关闭路由harness等；修正后通过证据另存，不宣称一次完整浏览器套件通过。有既有Router / Antd日志及故意网络拒绝 / 匿名401；pageerror0不等于console0。自有浏览器与Vite已关闭。本批没有云端模型 / IM投递、原生安装包或生产发布。
+原failed报告保留：同样synthetic回答文本计数、fixture新账号初始化 / hydration / 空白换行、桌面“更多”选择器、关闭路由harness等；修正后通过证据另存，不宣称一次完整浏览器套件通过。有既有Router / Antd日志及故意网络拒绝 / 匿名401；pageerror0不等于console0。自有浏览器与Vite已关闭。该段本地验收本身不证明云端模型 / IM投递；后续总控已实际发布并验证真实模型与OpenIM，见顶部统一状态。原生安装包尚未验收。
 
 ## 上一批本地候选：个人助理、长期记忆与跟进（2026-10-06）
 

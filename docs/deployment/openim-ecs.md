@@ -1,6 +1,28 @@
 # 新 ECS：OpenIM 科研微信（2026-10-06）
 
-## 最新更新：Personal Agent 第一批流程
+## 最新发布：连续 Agent 私聊（2026-10-06）
+
+18:16:59北京时间，用户明确授权后，固定源码 `2e696881583842eb0e251d222083bccd925524fe` 已同时部署客户端、API及worker。contract0.19.0 / chat1.8.0 / schema18，无迁移；完整CI同一源码三平台通过。PR3 / PR2已合并，发布标签 `personal-agent-2026-10-06.2` 指向部署源码。真实模型 / OpenIM结果见[当前状态](../current-state.md)。
+
+| 位置 | 实际值 |
+| --- | --- |
+| 后端current | `/opt/research-openim/releases/2e696881583842eb0e251d222083bccd925524fe` |
+| API / worker镜像 | `sha256:63915f409f27dd18f1ab14fc8cdd3f5e1cf2da4de16bbda80e620a5a90c37d06` |
+| Nginx root | `/opt/research-openim/releases/2e696881583842eb0e251d222083bccd925524fe/clients/openim/dist` |
+| 公网index SHA256 | `7df13778196d25cfcb8e37e54015c9254a6edaeae1616184270e7fa8318c1be9` |
+| 停写一致备份 | `/srv/research-openim-backups/20261006T101640Z` |
+| Nginx恢复副本 | `/opt/research-openim/ops/continuous-chat-2e6968815838/activate-20261006T101638Z/research-openim-production` |
+| 操作目录 | `/opt/research-openim/ops/continuous-chat-2e6968815838` |
+| 实际helper | `/root/continuous-chat-2e696881583842eb0e251d222083bccd925524fe/deploy-continuous-chat-v4.py` |
+| helper SHA256 | `668d9a3080c993c958e970b5ef6306cdf7b2a416d92aca784911fa23cfcee8bc` |
+
+- 先成对升级API / worker再启用新客户端。旧0.18客户端兼容新API，新客户端不连接旧严格0.18 body。停止本项目写入者取得一致备份；12checksum / 9gzip流CRC / 隔离SQLite恢复integrity及18迁移checksums通过，78表SQL与全部行hash在启用写入前一致。八服务运行 / 无OOM、healthy / HTTPS ready0.19及精确首页通过，其余六镜像未变。未新增SSH授权、端口或修改私有模型配置。
+- 准备阶段原失败保持：v1 release根700使www-data不可读；v2原归档已存在；v3 Windows工作树四个CRLF文件hash与固定Git归档LF不同。最终新release根755、匹配归档hash复用 / 新文件独占写入、源文件依据固定Git blob生成canonical manifest，并检查源 / 镜像 / 运行容器及www-data可读才激活。v4 helper3项本地归档 / 全表hash / 实际SQLite栅栏门禁通过；没有在失败准备阶段切换生产。
+- **本批恢复保持现有schema18库，不恢复旧快照。** 停API、worker及OpenIM三个写入者，核对18迁移checksums / integrity；栅栏running为interrupted并保留未知用量，取消不兼容未启动continuous或无输出waiting轮次，清除其暂存正文并推进revision。保留实际 / 未知usage、不退款，消息 / 记忆 / outbox和其余记录保持。helper的自动fallback随后恢复原镜像 `sha256:e632d1c79499b113983bfa2d4995ff1059b518a06a6e2e4a67901c9661d91c41`、current `/opt/research-openim/releases/787ca2314b24320ae0b90da4db4d1401b209f719` 与上述Nginx副本，前端回到27c3279 / index `ff018ec1ecaea9c079a877d5358fac7223a8e9f9124d8b3a73568fbb879b3a0b`；再核对八服务、healthy / ready0.18、精确首页和其余六镜像。本次没有实际切生产回退演练，SQLite栅栏已本地验证；禁止 `down -v`、直接运行旧schema17镜像或覆盖当前数据库。
+- 真实云端：既有已登录个人助理发送合成文字，两条短时输入合并一次调用，运行中补充栅栏旧轮，新轮成功；final前实际显示公开delta，最终OpenIM sent，刷新回复1份 / 暂存0。两个长文请求BUDGET_EXCEEDED保留，后续短请求成功，4000 / 90秒仍有限制。不是新建隔离账号，未读取 / 改变Key或密码；原生App、实时语音、完整Muse并行与外部Agent真实流式另验。
+- Git外证据 `D:/deepseek-agent/.runtime/continuous-chat-release-20261006` 的 `deployment-verified.json`、`prepared.json`、`public-final.json`、`cloud-turns-final.json`、`live-stream-actual.json`、`live-refresh-proof.json`及截图；原归档、manifest修正收据、三次prepare日志及中止selector报告保留。完整组件恢复 / 异地备份未完成。以下旧恢复说明只对应各自历史批次，不能代替本节当前恢复组合。
+
+## 历史更新：Personal Agent 第一批流程
 
 2026-10-06 11:09:21北京时间，固定源码 `787ca2314b24320ae0b90da4db4d1401b209f719` 发布前端 / API / worker及显式018；11:16:43静态补发 `27c3279f7dc6584ebde905fd821e21f7166e5c74`，个人回执仅在助理输出显示一次、记忆 / 提醒默认简短。contract0.18 / chat1.7 / schema18；八服务运行，其他六组件镜像不变。没有新SSH、端口调整或GitHub推送。
 

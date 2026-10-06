@@ -2,11 +2,11 @@
 
 **最终目标是以个人为中心的Personal Agent：采用类似微信的交流方式，人与Agent共用通讯录；个人助理根据任务类型和难度组织协作，积累获准的长期记忆，持续推进、主动跟进并从反馈中改进。** 科研小组是第一个验证场景，个人可以独立使用。
 
-主代码仓库为 [luoyan96/personal-agent](https://github.com/luoyan96/personal-agent)，`main` 是共同开发主线。每个人 / AI 用独立分支提交 PR，开发环境、客户端检查和版本回退见[协作说明](CONTRIBUTING.md)。当前协作基线标签 `personal-agent-2026-10-06.1`，包含[三平台CI修复](https://github.com/luoyan96/personal-agent/pull/1)；初始导入标签保留。GitHub 代码更新和阿里云部署分别记录。
+主代码仓库为 [luoyan96/personal-agent](https://github.com/luoyan96/personal-agent)，`main` 是共同开发主线。每个人 / AI 用独立分支提交 PR，开发环境、客户端检查和版本回退见[协作说明](CONTRIBUTING.md)。当前发布标签 `personal-agent-2026-10-06.2` 指向已部署2e69688；此前协作基线 `.1` 与初始导入标签保留。GitHub代码更新和阿里云部署分别记录。
 
-2026-10-06本地新增[连续Agent私聊](docs/development/continuous-chat.md)：可以连发补充、模型实际公开文字逐步显示、运行中调整方向；草稿 / 待发记录可在当前账号标签页刷新恢复，原请求手动重试。软件1eb9f8d，分支 `feature/continuous-agent-chat`，contract0.19 / chat1.8 / schema18无迁移。最终完整根CI534 + 2及客户端类型 / Web / 四SDK资源通过；实际本地HTTP / SQLite与生产React路由分阶段验收，模型 / SDK合成。**本批未部署，线上仍为下面的0.18版本。** 精确代码、证据及下一步见[当前状态](docs/current-state.md)。
+2026-10-06 18:16:59北京时间，[连续Agent私聊](docs/development/continuous-chat.md)已上线：可以连发补充、模型实际公开文字逐步显示、生成中调整方向；草稿 / 待发记录可在当前账号标签页刷新恢复，原请求手动重试。客户端、API / worker均为 `2e696881583842eb0e251d222083bccd925524fe`，contract0.19 / chat1.8 / schema18无迁移。同一源码三平台完整CI与客户端检查通过；真实模型增量、运行中补充、OpenIM投递和刷新去重已线上验收。长文仍可能触及4000 / 90秒预算，失败记录保留。精确镜像、证据与恢复步骤见[当前状态](docs/current-state.md)。
 
-2026-10-06 Personal Agent 第一批功能已上线：本人长期偏好的保存 / 纠正 / 撤回、专项工作转交站内 Agent、服务端一次性提醒及“关于我”管理。API / worker787ca23、最终客户端27c3279，契约0.18 / 聊天1.7 / 显式迁移018。根CI521 + 2、客户端构建与本地13组界面流程通过；云端合成账号实际偏好保存 / 持久纠正、关闭页面后的提醒 / OpenIM投递 / 重开可见和最终简短回执分别通过。任务匹配采用合成模型验证，本批未调用真实厂商；完整行为学习、跨个人空间任务群、条件 / 周期跟进与策略自我改进仍在后续。新AI先读[当前状态](docs/current-state.md)、[产品规划v0.7](docs/product-plan.md)与[Personal Agent开发主线](docs/roadmap.md)。
+此前2026-10-06 Personal Agent 第一批功能已上线：本人长期偏好的保存 / 纠正 / 撤回、专项工作转交站内 Agent、服务端一次性提醒及“关于我”管理。API / worker787ca23、最终客户端27c3279，契约0.18 / 聊天1.7 / 显式迁移018。根CI521 + 2、客户端构建与本地13组界面流程通过；云端合成账号实际偏好保存 / 持久纠正、关闭页面后的提醒 / OpenIM投递 / 重开可见和最终简短回执分别通过。任务匹配采用合成模型验证，本批未调用真实厂商；完整行为学习、跨个人空间任务群、条件 / 周期跟进与策略自我改进仍在后续。新AI先读[当前状态](docs/current-state.md)、[产品规划v0.7](docs/product-plan.md)与[Personal Agent开发主线](docs/roadmap.md)。
 
 ## 历史更新：文件聊天
 
