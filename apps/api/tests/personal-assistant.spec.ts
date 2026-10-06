@@ -239,6 +239,13 @@ describe('personal assistant actual HTTP/SQLite; model callbacks are synthetic',
   expect(await new PersonalFollowupWorker(s.db,s.config,()=>due+1).tick()).toBe(true)
   expect((await s.call('personalFollowup',null,{id:reminder.id})).value.data).toMatchObject({status:'completed',messageId:null});expect(s.count('chat_messages')).toBe(0);expect(s.count('chat_turns')).toBe(0)
  })
+ it('reports the real specialist limit without an orphan or incompatible persisted turn',async()=>{
+  const s=await setup(),own=await s.own()
+  for(let index=0;index<20;index++)expect((await s.call('createPersonalAgent',{...profile,displayName:`已有文本角色${index}`})).status).toBe(201)
+  const sent=await s.send(own.conversation.id,'帮我分析一个新主题')
+  await s.tick(async()=>modelResult(JSON.stringify({kind:'delegate',contactId:null,profile:{...profile,displayName:'新角色'}})))
+  expect(await s.turn(sent.turn.id)).toMatchObject({status:'failed',failure:'AGENT_LIMIT_REACHED',outputMessageId:null});expect(s.specialists()).toBe(20);expect(s.count('chat_conversations')).toBe(1);s.legacyStored()
+ })
 })
 it('parses full local/relative dates, rejects DST gaps/overlaps, and keeps explicit offsets',()=>{
  const now=Date.parse('2026-10-06T06:00:00Z')
