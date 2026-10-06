@@ -2,11 +2,11 @@
 
 **最终目标是以个人为中心的Personal Agent：采用类似微信的交流方式，人与Agent共用通讯录；个人助理根据任务类型和难度组织协作，积累获准的长期记忆，持续推进、主动跟进并从反馈中改进。** 科研小组是第一个验证场景，个人可以独立使用。
 
-主代码仓库为 [luoyan96/personal-agent](https://github.com/luoyan96/personal-agent)，`main` 是共同开发主线。每个人 / AI 用独立分支提交 PR，开发环境、客户端检查和版本回退见[协作说明](CONTRIBUTING.md)。当前发布标签 `personal-agent-2026-10-06.2` 指向已部署2e69688；此前协作基线 `.1` 与初始导入标签保留。GitHub代码更新和阿里云部署分别记录。
+主代码仓库为 [luoyan96/personal-agent](https://github.com/luoyan96/personal-agent)，`main` 是共同开发主线。每个人 / AI 用独立分支提交 PR，开发环境、客户端检查和版本回退见[协作说明](CONTRIBUTING.md)。当前发布标签 `personal-agent-2026-10-06.4` 指向已部署客户端622e84b；API代码与已部署94b26d1相同；此前协作基线 `.1` 与初始导入标签保留。GitHub代码更新和阿里云部署分别记录。
 
-2026-10-06[文档阅读上下文修复](docs/development/document-reading.md)已合入main，**尚未上线**：固定源码 `94b26d1d4871c45ace12a86f93d4c19cce377c4d`、[PR5](https://github.com/luoyan96/personal-agent/pull/5)、三平台完整CI537 + 2与客户端检查通过。新附件阅读使用有界的独立预算，全文优先于旧聊天历史；界面直接区分全部可提取文字与部分片段。真实解析13页 / 49,622字符合成PDF并逐页送入合成模型的检查通过，不代表真实厂商或云端验收。普通聊天仍为4000 / 90秒，旧请求预算不追溯增加。发布包已准备，待恢复既有Workbench连接；状态以[当前状态](docs/current-state.md)为准。
+2026-10-06[文档全文阅读](docs/development/document-reading.md)已上线：21:02:07发布API / worker94b26d1，21:25:34补发继续入口，22:01:49客户端622e84b补齐旧消息停留与同身份跟随，旧回执阅读全文实际按钮验收通过。真实既有IDE论文全部5页 / 29,415字符，以及真实上传13页 / 49,622字符合成PDF的模型阅读、末页标记、OpenIM投递 / 刷新去重通过；不是只按解析总数宣称读完。三批软件三平台完整CI及独立客户端检查通过，[PR5](https://github.com/luoyan96/personal-agent/pull/5) / [PR7](https://github.com/luoyan96/personal-agent/pull/7) / [PR8](https://github.com/luoyan96/personal-agent/pull/8)已合入main。新附件正文优先、独立有界预算，旧解析源可新请求继续；普通聊天仍4000 / 90秒，旧回复预算不追溯增加。扫描OCR / 图像 / 版式及无限上下文未实现。精确版本、恢复与证据见[当前状态](docs/current-state.md)。
 
-2026-10-06 18:16:59北京时间，[连续Agent私聊](docs/development/continuous-chat.md)已上线：可以连发补充、模型实际公开文字逐步显示、生成中调整方向；草稿 / 待发记录可在当前账号标签页刷新恢复，原请求手动重试。客户端、API / worker均为 `2e696881583842eb0e251d222083bccd925524fe`，contract0.19 / chat1.8 / schema18无迁移。同一源码三平台完整CI与客户端检查通过；真实模型增量、运行中补充、OpenIM投递和刷新去重已线上验收。长文仍可能触及4000 / 90秒预算，失败记录保留。精确镜像、证据与恢复步骤见[当前状态](docs/current-state.md)。
+此前2026-10-06 18:16:59北京时间，[连续Agent私聊](docs/development/continuous-chat.md)已上线：可以连发补充、模型实际公开文字逐步显示、生成中调整方向；草稿 / 待发记录可在当前账号标签页刷新恢复，原请求手动重试。客户端、API / worker均为 `2e696881583842eb0e251d222083bccd925524fe`，contract0.19 / chat1.8 / schema18无迁移。同一源码三平台完整CI与客户端检查通过；真实模型增量、运行中补充、OpenIM投递和刷新去重已线上验收。长文仍可能触及4000 / 90秒预算，失败记录保留。精确镜像、证据与恢复步骤见[当前状态](docs/current-state.md)。
 
 此前2026-10-06 Personal Agent 第一批功能已上线：本人长期偏好的保存 / 纠正 / 撤回、专项工作转交站内 Agent、服务端一次性提醒及“关于我”管理。API / worker787ca23、最终客户端27c3279，契约0.18 / 聊天1.7 / 显式迁移018。根CI521 + 2、客户端构建与本地13组界面流程通过；云端合成账号实际偏好保存 / 持久纠正、关闭页面后的提醒 / OpenIM投递 / 重开可见和最终简短回执分别通过。任务匹配采用合成模型验证，本批未调用真实厂商；完整行为学习、跨个人空间任务群、条件 / 周期跟进与策略自我改进仍在后续。新AI先读[当前状态](docs/current-state.md)、[产品规划v0.7](docs/product-plan.md)与[Personal Agent开发主线](docs/roadmap.md)。
 
