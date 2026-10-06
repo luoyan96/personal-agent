@@ -8,6 +8,7 @@ import {z} from 'zod'
 import {readConfig} from '../src/config.js'
 import {openDatabase,migrate} from '../src/database.js'
 import {createServer} from '../src/server.js'
+import {masterAvailable} from '../src/lab-ai-settings.js'
 import {ChatWorker,reconcileChat} from '../src/chat-worker.js'
 import {extendContinuous,startContinuous} from '../src/continuous-chat.js'
 import type {ModelCall,ModelResult} from '../src/execution-worker.js'
@@ -21,8 +22,11 @@ const profile={displayName:'研究助手',introduction:'讨论提供的研究文
 const LegacyTurn=z.strictObject({id:Id,conversationId:Id,inputMessageId:Id,agentContactId:Id,status:z.enum(['queued','running','waiting_input','succeeded','unavailable','failed','interrupted','cancelled']),failure:z.enum(['MODEL_UNAVAILABLE','INVALID_MODEL_OUTPUT','MODEL_FAILED','LEASE_EXPIRED_USAGE_UNCERTAIN','AUTHORITY_CHANGED','INPUT_CHANGED','BUDGET_EXCEEDED']).nullable(),availability:ChatAvailability,outputMessageId:Id.nullable(),usage:ModelUsage.nullable(),budget:Budget,remainingBudget:Budget.nullable(),allowedActions:z.array(z.enum(['cancel','retry'])).max(2),version:Version,createdAt:Instant,updatedAt:Instant})
 async function setup(){
  const dir=mkdtempSync(join(tmpdir(),'rap-continuous-'));clean.push(()=>rmSync(dir,{recursive:true,force:true}))
- const key=join(dir,'synthetic.key');writeFileSync(key,randomBytes(32).toString('hex'))
+ // Match the real credential guard on POSIX as well as Windows. A default
+ // write is0644 under Linux umask022, correctly rejected as world-readable.
+ const key=join(dir,'synthetic.key');writeFileSync(key,randomBytes(32).toString('hex'),{flag:'wx',mode:0o600})
  const config=readConfig({NODE_ENV:'test',APP_ORIGIN:'http://127.0.0.1:4423',DATABASE_PATH:join(dir,'platform.sqlite'),BLOB_ROOT:join(dir,'blobs'),B3_AI_ENABLED:'1',LAB_CREDENTIAL_KEY_FILE:key})
+ expect(masterAvailable(config)).toBe(true)
  mkdirSync(config.blobRoot);const db=openDatabase(config.databasePath,true);migrate(db);clean.push(()=>db.close())
  let app=createServer(config),url=await app.listen({host:'127.0.0.1',port:0});clean.push(()=>app.close())
  const actors:{cookie:string;csrf:string;id:string}[]=[]
@@ -30,7 +34,7 @@ async function setup(){
   const route=routes[name],response=await fetch(url+route.path.replace('{id}',id??''),{method:route.method,headers:{origin:config.origin,'content-type':'application/json','idempotency-key':key,...(actors[actor]?{cookie:actors[actor]!.cookie,'x-csrf-token':actors[actor]!.csrf}:{})},...(route.method==='GET'?{}:{body:JSON.stringify(body)})})
   return {status:response.status,value:await response.json() as any,cookie:response.headers.get('set-cookie')?.split(';')[0]??''}
  }
- for(const actor of [0,1]){const username=`continuous_${randomUUID().slice(0,8)}`,password='12345678';expect((await call('register',{username,password,displayName:`连续聊天者${actor}`},undefined,actor)).status).toBe(201);const login=await call('login',{username,password},undefined,actor);actors[actor]={cookie:login.cookie,csrf:'',id:login.value.data.id};actors[actor]!.csrf=(await call('session',null,undefined,actor)).value.data.csrfToken;await call('createPersonalModel',{name:'合成模型',provider:'deepseek',model:'deepseek-flash',apiKey:'synthetic-no-live-key',enabled:true},undefined,actor)}
+ for(const actor of [0,1]){const username=`continuous_${randomUUID().slice(0,8)}`,password='12345678';expect((await call('register',{username,password,displayName:`连续聊天者${actor}`},undefined,actor)).status).toBe(201);const login=await call('login',{username,password},undefined,actor);actors[actor]={cookie:login.cookie,csrf:'',id:login.value.data.id};actors[actor]!.csrf=(await call('session',null,undefined,actor)).value.data.csrfToken;const model=await call('createPersonalModel',{name:'合成模型',provider:'deepseek',model:'deepseek-flash',apiKey:'synthetic-no-live-key',enabled:true},undefined,actor);expect(model.status,JSON.stringify(model.value)).toBe(201)}
  const own=(await call('personalConversation',{})).value.data
  const send=async(text:string,key:string=randomUUID(),continuous=true)=>{const r=await call('agentChatMessage',{text,continuous},own.conversation.id,0,key);expect(r.status,JSON.stringify(r.value)).toBe(201);return r.value.data}
  const turn=async(id:string)=>(await call('chatTurn',null,id)).value.data
