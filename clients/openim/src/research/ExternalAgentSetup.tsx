@@ -12,7 +12,7 @@ export function ExternalAgentSetup({ active, onProfile }: { active: boolean; onP
   const [target, setTarget] = useState<string>(), [configured, setConfigured] = useState(false);
   const [busy, setBusy] = useState(false), [failure, setFailure] = useState("");
   const openChat = useResearchContactChat();
-  useLayoutEffect(() => { ++epoch.current; setBusy(false); return () => { ++epoch.current; }; }, [active]);
+  useLayoutEffect(() => { ++epoch.current; setBusy(false); if (!active) setForm(s => ({ ...s, apiKey: "" })); return () => { ++epoch.current; }; }, [active]);
   useLayoutEffect(() => { ++epoch.current; setTarget(undefined); setConfigured(false); setForm({ displayName: "", endpoint: "", model: "", apiKey: "" }); setFailure(""); }, [generation]);
   const run = async (openOnly = false) => {
     if (busy || !active) return;
@@ -25,14 +25,9 @@ export function ExternalAgentSetup({ active, onProfile }: { active: boolean; onP
         const body = { expectedVersion: 0, protocol: "chat_completions" as const, endpoint: form.endpoint.trim(), model: form.model.trim(), enabled: true, allowAcceptedContacts: false, apiKey: form.apiKey };
         if (!form.displayName.trim() || !AgentConnectionInput.safeParse(body).success) throw new Error("请填写名称、完整 HTTPS chat/completions 接口、模型及至少 8 字符的 Key。");
         if (!id) {
-          const owned = await researchApi("chatContacts", { query: { scope: "local", view: "mine", limit: 100 } });
+          const created = await researchApi("importAgentProfile", { body: { format: "research-agent-profile/v1", profile: { displayName: form.displayName.trim(), introduction: "", capabilityDescription: "", personality: "" } } });
           if (!current()) return;
-          id = owned.data.find(c => c.identity.kind === "personal_agent" && c.identity.ownerMemberId === actorId && c.profile.role === "specialist" && c.displayName === form.displayName.trim() && !c.profile.introduction && !c.profile.capabilityDescription && !c.profile.personality)?.id;
-          if (!id) {
-            const created = await researchApi("createPersonalAgent", { body: { displayName: form.displayName.trim(), introduction: "", capabilityDescription: "", personality: "" } });
-            if (!current()) return;
-            id = created.data.id;
-          }
+          id = created.data.contact.id;
           setTarget(id);
         }
         const state = await researchApi("agentConnection", { params: { id } });

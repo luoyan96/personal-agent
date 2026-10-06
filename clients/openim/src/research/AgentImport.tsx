@@ -47,7 +47,7 @@ export function AgentImport({ onProfile, active = true }: { onProfile: (id: stri
       <input className="mt-2 block max-w-full text-xs" type="file" accept=".json,application/json" disabled={!!target || busy} onChange={async event => {
         const file = event.currentTarget.files?.[0], ticket = epoch.current;
         event.currentTarget.value = ""; if (!file) return;
-        if (file.size > 20000) { setFailure("资料文件过大；只需公开人设四项资料。"); return; }
+        if (file.size > 65536) { setFailure("资料文件超过 64 KiB；只需公开人设四项资料。"); return; }
         try { const value = await file.text(); if (ticket === epoch.current) { setJson(value); setFailure(""); } }
         catch { if (ticket === epoch.current) setFailure("资料文件无法读取。"); }
       }} />
