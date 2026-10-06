@@ -1,8 +1,8 @@
 import { SessionType } from "@openim/wasm-client-sdk";
-import { Layout, Tooltip } from "antd";
+import { Button, Layout, Tooltip } from "antd";
 import clsx from "clsx";
 import i18n, { t } from "i18next";
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 import group_member from "@/assets/images/chatHeader/group_member.png";
 import launch_group from "@/assets/images/chatHeader/launch_group.png";
@@ -16,6 +16,7 @@ import GroupSetting from "../GroupSetting";
 import SingleSetting from "../SingleSetting";
 import { researchMode } from "@/research/api";
 import { useResearchStore } from "@/research/store";
+import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
 
 const menuList = [
   {
@@ -42,6 +43,7 @@ i18n.on("languageChanged", () => {
 });
 
 const ChatHeader = () => {
+  const [aboutMe, setAboutMe] = useState(false);
   const singleSettingRef = useRef<OverlayVisibleHandle>(null);
   const groupSettingRef = useRef<OverlayVisibleHandle>(null);
 
@@ -140,7 +142,8 @@ const ChatHeader = () => {
             )}
           </div>
         </div>
-        <div className="mr-5 flex">
+        <div className="mr-2 flex items-center">
+          {researchMode && isCoordinator && <Button type="text" size="small" onClick={() => setAboutMe(true)}>关于我</Button>}
           {menuList.map((menu) => {
             if (menu.idx === 1 && (isSingleSession || (!inGroup && !isSingleSession))) {
               return null;
@@ -165,6 +168,7 @@ const ChatHeader = () => {
       </div>
       <SingleSetting ref={singleSettingRef} />
       <GroupSetting ref={groupSettingRef} />
+      {researchMode && <PersonalAssistantPanel open={aboutMe} onClose={() => setAboutMe(false)} />}
     </Layout.Header>
   );
 };

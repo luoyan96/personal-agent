@@ -17,6 +17,7 @@ import {
 } from "./useAgentChatOperation";
 import { useResearchContactChat } from "./useResearchContactChat";
 import { CreatedAgentChatButton } from "./CreatedAgentChatButton";
+import { PersonalReceiptCard } from "./PersonalReceiptCard";
 
 export function useResearchComposer() {
   const captureOperation = useAgentChatOperation();
@@ -90,7 +91,6 @@ export function useResearchComposer() {
       fresh.attempted ||
       !currentTurn ||
       fresh.turnId !== currentTurn.id ||
-      currentTurn.purpose !== "create_agent" ||
       currentTurn.conversationId !== mapping?.researchConversationId ||
       !fresh.operation.isCurrent()
     )
@@ -104,12 +104,17 @@ export function useResearchComposer() {
       freshCreation.current = undefined;
       return;
     }
-    if (currentTurn.status !== "succeeded" || !currentTurn.createdAgent) return;
+    if (currentTurn.status !== "succeeded") return;
+    const delegated = currentTurn.assistantReceipt?.kind === "delegate" ? currentTurn.assistantReceipt : undefined;
+    const created = currentTurn.purpose === "create_agent" ? currentTurn.createdAgent : delegated;
+    if (!created) {
+      fresh.operation.dispose(); freshCreation.current = undefined; return;
+    }
     fresh.attempted = true;
-    const created = currentTurn.createdAgent;
     void openAgentChat(created.contactId, fresh.operation.isCurrent, {
       expectedConversationId: created.conversationId,
       onTarget: fresh.operation.allowTarget,
+      requireOwnLocal: !!delegated,
     })
       .catch((error) => {
         if (fresh.operation.isCurrent())
@@ -191,7 +196,7 @@ export function useResearchComposer() {
         result.data.turn ? { generation, imID, turn: result.data.turn } : undefined,
       );
       if (external) setExternalConsent(false);
-      if (result.data.turn?.purpose === "create_agent")
+      if (result.data.turn && (result.data.turn.purpose === "create_agent" || (mapping.kind === "personal" && !external)))
         fresh.turnId = result.data.turn.id;
       else {
         operation.dispose();
@@ -216,6 +221,7 @@ export function useResearchComposer() {
           <p className="truncate" title={external.serviceOrigin}>外部服务：{external.serviceOrigin} · 费用由主人连接的外部账号承担</p>
           {external.callerAllowed ? externalReady ? <Checkbox checked={externalConsent} onChange={e => setExternalConsent(e.target.checked)}>授权发送本条文字（不含历史、记忆与附件）</Checkbox> : <p className="text-amber-700">{peer?.availability.status === "disabled" ? "外部连接已停用，请主人启用。" : "外部连接当前不可用，请主人核对连接配置。"}</p> : <p className="text-amber-700">主人尚未允许当前账号调用，请先联系主人。</p>}
         </div>}
+        {currentTurn && <div className="mx-3"><PersonalReceiptCard turn={currentTurn} compact /></div>}
         {advanced && (
           <div className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs">
             <strong>需求与协作</strong>
@@ -253,6 +259,8 @@ export function useResearchComposer() {
           </div>
         )}
         {canonical.error && <Alert type="error" message={canonical.error} />}
+        {currentTurn?.assistantReceipt?.kind === "delegate" && creationFailure?.turnId === currentTurn.id &&
+          <div className="mx-3 mt-1"><CreatedAgentChatButton created={currentTurn.assistantReceipt} delegated initialFailure={creationFailure.message} /></div>}
         {currentTurn?.purpose === "create_agent" &&
           currentTurn.status === "succeeded" &&
           currentTurn.createdAgent &&

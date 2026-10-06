@@ -11,6 +11,7 @@ import { OverlayVisibleHandle } from "@/hooks/useOverlayVisible";
 import { routes } from "@research-agent-platform/contracts";
 import { validationMessage } from "./api-errors";
 import { contactReturnState } from "./contactDestination";
+import { PersonalAssistantPanel } from "./PersonalAssistantPanel";
 
 const authRule = (field: "username" | "password" | "inviteCode") => ({
   validator: async (_rule: unknown, value: unknown) => {
@@ -49,6 +50,7 @@ export default function ResearchLogin() {
       ? "即时通信服务暂时无法连接，请稍后重新连接。"
       : "即时通信账号准备失败，请稍后重试或联系实验室负责人。";
   const [settings, setSettings] = useState(false);
+  const [personal, setPersonal] = useState(false);
   const profile = useRef<OverlayVisibleHandle>(null);
   const connect = async () => {
     const generation = useResearchStore.getState().generation;
@@ -236,6 +238,7 @@ export default function ResearchLogin() {
                 </Button>
                 <Button onClick={() => profile.current?.openOverlay()}>我的资料</Button>
                 <Button onClick={() => setSettings(true)}>模型设置</Button>
+                <Button onClick={() => setPersonal(true)}>记忆与跟进</Button>
                 <Button
                   onClick={async () => {
                     try {
@@ -253,6 +256,7 @@ export default function ResearchLogin() {
                 </Button>
               </Space>
               <LabSettings open={settings} onClose={() => setSettings(false)} />
+              <PersonalAssistantPanel open={personal} onClose={() => setPersonal(false)} />
               <ResearchUserCard isSelf ref={profile} />
             </div>
           ) : (

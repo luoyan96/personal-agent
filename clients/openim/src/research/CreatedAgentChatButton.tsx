@@ -11,9 +11,11 @@ import { useResearchContactChat } from "./useResearchContactChat";
 export function CreatedAgentChatButton({
   created,
   initialFailure = "",
+  delegated = false,
 }: {
   created: CreatedAgentReceipt;
   initialFailure?: string;
+  delegated?: boolean;
 }) {
   const generation = useResearchStore((s) => s.generation);
   const actorId = useResearchStore((s) => s.actor?.member.id);
@@ -57,7 +59,7 @@ export function CreatedAgentChatButton({
       </Button>
       {failure && (
         <p className="mt-1 break-words text-amber-800" role="alert">
-          已添加 {created.displayName}。{failure}
+          {delegated ? "已安排给" : "已添加"} {created.displayName}。{failure}
         </p>
       )}
     </div>

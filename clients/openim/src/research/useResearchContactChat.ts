@@ -10,7 +10,7 @@ export function useResearchContactChat() {
   return async (
     contactId: string,
     isCurrent: () => boolean,
-    options?: { expectedConversationId?: string; onTarget?: (imID: string) => void },
+    options?: { expectedConversationId?: string; onTarget?: (imID: string) => void; requireOwnLocal?: boolean },
   ) => {
     if (!isCurrent()) return false;
     const canonical = await researchApi("createDirectConversation", {
@@ -46,6 +46,10 @@ export function useResearchContactChat() {
       throw new Error("聊天映射与当前私聊不一致，请稍后重试。");
     const target = state.contacts.find((entry) => entry.contact.id === contactId);
     if (!target) throw new Error("聊天目标尚未准备完成，请稍后重试。");
+    if (options?.requireOwnLocal && (target.contact.identity.kind !== "personal_agent" ||
+      target.contact.identity.ownerMemberId !== state.actor?.member.id ||
+      target.contact.profile.role !== "specialist" || target.contact.agentRuntime))
+      throw new Error("本次安排的本地 Agent 状态已变化，请从联系人资料核对后打开聊天。");
     if (
       !target.contact.allowedActions.includes("chat") ||
       target.userID !== mapping.data.peerUserID

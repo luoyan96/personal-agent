@@ -52,6 +52,12 @@ function modelGuidance(turn: AgentTurn, manager: boolean): Guidance {
 
 /** Present only the actual turn state; never infer a reply or successful task. */
 export function turnGuidance(turn: AgentTurn, manager = false): Guidance {
+  if (turn.memoryReceipt?.operation === "clarify") return {
+    title: "还需补充偏好信息", nextStep: turn.memoryReceipt.question || "请说明要保存、纠正或移除哪条偏好。", tone: "info",
+  };
+  if (turn.followupReceipt?.operation === "clarify") return {
+    title: "提醒时间还需明确", nextStep: turn.followupReceipt.question || "请补充事项、日期、时间和时区。", tone: "info",
+  };
   if (turn.failure?.startsWith("EXTERNAL_")) return {
     title: serviceErrorMessage(turn.failure, 0),
     nextStep: "请核对外部服务状态与记录。不会自动重试，也不会改用发送者的模型；重新发送仍需逐条授权。",

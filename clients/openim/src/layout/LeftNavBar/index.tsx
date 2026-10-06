@@ -25,6 +25,7 @@ import styles from "./left-nav-bar.module.scss";
 import PersonalSettings from "./PersonalSettings";
 import { researchMode } from "@/research/api";
 import { LabSettings } from "@/research/LabSettings";
+import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
 
 const { Sider } = Layout;
 
@@ -143,6 +144,7 @@ const profileMenuList = [
     gap: false,
     idx: 3,
   },
+  { title: "记忆与跟进", gap: true, idx: 4 },
 ];
 
 i18n.on("languageChanged", () => {
@@ -157,6 +159,7 @@ const LeftNavBar = memo(() => {
   const personalSettingsRef = useRef<OverlayVisibleHandle>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [labSettings, setLabSettings] = useState(false);
+  const [personal, setPersonal] = useState(false);
   const selfInfo = useUserStore((state) => state.selfInfo);
   const userLogout = useUserStore((state) => state.userLogout);
   const updateSelfInfo = useUserStore((state) => state.updateSelfInfo);
@@ -177,6 +180,9 @@ const LeftNavBar = memo(() => {
         break;
       case 3:
         tryLogout();
+        break;
+      case 4:
+        setPersonal(true);
         break;
       default:
         break;
@@ -247,7 +253,7 @@ const LeftNavBar = memo(() => {
           <div className="mb-1 truncate text-base font-medium">{selfInfo.nickname}</div>
         </div>
       </div>
-      {profileMenuList.map((menu) => (
+      {profileMenuList.filter(menu => researchMode || menu.idx !== 4).map((menu) => (
         <div key={menu.idx}>
           <div
             className="flex cursor-pointer items-center justify-between rounded-md px-3 py-4 hover:bg-[var(--primary-active)]"
@@ -297,6 +303,7 @@ const LeftNavBar = memo(() => {
       <PersonalSettings ref={personalSettingsRef} />
       <About ref={aboutRef} />
       <LabSettings open={labSettings} onClose={() => setLabSettings(false)} />
+      {researchMode && <PersonalAssistantPanel open={personal} onClose={() => setPersonal(false)} />}
     </Sider>
   );
 });
