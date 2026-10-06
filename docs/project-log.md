@@ -2,6 +2,8 @@
 
 ## 2026-10-06：GitHub 版本管理与多人协作入口
 
+- 首次实际发布成功：241个历史提交 / 902个tracked文件由原子、非强制push导入新main；远端main与annotated标签的peeled SHA均精确核对为 `3540e0c1d0247bffd711c21734b8d083c5fe3323`，标签对象 `12f04aa962d88a7a725f39e2665addf73efc7782`。GitHub [Foundation checks](https://github.com/luoyan96/personal-agent/actions/runs/37409783727) 已实际触发，结果按该运行读取，不提前计通过。root协作文档和本地清洁状态检查通过；发布回执在Git外，后续纯文档收尾不改变基线标签或线上软件。
+
 - 用户指定 `luoyan96/personal-agent` 作为项目协作仓库。读取仓库确认公开且初始无分支，当前源码75ab9b2包含240个历史提交 / 902文件；按首次空仓库导入建立main并保留既有历史，旧research-agent-platform远端另名保留，不覆盖其代码。
 - CONTRIBUTING补齐克隆、独立副本 / 分支、前后端契约、PR审核、撤销提交和部署边界；README与当前状态给出新主仓库，PR模板增加客户端及交接检查。既有根Actions在main / PR运行，完整OpenIM客户端仍要单独类型 / 服务 / auth / Web / 界面验证，不把根CI等同客户端验证。
 - 初始协作基线标签 `personal-agent-2026-10-06`。本批只更新协作 / 交接文件与Git远端，不改变软件行为、线上787后端 / 27前端或数据库18，不重复已通过的软件全量CI、不自动部署。
