@@ -2,6 +2,9 @@
 
 ## 2026-10-06：GitHub 版本管理与多人协作入口
 
+- 最终[Actions 37411082051](https://github.com/luoyan96/personal-agent/actions/runs/37411082051)三平台均实际成功：Linux22.19 / 24、Windows24各执行完整根CI。受测源0ef2016331307efdc5de71857550f0dbb202a76b；03:58:18UTC，PR1合并为f7b5099d2df7e889ecaae0a6542366194bc82767，合并树与受测源均为0a3f00d2c75b374b7e0e504ec568e0c1d347a92f。最终本地CI=true Windows单并发521+2通过、测试191.95秒，日志root-ci-github-windows-serial.log。首次 / 第二次失败证据保留；不将串行后通过当作已确定具体冷启动原因。
+- 本地创建main跟踪新origin/main，原开发分支 / 初始标签 / legacy远端保留；当前基线 `personal-agent-2026-10-06.1` 包含测试兼容修复，初始标签不移动。最终只补协作版本与验收事实，内容 / diff检查后同步纯文档提交，不重复已通过的同源软件检查。生产部署、真实账号 / Key、数据库及原生端没有本批变化；主线push的自动检查和既有PR检查分别可在Actions读取。
+
 - 首次实际发布成功：241个历史提交 / 902个tracked文件由原子、非强制push导入新main；远端main与annotated标签的peeled SHA均精确核对为 `3540e0c1d0247bffd711c21734b8d083c5fe3323`，标签对象 `12f04aa962d88a7a725f39e2665addf73efc7782`。GitHub [Foundation checks](https://github.com/luoyan96/personal-agent/actions/runs/37409783727) 已实际触发，结果按该运行读取，不提前计通过。root协作文档和本地清洁状态检查通过；发布回执在Git外，后续纯文档收尾不改变基线标签或线上软件。
 - 首次Actions三个任务均失败，原日志保留：两Ubuntu任务在OpenIM合成桥测试失败，fixture模型密钥默认world-readable，被生产一致的权限门禁拒绝；Windows任务的真实SQLite015→018双迁移 / 密码哈希测试超过默认5秒。独立fix/ci-portability分支将三份合成凭据文件显式创建为0600，并断言配置HTTP200；仅该磁盘迁移测试允许20秒、全部数据保持断言不变。无生产源码 / 权限门禁 / 预算或迁移改动。修复后本地完整根CI42文件 / 521项 + 2生产入口、构建 / 类型 / 契约 / B0 / 生产隔离通过，证据 `root-ci-github-portability.log`；提交PR后再核对实际三个GitHub平台任务，不把本地Windows通过等同云Linux通过。
 - 实际[PR #1](https://github.com/luoyan96/personal-agent/pull/1)运行37410599347的两Ubuntu平台通过；Windows仍在首条实际PDF解析命中生产8秒截止，其他520项通过。失败日志 `github-ci-windows24-second-full.log` 保留，资源竞争是待验证解释。仅CI Windows的Vitest文件并发改为1，保留实际解析器、8秒限制和全部断言；普通本地 / Linux仍并发2。随后本地CI=true及PR新源分别复验，结果在发布回执 / Actions读取，不预写通过。

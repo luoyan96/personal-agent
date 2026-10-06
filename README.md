@@ -2,7 +2,7 @@
 
 **最终目标是以个人为中心的Personal Agent：采用类似微信的交流方式，人与Agent共用通讯录；个人助理根据任务类型和难度组织协作，积累获准的长期记忆，持续推进、主动跟进并从反馈中改进。** 科研小组是第一个验证场景，个人可以独立使用。
 
-主代码仓库为 [luoyan96/personal-agent](https://github.com/luoyan96/personal-agent)，`main` 是共同开发主线。每个人 / AI 用独立分支提交 PR，开发环境、客户端检查和版本回退见[协作说明](CONTRIBUTING.md)。首次协作基线标签 `personal-agent-2026-10-06`；GitHub 代码更新和阿里云部署分别记录。
+主代码仓库为 [luoyan96/personal-agent](https://github.com/luoyan96/personal-agent)，`main` 是共同开发主线。每个人 / AI 用独立分支提交 PR，开发环境、客户端检查和版本回退见[协作说明](CONTRIBUTING.md)。当前协作基线标签 `personal-agent-2026-10-06.1`，包含[三平台CI修复](https://github.com/luoyan96/personal-agent/pull/1)；初始导入标签保留。GitHub 代码更新和阿里云部署分别记录。
 
 2026-10-06 Personal Agent 第一批功能已上线：本人长期偏好的保存 / 纠正 / 撤回、专项工作转交站内 Agent、服务端一次性提醒及“关于我”管理。API / worker787ca23、最终客户端27c3279，契约0.18 / 聊天1.7 / 显式迁移018。根CI521 + 2、客户端构建与本地13组界面流程通过；云端合成账号实际偏好保存 / 持久纠正、关闭页面后的提醒 / OpenIM投递 / 重开可见和最终简短回执分别通过。任务匹配采用合成模型验证，本批未调用真实厂商；完整行为学习、跨个人空间任务群、条件 / 周期跟进与策略自我改进仍在后续。新AI先读[当前状态](docs/current-state.md)、[产品规划v0.7](docs/product-plan.md)与[Personal Agent开发主线](docs/roadmap.md)。
 

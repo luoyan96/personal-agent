@@ -60,6 +60,6 @@ pnpm run build:web
 
 产品范围与近期任务见[路线图](docs/roadmap.md)。新网页、账号、记忆和调度必须以实际行为验收。需要真实模型或外部服务的测试另行配置，普通代码检查不依赖个人 API key。
 
-每批完成同步 [当前状态](docs/current-state.md)与[项目日志](docs/project-log.md)，写明受测源码、线上源码、证据和剩余事项。生产部署单独安排，GitHub 合并不会自动更新阿里云。首次协作基线标签为 `personal-agent-2026-10-06`；部署使用固定 SHA / 标签，并依据[ECS记录](docs/deployment/openim-ecs.md)保留兼容数据库的回退路径。
+每批完成同步 [当前状态](docs/current-state.md)与[项目日志](docs/project-log.md)，写明受测源码、线上源码、证据和剩余事项。生产部署单独安排，GitHub 合并不会自动更新阿里云。当前协作基线标签为 `personal-agent-2026-10-06.1`，初始 `personal-agent-2026-10-06` 保留其历史快照；部署使用固定 SHA / 标签，并依据[ECS记录](docs/deployment/openim-ecs.md)保留兼容数据库的回退路径。
 
 仓库不收录真实 API Key、密码、邀请码、聊天 / 记忆数据库、用户材料、录音、运行证据或构建目录。`.env.example` 只放占位示例。沿用上游源码的归属和许可见 [NOTICE.md](NOTICE.md)，不要删去 OpenIM 的来源与许可文件。
