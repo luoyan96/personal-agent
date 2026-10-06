@@ -3,10 +3,11 @@
 ## 2026-10-06：GitHub 版本管理与多人协作入口
 
 - 首次实际发布成功：241个历史提交 / 902个tracked文件由原子、非强制push导入新main；远端main与annotated标签的peeled SHA均精确核对为 `3540e0c1d0247bffd711c21734b8d083c5fe3323`，标签对象 `12f04aa962d88a7a725f39e2665addf73efc7782`。GitHub [Foundation checks](https://github.com/luoyan96/personal-agent/actions/runs/37409783727) 已实际触发，结果按该运行读取，不提前计通过。root协作文档和本地清洁状态检查通过；发布回执在Git外，后续纯文档收尾不改变基线标签或线上软件。
+- 首次Actions三个任务均失败，原日志保留：两Ubuntu任务在OpenIM合成桥测试失败，fixture模型密钥默认world-readable，被生产一致的权限门禁拒绝；Windows任务的真实SQLite015→018双迁移 / 密码哈希测试超过默认5秒。独立fix/ci-portability分支将三份合成凭据文件显式创建为0600，并断言配置HTTP200；仅该磁盘迁移测试允许20秒、全部数据保持断言不变。无生产源码 / 权限门禁 / 预算或迁移改动。修复后本地完整根CI42文件 / 521项 + 2生产入口、构建 / 类型 / 契约 / B0 / 生产隔离通过，证据 `root-ci-github-portability.log`；提交PR后再核对实际三个GitHub平台任务，不把本地Windows通过等同云Linux通过。
 
 - 用户指定 `luoyan96/personal-agent` 作为项目协作仓库。读取仓库确认公开且初始无分支，当前源码75ab9b2包含240个历史提交 / 902文件；按首次空仓库导入建立main并保留既有历史，旧research-agent-platform远端另名保留，不覆盖其代码。
 - CONTRIBUTING补齐克隆、独立副本 / 分支、前后端契约、PR审核、撤销提交和部署边界；README与当前状态给出新主仓库，PR模板增加客户端及交接检查。既有根Actions在main / PR运行，完整OpenIM客户端仍要单独类型 / 服务 / auth / Web / 界面验证，不把根CI等同客户端验证。
-- 初始协作基线标签 `personal-agent-2026-10-06`。本批只更新协作 / 交接文件与Git远端，不改变软件行为、线上787后端 / 27前端或数据库18，不重复已通过的软件全量CI、不自动部署。
+- 初始协作基线标签 `personal-agent-2026-10-06`。首次导入阶段只更新协作 / 交接文件与Git远端；随后CI环境修复见上文。线上787后端 / 27前端或数据库18不变，没有自动部署。
 - Git外 `.runtime/personal-agent-20261006/github-publication-audit.json` 保留全部可达历史blob的高置信凭据 / 私钥格式和大文件检查；唯一私钥命中为精确公开合成TLS测试fixture，生产不引用。扫描不保证覆盖所有凭据格式。真实凭据、SQLite / 运行材料、构建产物不在本次tracked树中；GitHub远端实际SHA与检查运行状态在后续发布回执核对。
 
 ## 2026-10-06：Personal Agent 第一批开发、发布与验收
