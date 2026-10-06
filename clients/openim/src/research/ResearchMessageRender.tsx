@@ -16,8 +16,9 @@ import {
 import type { AgentTurn } from "@research-agent-platform/contracts";
 import styles from "@/pages/chat/queryChat/MessageItem/message-item.module.scss";
 import { CreatedAgentChatButton } from "./CreatedAgentChatButton";
-import { AgentFileReadSummary } from "./AgentFileReadSummary";
+import { AgentFileReadSummary, agentFileReadCoverage } from "./AgentFileReadSummary";
 import { PersonalReceiptCard } from "./PersonalReceiptCard";
+import { ContinueAgentFileReadingButton } from "./ContinueAgentFileReadingButton";
 
 export default function ResearchMessageRender({ message }: IMessageItemProps) {
   const history = useContext(AgentProgressHistory);
@@ -83,6 +84,22 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
   );
   const currentTurn = turn.data?.data || currentRetry;
   const fileRead = currentTurn?.fileRead;
+  const fileCoverage = fileRead ? agentFileReadCoverage(fileRead) : undefined;
+  const canContinueFileReading =
+    !!fileRead &&
+    !turn.error &&
+    currentTurn?.conversationId === read.data?.fact.conversationId &&
+    ((currentTurn.status === "succeeded" &&
+      read.data?.fact.origin === "model" &&
+      currentTurn.outputMessageId === read.data.fact.id &&
+      (fileRead.partial ||
+        (!!fileCoverage?.ranges.length && !fileCoverage.complete))) ||
+      (["failed", "unavailable", "cancelled", "interrupted"].includes(
+        currentTurn.status,
+      ) &&
+        !currentTurn.outputMessageId &&
+        read.data?.fact.origin === "human" &&
+        currentTurn.inputMessageId === read.data.fact.id));
   useEffect(() => {
     if (!imID || !read.data?.fact.turnId) return;
     // Restore only active work from history; old terminal receipts must not
@@ -137,6 +154,12 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
             !read.data.fact.files?.some(
               (file) => file.messageId === fileRead.messageId,
             ) && <AgentFileReadSummary read={fileRead} status={currentTurn?.status} />}
+          {canContinueFileReading && fileRead && (
+            <ContinueAgentFileReadingButton
+              conversationId={read.data.fact.conversationId}
+              messageId={fileRead.messageId}
+            />
+          )}
           {!!read.data.fact.resources.length && (
             <details className="mt-2 text-xs">
               <summary>相关材料</summary>

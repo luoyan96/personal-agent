@@ -24,6 +24,7 @@ type Reading = {
   result?: ReadResult;
   error?: string;
   canRetry?: boolean;
+  failureStage?: "fetch" | "read";
   existingFile?: NonNullable<MessageItem["fileElem"]>;
 };
 const mediaTypes: Record<string, ReadBody["mediaType"]> = {
@@ -115,7 +116,7 @@ export function useAgentFileReading() {
       // The canonical outbox alone publishes the attachment request/reply.
       update({ ...entry, phase: "accepted", body: undefined, result: response.data, error: undefined, canRetry: false }, isCurrent);
     } catch (error) {
-      update({ ...entry, phase: "failed", error: failureMessage(error), canRetry: isRetryable(error) }, isCurrent);
+      update({ ...entry, phase: "failed", error: failureMessage(error), canRetry: isRetryable(error), failureStage: "read" }, isCurrent);
     }
   };
   const readFile = async (file: File, entry: Reading, isCurrent: () => boolean) => {
@@ -152,7 +153,7 @@ export function useAgentFileReading() {
       if (!isCurrent()) return;
       await readFile(file, entry, isCurrent);
     } catch (error) {
-      update({ ...entry, phase: "failed", error: failureMessage(error), canRetry: isRetryable(error) }, isCurrent);
+      update({ ...entry, phase: "failed", error: failureMessage(error), canRetry: isRetryable(error), failureStage: "fetch" }, isCurrent);
     }
   };
   const readExisting = async (message: MessageItem, localFile?: File, selectionIsCurrent = () => true) => {
@@ -218,7 +219,10 @@ function AgentFileReadingStatus({ entry, onRetry, onCompleted }: {
       {entry.phase === "failed" && (
         <div>
           <p className="truncate font-medium" title={entry.filename}>{entry.filename}</p>
-          <p className="text-amber-800" role="alert">文件已发送，但 Agent 读取失败：{entry.error}</p>
+          <p className="text-amber-800" role="alert">
+            {entry.failureStage === "fetch" ? "本次未能取回文件：" : "文件已发送，但本次 Agent 读取失败："}{entry.error}
+            {entry.failureStage === "fetch" && " 如已有解析或回复回执，可从该回执继续阅读全文；旧回执不受本次取回失败影响。"}
+          </p>
           {entry.canRetry && <Button size="small" onClick={onRetry}>重试阅读（不重复发送文件）</Button>}
         </div>
       )}
