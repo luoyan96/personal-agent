@@ -23,19 +23,31 @@
 - 普通个人 / Agent 私聊默认只输入文本并发送；使用本人默认模型，保留真实档案、性格和授权记忆。任务、材料、预算与需求模板收在可选协作中；普通聊天不创建计划、群、任务或执行动作。主标题显示真实 Agent 名称，沿用原协调身份和置顶映射。
 - 设置入口改为“模型设置”，每个人管理自己的 DeepSeek / 通义千问 / 豆包配置、加密 Key、启用及默认选择。朋友使用本人 Key 与当前对话记忆，不能读取 Agent 主人的 Key 或私有记忆。既有 IFRC 未选择个人配置时兼容旧模型；明确作个人选择后不静默回退。
 
-## 待发布：文档阅读上下文修复（尚未上线）
+## 最新补发：旧消息停留与阅读全文验收（22:01:49北京时间）
 
-2026-10-06，固定源码 `94b26d1d4871c45ace12a86f93d4c19cce377c4d` 修复“解析了13页、约5万字符，模型却只看到第一页118字符”的问题。[PR5](https://github.com/luoyan96/personal-agent/pull/5)于19:37:28北京时间合入main，软件合并提交 `0a2070f03492d8dee598aa71c90c7d87719c9be0`。原因是文件阅读沿用4000总预算，旧聊天历史又优先占用输入；解析成功并不等于模型获得全文。详见[文档阅读交接](development/document-reading.md)。当前线上仍为下节2e69688，以下是本地实现与发布准备状态，后续文档提交不改变固定发布包源码。
+固定客户端 `622e84bff20af8cefdd6d9004286da6ba6ba4a22` 已于2026-10-06 22:01:49静态上线；[PR8](https://github.com/luoyan96/personal-agent/pull/8)已合入main（288b56f），[三平台完整CI](https://github.com/luoyan96/personal-agent/actions/runs/37474793438)全部通过。发布标签 `personal-agent-2026-10-06.4` 指向这份源码；API / worker仍94b26d1、镜像d56ee747、contract0.19 / chat1.8 / schema18，没有迁移。
 
-- 新上传或明确追问附件使用所选正文JSON UTF-8字节数 + 8192的保守预算，限制4000–64000 / 90秒。当前完整输入、档案与获准记忆保留，先选择文件文字，再用剩余空间放入旧历史；所选全文至少容纳512输出token时，不为扩大回复上限而裁正文。
-- 普通无附件聊天仍4000 / 90秒；连续同源同页批次保留首份预算，换附件 / 页码开启新批，旧4000轮次和重试不隐式升额。旧轮被栅栏，实际或未知用量保留，未知用量不自动重试。契约0.19 / chat1.8 / schema18均不变，没有迁移或依赖调整。
-- 默认成功回执直接显示“已使用附件全部可提取文字”或“仅使用部分文字，未阅读全文”；全文须有实际成功、partial=false及去重后的范围覆盖。等待 / 失败不称读完，旧消息保留当时范围。超限时均匀覆盖至多20个非空页并如实标部分，不等同于扫描图、图表或版式理解。
-- 根CI44文件 / 537项、另2项生产入口 / B0 / 生产fixture排除通过；客户端类型 / Web / 四固定SDK资源通过。后端23专项 + 3最终边界通过。真实HTTP / SQLite / PDF解析13页49622字符，逐页完整文本及末页结论进入模型输入；预算63336，输入预留58226、输出上限4096；指定第13页追问含3817字符全文。模型为合成ModelCall / 本地合成SSE，未调用真实厂商。
-- 八组实际生产HashRouter / QueryChat / CKEditor界面检查覆盖全文、118字符部分、等待、失败、旧消息、重叠范围去重、空白页与1440 / 320px；该组API / SDK / 文档元数据 / 模型均合成。pageerror0，Router警告及原样本 / fixture失败保留。Git外证据 `D:/deepseek-agent/.runtime/document-reading-20261006`：`root-ci-final.log`、`backend/backend-review.json`、`backend/thirteen-page-call-proof.json`、`frontend/summary.json`及`frontend/render-d9dbb750/report.json`。
-- 发布助手以线上2e69688 / 镜像63915f4 / 首页7df1377为严格基线，沿用schema18并核验78表及停写一致备份。归档、表fingerprint及保留未知用量的栅栏三项本地检查通过；尚未执行。既有Workbench终端断开，返回入口曾被自动审批识别为VNC并拦下；改用原SSH入口仍未恢复。已请求用户重新连接 `launch-advisor-20261004`，无需发送凭据；没有新增SSH授权或端口。
-- 同一固定源码的[GitHub三平台完整CI](https://github.com/luoyan96/personal-agent/actions/runs/37456957982)全部通过：Windows Node24、Ubuntu Node22.19 / 24。发布归档 `document-reading-94b26d1d4871c45ace12a86f93d4c19cce377c4d.tar.gz` SHA256 `801e674d5dfa56ac46c534165a3c81aa8ed8e1fd54611f01598ded49ec4e72d0`；helper `fdeb01dff345abae4fca5c290785b10faca668fa5712bac7abbe5f5e02b1ab3d`，候选首页 `a33adc48e575ba827899fc055ad077228332b3fdc66ce4a5f0c35c37c02d6d2b`。包内固定Git blob、源 / Web / helper哈希及归档路径 / 类型均通过；19:35:53公网ready0.19正常、首页仍旧7df1377。证据另在 `release/{github-ci,software-merge,bundle-receipt,bundle-verified,public-pending}.json`。没有新发布标签或云部署成功记录。
+- 查看历史后明确暂停自动跟随；消息由短加载行变成长正文、模型增量、canonical回执或尺寸变化不能仅因列表几何到底重启。Virtuoso followOutput为真正false；初始会话、同身份本人发送、显式End或真实向下滚到底才恢复。阅读全文成功ACK只向原会话 / 身份 / generation发跟随事件，迟响应不跨账号或页面生效。
+- 当前Nginx root `/opt/research-openim/client-releases/622e84bff20af8cefdd6d9004286da6ba6ba4a22/clients/openim/dist`；精确公网index SHA256 `9f2591fb39dcf489669c693202d1006c926c24ac72df824cb142bf092ba99742`，八服务运行、API healthy、HTTPS ready0.19；八镜像与backend current全部保持。静态恢复只将Nginx副本 `/opt/research-openim/ops/history-scroll-622e84bff20a-20261006T140148Z/research-openim-production`复制回现有配置，nginx -t并reload后核对8c5f14c的e4ccf4c首页、健康和八镜像；不恢复数据库或切后端。原21:25补发记录仍保留各自基线。
+- types / Web / 四固定SDK资源通过；7个必要production React / HashRouter / QueryChat / Virtuoso场景通过（6+1两次窄运行），API / SDK / model均合成，pageerror0 / unexpectedAPI0。旧源码本地合成场景未复现，不称失败门禁；真实Edge旧跳回观察为原故障证据。两个harness启动失败以及库警告保留。
+- 线上确认浏览器加载精确新脚本index-0cce9eaf.js。旧IDE部分回执保持原142字范围；用可见“继续阅读全文”键盘Enter触发真实新请求，精确复用既有解析源而未重传文件。新轮成功使用全部5页 / 29415字符，partial=false，实际9127输入 / 446输出 / 3573ms，outbox sent。刷新后新canonical回复1份、编辑器空白；完整阅读入口和实际模型 / IM路径闭合。
+- 先前自动化click几次未形成新turn、位置改变，不能单凭这些操作归因window focus；没有把未提交点击计通过。厂商上传Session过期一次，刷新同权限Workbench后同包上传、hash守卫及激活成功，无新增SSH / Key / 端口。维护连接已按本批收尾关闭，用户聊天保留。
+- Git外 `.runtime/document-followup-20261006/history-scroll/summary.json`及两个render报告；`history-release/{bundle-receipt,deployment-online-1,source-review,upload-session-failure,live-button-final}.json`与真实新回复截图。用户论文正文、凭据和运行资料未入Git。扫描OCR / 图像 / 版式及超过20非空页、64000预算的全文仍未实现。
 
-## 最新发布：连续 Agent 私聊（已上线）
+## 本日先前发布：文档全文阅读与旧正文继续（已上线）
+
+2026-10-06 **21:02:07北京时间**，全文上下文修复 `94b26d1d4871c45ace12a86f93d4c19cce377c4d` 已成对部署API / worker及客户端；**21:25:34**静态补发客户端 `8c5f14c91f0248c522a52bb4c5eb31f440500f5b`，增加旧解析正文的“继续阅读全文”入口。[PR5](https://github.com/luoyan96/personal-agent/pull/5)与[PR7](https://github.com/luoyan96/personal-agent/pull/7)已合入main，后者软件合并提交2292360。发布标签 `personal-agent-2026-10-06.3` 指向受测客户端8c5f14c，其API / 契约 / Harness代码与已部署94b26d1完全相同；文档提交不改变运行软件。contract0.19 / chat1.8 / schema18，无迁移。详见[文档阅读交接](development/document-reading.md)。
+
+- 原问题是4000总预算和旧历史优先挤掉正文；此前GitHub修复尚未部署。这次真实既有IDE论文新追问使用全部5页 / 29415字符，partial=false，实际9252输入 / 671输出 / 5066ms，回复涉及正文方法及实验。不是新上传用户论文，也未读取 / 改变Key或密码。
+- 既有已登录Edge个人助理实际上传13页 / 49622字符合成PDF，Linux真实解析、既有模型及OpenIM路径通过。新上传实际13596输入 / 149输出 / 1895ms；新追问实际13582输入 / 80输出 / 2193ms，正确返回第4 / 8 / 13页末尾标记。两次预算均63352 / 90，全部13个文字范围及partial=false；这份合成重复文本不代表论文研究质量评估。三个正式回复outbox均sent；13页追问刷新后canonical回复1份，编辑器空白。
+- 新请求以所选正文JSON UTF-8字节数 + 8192保守估算，范围4000–64000 / 90秒；正文优先于旧历史。普通无文件仍4000 / 90；旧回复、旧预算、未知用量与原重试不追溯修改。超限至多选20个非空页并明确部分读取；全文仅可提取文字，扫描OCR / 图像 / 版式未实现。
+- “继续阅读全文”发新的明确agentChatMessage，精确引用已解析源messageId，沿自然文字continuous=true，不另传budget、不下载、不重发SDK文件。仅部分成功Agent回复或无输出终态的原human请求显示；完整成功 / pending / 无源旧消息 / 外部Agent隐藏。重新验证本人、direct会话、加入成员与发送权限，账号 / 导航变化栅栏；不确定ACK仅手动同键同body重试。旧SDK取回失败与已有解析回执分别显示，未放宽origin、redirect或cookie策略。截图的通用取回错误没有单独证明实际HTTP302。
+- 两次固定源码的GitHub三平台完整CI分别通过：94b26d1的37456957982，以及8c5f14c的37469860577（Ubuntu22.19 / 24、Windows24）。上一批根537项 + 2生产入口和后端23 + 3专项保持；客户端本批types / Web / 四固定SDK资源及9组实际production HashRouter / QueryChat / ChatFooter / CKEditor渲染通过，API / SDK / 解析元数据 / 模型在该9组中均合成。原401 fixture初始化失败和既有Router / Antd警告保留，pageerror0，不称console无错误。
+- API / worker实际镜像 `sha256:d56ee747229eeaffec170810b846f1265ca5c2afbffa4d32a95e69e66871017d`；backend current为 `/opt/research-openim/releases/94b26d1d4871c45ace12a86f93d4c19cce377c4d`。最终Nginx root `/opt/research-openim/client-releases/8c5f14c91f0248c522a52bb4c5eb31f440500f5b/clients/openim/dist`；公网index `e4ccf4c4069a7ab1cb5771880cd8b480c9aef09b70a0221470dd0381d322a65d`，八服务运行 / API healthy / HTTPS ready0.19。静态补发期间八镜像及后端current未变。
+- 主发布停写78表SQL / 全行hash保持一致，备份 `/srv/research-openim-backups/20261006T130148Z` 的12checksum / 9gzip / 隔离SQLite integrity及18迁移检查通过；完整组件恢复 / 异地备份仍未验。静态补发回退只恢复Nginx副本 `/opt/research-openim/ops/continue-reading-8c5f14c91f02-20261006T132533Z/research-openim-production`及94b前端，API / worker / 数据库保持；主发布恢复2e69688需先栅栏未完轮并保留用量，不能覆盖旧快照。
+- 沿用现有Workbench免密SSH；前次断开经刷新恢复。静态上传一次厂商Session过期、对应归档不存在守卫失败，刷新同权限连接后同包上传 / 核验 / 激活成功，失败记录保留。没有新增SSH、端口或Key。Git外证据 `.runtime/document-reading-20261006/release/{prepare-online-1,deployment-online-1,public-online-1,live-document-final}.json`、真实IDE及13页截图；补发 `.runtime/document-followup-20261006/{frontend/summary.json,frontend/render-7214ef96/report.json,release/bundle-receipt.json,release/deployment-online-1.json,release/github-ci.json,release/software-merge.json}`。
+
+## 历史发布：连续 Agent 私聊（已上线）
 
 2026-10-06 **18:16:59北京时间**，用户明确授权发布后，固定源码 `2e696881583842eb0e251d222083bccd925524fe` 已部署客户端、API与worker；contract0.19.0 / chat1.8.0 / schema18，**没有数据库迁移**。连续聊天实现源为1eb9f8d，2e69688另修正Linux测试私钥的0600权限，生产凭据守卫未放宽。PR3及其祖先PR2已合并到main（软件合并提交1d94cf5），后续发布文档不改变运行源码。发布标签 `personal-agent-2026-10-06.2` 指向受测及部署源码。
 
@@ -105,15 +117,15 @@
 | --- | --- |
 | 总控集成目录 | `D:/deepseek-agent/research-agent-platform-chat-integration`；操作前用 `git status` 确认目录与已有改动 |
 | 分支 | GitHub共同主线为main；每个本地副本用 `git branch --show-current` 和 `git log -1` 读取当前分支 / SHA，不使用其他旧克隆代替 |
-| 已上线前端 | `2e696881583842eb0e251d222083bccd925524fe`；公网index SHA256 `7df13778196d25cfcb8e37e54015c9254a6edaeae1616184270e7fa8318c1be9`；后续文档提交不改变软件版本 |
-| 已上线 API / worker | `2e696881583842eb0e251d222083bccd925524fe`；镜像 `sha256:63915f409f27dd18f1ab14fc8cdd3f5e1cf2da4de16bbda80e620a5a90c37d06`；连续输入同批一份默认4000 / 90秒，生成中新补充开启独立默认预算，旧实际 / 未知用量保留；专项父子请求仍共享原预算 |
+| 已上线前端 | `622e84bff20af8cefdd6d9004286da6ba6ba4a22`；公网index SHA256 `9f2591fb39dcf489669c693202d1006c926c24ac72df824cb142bf092ba99742`；后续文档提交不改变软件版本 |
+| 已上线 API / worker | `94b26d1d4871c45ace12a86f93d4c19cce377c4d`；镜像 `sha256:d56ee747229eeaffec170810b846f1265ca5c2afbffa4d32a95e69e66871017d`；新附件请求独立有界预算，普通聊天仍4000 / 90秒，历史实际 / 未知用量保留 |
 | 新站 | `https://chat.acceptcat.com`，文件 `https://files.chat.acceptcat.com` |
 | 新 ECS | 广州 Ubuntu 22.04.5，4 vCPU / 8 GiB / 50 GiB；当前到期日 2026-11-04，未改续费设置 |
-| 运行与发布 | `/srv/research-openim`；backend current为 `/opt/research-openim/releases/2e696881583842eb0e251d222083bccd925524fe`；Nginx root为 `/opt/research-openim/releases/2e696881583842eb0e251d222083bccd925524fe/clients/openim/dist` |
+| 运行与发布 | `/srv/research-openim`；backend current为 `/opt/research-openim/releases/94b26d1d4871c45ace12a86f93d4c19cce377c4d`；Nginx root `/opt/research-openim/client-releases/622e84bff20af8cefdd6d9004286da6ba6ba4a22/clients/openim/dist` |
 | 版本 | 契约0.19.0、聊天1.8.0、IM桥1.0.0、SQLite迁移018；本批无迁移，既有个人设置 / 记忆 / 修订 / 跟进保留 |
-| 本批安全恢复 | 保留现有schema18数据库，停写并栅栏不兼容未完轮次；恢复原787ca23镜像 `sha256:e632d1c79499b113983bfa2d4995ff1059b518a06a6e2e4a67901c9661d91c41`、current与27c3279前端。实际 / 未知用量、聊天及记忆保留；不覆盖旧数据库，步骤见部署记录 |
+| 本批安全恢复 | 静态修复只恢复Nginx副本 `/opt/research-openim/ops/history-scroll-622e84bff20a-20261006T140148Z/research-openim-production`，回8c5f14c / e4ccf4c；后端和数据库保持。主发布回退2e69688需先栅栏未完成轮次并保留用量，不覆盖旧库；见部署记录 |
 | 旧站 | `research.acceptcat.com` 独立保留；旧账号 / 模型配置不自动迁移，不在本轮升级范围 |
-| GitHub | 主仓库 `https://github.com/luoyan96/personal-agent`，main；PR3 / PR2已合并，软件合并1d94cf5、受测及部署源码2e69688，三平台[CI](https://github.com/luoyan96/personal-agent/actions/runs/37446680799)通过；发布标签 `personal-agent-2026-10-06.2`。历史标签及legacy远端保留，历史“未推送”只表示当时状态 |
+| GitHub | 主仓库 `https://github.com/luoyan96/personal-agent`，main；PR5 / PR7 / PR8已合并，软件合并288b56f；发布标签 `personal-agent-2026-10-06.4` 指向622e84b（API与94b相同），三平台[CI](https://github.com/luoyan96/personal-agent/actions/runs/37474793438)通过；历史标签和legacy远端保留 |
 
 ## 已完成、证据与边界
 
@@ -171,7 +183,7 @@
 
 ## 当前工作与后续优先级
 
-当前客户端、API及worker2e69688 / contract0.19 / chat1.8 / schema18已上线，GitHub PR3与PR2已合并。真实模型连续聊天、生成中补充、OpenIM最终投递与刷新去重已验证；长文预算失败保留。下一批先完善自然聊天的日常可用性及预算反馈，再推进任务组织与长期记忆闭环。
+当前客户端622e84b、API及worker94b26d1 / contract0.19 / chat1.8 / schema18已上线，PR5 / PR7 / PR8已合并。真实5页论文与13页合成PDF的全文模型输入及最终IM回复已验证；旧4000轮次失败保留。下一批继续日常聊天可用性、任务组织和长期记忆闭环。
 
 1. 保持自然聊天、创建 / 导入 / 接入和日常可用性。当前普通“想做一件事”仍不自动生成任务群；明确创建Agent时才保存；原文献 / 链研Agent真实聊天和文件阅读证据保留对应软件基线。
 2. 按[PA1—PA4路线](roadmap.md)逐批验证个人长期记忆、任务类型 / 难度组织、持久主动跟进和反馈改进。先实现一个跨会话可用的纵向闭环，再扩大能力；用户明确偏好、行为观察和AI推断分别记录，纠正 / 撤回生效。
