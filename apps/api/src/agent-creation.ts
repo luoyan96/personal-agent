@@ -20,18 +20,18 @@ export function isAgentCreationCommand(text: string) {
 }
 
 export const agentCreationBoundary='当前仅依据用户提供的文字进行讨论；不联网、不自动读取 PDF 或 SDK 文件、不运行工具，不配置独立模型或 API Key。'
-const GeneratedProfile=z.strictObject({displayName:z.string().trim().min(1).max(60),introduction:z.string().trim().min(1).max(80),capabilityDescription:z.string().trim().min(1).max(200),personality:z.string().trim().min(1).max(80)})
+export const GeneratedProfile=z.strictObject({displayName:z.string().trim().min(1).max(60),introduction:z.string().trim().min(1).max(80),capabilityDescription:z.string().trim().min(1).max(200),personality:z.string().trim().min(1).max(80)})
 export const AgentCreationOutput=z.discriminatedUnion('kind',[
   z.strictObject({kind:z.literal('create_agent'),profile:GeneratedProfile}),
   z.strictObject({kind:z.literal('clarify'),question:z.string().trim().min(1).max(8000)}),
 ])
 export const agentCreationSystem=`Generate a compact chatting Agent profile from ONLY this complete current request. No tools or external actions, history, memories, other users, IDs or credentials. Text discussion only: no web, automatic PDF/SDK-file access, execution or independent key; never claim installed or completed external abilities. Use concise sentences, not long disclaimers: the service appends the fixed capability boundary. If topic/style are clear, create without another confirmation; clarify only missing essentials. Strict JSON only, no extra keys or markdown: {"kind":"create_agent","profile":{"displayName":"nonempty <=60 characters","introduction":"nonempty <=80","capabilityDescription":"nonempty <=200","personality":"nonempty <=80"}} OR {"kind":"clarify","question":"nonempty <=8000"}. The service alone saves the contact/direct; no completion claims, task plans, owners, tools or model settings.`
 
-export function applyAgentCreation(s:ChatService,turnId:string,generated:z.infer<typeof GeneratedProfile>):CreatedAgentReceipt {
+export function applyAgentCreation(s:ChatService,turnId:string,generated:z.infer<typeof GeneratedProfile>,localOnly=false):CreatedAgentReceipt {
   const profile=ContactProfileInput.parse({...generated,capabilityDescription:generated.capabilityDescription.endsWith(agentCreationBoundary)?generated.capabilityDescription:`${generated.capabilityDescription}\n${agentCreationBoundary}`})
   const existing=s.db.prepare(`SELECT c.id FROM chat_contacts c JOIN chat_contact_profiles p ON p.contact_id=c.id
     WHERE c.lab_id=? AND c.owner_id=? AND c.kind='personal_agent' AND p.role='specialist'
-    AND p.display_name=? AND p.introduction=? AND p.capability_description=? AND p.personality=? ORDER BY c.id LIMIT 1`).get(s.c.actor.labId,s.c.actor.id,profile.displayName,profile.introduction,profile.capabilityDescription,profile.personality)
+    AND p.display_name=? AND p.introduction=? AND p.capability_description=? AND p.personality=? ${localOnly?'AND NOT EXISTS(SELECT 1 FROM agent_connections external WHERE external.contact_id=c.id AND external.configured=1)':''} ORDER BY c.id LIMIT 1`).get(s.c.actor.labId,s.c.actor.id,profile.displayName,profile.introduction,profile.capabilityDescription,profile.personality)
   const request=(body:unknown,key:string):ChatRequest=>({params:{},query:{},body,headers:{'Idempotency-Key':`creation_${turnId}_${key}`}})
   const agent=existing?s.contact(String(existing.id)):(s.run('createPersonalAgent',request(profile,'profile')) as {data:Contact}).data
   if(agent.identity.kind!=='personal_agent'||agent.identity.ownerMemberId!==s.c.actor.id||agent.profile.role!=='specialist')throw new Error('INVALID_MODEL_OUTPUT')
@@ -42,6 +42,6 @@ export function applyAgentCreation(s:ChatService,turnId:string,generated:z.infer
 // Existing 0.14 workers/clients have strict schemas. New metadata belongs in
 // request_json; even a new limit code has a legacy-compatible persisted failure.
 export function legacyTurnDocument(turn:AgentTurn) {
-  const {purpose:_purpose,createdAgent:_createdAgent,fileRead:_fileRead,...document}=turn
+  const {purpose:_purpose,createdAgent:_createdAgent,fileRead:_fileRead,assistantReceipt:_assistantReceipt,memoryReceipt:_memoryReceipt,followupReceipt:_followupReceipt,...document}=turn
   return {...document,failure:document.failure==='AGENT_LIMIT_REACHED'?'INVALID_MODEL_OUTPUT':document.failure}
 }

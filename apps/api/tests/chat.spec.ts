@@ -94,6 +94,24 @@ async function setup(enabled = true, representativeMembers = 0) {
 }
 
 describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
+  it('coordinates an accepted lab human through a real proposal and independent group acceptance, without personal memory in group model inputs',async()=>{
+    const s=await setup();await s.connect(s.human('member_B').id)
+    await s.call('createPersonalMemory',{topic:'回复方式',content:'OWNER_PERSONAL_PREF_NOT_GROUP',scope:'general'})
+    const text='请安排和已添加的同事一起整理材料',sent=(await s.call('agentChatMessage',{text},{id:s.personal.id})).value.data
+    const output={kind:'collaborate',answer:'先确认任务建议，同事仍需接受邀请。',group:{title:'合成协作',contactIds:[s.human('member_B').id,s.agent('member_A').id],sharedContext:{selectedText:text,artifactRefs:[]},plan:{labId:'lab_synthetic',goal:text,proposedItems:[{id:'organize',title:'整理材料',goal:'整理提供文字',deliverable:'文字清单',acceptanceCriteria:'清单可检查',allocation:{kind:'invitation',memberId:'member_B'},dependencies:[],schedule,inputArtifactIds:[],budget:null}],unresolvedQuestions:[]}}}
+    await new ChatWorker(s.db,s.config,async input=>{const p=JSON.parse(input.prompt);expect(p.collaboratingHumans.map((v:{id:string})=>v.id)).toContain(s.human('member_B').id);expect(p.collaboratingHumans.map((v:{id:string})=>v.id)).not.toContain(s.human('member_C').id);return {text:JSON.stringify(output),failure:null,inputTokens:100,outputTokens:200,elapsedMs:20}}).tick()
+    const turn=(await s.call('chatTurn',null,{id:sent.turn.id})).value.data;expect(turn.status).toBe('succeeded');expect(turn.assistantReceipt).toMatchObject({kind:'collaborate',planId:expect.any(String),actionIds:[expect.any(String)]})
+    expect(s.db.prepare("SELECT count(*) n FROM chat_conversations WHERE kind='group'").get()!.n).toBe(0)
+    const action=(await s.call('chatActions',null,{id:s.personal.id})).value.data[0]
+    const decided=await s.call('decideChatAction',{expectedVersion:action.version,expectedConversationVersion:s.personal.version,decision:'confirm'},{id:action.id});expect(decided.status,decided.raw).toBe(200)
+    const group=(await s.call('chatConversation',null,{id:decided.value.data.conversationId})).value.data
+    expect(group.members.find((m:{contactId:string})=>m.contactId===s.human('member_B').id).status).toBe('invited')
+    expect((await s.call('chatConversation',null,{id:group.id},1)).status).toBe(404)
+    const invitation=(await s.call('chatInvitations',null,{},0)).value.data.find((i:{conversationId:string;invitedContactId:string})=>i.conversationId===group.id&&i.invitedContactId===s.agent('member_A').id)
+    await s.call('decideChatInvitation',{expectedVersion:invitation.version,decision:'accept'},{id:invitation.id})
+    await s.ask(group.id,s.agent('member_A').id,[],'合成群讨论')
+    await new ChatWorker(s.db,s.config,async input=>{expect(input.prompt).not.toContain('OWNER_PERSONAL_PREF_NOT_GROUP');return {text:JSON.stringify(reply()),failure:null,inputTokens:100,outputTokens:200,elapsedMs:20}}).tick()
+  })
   it.each([1,2])('reserves total budget for short chat with %i UUID members and keeps measured usage',async memberCount=>{
     const s=await setup(true,memberCount),total={maxTokens:4000,maxSeconds:30}
     const sent=(await s.call('sendChatMessage',{text:'hello 在吗',intent:'ask_agent',agentContactId:s.agent(s.accounts[0]!.memberId).id,budget:total},{id:s.personal.id})).value.data
@@ -313,9 +331,9 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     await s.call('sendChatMessage',{text:'旧013真人聊天'},{id:direct.id});await s.call('updateChatPreferences',{expectedVersion:1,pinned:true},{id:direct.id})
     s.db.prepare('UPDATE chat_conversations SET scope_key=? WHERE id=?').run('direct:lab_synthetic:member_A:member_B',direct.id)
     const previous=s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(direct.id)!.document
-    s.db.exec('DROP TABLE agent_connections; DROP INDEX chat_contact_owner; DROP TABLE personal_model_settings; DROP TABLE personal_model_configurations; DROP TABLE personal_spaces; DROP TRIGGER im_queue_research_message; DROP TABLE im_callback_receipts; DROP TABLE im_message_outbox; DROP TABLE im_token_leases; DROP TABLE im_conversations; DROP TABLE im_identities; DROP TABLE chat_memory_revisions; DROP TABLE chat_memories; DROP TABLE chat_contact_requests; DROP TABLE chat_contact_profiles; DELETE FROM schema_migrations WHERE version>=14')
+    s.db.exec('DROP TABLE personal_followups; DROP TABLE personal_memory_revisions; DROP TABLE personal_memories; DROP TABLE personal_memory_settings; DROP TABLE agent_connections; DROP INDEX chat_contact_owner; DROP TABLE personal_model_settings; DROP TABLE personal_model_configurations; DROP TABLE personal_spaces; DROP TRIGGER im_queue_research_message; DROP TABLE im_callback_receipts; DROP TABLE im_message_outbox; DROP TABLE im_token_leases; DROP TABLE im_conversations; DROP TABLE im_identities; DROP TABLE chat_memory_revisions; DROP TABLE chat_memories; DROP TABLE chat_contact_requests; DROP TABLE chat_contact_profiles; DELETE FROM schema_migrations WHERE version>=14')
     migrate(s.db);migrate(s.db)
-    expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(17)
+    expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(18)
     expect(s.db.prepare('SELECT count(*) n FROM chat_contact_requests').get()!.n).toBe(1)
     expect(s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(direct.id)!.document).toBe(previous)
     expect((await s.call('chatContact',null,{id:s.human('member_B').id})).value.data.relationship.status).toBe('accepted')
@@ -335,9 +353,9 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     const message = s.db.prepare('SELECT document FROM chat_messages WHERE conversation_id=?').get(s.personal.id)!.document
     // Reconstruct the exact 012 shape by removing only the new 013 table/history.
     // Existing applied checksums and all chat rows remain untouched.
-    s.db.exec('DROP TABLE agent_connections; DROP INDEX chat_contact_owner; DROP TABLE personal_model_settings; DROP TABLE personal_model_configurations; DROP TABLE personal_spaces; DROP TRIGGER im_queue_research_message; DROP TABLE im_callback_receipts; DROP TABLE im_message_outbox; DROP TABLE im_token_leases; DROP TABLE im_conversations; DROP TABLE im_identities; DROP TABLE chat_memory_revisions; DROP TABLE chat_memories; DROP TABLE chat_contact_requests; DROP TABLE chat_contact_profiles; DROP TABLE chat_viewer_states; DELETE FROM schema_migrations WHERE version>=13')
+    s.db.exec('DROP TABLE personal_followups; DROP TABLE personal_memory_revisions; DROP TABLE personal_memories; DROP TABLE personal_memory_settings; DROP TABLE agent_connections; DROP INDEX chat_contact_owner; DROP TABLE personal_model_settings; DROP TABLE personal_model_configurations; DROP TABLE personal_spaces; DROP TRIGGER im_queue_research_message; DROP TABLE im_callback_receipts; DROP TABLE im_message_outbox; DROP TABLE im_token_leases; DROP TABLE im_conversations; DROP TABLE im_identities; DROP TABLE chat_memory_revisions; DROP TABLE chat_memories; DROP TABLE chat_contact_requests; DROP TABLE chat_contact_profiles; DROP TABLE chat_viewer_states; DELETE FROM schema_migrations WHERE version>=13')
     migrate(s.db); migrate(s.db)
-    expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(17)
+    expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(18)
     expect(s.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(s.personal.id)!.document).toBe(previous)
     expect(s.db.prepare('SELECT document FROM chat_messages WHERE conversation_id=?').get(s.personal.id)!.document).toBe(message)
     expect((await s.call('chatConversation', null, { id: s.personal.id })).value.data.viewerState).toEqual({ readSequence: 0, unreadCount: 0, pinned: true, version: 1 })

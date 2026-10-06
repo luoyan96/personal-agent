@@ -127,9 +127,9 @@ it('migration 016 to 017 preserves every populated old table row and is repeatab
  // The populated fixture uses only legacy account/profile/direct operations.
  // Remove the empty 017 table/history entry to make an exact 016 snapshot.
  expect(db.prepare('SELECT count(*) n FROM agent_connections').get()!.n).toBe(0)
- db.exec('DROP TABLE agent_connections; DELETE FROM schema_migrations WHERE version=17')
+ db.exec('DROP TABLE personal_followups; DROP TABLE personal_memory_revisions; DROP TABLE personal_memories; DROP TABLE personal_memory_settings; DROP TABLE agent_connections; DELETE FROM schema_migrations WHERE version>=17')
  const tables=db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name<>'schema_migrations' ORDER BY name").all().map(r=>String(r.name))
  const digest=()=>Object.fromEntries(tables.map(table=>[table,createHash('sha256').update(JSON.stringify(db.prepare(`SELECT * FROM "${table}" ORDER BY rowid`).all())).digest('hex')]))
  const count=tables.reduce((n,t)=>n+Number(db.prepare(`SELECT count(*) n FROM "${t}"`).get()!.n),0);expect(count).toBeGreaterThan(30)
- const before=digest();migrate(db);migrate(db);expect(digest()).toEqual(before);expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(17);expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+ const before=digest();migrate(db);migrate(db);expect(digest()).toEqual(before);expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(18);expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
 })

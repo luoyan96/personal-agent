@@ -4,6 +4,7 @@ import { openDatabase,checkDatabase } from './database.js'
 import { ExecutionWorker } from './execution-worker.js'
 import { ChatWorker } from './chat-worker.js'
 import { OpenImWorker } from './openim-worker.js'
+import { PersonalFollowupWorker } from './personal-followups.js'
 const config=readConfig()
 const releaseProcess=processGuard(config.databasePath);process.once('exit',releaseProcess)
 const db=openDatabase(config.databasePath)
@@ -13,5 +14,6 @@ process.once('SIGINT',()=>{stopping=true});process.once('SIGTERM',()=>{stopping=
 const worker=new ExecutionWorker(db,config)
 const chatWorker=new ChatWorker(db,config)
 const imWorker=new OpenImWorker(db,config)
+const followupWorker=new PersonalFollowupWorker(db,config)
 console.log('B3 worker started; historical notification outbox is not consumed.')
-try { do {const chat=await chatWorker.tick();const execution=await worker.tick();const im=await imWorker.tick();if(!chat&&!execution&&!im)await new Promise(resolve=>setTimeout(resolve,1000))}while(!stopping && !process.argv.includes('--once')) } finally {db.close()}
+try { do {const reminder=await followupWorker.tick();const chat=await chatWorker.tick();const execution=await worker.tick();const im=await imWorker.tick();if(!reminder&&!chat&&!execution&&!im)await new Promise(resolve=>setTimeout(resolve,1000))}while(!stopping && !process.argv.includes('--once')) } finally {db.close()}

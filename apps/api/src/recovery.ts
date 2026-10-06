@@ -73,6 +73,8 @@ export function restore(source:string,destination:string,operator:string){
     db.prepare('UPDATE personal_model_configurations SET enabled=0,version=version+1,updated_at=?').run(now)
     db.exec('UPDATE personal_model_settings SET version=version+1')
     db.prepare('UPDATE agent_connections SET enabled=0,version=version+1,updated_at=?,last_probe_json=NULL').run(now)
+    db.exec("UPDATE personal_memory_settings SET candidate_learning=0,version=version+1; UPDATE personal_followups SET status='paused',version=version+1 WHERE status='active' AND fired_message_id IS NULL")
+    db.exec("UPDATE im_message_outbox SET status='uncertain',lease_until=NULL WHERE status IN ('pending','sending')")
     db.exec('DELETE FROM registration_work')
     db.prepare("UPDATE runtime_meta SET value=? WHERE key='signing_key'").run(randomBytes(32).toString('hex'))
     for(const row of db.prepare("SELECT id,document FROM execution_jobs WHERE status IN ('queued','running','waiting_input')").all()){

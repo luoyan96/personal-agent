@@ -15,6 +15,7 @@ export class OpenImWorker {
   private checkedFriends=new Map<string,number>()
   constructor(readonly db:DatabaseSync,readonly config:Config,client=new OpenImClient(config)){this.bridge=new OpenImBridge(db,config,client)}
   snapshot(id:string){
+    if(this.db.prepare("SELECT 1 FROM personal_followups WHERE fired_message_id=? AND status IN ('completed','cancelled')").get(id))throw new Error('Followup delivery stopped')
     const row=this.db.prepare('SELECT m.document,c.owner_id FROM chat_messages m JOIN chat_conversations c ON c.id=m.conversation_id WHERE m.id=?').get(id)!
     const document=JSON.parse(String(row.document)),turn=document.turnId?this.db.prepare('SELECT owner_id FROM chat_turns WHERE id=?').get(document.turnId):null
     const contact=document.senderContactId?this.db.prepare('SELECT owner_id,kind FROM chat_contacts WHERE id=?').get(document.senderContactId):null

@@ -36,6 +36,7 @@ export class OpenImCallbacks {
     const pointer=this.pointer(body);if(!pointer.success||body.contentType!==110)fail('FORBIDDEN')
     const row=this.db.prepare("SELECT m.document,c.owner_id,o.status,o.operation_id FROM chat_messages m JOIN chat_conversations c ON c.id=m.conversation_id JOIN im_message_outbox o ON o.message_id=m.id WHERE m.id=? AND m.conversation_id=?").get(pointer.data.messageId,pointer.data.conversationId)
     if(!row||!['sending','uncertain','sent'].includes(String(row.status))||!row.operation_id||body.operationID!==row.operation_id)fail('FORBIDDEN')
+    if(row.status!=='sent'&&this.db.prepare("SELECT 1 FROM personal_followups WHERE fired_message_id=? AND status IN ('completed','cancelled')").get(pointer.data.messageId))fail('FORBIDDEN')
     const value=JSON.parse(String(row.document)),turn=value.turnId?this.db.prepare('SELECT owner_id FROM chat_turns WHERE id=?').get(value.turnId):null
     const sender=value.senderContactId?this.db.prepare('SELECT owner_id FROM chat_contacts WHERE id=?').get(value.senderContactId):null
     const owner=String(turn?.owner_id??(value.origin==='human'?sender?.owner_id:null)??row.owner_id),chat=this.bridge.chat(serviceFor(this.db,owner,this.bridge.config).c.actor),message=chat.projectedMessage(pointer.data.messageId)
