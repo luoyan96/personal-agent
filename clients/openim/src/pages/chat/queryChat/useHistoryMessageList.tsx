@@ -67,13 +67,26 @@ export function useHistoryMessageList() {
           viewType: MessageViewType.History,
         });
         if (!isCurrent()) return;
-        setLoadState((preState) => ({
-          ...preState,
-          initLoading: false,
-          hasMoreOld: !data.isEnd,
-          messageList: [...data.messageList, ...(loadMore ? preState.messageList : [])],
-          firstItemIndex: preState.firstItemIndex - data.messageList.length,
-        }));
+        setLoadState((preState) => {
+          // SDK live events can arrive before the history promise settles.
+          // Keep them, and merge overlapping locators exactly once.
+          const existing = new Set(preState.messageList.map((m) => m.clientMsgID));
+          const merged = new Map(
+            [...data.messageList, ...preState.messageList].map((m) => [
+              m.clientMsgID,
+              m,
+            ]),
+          );
+          return {
+            ...preState,
+            initLoading: false,
+            hasMoreOld: !data.isEnd,
+            messageList: [...merged.values()],
+            firstItemIndex:
+              preState.firstItemIndex -
+              data.messageList.filter((m) => !existing.has(m.clientMsgID)).length,
+          };
+        });
       } catch (error) {
         // A route reload can mount this hook before SDK login. Also consume
         // failures of requests that belonged to a closed route or prior actor.
@@ -97,17 +110,14 @@ export function useHistoryMessageList() {
 
   useEffect(() => {
     const pushNewMessage = (message: MessageItem) => {
-      if (
-        latestLoadState.current.messageList.find(
-          (item) => item.clientMsgID === message.clientMsgID,
-        )
-      ) {
-        return;
-      }
-      setLoadState((preState) => ({
-        ...preState,
-        messageList: [...preState.messageList, message],
-      }));
+      setLoadState((preState) =>
+        preState.messageList.some((item) => item.clientMsgID === message.clientMsgID)
+          ? preState
+          : {
+              ...preState,
+              messageList: [...preState.messageList, message],
+            },
+      );
     };
     const updateOneMessage = (message: MessageItem) => {
       setLoadState((preState) => {

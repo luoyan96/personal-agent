@@ -18,16 +18,18 @@ import { personalCommands,handleMemory,memory,memorySettings,ownLocalMemoryScope
 import { handleFollowup,followup,followupCommand } from './personal-followups.js'
 import { personalWorkRequest,assistantDirectoryFingerprint,unsupportedCollaboration } from './personal-assistant.js'
 import { isAgentCreationCommand, legacyTurnDocument } from './agent-creation.js'
+import { startContinuous,extendContinuous,currentTurnText,supersedeTurn,turnProgress,abortChatCall } from './continuous-chat.js'
+import type { ContinuousInput } from './continuous-chat.js'
 
 export type ChatCommand = keyof typeof chatRoutes | keyof typeof agentIntegrationRoutes | keyof typeof personalAssistantRoutes | 'imCreateGroup' | 'imInviteContact'
 type Resource = z.infer<typeof ChatResource>
-export type TurnInput = { budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; personalAssistant?:boolean; assistantMode?:'coordinate'; delegatedByTurnId?:string; personalMemoryFingerprint?:string; assistantDirectoryFingerprint?:string; assistantReceipt?:AgentTurn['assistantReceipt'];memoryReceipt?:AgentTurn['memoryReceipt'];followupReceipt?:AgentTurn['followupReceipt']; externalConsent?:boolean; externalAgent?:boolean; externalConnectionVersion?:number; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED'; assistantFailure?:'AGENT_LIMIT_REACHED'; fileDocument?:FileDocument; fileSource?:AgentFileSelection; fileRead?:AgentTurn['fileRead']; modelOutputDiagnostic?:{stage:string;returnedTextLength:number;trimEmpty:boolean;maxOutputTokens:number;reasoningEffort:string;finishReason?:string;failure?:string;errorCategory?:string} }
+export type TurnInput = { continuous?:ContinuousInput; budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; personalAssistant?:boolean; assistantMode?:'coordinate'; delegatedByTurnId?:string; personalMemoryFingerprint?:string; assistantDirectoryFingerprint?:string; assistantReceipt?:AgentTurn['assistantReceipt'];memoryReceipt?:AgentTurn['memoryReceipt'];followupReceipt?:AgentTurn['followupReceipt']; externalConsent?:boolean; externalAgent?:boolean; externalConnectionVersion?:number; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED'; assistantFailure?:'AGENT_LIMIT_REACHED'; fileDocument?:FileDocument; fileSource?:AgentFileSelection; fileRead?:AgentTurn['fileRead']; modelOutputDiagnostic?:{stage:string;returnedTextLength:number;trimEmpty:boolean;maxOutputTokens:number;reasoningEffort:string;finishReason?:string;failure?:string;errorCategory?:string} }
 export type ChatRequest = { params: { id?: string; contactId?: string }; query: { cursor?: string; limit?: number; search?: string; afterSequence?: number; view?: 'directory'|'mine'; direction?: 'all'|'incoming'|'outgoing'; status?: 'all'|'pending'|'confirmed'|'candidate'|'revoked'|'active'|'paused'|'completed'|'cancelled'; scope?: 'private_agent'|'conversation'|'local'|'global'; scopeId?: string }; headers: { 'Idempotency-Key'?: string }; body: unknown }
 type Request = ChatRequest
 const decode = (value: unknown) => JSON.parse(String(value))
 const encode = JSON.stringify
 export class ChatService {
-  constructor(readonly c: Collaboration, readonly config: Config) {}
+  constructor(readonly c: Collaboration, readonly config: Config,readonly clock:()=>number=Date.now) {}
   get db() { return this.c.db }
   get directory() { return new ContactDirectory(this) }
   get ai() { const r = labAiRuntime(this.db, this.c.actor.labId, this.config); return new AiService(this.c, r.enabled, r.model) }
@@ -192,13 +194,13 @@ export class ChatService {
     const group = this.conversation(turn.conversationId, false); this.joinedAgent(group, turn.agentContactId)
     if(input.purpose==='create_agent') {
       const agent=this.contact(turn.agentContactId),message=this.projectedMessage(turn.inputMessageId)
-      if(!input.dailyChat||group.kind!=='personal'||group.ownerMemberId!==this.c.actor.id||agent.identity.kind!=='personal_agent'||agent.identity.ownerMemberId!==this.c.actor.id||agent.profile.role!=='coordinator'||message.origin!=='human'||message.senderContactId!==this.human().id||!isAgentCreationCommand(message.text??''))fail('FORBIDDEN')
+      if(!input.dailyChat||group.kind!=='personal'||group.ownerMemberId!==this.c.actor.id||agent.identity.kind!=='personal_agent'||agent.identity.ownerMemberId!==this.c.actor.id||agent.profile.role!=='coordinator'||message.origin!=='human'||message.senderContactId!==this.human().id||!isAgentCreationCommand(currentTurnText(this,turnId)))fail('FORBIDDEN')
     }
     if(input.externalAgent){const connection=connectionRow(this,turn.agentContactId);if(!input.dailyChat||!input.externalConsent||group.kind!=='direct'||!connection?.configured||connection.version!==input.externalConnectionVersion)fail('FORBIDDEN')}
-    if(input.personalMemoryFingerprint&&exact&&input.personalMemoryFingerprint!==personalMemoryContext(this,this.contact(turn.agentContactId),group,this.projectedMessage(turn.inputMessageId).text??'').fingerprint)fail('VERSION_CONFLICT')
+    if(input.personalMemoryFingerprint&&exact&&input.personalMemoryFingerprint!==personalMemoryContext(this,this.contact(turn.agentContactId),group,currentTurnText(this,turnId)).fingerprint)fail('VERSION_CONFLICT')
     if(input.assistantMode==='coordinate'&&exact&&input.assistantDirectoryFingerprint!==assistantDirectoryFingerprint(this))fail('VERSION_CONFLICT')
-    if(input.assistantMode==='coordinate'&&(group.kind!=='personal'||group.ownerMemberId!==this.c.actor.id||this.contact(turn.agentContactId).profile.role!=='coordinator'||!personalWorkRequest(this.projectedMessage(turn.inputMessageId).text??'')))fail('FORBIDDEN')
-    if(input.delegatedByTurnId){const parent=this.db.prepare('SELECT owner_id,status,request_json,document FROM chat_turns WHERE id=?').get(input.delegatedByTurnId);if(!parent||parent.owner_id!==this.c.actor.id||parent.status!=='succeeded'||JSON.parse(String(parent.request_json)).assistantMode!=='coordinate'||this.projectedMessage(turn.inputMessageId).text!==this.projectedMessage(JSON.parse(String(parent.document)).inputMessageId).text)fail('FORBIDDEN')}
+    if(input.assistantMode==='coordinate'&&(group.kind!=='personal'||group.ownerMemberId!==this.c.actor.id||this.contact(turn.agentContactId).profile.role!=='coordinator'||!personalWorkRequest(currentTurnText(this,turnId))))fail('FORBIDDEN')
+    if(input.delegatedByTurnId){const parent=this.db.prepare('SELECT owner_id,status,request_json,document FROM chat_turns WHERE id=?').get(input.delegatedByTurnId);if(!parent||parent.owner_id!==this.c.actor.id||parent.status!=='succeeded'||JSON.parse(String(parent.request_json)).assistantMode!=='coordinate'||this.projectedMessage(turn.inputMessageId).text!==currentTurnText(this,input.delegatedByTurnId))fail('FORBIDDEN')}
     if(input.fileSource)this.fileDocument(input.fileSource.messageId,group.id)
     if (exact) this.c.checkVersion(group.version, input.conversationVersion)
     if(exact && input.modelSelectionFingerprint && input.modelSelectionFingerprint!==chatModelFingerprint(this,turn.agentContactId,personalModelRuntime(this.db,this.c.actor,this.config).fingerprint))fail('VERSION_CONFLICT')
@@ -238,7 +240,7 @@ export class ChatService {
       if(['queued','running','waiting_input'].includes(turn.status))turn.allowedActions.push('cancel')
       const active=!!this.db.prepare("SELECT 1 FROM chat_turns WHERE root_id=? AND status IN ('queued','running','waiting_input')").get(row.root_id!)
       const latest=this.db.prepare('SELECT id FROM chat_turns WHERE root_id=? ORDER BY rowid DESC LIMIT 1').get(row.root_id!)
-      if(latest?.id===turn.id&&!active&&turn.availability.status==='available'&&turn.remainingBudget&&attempts.length<3&&['unavailable','failed','interrupted','cancelled'].includes(turn.status))turn.allowedActions.push('retry')
+      if(!((decode(row.request_json) as TurnInput).continuous?.supersededBy)&&latest?.id===turn.id&&!active&&turn.availability.status==='available'&&turn.remainingBudget&&attempts.length<3&&['unavailable','failed','interrupted','cancelled'].includes(turn.status))turn.allowedActions.push('retry')
     }catch{/* Failure state is visible, but no operation may reuse lost context authority. */}
     // Status remains visible after source/agent revocation; output content has separate live ACL checks.
     return turn
@@ -421,7 +423,7 @@ export class ChatService {
     if(personalCommands.includes(name)){if(req.params.id){if(name.toLowerCase().includes('followup'))followup(this,req.params.id);else memory(this,req.params.id)}return}
     if(this.directory.authorize(name,req))return
     const id = req.params.id
-    if (name === 'chatTurn' || name === 'cancelChatTurn' || name === 'retryChatTurn') this.turn(id!)
+    if (name === 'chatTurn' || name === 'chatTurnProgress' || name === 'cancelChatTurn' || name === 'retryChatTurn') this.turn(id!)
     else if (name === 'decideChatAction') this.action(id!)
     else if (name === 'decideChatInvitation') this.invitation(id!)
     else if (id) {const group=this.conversation(id, false);if(name==='imInviteContact'&&(group.kind!=='group'||group.ownerMemberId!==this.c.actor.id))fail('FORBIDDEN')}
@@ -544,25 +546,61 @@ export class ChatService {
       if (input.intent === 'ask_agent') this.joinedAgent(group, input.agentContactId!)
       const external=input.agentContactId&&connectionRow(this,input.agentContactId)?.configured===1
       if(external){if(name==='agentFileMessage'||(b as {fileSelection?:unknown}).fileSelection)fail('EXTERNAL_FILES_UNSUPPORTED');if(name!=='agentChatMessage'||group.kind!=='direct')fail('EXTERNAL_SCOPE_UNSUPPORTED');if((b as {externalConsent?:boolean}).externalConsent!==true)fail('EXTERNAL_CONSENT_REQUIRED');const contact=this.contact(input.agentContactId!);if(!contact.agentRuntime?.callerAllowed)fail('FORBIDDEN')}
+      const continuous=name==='agentChatMessage'&&(b as {continuous?:boolean}).continuous===true
+      const active=continuous?this.db.prepare("SELECT * FROM chat_turns WHERE owner_id=? AND conversation_id=? AND status IN ('queued','running','waiting_input') ORDER BY rowid DESC").all(this.c.actor.id,id):[]
+      let pending=!external?active.find(row=>row.status==='queued'&&(decode(row.request_json) as TurnInput).continuous&&this.clock()<=(decode(row.request_json) as TurnInput).continuous!.dueAt&&(decode(row.request_json) as TurnInput).continuous!.messageIds.length<100):undefined
+      for(const row of active)if(row!==pending)supersedeTurn(this,String(row.id))
       const message = this.message(id, { senderContactId: this.human().id, origin: 'human', text: input.text, mentions: input.mentions, resources: input.context, actionIds: [], turnId: null })
       const agent=input.agentContactId?this.contact(input.agentContactId):null
       const purpose=name==='agentChatMessage'&&!(b as {fileSelection?:AgentFileSelection}).fileSelection&&group.kind==='personal'&&group.ownerMemberId===this.c.actor.id&&agent?.identity.kind==='personal_agent'&&agent.identity.ownerMemberId===this.c.actor.id&&agent.profile.role==='coordinator'&&isAgentCreationCommand(input.text)?'create_agent' as const:undefined
+      // A fresh explicit creation/work imperative after small talk is a new
+      // request, not permission inferred from a quoted/older first sentence.
+      if(pending){const old=decode(pending.request_json) as TurnInput;if(purpose&&old.purpose!=='create_agent'||!purpose&&!old.assistantMode&&!old.fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(input.text)){supersedeTurn(this,String(pending.id));pending=undefined}}
       const management=name==='agentChatMessage'&&!purpose&&!(b as {fileSelection?:unknown}).fileSelection&&agent&&ownLocalMemoryScope(this,agent,group)?{memory:memoryCommand(this,input.text,message),followup:followupCommand(this,input.text,message)}:null
       const limitation=name==='agentChatMessage'&&!purpose&&!(b as {fileSelection?:unknown}).fileSelection&&group.kind==='personal'&&agent?.profile.role==='coordinator'?unsupportedCollaboration(this,input.text):null
-      if(management?.memory||management?.followup||limitation){const turn=this.newTurn(group,message,input.agentContactId!,{budget:input.budget!,context:[],conversationVersion:group.version,inputSequence:message.sequence,dailyChat:true,personalAssistant:true});const result=management?.memory??management?.followup;if(management?.memory)turn.memoryReceipt=management.memory.receipt;else if(management?.followup)turn.followupReceipt=management.followup.receipt;const response=this.message(group.id,{senderContactId:input.agentContactId!,origin:'service',text:result?.text??limitation!,mentions:[],resources:[],actionIds:[],turnId:turn.id});turn.status='succeeded';turn.failure=null;turn.outputMessageId=response.id;turn.version++;turn.updatedAt=instant();this.saveTurn(turn);message.turnId=turn.id;this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(legacyChatMessage(message)),message.id);return {data:{message:this.projectedMessage(message.id),turn:this.turn(turn.id)}}}
+      if(management?.memory||management?.followup||limitation){if(pending)supersedeTurn(this,String(pending.id));const turn=this.newTurn(group,message,input.agentContactId!,{budget:input.budget!,context:[],conversationVersion:group.version,inputSequence:message.sequence,dailyChat:true,personalAssistant:true});const result=management?.memory??management?.followup;if(management?.memory)turn.memoryReceipt=management.memory.receipt;else if(management?.followup)turn.followupReceipt=management.followup.receipt;const response=this.message(group.id,{senderContactId:input.agentContactId!,origin:'service',text:result?.text??limitation!,mentions:[],resources:[],actionIds:[],turnId:turn.id});turn.status='succeeded';turn.failure=null;turn.outputMessageId=response.id;turn.version++;turn.updatedAt=instant();this.saveTurn(turn);message.turnId=turn.id;this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(legacyChatMessage(message)),message.id);return {data:{message:this.projectedMessage(message.id),turn:this.turn(turn.id)}}}
       let fileSource=name==='agentFileMessage'?{messageId:message.id}:name==='agentChatMessage'&&!purpose&&!external?this.dailyFileSource(group.id,(b as {fileSelection?:AgentFileSelection}).fileSelection):undefined
       const fileDocument=name==='agentFileMessage'&&parsedFile?{...parsedFile,metadata:{...parsedFile.metadata,messageId:message.id}}:undefined
       if(name==='agentFileMessage'&&!fileDocument)fail('INVALID_STATE')
       if(fileSource){const document=fileDocument??this.fileDocument(fileSource.messageId,group.id);const questionPages=pageNumbersFromQuestion(input.text);const numbers=fileSource.pageNumbers??(questionPages.length?[...new Set(questionPages)]:undefined);if(numbers?.some(n=>!document.pages.some(page=>page.pageNumber===n)))fail('FILE_PAGE_UNAVAILABLE');fileSource={...fileSource,...(numbers?{pageNumbers:numbers}:{} )}}
-      const turn = input.intent === 'ask_agent' ? this.newTurn(group, message, input.agentContactId!, { budget: input.budget!, context: input.context, conversationVersion: group.version, inputSequence: message.sequence,dailyChat:name!=='sendChatMessage',...(external?{externalConsent:true}:{}),...(purpose?{purpose}:{}),...(name==='agentChatMessage'&&!purpose&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(input.text)?{personalAssistant:true,assistantMode:'coordinate' as const}:{}),...(fileDocument?{fileDocument}:{}),...(fileSource?{fileSource,fileRead:fileReadMetadata(fileDocument??this.fileDocument(fileSource.messageId,group.id))}:{}) }) : null
+      const nextInput:TurnInput={budget:input.budget!,context:input.context,conversationVersion:group.version,inputSequence:message.sequence,dailyChat:name!=='sendChatMessage',...(external?{externalConsent:true}:{}),...(purpose?{purpose}:{}),...(name==='agentChatMessage'&&!purpose&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(input.text)?{personalAssistant:true,assistantMode:'coordinate' as const}:{}),...(fileDocument?{fileDocument}:{}),...(fileSource?{fileSource,fileRead:fileReadMetadata(fileDocument??this.fileDocument(fileSource.messageId,group.id))}:{})}
+      let turn:AgentTurn|null=null
+      let merge=pending
+      if(merge){try{this.checkTurnInput(String(merge.id))}catch{supersedeTurn(this,String(merge.id));merge=undefined}}
+      if(merge){
+        const previous=decode(merge.request_json) as TurnInput
+        nextInput.continuous=extendContinuous(previous.continuous!,message.id,this.clock())
+        // New current submissions can retract a pending instruction. Explicit
+        // negation/correction wins over a creation/work imperative in this batch.
+        const retracted=/^(?:先)?(?:别|不要|不用|停止|取消|算了)|^(?:先给|只要|只需|改为|改成)/.test(input.text.trim())
+        if(retracted)nextInput.continuous.structuredSuppressed=true
+        this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(encode(nextInput),merge.id!)
+        const combined=currentTurnText(this,String(merge.id))
+        nextInput.purpose=!nextInput.continuous.structuredSuppressed&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&isAgentCreationCommand(combined)?'create_agent':undefined
+        nextInput.assistantMode=!nextInput.continuous.structuredSuppressed&&!nextInput.purpose&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(combined)?'coordinate':undefined
+        nextInput.personalAssistant=nextInput.assistantMode==='coordinate'||undefined
+        nextInput.personalMemoryFingerprint=personalMemoryContext(this,agent!,group,combined).fingerprint||undefined
+        nextInput.agentContextFingerprint=this.directory.modelContext(input.agentContactId!,group.id).fingerprint
+        nextInput.modelSelectionFingerprint=chatModelFingerprint(this,input.agentContactId!,personalModelRuntime(this.db,this.c.actor,this.config).fingerprint)
+        if(nextInput.assistantMode)nextInput.assistantDirectoryFingerprint=assistantDirectoryFingerprint(this)
+        const value=this.materializedTurn(merge);delete value.purpose;delete value.createdAgent;value.inputMessageId=message.id;value.version++;value.updatedAt=instant()
+        this.db.prepare('UPDATE chat_turns SET request_json=?,document=? WHERE id=?').run(encode(nextInput),encode(legacyTurnDocument(value)),merge.id!)
+        turn=this.turn(String(merge.id))
+      }else if(input.intent==='ask_agent'){
+        if(continuous){nextInput.continuous=startContinuous(message.id,this.clock());if(external)nextInput.continuous.dueAt=this.clock()}
+        turn=this.newTurn(group,message,input.agentContactId!,nextInput)
+      }
+      if(turn&&continuous)for(const row of active)if(String(row.id)!==turn.id){const old=decode(this.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(row.id!)!.request_json) as TurnInput;if(old.continuous){old.continuous.supersededBy=turn.id;old.continuous.revision++;old.continuous.text='';old.continuous.updatedAt=instant();this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(encode(old),row.id!)}}
+
       if (turn) { message.turnId = turn.id; this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(legacyChatMessage(message)), message.id) }
       return { data: { message:this.projectedMessage(message.id), turn } }
     }
     if (name === 'chatTurn') return { data: this.turn(id) }
+    if(name==='chatTurnProgress')return {data:turnProgress(this,id)}
     if (name === 'cancelChatTurn') {
       const turn = this.turn(id); this.c.checkVersion(turn.version, (b as RequestFor<'cancelChatTurn'>['body']).expectedVersion)
       if (!['queued', 'running', 'waiting_input'].includes(turn.status)) fail('INVALID_STATE')
-      turn.status = 'cancelled'; turn.version++; turn.updatedAt = instant(); this.saveTurn(turn)
+      abortChatCall(id);turn.status = 'cancelled'; turn.version++; turn.updatedAt = instant(); this.saveTurn(turn)
       this.db.prepare('UPDATE chat_turns SET fence=fence+1,lease_owner=NULL,lease_until=NULL WHERE id=?').run(id)
       return { data: this.turn(turn.id) }
     }

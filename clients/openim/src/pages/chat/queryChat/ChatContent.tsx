@@ -6,6 +6,8 @@ import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import { SystemMessageTypes } from "@/constants/im";
 import { useConversationStore, useUserStore } from "@/store";
 import { useResearchStore } from "@/research/store";
+import { AgentReplyProgress, AgentProgressHistory } from "@/research/agent-progress";
+import { OpenImResearchPointer } from "@research-agent-platform/contracts";
 import emitter from "@/utils/events";
 
 import MessageItem from "./MessageItem";
@@ -24,6 +26,27 @@ const ChatContent = () => {
   const followLatest = useRef(true);
   const frame = useRef<number>();
   const touchY = useRef<number>();
+  const pointerHistory = useMemo(() => {
+    const messageIds = new Set<string>();
+    let sequence = 0,
+      latestOwnId: string | undefined;
+    for (const message of loadState.messageList) {
+      try {
+        const pointer = OpenImResearchPointer.safeParse(
+          JSON.parse(message.customElem?.data || "null"),
+        );
+        if (!pointer.success) continue;
+        messageIds.add(pointer.data.messageId);
+        if (message.sendID === selfUserID && pointer.data.sequence > sequence) {
+          sequence = pointer.data.sequence;
+          latestOwnId = pointer.data.messageId;
+        }
+      } catch {
+        /* Ordinary SDK messages have no research locator. */
+      }
+    }
+    return { messageIds, latestOwnId };
+  }, [loadState.messageList, selfUserID]);
 
   const stopFollowing = useCallback(() => {
     followLatest.current = false;
@@ -62,9 +85,11 @@ const ChatContent = () => {
 
   useEffect(() => {
     const followOwnSend = (
-      request:
-        | void
-        | { conversationID: string; actorGeneration: number; selfUserID: string },
+      request: void | {
+        conversationID: string;
+        actorGeneration: number;
+        selfUserID: string;
+      },
     ) => {
       if (
         request &&
@@ -84,6 +109,7 @@ const ChatContent = () => {
 
   const components = useMemo(
     () => ({
+      Footer: () => <AgentReplyProgress onResize={scrollToBottom} />,
       Header: () =>
         loadState.hasMoreOld ? (
           <div
@@ -96,7 +122,7 @@ const ChatContent = () => {
           </div>
         ) : null,
     }),
-    [loadState.hasMoreOld, moreOldLoading],
+    [loadState.hasMoreOld, moreOldLoading, scrollToBottom],
   );
 
   const loadMoreMessage = () => {
@@ -143,47 +169,49 @@ const ChatContent = () => {
           <Spin spinning />
         </div>
       ) : (
-        <Virtuoso
-          key={scope}
-          id="chat-list"
-          tabIndex={0}
-          className="w-full overflow-x-hidden"
-          followOutput={() => (followLatest.current ? "auto" : false)}
-          atBottomThreshold={4}
-          atBottomStateChange={(atBottom) => {
-            if (atBottom) followLatest.current = true;
-          }}
-          // Authorized facts and turn cards hydrate later than Virtuoso's
-          // short resize trap. Follow their actual measured height while the
-          // user is waiting at the latest message, never while reading history.
-          totalListHeightChanged={scrollToBottom}
-          firstItemIndex={loadState.firstItemIndex}
-          initialTopMostItemIndex={{ index: "LAST", align: "end" }}
-          startReached={loadMoreMessage}
-          ref={virtuoso}
-          data={loadState.messageList}
-          components={components}
-          computeItemKey={(_, item) => item.clientMsgID}
-          itemContent={(_, message) => {
-            if (SystemMessageTypes.includes(message.contentType)) {
+        <AgentProgressHistory.Provider value={pointerHistory}>
+          <Virtuoso
+            key={scope}
+            id="chat-list"
+            tabIndex={0}
+            className="w-full overflow-x-hidden"
+            followOutput={() => (followLatest.current ? "auto" : false)}
+            atBottomThreshold={4}
+            atBottomStateChange={(atBottom) => {
+              if (atBottom) followLatest.current = true;
+            }}
+            // Authorized facts and turn cards hydrate later than Virtuoso's
+            // short resize trap. Follow their actual measured height while the
+            // user is waiting at the latest message, never while reading history.
+            totalListHeightChanged={scrollToBottom}
+            firstItemIndex={loadState.firstItemIndex}
+            initialTopMostItemIndex={{ index: "LAST", align: "end" }}
+            startReached={loadMoreMessage}
+            ref={virtuoso}
+            data={loadState.messageList}
+            components={components}
+            computeItemKey={(_, item) => item.clientMsgID}
+            itemContent={(_, message) => {
+              if (SystemMessageTypes.includes(message.contentType)) {
+                return (
+                  <NotificationMessage key={message.clientMsgID} message={message} />
+                );
+              }
+              const isSender = selfUserID === message.sendID;
               return (
-                <NotificationMessage key={message.clientMsgID} message={message} />
+                <MessageItem
+                  key={message.clientMsgID}
+                  conversationID={conversationID}
+                  message={message}
+                  messageUpdateFlag={`${message.senderNickname ?? ""}${
+                    message.senderFaceUrl ?? ""
+                  }`}
+                  isSender={isSender}
+                />
               );
-            }
-            const isSender = selfUserID === message.sendID;
-            return (
-              <MessageItem
-                key={message.clientMsgID}
-                conversationID={conversationID}
-                message={message}
-                messageUpdateFlag={`${message.senderNickname ?? ""}${
-                  message.senderFaceUrl ?? ""
-                }`}
-                isSender={isSender}
-              />
-            );
-          }}
-        />
+            }}
+          />
+        </AgentProgressHistory.Provider>
       )}
     </Layout.Content>
   );

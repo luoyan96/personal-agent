@@ -1,6 +1,6 @@
 import { Button } from "antd";
 import { MessageStatus, type MessageItem } from "@openim/wasm-client-sdk";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import type { RequestFor, ResponseFor } from "@research-agent-platform/contracts";
 import { useConversationStore, useUserStore } from "@/store";
@@ -9,7 +9,6 @@ import { useResearchStore } from "./store";
 import { useAgentChatOperation } from "./useAgentChatOperation";
 import { useResearchRead } from "./useResearchRead";
 import { ResearchTurnStatus } from "./ResearchTurnStatus";
-import { AgentFileReadSummary } from "./AgentFileReadSummary";
 import type { SentFileContext } from "./useScopedFileSender";
 import { FileFetchError, firstPartyFile, maxAgentFileBytes } from "./firstPartyFile";
 
@@ -188,11 +187,15 @@ export function useAgentFileReading() {
     onFileSent,
     readExisting,
     busy: readings.some(entry => entry.phase === "reading" || entry.phase === "downloading"),
-    controls: readings.map((entry) => <AgentFileReadingStatus key={entry.id} entry={entry} onRetry={() => void retry(entry)} />),
+    controls: readings.map((entry) => <AgentFileReadingStatus key={entry.id} entry={entry}
+      onRetry={() => void retry(entry)}
+      onCompleted={() => setReadings(previous => previous.filter(item => item.id !== entry.id))} />),
   };
 }
 
-function AgentFileReadingStatus({ entry, onRetry }: { entry: Reading; onRetry: () => void }) {
+function AgentFileReadingStatus({ entry, onRetry, onCompleted }: {
+  entry: Reading; onRetry: () => void; onCompleted: () => void;
+}) {
   const imID = useConversationStore((state) => state.currentConversation?.conversationID);
   const turnId = entry.result?.turn?.id;
   const turnRead = useResearchRead(
@@ -201,7 +204,13 @@ function AgentFileReadingStatus({ entry, onRetry }: { entry: Reading; onRetry: (
     entry.phase === "accepted" && !!turnId,
   );
   const turn = turnRead.data?.data || entry.result?.turn;
-  const metadata = entry.result?.message.files?.[0];
+  const completed = entry.phase === "accepted" && turn?.status === "succeeded" && !turnRead.error;
+  // The durable chat message owns the reading receipt. Remove its temporary
+  // composer state after success, also unmounting the read-only status poller.
+  useEffect(() => {
+    if (completed) onCompleted();
+  }, [completed, onCompleted]);
+  if (completed) return null;
   return (
     <div className="mx-3 mt-1 min-w-0 text-xs leading-5" data-agent-file-status>
       {entry.phase === "reading" && <p className="truncate" role="status" title={entry.filename}>正在读取文件：{entry.filename}</p>}
@@ -213,12 +222,11 @@ function AgentFileReadingStatus({ entry, onRetry }: { entry: Reading; onRetry: (
           {entry.canRetry && <Button size="small" onClick={onRetry}>重试阅读（不重复发送文件）</Button>}
         </div>
       )}
-      {metadata && <>
-        <p className="text-slate-500">附件上传阅读回执</p>
-        <AgentFileReadSummary file={metadata} read={turn?.fileRead} />
-      </>}
       {entry.phase === "accepted" && turn && (
-        turn.status === "succeeded" ? <p className="text-slate-600">AI 已回复，请查看聊天消息。</p> : <ResearchTurnStatus turn={turn} compact />
+        <>
+          <p className="truncate text-slate-500" title={entry.filename}>{entry.filename}</p>
+          <ResearchTurnStatus turn={turn} compact />
+        </>
       )}
       {entry.phase === "accepted" && !turn && <p>文字已保存，本次未创建 AI 回复请求。</p>}
       {turnRead.error && <p className="text-amber-800">AI 回复状态暂时无法读取：{turnRead.error}</p>}

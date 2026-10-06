@@ -1,6 +1,7 @@
 import { ReuseService } from './reuse.js'
 import { validateChecklist } from '@research-agent-platform/research-core'
 import { spawn } from 'node:child_process'
+import { StringDecoder } from 'node:string_decoder'
 import { fileURLToPath } from 'node:url'
 import type { DatabaseSync } from 'node:sqlite'
 import { z } from 'zod'
@@ -15,7 +16,7 @@ import { labAiRuntime, labApiKey } from './lab-ai-settings.js'
 
 export interface ModelInput {provider?:'deepseek'|'qwen'|'doubao';system:string;prompt:string;model:string;maxTokens:number;timeoutMs:number;reasoningEffort?:'off'}
 export interface ModelResult {text:string;failure:string|null;inputTokens:number|null;outputTokens:number|null;elapsedMs:number;finishReason?:string}
-export type ModelCall=(input:ModelInput,signal:AbortSignal,credential:{apiKey:string})=>Promise<ModelResult>
+export type ModelCall=(input:ModelInput,signal:AbortSignal,credential:{apiKey:string},onTextDelta?:(text:string)=>void)=>Promise<ModelResult>
 const encode=JSON.stringify
 export function serviceFor(db:DatabaseSync,ownerId:string,config:Config){
   const actor=db.prepare('SELECT m.id,m.lab_id,a.disabled FROM members m JOIN auth_accounts a ON a.member_id=m.id WHERE m.id=?').get(ownerId)
@@ -51,23 +52,29 @@ export function reconcile(db:DatabaseSync,config:Config){
 }
 // Only this trusted coordinator has DB access. The Harness child receives bounded
 // authorized text over stdin, no DB path, cookie, blob path, service secret or tools.
-export const callHarness:ModelCall=async(input,signal,credential)=>new Promise(resolve=>{
+export const callHarness:ModelCall=async(input,signal,credential,onTextDelta)=>new Promise(resolve=>{
   const childEnv:NodeJS.ProcessEnv={}
   for(const name of ['SystemRoot','WINDIR','PATH','TEMP','TMP','DEEPSEEK_BASE_URL'])if(process.env[name])childEnv[name]=process.env[name]
   if(input.provider&&input.provider!=='deepseek')childEnv.MODEL_API_KEY=credential.apiKey
   else childEnv.DEEPSEEK_API_KEY=credential.apiKey
-  const child=spawn(process.execPath,[fileURLToPath(new URL('../../../integrations/deepseek-harness/runtime/dist/cli.js',import.meta.url))],{env:childEnv,windowsHide:true,stdio:['pipe','pipe','pipe']})
-  let output='',settled=false
+  const child=spawn(process.execPath,[fileURLToPath(new URL('../../../integrations/deepseek-harness/runtime/dist/cli.js',import.meta.url))],{env:childEnv,windowsHide:true,stdio:['pipe','pipe','pipe','ipc']})
+  let output='',settled=false,bytes=0,final:ModelResult|undefined,killTimer:ReturnType<typeof setTimeout>|undefined
+  const decoder=new StringDecoder('utf8')
   const started=Date.now()
-  const finish=(value:ModelResult)=>{if(settled)return;settled=true;signal.removeEventListener('abort',cancel);resolve(value)}
+  const finish=(value:ModelResult)=>{if(settled)return;settled=true;if(killTimer)clearTimeout(killTimer);signal.removeEventListener('abort',cancel);resolve(value)}
   const failure=(code:string):ModelResult=>({text:'',failure:code,inputTokens:null,outputTokens:null,elapsedMs:Date.now()-started})
-  const cancel=()=>child.kill()
+  const cancel=()=>{if(child.connected)child.send({type:'abort'},()=>{});killTimer??=setTimeout(()=>child.kill(),1500)}
   signal.addEventListener('abort',cancel,{once:true});if(signal.aborted)cancel()
-  child.stdout.on('data',chunk=>{output+=String(chunk);if(output.length>150000)child.kill()})
-  child.stderr.on('data',()=>{/* Provider diagnostics may contain secrets. Never log or relay. */})
+  const resultSchema=z.object({text:z.string().max(100000),failure:z.string().nullable(),inputTokens:z.number().nonnegative().nullable(),outputTokens:z.number().nonnegative().nullable(),elapsedMs:z.number().nonnegative(),finishReason:z.string().regex(/^[a-z_-]{1,64}$/).optional()})
+  child.stdout!.on('data',chunk=>{
+    bytes+=chunk.length;output+=decoder.write(chunk)
+    if(bytes>1500000||output.length>150000){child.kill();return}
+    if(onTextDelta){let end:number;while((end=output.indexOf('\n'))>=0){const line=output.slice(0,end);output=output.slice(end+1);try{const frame=JSON.parse(line);if(final)throw new Error('Unexpected frame');if(frame.type==='delta'){const text=z.string().max(100000).parse(frame.text);onTextDelta(text)}else if(frame.type==='result')final=resultSchema.parse(frame.result);else throw new Error('Unexpected frame')}catch{child.kill()}}}
+  })
+  child.stderr!.on('data',()=>{/* Provider diagnostics may contain secrets. Never log or relay. */})
   child.on('error',()=>finish(failure('HARNESS_START_FAILED')))
-  child.on('exit',()=>{try{const parsed=z.object({text:z.string().max(100000),failure:z.string().nullable(),inputTokens:z.number().nonnegative().nullable(),outputTokens:z.number().nonnegative().nullable(),elapsedMs:z.number().nonnegative(),finishReason:z.string().regex(/^[a-z_-]{1,64}$/).optional()}).parse(JSON.parse(output));finish(parsed)}catch{finish(failure(signal.aborted?'INTERRUPTED':'HARNESS_PROCESS_FAILED'))}})
-  child.stdin.on('error',()=>{});child.stdin.end(encode(input))
+  child.on('close',()=>{try{output+=decoder.end();const parsed=onTextDelta?final:resultSchema.parse(JSON.parse(output));if(!parsed||onTextDelta&&output.trim())throw new Error('Missing final');finish(parsed)}catch{finish(failure(signal.aborted?'INTERRUPTED':'HARNESS_PROCESS_FAILED'))}})
+  child.stdin!.on('error',()=>{});child.stdin!.end(encode({...input,...(onTextDelta?{stream:true}:{})}))
 })
 export class ExecutionWorker {
   readonly owner=randomUUID()
