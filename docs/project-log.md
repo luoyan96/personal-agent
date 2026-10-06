@@ -1,5 +1,14 @@
 # 项目进展日志
 
+## 2026-10-06：附件输入区临时回执清理（本地修复，待发布）
+
+- 用户指出附件已经回复后，输入区仍常驻“附件上传阅读回执”、页数和“AI已回复”。根因是useAgentFileReading持续保留accepted成功条目，且重复展示聊天中已有的提取元数据。
+- 移除输入区重复的文件提取摘要；服务返回succeeded且没有读取错误后移除该临时条目、卸载状态轮询。上传 / 取回 / 等待、解析失败、模型不可用与不重复发送的重试仍保留；聊天消息中的真实阅读范围与未发送草稿不变。
+- 独立分支fix/file-reading-feedback，客户端typecheck / build:web及四固定SDK资源实际通过。既有隔离Edge Playwright验证实际QueryChat / ChatFooter，四组桌面1280 / 窄屏320场景通过，详情可展开，成功后至少一个轮询周期不再发临时状态请求；失败重试保持同一幂等键 / 原字节且SDK仅发送一次。API、SDK、提取及模型明确合成，不计真实云投递或厂商阅读质量通过。
+- pageerror0；既有React Router未来版本警告、故意503 / 422响应保留。首次pnpm按上级packageManager尝试创建工具目录遭EPERM，关闭自动版本管理并独立客户端检查后通过；首轮UI已过桌面场景，但并行构建更新dist触发Vite watcher EBUSY / 后续导航拒绝，保留失败报告，监视排除生成目录后四场景通过。
+- Git外证据 `.runtime/file-reading-feedback-20261006`：verification.json、client-build.log、component-857ede49/report.json与截图；原第一轮组件失败证据保留于 `.runtime/agent-files-20261005/component-*` 当次目录。没有共享源码 / 契约或依赖变化，故不重复共享根CI；未部署，生产仍27c3279前端 / 787ca23后端 / schema18。
+
+
 ## 2026-10-06：GitHub 版本管理与多人协作入口
 
 - 最终[Actions 37411082051](https://github.com/luoyan96/personal-agent/actions/runs/37411082051)三平台均实际成功：Linux22.19 / 24、Windows24各执行完整根CI。受测源0ef2016331307efdc5de71857550f0dbb202a76b；03:58:18UTC，PR1合并为f7b5099d2df7e889ecaae0a6542366194bc82767，合并树与受测源均为0a3f00d2c75b374b7e0e504ec568e0c1d347a92f。最终本地CI=true Windows单并发521+2通过、测试191.95秒，日志root-ci-github-windows-serial.log。首次 / 第二次失败证据保留；不将串行后通过当作已确定具体冷启动原因。
