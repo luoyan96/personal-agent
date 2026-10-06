@@ -143,7 +143,7 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
       {turn.error && (
         <p className="text-xs text-red-700">AI 请求状态暂时无法读取：{turn.error}</p>
       )}
-      {currentTurn && <div className="mt-2"><PersonalReceiptCard turn={currentTurn} /></div>}
+      {currentTurn && currentTurn.outputMessageId === read.data?.fact.id && <div className="mt-2"><PersonalReceiptCard turn={currentTurn} compact={!!currentTurn.memoryReceipt || !!currentTurn.followupReceipt} /></div>}
       {read.data?.fact.origin === "service" &&
         turn.data?.data.purpose === "create_agent" &&
         turn.data?.data.status === "succeeded" &&
