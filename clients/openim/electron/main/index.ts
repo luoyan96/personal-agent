@@ -9,6 +9,7 @@ import { isLinux } from "../utils";
 import { getLogger } from "../utils/log";
 import { initI18n } from "../i18n";
 import { smokeProgress } from "../utils/smoke";
+import { initDesktopUpdates } from "./updateManage";
 
 export const logger = getLogger(join(app.getPath("userData"), `/OpenIMData/logs`));
 
@@ -16,6 +17,7 @@ const init = () => {
   smokeProgress("app-ready");
   initI18n();
   createMainWindow();
+  initDesktopUpdates();
   if (process.env.OPENIM_SMOKE_TEST !== "1" && process.env.OPENIM_HIDE_WINDOW !== "1") {
     createAppMenu();
     createTray();

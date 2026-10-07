@@ -7,6 +7,14 @@
   asar: true,
   asarUnpack: ["**/*.node"],
   extends: null,
+  publish: [
+    {
+      provider: "github",
+      owner: "luoyan96",
+      repo: "personal-agent",
+      releaseType: "release",
+    },
+  ],
   directories: {
     output: "release/Base/${version}",
   },

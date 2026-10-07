@@ -1,11 +1,15 @@
 import { app, Menu, Tray } from "electron";
 import { t } from "i18next";
 import { hideWindow, showWindow } from "./windowManage";
+import { checkDesktopUpdates } from "./updateManage";
 
 let appTray: Tray;
 
 export const createTray = () => {
   const trayMenu = Menu.buildFromTemplate([
+    { label: `科研微信 ${app.getVersion()}`, enabled: false },
+    { label: "检查更新", click: () => void checkDesktopUpdates(true) },
+    { type: "separator" },
     {
       label: t("system.showWindow"),
       click: showWindow,
