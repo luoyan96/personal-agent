@@ -26,6 +26,7 @@ type Reading = {
   canRetry?: boolean;
   failureStage?: "fetch" | "read";
   existingFile?: NonNullable<MessageItem["fileElem"]>;
+  agentFileText?: string;
 };
 const mediaTypes: Record<string, ReadBody["mediaType"]> = {
   pdf: "application/pdf", txt: "text/plain", md: "text/markdown", csv: "text/csv",
@@ -129,16 +130,16 @@ export function useAgentFileReading() {
     try {
       const contentBase64 = await base64(file);
       if (!isCurrent()) return;
-      await submit({ ...entry, body: { filename: file.name, mediaType, contentBase64 } }, isCurrent);
+      await submit({ ...entry, body: { filename: file.name, mediaType, contentBase64, ...(entry.agentFileText ? { text: entry.agentFileText } : {}) } }, isCurrent);
     } catch (error) {
       update({ ...entry, phase: "failed", error: failureMessage(error), canRetry: false }, isCurrent);
     }
   };
-  const onFileSent = async ({ file, agentConversationId, isCurrent, sdkClientMsgID }: SentFileContext) => {
+  const onFileSent = async ({ file, agentConversationId, isCurrent, sdkClientMsgID, agentFileText }: SentFileContext) => {
     if (!agentConversationId || !isCurrent()) return;
     const idempotencyKey = await fileKey(sdkClientMsgID);
     if (!isCurrent()) return;
-    const entry: Reading = { id: crypto.randomUUID(), filename: file.name, conversationId: agentConversationId, idempotencyKey, phase: "reading" };
+    const entry: Reading = { id: crypto.randomUUID(), filename: file.name, conversationId: agentConversationId, idempotencyKey, phase: "reading", agentFileText };
     const ticket = begin(entry.idempotencyKey); if (!ticket) return;
     put(entry);
     try { await readFile(file, entry, isCurrent); }

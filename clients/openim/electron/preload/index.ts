@@ -101,6 +101,9 @@ const saveFileToDisk = async ({
 };
 
 const Api: IElectronAPI = {
+  pickLocalFolder: () => ipcRenderer.invoke("pick-local-folder"),
+  readLocalFolderSelection: (request) => ipcRenderer.invoke("read-local-folder-selection", request),
+  releaseLocalFolder: (grantId) => ipcRenderer.invoke("release-local-folder", grantId),
   getResearchServiceStatus: () => ipcRenderer.invoke("research-service-status"),
   configureResearchService: (address) =>
     ipcRenderer.invoke("configure-research-service", address),

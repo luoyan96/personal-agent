@@ -14,6 +14,7 @@ import { feedbackToast } from "@/utils/common";
 import { useAgentChatOperation, type AgentChatOperation } from "@/research/useAgentChatOperation";
 import { useResearchStore } from "@/research/store";
 import type { SelectedFileKind } from "@/research/useScopedFileSender";
+import LocalFolderAction from "@/research/LocalFolderAction";
 
 import { SendMessageParams } from "../useSendMessage";
 import CallPopContent from "./CallPopContent";
@@ -34,7 +35,7 @@ const SendActionBar = ({
   insertEmoji,
 }: {
   sendMessage: (params: SendMessageParams) => Promise<void>;
-  sendFile: (file: File, kind: SelectedFileKind, isCurrent?: () => boolean) => Promise<boolean>;
+  sendFile: (file: File, kind: SelectedFileKind, isCurrent?: () => boolean, agentFileText?: string) => Promise<boolean>;
   getSoundMessage: (file: File, duration: number) => Promise<MessageItem>;
   insertEmoji: (emoji: string) => void;
 }) => {
@@ -103,6 +104,7 @@ const SendActionBar = ({
         <button type="button" className={toolbarClass} aria-label="发送图片" title="图片" onClick={() => chooseFile("image")}><PictureOutlined /></button>
         <button type="button" className={toolbarClass} aria-label="发送文件" title="文件" onClick={() => chooseFile("file")}><FileOutlined /></button>
         <button type="button" className={toolbarClass} aria-label="打开语音面板" title="语音消息" onClick={() => { setEmojiMode(undefined); setVoiceVisible(true); }}><AudioOutlined /></button>
+        <LocalFolderAction sendFile={sendFile} />
         {!researchMode && !isGroupSession && <Popover content={<CallPopContent closeAllPop={() => setExpanded(false)} />} trigger="click" arrow={false} placement="top"><button type="button" className={toolbarClass} aria-label={t("placeholder.call")}><img src={rtc} width={20} alt="" /></button></Popover>}
       </div>
       <Button
@@ -160,6 +162,7 @@ const SendActionBar = ({
           <AudioOutlined className="text-2xl" />
           <span>语音</span>
         </button>
+        <LocalFolderAction sendFile={sendFile} menu />
         {!researchMode && !isGroupSession && (
           <Popover content={<CallPopContent closeAllPop={() => setExpanded(false)} />} trigger="click" arrow={false} placement="top">
             <button type="button" className={actionClass} aria-label={t("placeholder.call")}>

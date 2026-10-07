@@ -14,6 +14,7 @@ import { t } from "i18next";
 import { IpcRenderToMain } from "../constants";
 import { getStore } from "./storeManage";
 import { changeLanguage } from "../i18n";
+import { registerLocalFolderBridge } from "./localFolderManage";
 
 const store = getStore();
 const assertLocalConnectionPage = (event: Electron.IpcMainInvokeEvent) => {
@@ -31,6 +32,7 @@ const readPreference = (key: unknown) => {
 };
 
 export const setIpcMainListener = () => {
+  registerLocalFolderBridge();
   ipcMain.handle("research-service-status", (event) => {
     assertLocalConnectionPage(event);
     return getResearchServiceStatus();

@@ -1,10 +1,20 @@
 import { Platform } from "@openim/wasm-client-sdk";
+import type {
+  LocalFolderManifest,
+  LocalFolderReadRequest,
+  LocalFolderSelection,
+} from "./localFolder";
 
 export type DataPath = "public" | "emojiData" | "sdkResources" | "logsPath";
 
 export interface IElectronAPI {
-  getResearchServiceStatus: () => Promise<{ address: string; error: string }>;
+  getResearchServiceStatus: () => Promise<{ connected: boolean; address: string; error: string }>;
   configureResearchService: (address: string) => Promise<void>;
+  pickLocalFolder: () => Promise<LocalFolderManifest | null>;
+  readLocalFolderSelection: (
+    selection: LocalFolderReadRequest,
+  ) => Promise<LocalFolderSelection>;
+  releaseLocalFolder: (grantId: string) => Promise<void>;
   getDataPath: (key: DataPath) => string;
   getVersion: () => string;
   getPlatform: () => Platform;

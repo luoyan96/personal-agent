@@ -1,8 +1,10 @@
 # 科研微信完整 OpenIM 客户端
 
-2026-10-06当前发布：客户端 `622e84bff20af8cefdd6d9004286da6ba6ba4a22`，API / worker `94b26d1d4871c45ace12a86f93d4c19cce377c4d`，contract0.19 / chat1.8 / schema18无迁移。21:02:07主发布，21:25:34继续入口、22:01:49历史跟随修复补发；真实5页全文与13页合成PDF上传 / 解析 / 模型 / IM链路通过。准确证据与恢复见[统一状态](../../docs/current-state.md)。
+2026-10-07 10:24:26北京时间当前发布：客户端 `8b42d35a9e47b5159bfd19e5ce4155508d53f7e0`，API / worker `94b26d1d4871c45ace12a86f93d4c19cce377c4d`，contract0.19 / chat1.8 / schema18无迁移。Windows0.1.0及本地文件夹入口静态发布，公网精确首页、八服务与后台版本检查通过；上一日真实5页全文与13页合成PDF上传 / 解析 / 模型 / IM链路证据保留各自基线。准确证据与恢复见[统一状态](../../docs/current-state.md)。
 
 此目录保留 OpenIM `62d7ca7` 的完整 React/Electron 工程，来源与修改位置见 [ORIGIN.md](./ORIGIN.md)。原 README 和许可原文保留；科研功能说明以本文件为准。
+
+Windows `0.1.0` 安装包与文件夹入口见[独立验收说明](../../docs/development/windows-local-folder.md)。原生读取已在打包后的 Electron 中验收，云端工具栏已发布；真实桌面账号 / 模型 / IM文件路径仍另验。
 
 正式新入口的完整网页资源、Nginx 同源反代、HTTPS/WSS/媒体配置和验收顺序见[部署说明](deploy/README.md)。新地址准备状态不等于服务已连接；真实双账号 SDK 验收结果另行记录。
 
