@@ -1,4 +1,4 @@
-import { MessageItem as MessageItemType, MessageType } from "@openim/wasm-client-sdk";
+import { MessageItem as MessageItemType, MessageType, SessionType } from "@openim/wasm-client-sdk";
 import clsx from "clsx";
 import { FC, memo, useRef } from "react";
 
@@ -14,6 +14,7 @@ import TextMessageRender from "./TextMessageRender";
 import FileMessageRender from "./FileMessageRender";
 import SoundMessageRender from "./SoundMessageRender";
 import ResearchMessageRender from "@/research/ResearchMessageRender";
+import { useConversationStore } from "@/store";
 
 export interface IMessageItemProps {
   message: MessageItemType;
@@ -38,13 +39,14 @@ const MessageItem: FC<IMessageItemProps> = ({
   conversationID,
 }) => {
   const messageWrapRef = useRef<HTMLDivElement>(null);
+  const isDirectChat = useConversationStore(s => s.currentConversation?.conversationType === SessionType.Single);
   const MessageRenderComponent = components[message.contentType] || CatchMessageRender;
 
   return (
     <>
       <div
         id={`chat_${message.clientMsgID}`}
-        className={clsx("relative flex select-text px-5 py-3")}
+        className={clsx("desktop-message-row relative flex select-text px-5 py-3", isSender && "desktop-message-row-sender", isDirectChat && "desktop-message-row-direct")}
       >
         <div
           className={clsx(

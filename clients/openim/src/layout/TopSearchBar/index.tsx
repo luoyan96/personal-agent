@@ -6,7 +6,7 @@ import {
   SignalingInvitation,
 } from "@openim/wasm-client-sdk/lib/types/entity";
 import { Popover } from "antd";
-import { PlusOutlined, RobotOutlined, SearchOutlined } from "@ant-design/icons";
+import { PlusOutlined, RobotOutlined } from "@ant-design/icons";
 import i18n, { t } from "i18next";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -177,10 +177,9 @@ const TopSearchBar = () => {
 
   return (
     <div className={`no-mobile app-drag flex h-10 min-h-[40px] items-center bg-[var(--top-search-bar)] dark:bg-[#141414] ${window.electronAPI ? "desktop-titlebar" : ""}`}>
-      {window.electronAPI && <span className="desktop-app-name">Personal Agent</span>}
-      <div className="flex w-full items-center justify-center">
-        {window.electronAPI ? <button type="button" className="app-no-drag desktop-contact-search" onClick={() => navigate("/contact")}><SearchOutlined /><span>联系人和 Agent</span></button>
-          : <div className="app-no-drag flex h-[26px] w-1/3 items-center justify-center rounded-md bg-[rgba(255,255,255,0.2)]"></div>}
+      {window.electronAPI && <span className="desktop-app-name"><RobotOutlined />Personal Agent</span>}
+      {!window.electronAPI && <div className="flex w-full items-center justify-center">
+        <div className="app-no-drag flex h-[26px] w-1/3 items-center justify-center rounded-md bg-[rgba(255,255,255,0.2)]"></div>
         <Popover
           content={<ActionPopContent actionClick={actionClick} research={researchMode} />}
           arrow={false}
@@ -200,7 +199,7 @@ const TopSearchBar = () => {
             <PlusOutlined />
           </button>
         </Popover>
-      </div>
+      </div>}
       <WindowControlBar />
       <UserCardModal ref={userCardRef} {...userCardState} />
       <GroupCardModal ref={groupCardRef} groupData={groupCardData} />

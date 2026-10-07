@@ -17,6 +17,7 @@ import SingleSetting from "../SingleSetting";
 import { researchMode } from "@/research/api";
 import { useResearchStore } from "@/research/store";
 import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
+import { MoreOutlined, TeamOutlined, UserOutlined } from "@ant-design/icons";
 
 const menuList = [
   {
@@ -107,13 +108,14 @@ const ChatHeader = () => {
   const isGroupSession = currentConversation?.conversationType === SessionType.Group;
 
   return (
-    <Layout.Header className="relative border-b border-b-[var(--gap-text)] !bg-white !px-3">
+    <Layout.Header className="desktop-chat-header relative border-b border-b-[var(--gap-text)] !bg-white !px-3">
       <div className="flex h-full items-center leading-none">
         <div className="flex flex-1 items-center overflow-hidden">
           <OIMAvatar
             src={currentConversation?.faceURL}
             text={currentConversation?.showName}
             isgroup={Boolean(currentConversation?.groupID)}
+            size={window.electronAPI ? 48 : 42}
           />
           <div
             className={clsx(
@@ -143,7 +145,7 @@ const ChatHeader = () => {
           </div>
         </div>
         <div className="mr-2 flex items-center">
-          {researchMode && isCoordinator && <Button type="text" size="small" onClick={() => setAboutMe(true)}>关于我</Button>}
+          {researchMode && isCoordinator && <Button className="desktop-about-me" type="text" size="small" icon={window.electronAPI ? <UserOutlined /> : undefined} onClick={() => setAboutMe(true)}>关于我</Button>}
           {menuList.map((menu) => {
             if (menu.idx === 1 && (isSingleSession || (!inGroup && !isSingleSession))) {
               return null;
@@ -154,13 +156,13 @@ const ChatHeader = () => {
 
             return (
               <Tooltip title={menu.title} key={menu.idx}>
-                <img
+                {window.electronAPI ? <button type="button" className="desktop-chat-header-action" aria-label={menu.title} onClick={() => menuClick(menu.idx)}>{menu.idx === 2 ? <MoreOutlined /> : <TeamOutlined />}</button> : <img
                   className="ml-5 cursor-pointer"
                   width={20}
                   src={menu.icon}
                   alt=""
                   onClick={() => menuClick(menu.idx)}
-                />
+                />}
               </Tooltip>
             );
           })}

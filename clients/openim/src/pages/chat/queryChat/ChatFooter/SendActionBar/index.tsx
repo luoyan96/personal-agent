@@ -99,11 +99,11 @@ const SendActionBar = ({
     <div className="px-3 pt-1">
       <div className="hidden items-center gap-1 min-[601px]:flex" role="toolbar" aria-label="聊天工具栏">
         <Popover content={emojiContent} open={emojiMode === "desktop"} placement="topLeft" onOpenChange={open => setEmojiMode(open ? "desktop" : undefined)} trigger="click">
-          <button type="button" className={toolbarClass} aria-label="表情" title="表情"><SmileOutlined /></button>
+          <button type="button" className={toolbarClass} aria-label="表情" title="表情"><SmileOutlined />{window.electronAPI && <span>表情</span>}</button>
         </Popover>
-        <button type="button" className={toolbarClass} aria-label="发送图片" title="图片" onClick={() => chooseFile("image")}><PictureOutlined /></button>
-        <button type="button" className={toolbarClass} aria-label="发送文件" title="文件" onClick={() => chooseFile("file")}><FileOutlined /></button>
-        <button type="button" className={toolbarClass} aria-label="打开语音面板" title="语音消息" onClick={() => { setEmojiMode(undefined); setVoiceVisible(true); }}><AudioOutlined /></button>
+        <button type="button" className={toolbarClass} aria-label="发送图片" title="图片" onClick={() => chooseFile("image")}><PictureOutlined />{window.electronAPI && <span>图片</span>}</button>
+        <button type="button" className={toolbarClass} aria-label="发送文件" title="文件" onClick={() => chooseFile("file")}><FileOutlined />{window.electronAPI && <span>文件</span>}</button>
+        <button type="button" className={toolbarClass} aria-label="打开语音面板" title="语音消息" onClick={() => { setEmojiMode(undefined); setVoiceVisible(true); }}><AudioOutlined />{window.electronAPI && <span>语音</span>}</button>
         <LocalFolderAction sendFile={sendFile} />
         {!researchMode && !isGroupSession && <Popover content={<CallPopContent closeAllPop={() => setExpanded(false)} />} trigger="click" arrow={false} placement="top"><button type="button" className={toolbarClass} aria-label={t("placeholder.call")}><img src={rtc} width={20} alt="" /></button></Popover>}
       </div>

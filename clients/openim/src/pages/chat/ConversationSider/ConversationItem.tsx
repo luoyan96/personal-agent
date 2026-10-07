@@ -3,6 +3,7 @@ import type {
   MessageItem,
 } from "@openim/wasm-client-sdk/lib/types/entity";
 import { Badge } from "antd";
+import { PushpinOutlined } from "@ant-design/icons";
 import clsx from "clsx";
 import { t } from "i18next";
 import { memo, useMemo } from "react";
@@ -56,10 +57,12 @@ const ConversationItem = ({ isActive, conversation }: IConversationProps) => {
   const latestMessageTime = formatConversionTime(conversation.latestMsgSendTime);
 
   return (
-    <div
+    <button
+      type="button"
+      aria-current={isActive ? "true" : undefined}
       className={clsx(
         styles["conversation-item"],
-        "border border-transparent",
+        "desktop-conversation-row w-full border border-transparent text-left",
         isActive && `bg-[var(--primary-active)]`,
       )}
       onClick={() => void toSpecifiedConversation()}
@@ -69,6 +72,7 @@ const ConversationItem = ({ isActive, conversation }: IConversationProps) => {
           src={conversation.faceURL}
           isgroup={Boolean(conversation.groupID)}
           text={conversation.showName}
+          size={window.electronAPI ? 44 : 42}
         />
       </Badge>
 
@@ -77,10 +81,10 @@ const ConversationItem = ({ isActive, conversation }: IConversationProps) => {
           <div className="flex-1 truncate font-medium">
             {contact?.displayName || conversation.showName}
             {contact && contact.identity.kind !== "human" && (
-              <span className="ml-1 text-xs text-blue-600">AI</span>
+              <span className="desktop-agent-label ml-1 text-xs text-blue-600">AI</span>
             )}
           </div>
-          <div className="ml-2 text-xs text-[var(--sub-text)]">{latestMessageTime}</div>
+          <div className="desktop-conversation-time ml-2 text-xs text-[var(--sub-text)]">{latestMessageTime}</div>
         </div>
 
         <div className="flex items-center">
@@ -90,9 +94,10 @@ const ConversationItem = ({ isActive, conversation }: IConversationProps) => {
                 (isCoordinator ? contact?.displayName || conversation.showName : "")}
             </div>
           </div>
+          {isCoordinator && <PushpinOutlined className="desktop-conversation-pin" aria-label="个人助理置顶" />}
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 

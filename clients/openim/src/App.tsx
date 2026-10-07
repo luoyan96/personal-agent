@@ -28,7 +28,7 @@ function App() {
       autoInsertSpaceInButton={false}
       locale={locale === "zh-CN" ? zhCN : enUS}
       theme={{
-        token: { colorPrimary: "#0089FF" },
+        token: { colorPrimary: window.electronAPI ? "#1677FF" : "#0089FF" },
       }}
     >
       <QueryClientProvider client={queryClient}>

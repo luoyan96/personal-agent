@@ -5,6 +5,8 @@ import { useConversationStore } from "@/store";
 import { researchApi } from "./api";
 import { useResearchStore } from "./store";
 import SafeMessageMarkdown from "./SafeMessageMarkdown";
+import OIMAvatar from "@/components/OIMAvatar";
+import DesktopWorkCard from "./DesktopWorkCard";
 
 type Entry = {
   generation: number;
@@ -77,6 +79,9 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
   }, [onResize]);
   const generation = useResearchStore((s) => s.generation);
   const imID = useConversationStore((s) => s.currentConversation?.conversationID || "");
+  const conversation = useConversationStore((s) => s.currentConversation);
+  const actorId = useResearchStore((s) => s.actor?.member.id);
+  const mapping = useResearchStore((s) => s.mappings.find(m => m.imConversationID === imID));
   const entries = useProgress((s) => s.entries);
   const scope = `${generation}:${imID}`;
   const validation = useRef({ scope, token: crypto.randomUUID() });
@@ -209,13 +214,15 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
     )
     .slice(-3);
   return (
-    <div ref={container} data-agent-progress className="space-y-2 px-5 pb-4">
+    <div ref={container} data-agent-progress className="desktop-agent-progress space-y-2 px-5 pb-4">
       {visible.map(({ turnId, progress: p, error }) => (
         <div
           key={turnId}
           data-progress-turn={turnId}
-          className="max-w-[620px] rounded-lg bg-[#f3f5f7] px-3 py-2 text-sm"
+          className="desktop-streaming-row text-sm"
         >
+          <OIMAvatar size={36} src={conversation?.faceURL} text={conversation?.showName} />
+          <div className="desktop-streaming-content">
           {error ? (
             <div className="text-xs text-slate-600">
               回复状态暂时无法读取。
@@ -238,7 +245,7 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
             </div>
           ) : (
             <>
-              <p className="mb-1 text-xs text-slate-500">
+              <p className="desktop-streaming-status mb-1 text-xs text-slate-500" role="status">
                 {p!.phase === "queued"
                   ? "等待回复 · 可以继续补充"
                   : p!.phase === "streaming"
@@ -250,8 +257,10 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
               {p!.text && <SafeMessageMarkdown text={p!.text} />}
             </>
           )}
+          </div>
         </div>
       ))}
+      {window.electronAPI && actorId && mapping && typeof window.electronAPI.listDesktopReports === "function" && <div className="desktop-work-in-chat"><DesktopWorkCard key={`${generation}:${mapping.researchConversationId}`} scope={{ actorId, conversationId: mapping.researchConversationId }} variant="chat" /></div>}
     </div>
   );
 }

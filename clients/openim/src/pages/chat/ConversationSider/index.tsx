@@ -1,6 +1,8 @@
 import clsx from "clsx";
 import { t } from "i18next";
-import { useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Input } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import { useParams } from "react-router-dom";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 
@@ -12,6 +14,7 @@ import { useConversationStore, useUserStore } from "@/store";
 import ConversationItemComp from "./ConversationItem";
 import styles from "./index.module.scss";
 import { useResearchStore } from "@/research/store";
+import NewConversationButton from "@/layout/TopSearchBar/NewConversationButton";
 
 const ConnectBar = () => {
   const userStore = useUserStore();
@@ -59,9 +62,19 @@ const ConversationSider = () => {
   const conversationList = useConversationStore((state) => state.conversationList);
   const coordinator = useResearchStore(state => state.session?.coordinator?.imConversationID);
   const nativeCoordinator = useResearchStore(state => state.coordinatorConversation);
+  const contacts = useResearchStore(state => state.contacts);
+  const generation = useResearchStore(state => state.generation);
+  const [search, setSearch] = useState("");
+  useEffect(() => { setSearch(""); }, [generation]);
   const visibleConversations = nativeCoordinator && nativeCoordinator.conversationID === coordinator &&
     !conversationList.some(item => item.conversationID === coordinator)
     ? [nativeCoordinator, ...conversationList] : conversationList;
+  const filtered = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase();
+    const names = new Map(contacts.map(item => [item.userID, item.contact.displayName]));
+    return visibleConversations.filter(item => !query || `${item.showName} ${names.get(item.userID) || ""}`.toLocaleLowerCase().includes(query))
+      .sort((a, b) => Number(b.conversationID === coordinator) - Number(a.conversationID === coordinator));
+  }, [visibleConversations, contacts, search, coordinator]);
   const getConversationListByReq = useConversationStore(
     (state) => state.getConversationListByReq,
   );
@@ -77,7 +90,7 @@ const ConversationSider = () => {
   };
 
   return (
-    <div className={clsx("flex min-h-0 flex-col", {
+    <div className={clsx("desktop-conversation-column flex min-h-0 flex-col", {
       "max-[600px]:hidden": Boolean(conversationID),
       "max-[600px]:w-full": !conversationID,
     })}>
@@ -85,11 +98,16 @@ const ConversationSider = () => {
       <FlexibleSider
         needHidden={Boolean(conversationID)}
         siderClassName="min-h-0 flex-1"
-        wrapClassName="left-2 right-2 top-1.5 flex flex-col"
+        wrapClassName="desktop-conversation-list left-2 right-2 top-1.5 flex flex-col"
       >
+        {window.electronAPI && <div className="desktop-conversation-heading">
+          <div className="desktop-conversation-title"><h1>消息</h1><NewConversationButton /></div>
+          <Input prefix={<SearchOutlined />} placeholder="搜索聊天" aria-label="搜索聊天" allowClear value={search} onChange={event => setSearch(event.target.value)} />
+        </div>}
+        {window.electronAPI && !filtered.length && <p className="desktop-conversation-empty">{search ? "没有匹配的聊天" : "聊天会显示在这里"}</p>}
         <Virtuoso
           className="flex-1"
-          data={coordinator ? [...visibleConversations].sort((a,b) => Number(b.conversationID === coordinator)-Number(a.conversationID === coordinator)) : visibleConversations}
+          data={filtered}
           ref={virtuoso}
           endReached={() => void endReached()}
           computeItemKey={(_, item) => item.conversationID}

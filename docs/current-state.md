@@ -2,7 +2,17 @@
 
 更新日期：2026-10-07（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新桌面改造：Windows 0.2.0
+## 最新桌面源码：Windows 0.3.0
+
+用户要求前端采用6.1 sol / high改进Windows桌面聊天界面。分支`feature/desktop-agent-interface`完成微信式三栏布局、会话真实名字筛选、模型设置入口、统一人与Agent通讯录样式、直接媒体工具栏、生成中继续输入、流式消息和可展开的文件任务卡。当前文件 / 字符范围、分析步骤、停止与已保存报告来自既有真实状态；群聊保留发送者署名。最终汇总步骤已纳入completed计数，原生报告错误去除IPC技术前缀。
+
+最终renderer类型检查通过；真实Electron22 / Chromium108生产组件的17项定向交互通过，SDK / API / 报告桥为合成，实际生产desktop runner取消路径有明确HTTP目标；1280×820无横溢出，168px编辑器，pageErrors0。实际长文件 / 合成模型 / 真实报告的完成计数专项通过。原生检查启动阶段的源模块误拦、错误监听时机、窗口发现、缺失桥和取消文字多匹配等失败证据保留；不是用户账号、真实模型质量或安装升级验收。检查与截图见Git外`.runtime/desktop-interface-20261007`，设计 / 类型 / 计数 / 打包 / 发布记录见`.runtime/desktop-ui-refresh-20261007`。准确发布源码及安装文件以GitHub `v0.3.0`标签与Release为准。
+
+本批没有CopilotKit / AG-UI依赖或协议适配，服务端鉴权、OpenIM权威消息和500ms增量快照机制沿用；界面不会增加通用自主工具、跨重启本地任务恢复或行为学习。接入原理、当前真实来源与后续适配边界见[桌面文件工作区](development/desktop-agent-workspace.md#agent交互与copilotkit--ag-ui的关系)。数据库 / 共享API / 云端部署未变。
+
+Windows0.3.0实际打包及更新文件门禁通过，安装包86284271字节、SHA256 `69e561754a6222e620ab274d0f9bfaba71221cd9d2ee6d020726ec7c2292565a`，本机`D:/deepseek-agent/PersonalAgent-Windows/0.3.0/ResearchWeChat_0.3.0.exe`。安装版沿用托盘“检查更新”；用户自行退出旧版后安装。本批未替用户安装或重启。
+
+## 上一版桌面改造：Windows 0.2.0
 
 用户最新要求集中做好Windows桌面端。新版安装包携带本地界面，保留人与Agent同一通讯录及模型设置，改进标题栏、头像、Markdown聊天、直接工具栏和输入区。增加“选择本地文件 → 分段分析 → 分层汇总 → 本机报告”的真实状态流程；可切换聊天继续任务、停止本任务，重开已保存报告。源码与使用/检查范围见[桌面文件工作区](development/desktop-agent-workspace.md)，发布源码以GitHub `v0.2.0`标签为准。
 
