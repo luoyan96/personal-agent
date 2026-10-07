@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { BrowserWindow, dialog, shell } from "electron";
+import { app, BrowserWindow, dialog, shell } from "electron";
 import { isLinux, isMac, isWin } from "../utils";
 import { destroyTray } from "./trayManage";
 import { getIsForceQuit } from "./appManage";
@@ -16,6 +16,7 @@ let splashWindow: BrowserWindow | null = null;
 let sdkInstance: OpenIMSDKMain | null = null;
 let attemptedServiceAddress = "";
 let serviceConnectionError = "";
+let serviceConnected = false;
 
 function createSplashWindow() {
   splashWindow = new BrowserWindow({
@@ -95,7 +96,8 @@ export function createMainWindow() {
 
   const researchUrl =
     process.env.RESEARCH_APP_URL ||
-    (getStore().get("researchServiceUrl") as string | undefined);
+    (getStore().get("researchServiceUrl") as string | undefined) ||
+    (app.isPackaged && !smoke ? "https://chat.acceptcat.com/" : undefined);
   if (researchUrl) {
     void connectResearchService(researchUrl).catch(() => {
       if (mainWindow && !mainWindow.webContents.getURL().startsWith("file:"))
@@ -154,11 +156,13 @@ export function createMainWindow() {
 export async function connectResearchService(address: unknown) {
   const target = validateResearchServiceUrl(address);
   attemptedServiceAddress = target;
+  serviceConnected = false;
   if (!mainWindow) throw new Error("桌面窗口尚未就绪");
   try {
     await mainWindow.loadURL(target);
     getStore().set("researchServiceUrl", target);
     serviceConnectionError = "";
+    serviceConnected = true;
   } catch {
     serviceConnectionError = "连接失败，请核对地址和网络，再重新连接。";
     await mainWindow.loadFile(global.pathConfig.indexHtml);
@@ -167,6 +171,7 @@ export async function connectResearchService(address: unknown) {
 }
 export function getResearchServiceStatus() {
   return {
+    connected: serviceConnected,
     address:
       attemptedServiceAddress || String(getStore().get("researchServiceUrl", "")),
     error: serviceConnectionError,

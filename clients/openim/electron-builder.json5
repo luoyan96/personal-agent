@@ -74,12 +74,12 @@
   },
   nsis: {
     oneClick: false,
-    perMachine: true,
+    perMachine: false,
     allowElevation: true,
     allowToChangeInstallationDirectory: true,
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
-    deleteAppDataOnUninstall: true,
+    deleteAppDataOnUninstall: false,
     shortcutName: "科研微信",
   },
 }

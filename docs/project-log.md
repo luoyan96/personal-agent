@@ -287,3 +287,13 @@
 - 软件固定提交 `94b26d1d4871c45ace12a86f93d4c19cce377c4d`、[PR5](https://github.com/luoyan96/personal-agent/pull/5)已合入main0a2070f；[同一源码三平台完整CI](https://github.com/luoyan96/personal-agent/actions/runs/37456957982)全部通过。后续仅交接文档更新，不重跑已通过的共享本地CI。
 - 发布包固定94b26d1，归档SHA256801e674d、helperfdeb01df、候选首页a33adc48；源 / Web / helper哈希、canonical Git blob和所有归档成员守卫通过。收据 `.runtime/document-reading-20261006/release/{github-ci,software-merge,bundle-receipt,bundle-verified}.json`。19:35:53公网ready0.19正常，首页仍旧7df1377，证据 `public-pending.json`。
 - **尚未上线**。现有Workbench终端仍断开，已请用户在Edge恢复原SSH连接，无需提供密码或Key；没有执行云部署、变更端口 / 授权、调用真实厂商或发布新版本标签。恢复后须完成13页样本真实SDK / 模型验收再登记部署结果，不能把三平台CI或合成模型当成线上读完全文。
+
+### 2026-10-06至07：Windows 0.1.0与本地文件夹候选
+
+- 用户要求做好Windows客户端并试读本地目录。本批基于main `eb18b6fb498975f94540ec6771705beacee3c2d3`，分支 `feature/windows-local-folder`；仅独立客户端和交接文档改变，共享contract0.19 / chat1.8 / schema18未改，无迁移。当前云端仍客户端622e84b、API / worker94b26d1。
+- 原生Windows选择器授权目录，窗口主frame持有随机grant / fileID；相对列表、文字预览、10文件 / 52000 JSON字节上限和正式任务，单一合并Markdown走现有SDK文件与科研阅读API。UTF8 / 常用代码 / 文字PDF / DOCX，junction / 秘钥常见名 / 隐藏与依赖项排除，文件变动拒绝；取消 / 导航 / renderer退出撤销。目录只读，不执行或自动改文件，无OCR / 图像 / 旧DOC / XLSX。
+- 固定PDF.js3.2.146并禁用eval。在实际Electron22 utilityProcess中它将Node16识别为无DOM浏览器，原generic build缺workerSrc导致解析失败；最终使用官方legacy、本地同版worker与自身流兼容层，没改process身份或放宽网络。Canvas可选native渲染依赖从打包closure排除，保留OpenIM DLL原hash。Node24真实FS / PDF / DOCX4组、renderer / Electron类型、Web / 四SDK、NSIS安装包和smoke通过。
+- `native-final/report.json`记录最终已打包Electron22 / Node16、main IPC / preload / utilityProcess五项通过：PDF第二页和DOCX真实正文、任意路径拒绝、release与hash导航撤销。`frontend/summary.json`12个必要React场景分阶段通过，bridge / SDK / API / model全部合成。最终 `frontend-native-ui/render-6d14edc8/report.json`另两项真实打包程序与生产React集成通过：预览零上传；原生临时MD544字节与API base64逐字一致，正式text独立，仅OSdialog / SDK / API / model为替身，各一次发送 / 请求，pageerror0。不能称真实模型或IM通过。
+- 默认正式HTTPS登录在正常网络权限下通过：`default-cloud-final/report.json`，version0.1.0 / packaged / webSecuritytrue、真实隔离preload。隔离匿名session预期401记录；受限网络回落连接页、隐藏窗口CDP截图timeout、Canvas打包失败、两个残留测试进程占用DLL和前端fixture / selector失败均保留。最终用Electron capturePage获得稳定截图，未通过新权限绕过用户窗口控制。
+- Git外 `D:/deepseek-agent/PersonalAgent-Windows/0.1.0/ResearchWeChat_0.1.0.exe`（86163661字节，SHA256 `28b8a1938efdff5655bc24dac53337bb3501028022e4484fd6c514a67964e208`），免安装入口 `app/ResearchWeChat.exe`已启动供用户登录；app.asar SHA256 `91663c7013a7604cf725381c4dd94b8142dd8dd0d00c56a79282465b9644201e`。用户真实资料未读取或传输。Windows操作工具新增应用审批超时，没有控制该用户程序。所有自有测试Electron / Vite已收尾。
+- **云端新入口未发布**：客户端加载云端UI，阿里云Workbench登录过期，已请求用户恢复Edge原登录；尚未上传静态资源、修改生产Nginx或调用真实桌面模型 / IM。源码/安装包成功不能代替发布。证据在Git外 `.runtime/windows-local-folder-20261006`，使用和下一步见[Windows交接](development/windows-local-folder.md)。

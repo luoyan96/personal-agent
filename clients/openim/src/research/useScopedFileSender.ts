@@ -18,6 +18,7 @@ export type SentFileContext = {
   isCurrent: () => boolean;
   agentConversationId?: string;
   sdkClientMsgID?: string;
+  agentFileText?: string;
 };
 
 /** Menu and drop send the same original File to the captured SDK conversation. */
@@ -37,6 +38,7 @@ export function useScopedFileSender({
     file: File,
     kind: SelectedFileKind = "auto",
     selectionIsCurrent: () => boolean = () => true,
+    agentFileText?: string,
   ) => {
     const conversation = useConversationStore.getState().currentConversation;
     if (!conversation || !selectionIsCurrent()) return false;
@@ -64,7 +66,7 @@ export function useScopedFileSender({
       });
       if (!isCurrent()) return false;
       if (!image)
-        await onFileSent({ file, conversation, operation, isCurrent, agentConversationId, sdkClientMsgID: message.clientMsgID });
+        await onFileSent({ file, conversation, operation, isCurrent, agentConversationId, sdkClientMsgID: message.clientMsgID, agentFileText });
       return true;
     } catch (error) {
       if (isCurrent())

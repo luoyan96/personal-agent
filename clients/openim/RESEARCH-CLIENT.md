@@ -4,6 +4,8 @@
 
 此目录保留 OpenIM `62d7ca7` 的完整 React/Electron 工程，来源与修改位置见 [ORIGIN.md](./ORIGIN.md)。原 README 和许可原文保留；科研功能说明以本文件为准。
 
+Windows `0.1.0` 本地安装包与文件夹候选见[独立验收说明](../../docs/development/windows-local-folder.md)。原生读取已在打包后的 Electron 中验收；云端新工具栏入口等待发布，不能仅凭本地安装包称为线上全流程完成。
+
 正式新入口的完整网页资源、Nginx 同源反代、HTTPS/WSS/媒体配置和验收顺序见[部署说明](deploy/README.md)。新地址准备状态不等于服务已连接；真实双账号 SDK 验收结果另行记录。
 
 ## 已发布：文档阅读范围与正文继续（2026-10-06）

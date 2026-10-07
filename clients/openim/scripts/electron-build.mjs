@@ -147,6 +147,9 @@ const collectInstalledDependencyNames = (rootPackageNames) => {
       visit(dependencyName, manifestPath);
     }
     for (const dependencyName of Object.keys(manifest.optionalDependencies ?? {})) {
+      // PDF text extraction never renders a canvas. Do not package/rebuild the
+      // optional native renderer against Electron's separate Node ABI.
+      if (manifest.name === "pdfjs-dist" && dependencyName === "canvas") continue;
       visit(dependencyName, manifestPath, true);
     }
   };
@@ -301,8 +304,10 @@ const prepareRuntimeDirectory = () => {
     });
     for (const dependency of Object.keys(manifest.dependencies || {}))
       copyPackage(dependency, sourceManifest, destination);
-    for (const dependency of Object.keys(manifest.optionalDependencies || {}))
+    for (const dependency of Object.keys(manifest.optionalDependencies || {})) {
+      if (manifest.name === "pdfjs-dist" && dependency === "canvas") continue;
       copyPackage(dependency, sourceManifest, destination, true);
+    }
   };
   // Reserve direct dependency versions before resolving transitive dependencies.
   for (const name of Object.keys(runtimeManifest.dependencies)) {
