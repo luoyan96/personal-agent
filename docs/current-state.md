@@ -2,7 +2,19 @@
 
 更新日期：2026-10-07（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新桌面源码：Windows 0.3.2 发送恢复
+## 最新桌面源码：Windows 0.3.3 设置与版本更新
+
+`feature/settings-version-updates`基于已发布0.3.2源码 `6448412cb2401082a3cf86a1077604fb69df44b4`，只改桌面React / SCSS及客户端版本。登录后左下角“设置”一直存在，菜单保留“模型设置”并新增“版本更新”。版本从原生快照读取；打开更新页检查，已有下载中 / 已完成候选不被重新检查清空。页面展示实际版本、检查结果、发布说明、下载百分比及“安装并重启”；状态与左下角提示共用一个原生订阅，迟到快照不能覆盖新事件。自动检查保持15秒 / 6小时 / 唤醒；不自动下载和安装，重启仍由原生保存确认处理。
+
+renderer / Electron类型、5组既有更新控制器检查通过。真实Electron22 / Chromium108生产导航、设置、共享hook、原生IPC / preload方法和控制器完成18项定向交互检查；两个夹具选择器重名失败保留，修正选择器后只补未完成项和迟到快照，不重复已通过流程。1024×726 / 1280×820无横向溢出，设置 / 版本窗无遮挡，pageerror0；截图查看后修正Badge导致的设置图标颜色，再做一次定向截图与颜色检查。Router / 开发CSP / Antd废弃告警如实记录。Browser插件不可用，使用隔离Playwright Electron；发布执行器、安装版资格、OS确认及无关聊天传输明确合成，不使用用户账号 / Key / 文件，不声称真实旧安装版升级已执行。证据在Git外 `.runtime/settings-version-updates-20261007`。
+
+实际NSIS构建与exe / blockmap / latest.yml / 固定公开GitHub更新源一致性门禁通过，安装包86288813字节、SHA256 `0ce45b9a0b3ff04c57d6838949e8b89429a37ca31d468ffd32b878075f0f5284`，另存发布收据；精确源码以 `v0.3.3` 标签和Release为准，本机安装文件在 `D:/deepseek-agent/PersonalAgent-Windows/0.3.3/`。用户正常客户端未安装或重启。旧版需先用系统托盘“检查更新”或手动安装一次0.3.3，之后才有固定设置入口；升级前复制未确认需求。云端仍API / worker94b26d1、contract0.19 / chat1.8 / schema18，本批无服务器部署或迁移。
+
+## 独立待上线：定时任务 Windows 0.4.0
+
+[PR18](https://github.com/luoyan96/personal-agent/pull/18)的 `feature/recurring-agent-tasks` 已准备0.4.0候选与GitHub草稿，runtime源 `f91b9d552c4f786b61434718dea114187ca9e1d2`，后续测试 / 文档提交 `d015b099ad7a8dacf9d56bad7289743aab731258`。该分支需要contract0.20 / chat1.9 / migration019；阿里云Workbench明确授权问题仍待回复，云端未升级，**0.4.0草稿不能提前公开**。本次0.3.3独立兼容现有后端，不把定时任务称为已上线。其证据在 `.runtime/recurring-agent-tasks-20261007`，安装候选在 `PersonalAgent-Windows/0.4.0`；不要拿本次更新入口验证代替定时任务部署验收。
+
+## 上一版桌面源码：Windows 0.3.2 发送恢复
 
 `fix/desktop-send-recovery`基于0.3.1发布源码e1d38de。普通API请求完整期限30秒（涵盖CSRF会话准备、连接与响应正文），附件读取保留120秒；SDK文字发送也有有界等待。超时 / 停止等待保留原文、请求体、原幂等键或nativeMessage；“重试原消息”核对原提交结果，后续句子等待前一条确认。切换联系人立即取消等待并暂停原记录，旧请求不能锁住新会话或用迟到结果删除暂停记录。恢复卡独立放在编辑器上方，错误和操作不会被遮住。
 

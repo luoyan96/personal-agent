@@ -1,4 +1,4 @@
-import { ContactsOutlined, MessageOutlined, RightOutlined, SettingOutlined } from "@ant-design/icons";
+import { ContactsOutlined, MessageOutlined, RightOutlined } from "@ant-design/icons";
 import { Badge, Divider, Layout, Popover, Upload, UploadProps } from "antd";
 import clsx from "clsx";
 import i18n, { t } from "i18next";
@@ -23,7 +23,7 @@ import { OverlayVisibleHandle } from "../../hooks/useOverlayVisible";
 import About from "./About";
 import styles from "./left-nav-bar.module.scss";
 import PersonalSettings from "./PersonalSettings";
-import DesktopUpdateButton from "./DesktopUpdateButton";
+import DesktopSettings from "./DesktopSettings";
 import { researchMode } from "@/research/api";
 import { LabSettings } from "@/research/LabSettings";
 import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
@@ -304,8 +304,7 @@ const LeftNavBar = memo(() => {
           <NavItem nav={nav} key={nav.path} />
         ))}
         {window.electronAPI && <div className="desktop-navigation-bottom">
-          {researchMode && <button type="button" className="desktop-model-settings" onClick={() => setLabSettings(true)} aria-label="模型设置"><SettingOutlined /><span>模型设置</span></button>}
-          <DesktopUpdateButton />
+          <DesktopSettings onModelSettings={() => researchMode ? setLabSettings(true) : personalSettingsRef.current?.openOverlay()} />
         </div>}
       </div>
       <PersonalSettings ref={personalSettingsRef} />
