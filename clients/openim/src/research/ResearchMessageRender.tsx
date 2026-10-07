@@ -57,7 +57,7 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
       const fact = messages.data.find(
         (m) => m.id === pointer.messageId && m.sequence === pointer.sequence,
       );
-      if (!fact) throw new Error("当前权限下无法读取这条科研消息");
+      if (!fact) throw new Error("暂未找到这条消息，请稍后重试。");
       return {
         fact,
         actions: actions.data.filter((a) => fact.actionIds.includes(a.id)),
