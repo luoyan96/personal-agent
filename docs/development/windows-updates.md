@@ -28,4 +28,8 @@ Git外证据保存在 `D:/deepseek-agent/.runtime/windows-updates-20261007/`。�
 
 Windows0.1.1安装包与NSIS blockmap / latest.yml已生成，86257023字节、SHA256 `d3350cdd7405aec2526ac9e917e65970ad901d3a2c96ba4977621795891572a0`，更新资源一致性门禁通过，真实打包smoke与HTTPS登录页成功。`native-final3/report.json`记录真实已打包原生管理器对免安装目录的保护及指导，仅OS提示响应替代，未执行安装。初次重复publish参数造成发布器缺GH_TOKEN失败、后续两个测试main模块导入错误保留；最终使用原默认单次never构建成功，不向包内加凭据。
 
-真实公开更新源 / 安装包下载校验、GitHub发布与实际安装重启尚未计完成。准确源码及结果在统一状态和项目日志追加。
+2026-10-07 11:06:33北京时间，正式[v0.1.1](https://github.com/luoyan96/personal-agent/releases/tag/v0.1.1)发布，安装包源码固定 `e8cffadb38ab5bb3abeb951107491ea39a482c10`；该源码[三平台CI37564725311](https://github.com/luoyan96/personal-agent/actions/runs/37564725311)全部通过。三个公开资产的GitHub digest和大小均与本地一致，`release-published.json`、`upload-verified.json`保存实际收据。
+
+`live-final4/report.json`记录实际打包Electron22和electron-updater5.3从公开GitHub检测到0.1.1并真实下载，库SHA512校验及独立SHA256 / 86257023字节核对通过，收到15次有效进度事件。比较版本明确模拟为0.1.0，其余网络执行器、发布源、安装包与校验均真实；程序实际为0.1.1，没有安装执行，不能称真实旧安装版升级重启通过。首轮`live-final3`的自有验收构造器传入测试adapter，库因此不创建网络执行器，失败报告保留；改用库正常构造并仅模拟比较版本 / 隔离缓存后通过，产品包没有因此修改。
+
+当前用户机器首次安装与之后真正安装升级重启仍待用户执行。之前桌面登录后的文件夹 / 模型验收仍是独立待办，不能用下载通过代替。准确源码及结果在统一状态和项目日志追加。

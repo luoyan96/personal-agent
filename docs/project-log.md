@@ -312,3 +312,10 @@
 - 5组控制器必要故障与动作门禁通过：并发一次、失败重试、迟到 / 不匹配或坏元数据不能安装、安装抛错恢复forceQuit。renderer / Electron类型、NSIS最终构建、真正打包启动smoke及HTTPS登录通过；native-final3原生未安装保护与提示参数通过，OS提示响应为明确替代。未登录、未发用户资料或执行安装。初次strip-only参数属性与pnpm入口失败、两个native测试模块导入失败保留；首轮build重复publish参数导致缺GH_TOKEN失败无上传，最终原单个never构建通过。
 - 安装包86257023字节、SHA256 d3350cdd7405aec2526ac9e917e65970ad901d3a2c96ba4977621795891572a0；read-only发布门禁实际核对exe / latest.yml版本与SHA512 / size、blockmap及包内公开GitHub配置无Token。Git外 `.runtime/windows-updates-20261007`，本机交付目录 `PersonalAgent-Windows/0.1.1`。0.1.0需首装一次，免安装不原地替换。
 - 本批没有修改云端UI / 后台 / schema，线上8b42d35 + 94b26d1维持。候选尚未GitHub发布；真实公开源下载校验及安装重启另验。准确操作见windows-updates交接，先前0.1.0桌面账号 / 文件夹模型验收仍待登录。
+
+### 2026-10-07：Windows0.1.1正式发布与公开更新下载验收
+
+- 11:06:33北京时间，[正式v0.1.1](https://github.com/luoyan96/personal-agent/releases/tag/v0.1.1)发布，源码固定e8cffadb38ab5bb3abeb951107491ea39a482c10；[PR11](https://github.com/luoyan96/personal-agent/pull/11)及[源码三平台CI37564725311](https://github.com/luoyan96/personal-agent/actions/runs/37564725311)全部通过。先一起上传exe / blockmap / latest.yml并核对GitHub资产digest与大小，之后公开草稿，无覆盖不同字节。安装包SHA256 d3350cdd7405aec2526ac9e917e65970ad901d3a2c96ba4977621795891572a0、86257023字节。
+- `live-final4/report.json`真实Electron22打包程序及electron-updater5.3生产网络执行器、公开GitHub源检测 / HTTPS下载 / 库SHA512校验通过，独立SHA256 / 大小完全一致、15次有效进度；autoDownload / autoInstallOnAppQuit / allowDowngrade / allowPrerelease均false。只明确模拟比较版本0.1.0与隔离缓存，实际程序0.1.1，没有执行安装器，不能称真实已安装旧版本升级重启通过。
+- 首轮自有验收`live-final3`传测试adapter，库不创建HTTP执行器，因此检测失败；原报告保留。改用库正常构造、仅模拟版本 / 缓存后通过，产品代码和已发布包未改。Git外 `.runtime/windows-updates-20261007`保存release-published、upload-verified、software-ci、live-final4证据；当前新文档提交不重构建安装包。
+- 用户0.1.0先手动安装一次0.1.1，再从安装快捷方式启动；随后可检测、点击下载 / 安装并重启，托盘可手动检查。用户机器安装执行与之前桌面真实账号 / 文件夹模型仍待验。云端UI8b42d35、API / worker94b26d1 / d56ee747、contract0.19 / chat1.8 / schema18保持，无云部署或迁移。
