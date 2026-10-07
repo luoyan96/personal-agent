@@ -11,7 +11,7 @@ Windows x64 客户端版本为 `0.1.0`。本机安装包在 `D:/deepseek-agent/P
 3. 输入任务，点击 **发送所选内容给Agent**。
 4. 查看聊天中的实际附件、阅读状态和回复；附件发送成功不等于模型已经读完。
 
-**当前发布条件：** 桌面主进程、预览页面和安装包已经本地构建；当前 Electron 加载云端聊天页面，云端还必须发布本批客户端静态资源，才能在正常登录页面看到新入口。阿里云 Workbench 登录已过期，发布等待用户恢复原登录；不得把本地测试或安装包生成称为云端已上线。
+**当前发布状态：** Windows 0.1.0已打包。2026-10-07 10:24:26北京时间，云端客户端静态入口固定 `8b42d35a9e47b5159bfd19e5ce4155508d53f7e0` 已发布；Electron加载该云端聊天页面，重新打开即可获取入口。公网首页SHA256 `3a43637be852292eb7152c67e5208cfd029d73a1a40602ea854bd52b953e6cd1`、API / worker94b26d1 / 镜像d56ee747、contract0.19 / chat1.8 / schema18，八服务运行且API healthy，未迁移或重启后台。文档HEAD31995a5的三平台CI37560573547通过。真实桌面账号模型 / IM流程待用户桌面登录后验收。
 
 ## 本批实际能力
 
@@ -51,4 +51,6 @@ Electron 22 的 utilityProcess 使用 Node 16。独立解析进程固定 PDF.js 
 - 隔离桌面在正常网络权限下实际进入正式 HTTPS 登录页，appVersion0.1.0、packaged与webSecurity为true、真实隔离preload可见；没有登录或提交用户资料。此前受限网络回落连接页，以及隐藏窗口CDP截图超时的失败报告保留。用户免安装程序已实际启动；原生电脑操作工具的新增应用审批超时，没有绕过该权限去控制用户窗口。
 - 首次 Canvas 打包失败、utilityProcess 兼容失败、残留测试进程造成 DLL 占用、前端 fixture / 选择器失败保留，不能覆盖成全绿。宿主隔离 smoke 有 os_crypt 日志，既有 Antd / Router 弃用日志也保留。
 
-尚未计完成：新入口云端发布、真实桌面账号 / OpenIM 文件 / 模型全流程、系统安装向导与升级、通知、自动更新、手机原生客户端、目录自动写回。后续验收与精确部署版本追加到统一状态及项目日志。
+静态部署收据、独立公网核对与GitHub检查保存在 `static-release/`。当前Nginx root是 `/opt/research-openim/client-releases/8b42d35a9e47b5159bfd19e5ce4155508d53f7e0/clients/openim/dist`；回退副本 `/opt/research-openim/ops/windows-local-folder-8b42d35a9e47-20261007T022425Z/research-openim-production`，恢复配置、nginx -t / reload并核对旧622e首页9f2591 / 八服务；数据库、API及worker保持。此前Workbench过期失败保留，用户恢复原连接后未新增SSH / Key / 端口。
+
+尚未计完成：真实桌面账号 / OpenIM 文件 / 模型全流程、系统安装向导与升级、通知、自动更新、手机原生客户端、目录自动写回。后续验收追加到统一状态及项目日志。

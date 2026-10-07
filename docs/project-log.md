@@ -298,3 +298,10 @@
 - Git外 `D:/deepseek-agent/PersonalAgent-Windows/0.1.0/ResearchWeChat_0.1.0.exe`（86163661字节，SHA256 `28b8a1938efdff5655bc24dac53337bb3501028022e4484fd6c514a67964e208`），免安装入口 `app/ResearchWeChat.exe`已启动供用户登录；app.asar SHA256 `91663c7013a7604cf725381c4dd94b8142dd8dd0d00c56a79282465b9644201e`。用户真实资料未读取或传输。Windows操作工具新增应用审批超时，没有控制该用户程序。所有自有测试Electron / Vite已收尾。
 - **云端新入口未发布**：客户端加载云端UI，阿里云Workbench登录过期，已请求用户恢复Edge原登录；尚未上传静态资源、修改生产Nginx或调用真实桌面模型 / IM。源码/安装包成功不能代替发布。证据在Git外 `.runtime/windows-local-folder-20261006`，使用和下一步见[Windows交接](development/windows-local-folder.md)。
 - 固定实现提交 `8b42d35a9e47b5159bfd19e5ce4155508d53f7e0` 已推送，[PR10](https://github.com/luoyan96/personal-agent/pull/10)已附着当前任务；CI37560444750启动中，尚未计通过。后续交接文档提交不改变安装包代码。静态准备包41735965字节、SHA2562698a4de、helperbc27f0bc、候选首页3a43637b；逐个canonical客户端源码与四SDK hash通过，后端 / contracts / Harness差异为空。生产助手保留原622e / 9f2591、94b26d1 / d56ee747 / schema18 / 八服务与Nginx自动回退守卫；没有执行到云端。收据 `static-release/bundle-receipt.json`。
+
+### 2026-10-07：Windows文件夹入口云端静态发布
+
+- 用户回复“已登录”，现有阿里云Workbench原SSH会话恢复；没有新增临时SSH公钥、开放端口或读取用户Key。10:24:26北京时间，固定客户端8b42d35经文件管理上传、外包SHA2562698a4de校验、有界目录解包及已审阅助手发布。Nginx root `/opt/research-openim/client-releases/8b42d35a9e47b5159bfd19e5ce4155508d53f7e0/clients/openim/dist`；精确公网首页3a43637b，八服务运行、API healthy、HTTPS ready0.19，八镜像与后台current94b26d1 / d56ee747保持不变。没有数据库迁移或后台重启。
+- 10:27:25本机独立HTTPS核对同一完整index SHA256与健康通过。Git外 `.runtime/windows-local-folder-20261006/static-release/{deployment-verified,public-verified,github-ci}.json`；部署收据原文来自实际Workbench终端。文档HEAD31995a5的CI37560573547三平台全部通过（Ubuntu22.19 / 24、Windows24），与上一节未完成发布及启动中CI分开。
+- 静态恢复副本 `/opt/research-openim/ops/windows-local-folder-8b42d35a9e47-20261007T022425Z/research-openim-production`；只恢复Nginx配置、nginx -t / reload并核对旧622e84b首页9f2591、健康及八镜像，不恢复数据库或更换API。Windows包代码仍8b42，文档更新不触发重构建。
+- 原生电脑操作工具此次成功定位并显示真实用户Windows0.1.0客户端；目前是科研微信登录页，已请求用户在桌面手工登录。准备 `D:/deepseek-agent/PersonalAgent-Windows/试用文件夹/`，仅复制已有合成两页PDF与DOCX。真实桌面模型 / OpenIM投递仍未计完成；不会将本地合成SDK/API验收冒充真实线上结果。
