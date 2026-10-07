@@ -28,9 +28,16 @@
   .desktop-nav-item:hover { background: #3a4758; }
   .desktop-nav-item[aria-current] { background: #394b63; border-left-color: #4b9cff; color: #68afff; }
   .desktop-nav-item[aria-current] > div { color: #e4efff; }
-  .desktop-model-settings { margin-top: auto; margin-bottom: 28px; display: flex; flex-direction: column; gap: 9px; align-items: center; color: #ced6e2; width: 100%; padding: 10px 0; font-size: 11px; }
+  .desktop-navigation-bottom { margin-top: auto; margin-bottom: 18px; width: 100%; }
+  .desktop-model-settings { display: flex; flex-direction: column; gap: 9px; align-items: center; color: #ced6e2; width: 100%; padding: 10px 0; font-size: 11px; }
   .desktop-model-settings .anticon { font-size: 24px; }
   .desktop-model-settings:hover { background: #3a4758; color: #fff; }
+  .desktop-update-button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 62px; width: 100%; padding: 10px 3px; margin-top: 8px; background: #394b63; color: #8bc1ff; border-radius: 6px; font-size: 11px; }
+  .desktop-update-button .anticon { font-size: 22px; }
+  .desktop-update-button:hover:enabled { background: #435b7b; color: #fff; }
+  .desktop-update-button:disabled { cursor: default; }
+  .desktop-update-progress { width: 48px; height: 3px; border-radius: 2px; overflow: hidden; background: #607088; }
+  .desktop-update-progress > span { display: block; height: 100%; background: #8bc1ff; }
 
   .desktop-conversation-column { width: 300px; flex-shrink: 0; background: #fff; }
   .desktop-conversation-column aside { width: 300px; }

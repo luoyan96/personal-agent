@@ -101,6 +101,9 @@ const saveFileToDisk = async ({
 };
 
 const Api: IElectronAPI = {
+  getDesktopUpdateState: () => ipcRenderer.invoke("desktop-update-state"),
+  onDesktopUpdateState: (callback) => subscribe("desktop-update-state-changed", callback),
+  desktopUpdateAction: (action, version) => ipcRenderer.invoke("desktop-update-action", action, version),
   createDesktopReport: (scope, title, markdown, sources) => ipcRenderer.invoke("create-desktop-report", scope, title, markdown, sources),
   listDesktopReports: (scope) => ipcRenderer.invoke("list-desktop-reports", scope),
   openDesktopReport: (scope, id) => ipcRenderer.invoke("open-desktop-report", scope, id),
