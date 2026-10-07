@@ -288,7 +288,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     const names=['001-foundation.sql','002-collaboration.sql','003-invitation-decisions.sql','004-discovery.sql','005-coordination.sql','006-execution.sql','007-authorized-reuse.sql','008-pilot-operations.sql','009-invite-registration.sql','010-lab-invite-management.sql','011-lab-ai-settings.sql','012-research-chat.sql','013-chat-viewer-state.sql','014-agent-contacts.sql']
     for(const [index,name] of names.entries()){const sql=readFileSync(new URL(`../migrations/${name}`,import.meta.url),'utf8');db.exec(sql);db.prepare('INSERT INTO schema_migrations VALUES (?,?,?)').run(index+1,createHash('sha256').update(sql).digest('hex'),'2026-01-01T00:00:00Z')}
     seed(db,'test');db.prepare("INSERT INTO chat_conversations VALUES ('old','lab_synthetic','member_A','personal','old_scope','{}')").run();db.prepare("INSERT INTO chat_messages VALUES ('old_message','old',1,'{}')").run()
-    migrate(db);migrate(db);checkDatabase(db);expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(18)
+    migrate(db);migrate(db);checkDatabase(db);expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(19)
     expect(db.prepare('SELECT count(*) n FROM chat_messages').get()!.n).toBe(1);expect(db.prepare('SELECT count(*) n FROM im_message_outbox').get()!.n).toBe(0)
   })
 })

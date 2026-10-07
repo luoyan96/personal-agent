@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { PersonalAssistantReceipt,PersonalMemoryReceipt,PersonalFollowupReceipt } from './personal-assistant.js'
 import { Id, Title, Text, Version, Instant, ObjectRef, PublicCapabilityRef, Budget, Schedule, ModelUsage, ErrorResponse, errorStatus, data, page } from './models.js'
 
-export const chatProtocolVersion = '1.8.0' as const
+export const chatProtocolVersion = '1.9.0' as const
 export const ChatAvailability = z.strictObject({ status: z.enum(['available', 'unavailable', 'disabled']), reason: z.enum(['platform_disabled', 'lab_disabled', 'missing_credentials', 'capability_unavailable', 'owner_authorization_required', 'not_connected']).nullable() })
 export const ContactProfileInput = z.strictObject({ displayName: Title, introduction: z.string().max(2000), capabilityDescription: z.string().max(4000), personality: z.string().max(2000) })
 export const ContactProfile = z.strictObject({ role: z.enum(['human', 'coordinator', 'specialist', 'public_capability']), introduction: z.string().max(2000), capabilityDescription: z.string().max(4000), personality: z.string().max(2000), version: Version })

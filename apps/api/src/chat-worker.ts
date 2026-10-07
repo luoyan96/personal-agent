@@ -103,6 +103,7 @@ export class ChatWorker {
       const contactColumns=['id','displayName','identity','availability','profile']
       const selectedTasks=input.context.filter(ref=>ref.kind==='task').map(ref=>s.c.task(ref.ref.id))
       system=input.dailyChat?dailyChatSystem:chatModelSystem({group:group.kind==='personal'&&agentContext.agent.profile.role==='coordinator',inviteContact:group.kind==='group'&&group.ownerMemberId===s.c.actor.id,inviteTask:group.kind==='group'&&group.ownerMemberId===s.c.actor.id&&selectedTasks.some(task=>task.initiatorId===s.c.actor.id),runTask:group.kind==='group'&&selectedTasks.some(task=>task.leadId===s.c.actor.id)})
+      if(input.scheduledFollowupId)system+='\nThe latest service message is an explicitly owner-authorized scheduled instruction. Execute that instruction within the provided conversation text only, and return the result conversationally. It does not grant web browsing, tools, filesystem access, business mutations, contact creation, or further scheduling. State any missing inputs/access plainly; never claim to have performed actions outside this scope.'
       if(input.assistantMode==='coordinate')system=personalAssistantSystem+'\n'+chatModelSystem({group:true,inviteContact:false,inviteTask:false,runTask:false}).split('\n').filter(line=>/^(Ref=|Group=|Item=|Schedule=)/.test(line)).join('\n')
       const document=input.fileSource?s.fileDocument(input.fileSource.messageId,group.id):undefined
       if(document)system+=fileChatSystem
