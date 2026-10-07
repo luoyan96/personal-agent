@@ -23,6 +23,12 @@
 - 普通个人 / Agent 私聊默认只输入文本并发送；使用本人默认模型，保留真实档案、性格和授权记忆。任务、材料、预算与需求模板收在可选协作中；普通聊天不创建计划、群、任务或执行动作。主标题显示真实 Agent 名称，沿用原协调身份和置顶映射。
 - 设置入口改为“模型设置”，每个人管理自己的 DeepSeek / 通义千问 / 豆包配置、加密 Key、启用及默认选择。朋友使用本人 Key 与当前对话记忆，不能读取 Agent 主人的 Key 或私有记忆。既有 IFRC 未选择个人配置时兼容旧模型；明确作个人选择后不静默回退。
 
+## 桌面隔离验收启动报错（源码修复，未重发安装包）
+
+2026-10-07用户截图的 `Unexpected desktop review directory` 来自先前自有Electron验收程序：初次测试目录用了 `openim-query-probe-`，不符合生产启动守卫规定的 `openim-electron-review-` 前缀；目录检查又在异常处理器注册之前执行，因此弹出未捕获异常窗口。先前验收脚本已纠正前缀，本批在分支 `fix/desktop-review-startup-error` 将原有目录检查 / userData设置移入已注册异常处理器之后的try块，保留原目录边界和拒绝条件。
+
+Electron主进程类型检查通过；真实Electron22.3.27运行生产bootstrap / smoke源码，两个非法目录均快速退出1，合法隔离目录进入明确合成的最小main并退出0，均无超时。没有调用真实业务main、模型、网络或用户账号，不当作完整客户端端到端验收。Git外 `.runtime/desktop-startup-error-20261007/report.json`及三组stdout / stderr日志保存证据；初次测试失败仍保留在 `.runtime/desktop-message-query-20261007/probe.log`。进程核对无自有测试残留，用户正常客户端仍在运行，未重启或重装。此前云端b3eb215历史消息修复、API94b26d1和Windows0.1.1安装包均保持；此源码修复留待后续安装包纳入。
+
 ## Windows 登录后历史消息误报权限（已上线并实际验收）
 
 用户2026-10-07截图中本人和个人助理的旧消息均显示“当前权限下无法读取”。固定修复 `b3eb21536d696f25fc5535e6a3b2c6e854f03c18`、[PR12](https://github.com/luoyan96/personal-agent/pull/12)：实际打包Electron22 / Chromium108没有 `URLSearchParams.size`，原客户端因此丢失全部GET查询参数，读取默认前30条后找不到后续canonical消息。改用 `query.toString()` 判断非空；未找到消息时显示真实未找到状态，不再误称权限不足。后端鉴权、共享API、contract0.19 / chat1.8 / schema18未改。
