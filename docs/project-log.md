@@ -1,5 +1,12 @@
 # 项目进展日志
 
+## 2026-10-07：Windows 0.3.1 左下角更新按钮
+
+- 用户明确要求做好窗口左下角更新入口。分支`feature/desktop-update-button`基于main6122b91，客户端版本0.3.1；复用原生真实更新状态，增加只接受固定动作与同一候选版本的主frame IPC和preload方法。React先订阅再读取快照，并以revision避免迟到快照覆盖新进度；左下角发现新版 / 下载百分比 / 重启更新 / 失败重试，页面重开不重下。自动检测不打断聊天，手动托盘原生入口及明确安装确认保留。
+- renderer与Electron类型、既有5组控制器检查通过。真实Electron22 / Chromium108运行生产导航、主进程、IPC、preload方法和控制器，17项定向交互通过，1280×820无横溢出、按钮在左下角、pageerror0；过时候选 / 完成前安装 / 非主窗口均拒绝。发布执行器、安装版资格及OS响应为合成；安装器仅验证调用次数，未真实下载或安装，不能宣称旧安装版升级重启成功。
+- 实际NSIS构建、清单 / 安装包 / blockmap与公开GitHub更新源门禁通过；安装包86287581字节、SHA256 `bd7702604c996910baecef8d68c28f12b29a001486870aec6284637d2c945d89`，本机`D:/deepseek-agent/PersonalAgent-Windows/0.3.1/ResearchWeChat_0.3.1.exe`。源码发布以`v0.3.1`和Release固定，后续Git外发布收据记录精确源码、PR / CI、公开资产与最终状态；无共享代码 / 服务端 / 数据库变更。
+- Git外`.runtime/desktop-update-button-20261007`保存类型 / 交互 / 截图 / 打包 / 清单门禁，首次QA依赖解析失败、截图补拍字段遗漏、默认进程读取拒绝均保留失败记录。改正合成服务结构后只补拍按钮截图；残留自有验收进程已单独确认并清理，Vite已关闭，正常用户程序和账号未触碰。旧版须先更新至0.3.1，之后才能使用新按钮。
+
 ## 2026-10-07：Windows0.3.0桌面界面与真实状态呈现
 
 按用户要求，前端交给gpt-6.1-sol / high，独立分支`feature/desktop-agent-interface`；总控生成并检查完整设计参考、审查实际截图、修正汇总计数、打包与整合。桌面发布源码以GitHub `v0.3.0`标签及Release为准。当前交互机制及CopilotKit / AG-UI后续适配边界见[桌面说明](development/desktop-agent-workspace.md)。

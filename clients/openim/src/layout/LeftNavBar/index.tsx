@@ -23,6 +23,7 @@ import { OverlayVisibleHandle } from "../../hooks/useOverlayVisible";
 import About from "./About";
 import styles from "./left-nav-bar.module.scss";
 import PersonalSettings from "./PersonalSettings";
+import DesktopUpdateButton from "./DesktopUpdateButton";
 import { researchMode } from "@/research/api";
 import { LabSettings } from "@/research/LabSettings";
 import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
@@ -302,7 +303,10 @@ const LeftNavBar = memo(() => {
         {NavList.map((nav) => (
           <NavItem nav={nav} key={nav.path} />
         ))}
-        {window.electronAPI && researchMode && <button type="button" className="desktop-model-settings" onClick={() => setLabSettings(true)} aria-label="模型设置"><SettingOutlined /><span>模型设置</span></button>}
+        {window.electronAPI && <div className="desktop-navigation-bottom">
+          {researchMode && <button type="button" className="desktop-model-settings" onClick={() => setLabSettings(true)} aria-label="模型设置"><SettingOutlined /><span>模型设置</span></button>}
+          <DesktopUpdateButton />
+        </div>}
       </div>
       <PersonalSettings ref={personalSettingsRef} />
       <About ref={aboutRef} />
