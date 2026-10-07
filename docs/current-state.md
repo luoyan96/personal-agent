@@ -23,7 +23,17 @@
 - 普通个人 / Agent 私聊默认只输入文本并发送；使用本人默认模型，保留真实档案、性格和授权记忆。任务、材料、预算与需求模板收在可选协作中；普通聊天不创建计划、群、任务或执行动作。主标题显示真实 Agent 名称，沿用原协调身份和置顶映射。
 - 设置入口改为“模型设置”，每个人管理自己的 DeepSeek / 通义千问 / 豆包配置、加密 Key、启用及默认选择。朋友使用本人 Key 与当前对话记忆，不能读取 Agent 主人的 Key 或私有记忆。既有 IFRC 未选择个人配置时兼容旧模型；明确作个人选择后不静默回退。
 
-## Windows 本地文件夹（0.1.0已打包，云端入口已发布）
+## Windows 更新候选（0.1.1已打包）
+
+用户要求检测新版本、提示并点击更新。分支 `feature/windows-updates` 基于main `abed83e792d4f4b8af3881d5aae1cc375db09d83`，只接原生 `electron-updater` 5.3.0与本项目公开GitHub Releases；共享API / 云端UI未改。安装版启动15秒、每6小时及唤醒检查，前台提示；后台结果回到窗口再提示。系统托盘有真实版本及“检查更新”。检测不下载，明确下载后库校验，再由本人“安装并重启”；退出不自动安装，不自动降级或选择预发布版。无renderer安装IPC / 自定URL / 嵌入Token，无TLS、webSecurity或签名检查放宽。
+
+Windows0.1.1安装包86257023字节、SHA256 `d3350cdd7405aec2526ac9e917e65970ad901d3a2c96ba4977621795891572a0`；本机入口 `D:/deepseek-agent/PersonalAgent-Windows/0.1.1/ResearchWeChat_0.1.1.exe`。[更新使用与发布步骤](development/windows-updates.md)。0.1.0须首装一次新版本；免安装目录明确引导安装，不做原地替换。
+
+5组状态 / 故障检查、renderer / Electron类型、NSIS最终构建、实际打包启动smoke、安装包 / app-update.yml / latest.yml / blockmap一致性门禁通过。`native-final3/report.json`真实Electron22 0.1.1正常HTTPS登录及原生未安装保护通过；仅OS提示响应替代，未执行安装。首轮重复publish参数造成builder尝试创建发布器、缺GH_TOKEN失败（无上传），去掉新增重复参数后沿原默认单个 `--publish never` 构建通过；两次开发测试require / dynamic import入口失败保留。
+
+Git外 `.runtime/windows-updates-20261007/`。更新候选尚未发布，真实公开源下载校验与实际安装升级未计完成；用户旧0.1.0桌面登录后的文件夹 / 模型验收仍独立待办。云端当前8b42d35、API / worker94b26d1 / d56ee747、contract0.19 / chat1.8 / schema18保持。
+
+## Windows 本地文件夹（0.1.0已发布）
 
 用户要求 Windows 电脑版并试用本地目录。分支 `feature/windows-local-folder` 基于 main `eb18b6fb498975f94540ec6771705beacee3c2d3`，客户端版本独立为 `0.1.0`。安装包及免安装程序保存在 Git 外 `D:/deepseek-agent/PersonalAgent-Windows/0.1.0/`；[试用、开发与边界](development/windows-local-folder.md)。本批没有修改共享 API / contract0.19 / chat1.8 / schema18，没有迁移。
 
