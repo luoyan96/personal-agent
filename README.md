@@ -1,5 +1,7 @@
 # Research Agent Platform · Personal Agent 与人机协作
 
+Windows桌面 **0.3.2** 修复发送等待和错误 / 重试入口被遮挡：30秒未确认保留原请求，重试沿用原编号；可停止等待、持续输入和切换联系人。下载与准确受测范围见[当前状态](docs/current-state.md)。升级前复制旧版未确认需求；本批未新增跨软件重启的待发恢复。
+
 **最终目标是以个人为中心的Personal Agent：采用类似微信的交流方式，人与Agent共用通讯录；个人助理根据任务类型和难度组织协作，积累获准的长期记忆，持续推进、主动跟进并从反馈中改进。** 科研小组是第一个验证场景，个人可以独立使用。
 
 Windows桌面源码 **0.3.1**：发现新版后在左下角显示“更新”，点击下载、显示进度，校验完成后可重启安装；保留微信式三栏、会话搜索、流式回复、文件任务卡与本地文件报告。更新用法见[Windows更新](docs/development/windows-updates.md)，文件与协议边界见[桌面文件工作区](docs/development/desktop-agent-workspace.md)。桌面发布以GitHub版本标签及Release为准，云端部署记录与桌面版本分别维护。

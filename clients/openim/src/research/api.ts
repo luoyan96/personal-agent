@@ -6,6 +6,11 @@ import type {
 } from "@research-agent-platform/contracts";
 import { clearIMProfile } from "@/utils/storage";
 import {
+  assertRequestActive,
+  RequestTimeoutError,
+  withRequestDeadline,
+} from "./request-deadline";
+import {
   normalizeAuthBody,
   serviceErrorMessage,
   validationMessage,
@@ -35,6 +40,24 @@ export async function researchApi<K extends RouteName>(
   name: K,
   options: Options<K> = {},
 ): Promise<ResponseFor<K>> {
+  try {
+    return await withRequestDeadline(
+      (signal) => requestResearchApi(name, { ...options, signal }),
+      name === "agentFileMessage" ? 120000 : 30000,
+      options.signal,
+    );
+  } catch (error) {
+    if (error instanceof RequestTimeoutError)
+      throw new ResearchApiError("REQUEST_TIMEOUT", 0, error.message);
+    throw error;
+  }
+}
+
+async function requestResearchApi<K extends RouteName>(
+  name: K,
+  options: Options<K>,
+): Promise<ResponseFor<K>> {
+  assertRequestActive(options.signal);
   const route = routes[name];
   let path: string = route.path;
   for (const [key, value] of Object.entries(options.params ?? {}))
@@ -55,8 +78,12 @@ export async function researchApi<K extends RouteName>(
       validationMessage(parsedBody.error.issues),
     );
   const body = parsedBody.data;
-  if (route.method !== "GET" && route.access === "session" && !csrfToken)
-    csrfToken = (await researchApi("session")).data.csrfToken;
+  if (route.method !== "GET" && route.access === "session" && !csrfToken) {
+    const session = await requestResearchApi("session", { signal: options.signal });
+    assertRequestActive(options.signal);
+    csrfToken = session.data.csrfToken;
+  }
+  assertRequestActive(options.signal);
   const headers: Record<string, string> = {};
   if (route.method !== "GET") headers["Content-Type"] = "application/json";
   if (csrfToken && route.method !== "GET" && route.access === "session")
@@ -89,6 +116,7 @@ export async function researchApi<K extends RouteName>(
       "服务连接失败，填写内容已保留，请检查连接后重试。",
     );
   }
+  assertRequestActive(options.signal);
   if (
     response.status === 401 &&
     name !== "login" &&
@@ -101,7 +129,8 @@ export async function researchApi<K extends RouteName>(
   let value: unknown;
   try {
     value = await response.json();
-  } catch {
+  } catch (error) {
+    if (options.signal?.aborted) throw error;
     throw new ResearchApiError(
       response.ok ? "INVALID_RESPONSE" : "SERVICE_UNAVAILABLE",
       response.status,
@@ -110,7 +139,7 @@ export async function researchApi<K extends RouteName>(
         : serviceErrorMessage("SERVICE_UNAVAILABLE", response.status, name),
     );
   }
-  if (options.signal?.aborted) throw new DOMException("Read cancelled", "AbortError");
+  assertRequestActive(options.signal);
   if (!response.ok) {
     const parsed = ErrorResponse.safeParse(value),
       code = parsed.success ? parsed.data.error.code : "HTTP_ERROR";

@@ -221,6 +221,7 @@ export function useResearchComposer() {
     idempotencyKey: string,
     isCurrent: () => boolean,
     intent: number,
+    signal: AbortSignal,
   ) => {
     if (!isCurrent())
       throw new Error("会话已切换，这条消息尚未发送，请返回原会话核对。");
@@ -244,11 +245,13 @@ export function useResearchComposer() {
               params: { id: prepared.conversationId },
               body: prepared.body,
               idempotencyKey,
+              signal,
             })
           : await researchApi("agentChatMessage", {
               params: { id: prepared.conversationId },
               body: prepared.body,
               idempotencyKey,
+              signal,
             });
     } catch (error) {
       operation.dispose();

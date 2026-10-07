@@ -5,45 +5,154 @@
     --chat-bubble-sender: #d8ecff;
     background: #f5f6f8;
 
-    #chat-list { background: #f5f6f8; }
+    #chat-list {
+      background: #f5f6f8;
+    }
     [data-panel-id="chat-footer"] {
       min-height: 190px !important;
       max-height: 240px;
     }
-    [data-panel-resize-handle-id] { background: #e4e8ee; height: 1px; }
+    [data-panel-resize-handle-id] {
+      background: #e4e8ee;
+      height: 1px;
+    }
   }
   .desktop-chat-footer {
-    [data-composer-controls] { max-height: 48px; flex-shrink: 1; }
-    [data-composer-editor] { min-height: 92px; }
-    .ck-content { font-size: 15px; line-height: 1.65; word-break: break-word; }
-    .ck-content > p { margin: 5px 0 !important; }
-    [data-composer-editor] > div:last-child { padding-top: 4px; padding-bottom: 6px; }
-    [data-ai-turn-status] { padding-top: 1px; padding-bottom: 1px; }
+    [data-composer-controls] {
+      max-height: 48px;
+      flex-shrink: 1;
+    }
+    [data-composer-editor] {
+      min-height: 92px;
+    }
+    .ck-content {
+      font-size: 15px;
+      line-height: 1.65;
+      word-break: break-word;
+    }
+    .ck-content > p {
+      margin: 5px 0 !important;
+    }
+    [data-composer-editor] > div:last-child {
+      padding-top: 4px;
+      padding-bottom: 6px;
+    }
+    [data-ai-turn-status] {
+      padding-top: 1px;
+      padding-bottom: 1px;
+    }
   }
 }
 
 .desktop-chat-footer.is-native-desktop {
-  > div { border-top-color: #e4e9f0; }
-  [role="toolbar"] { display: flex !important; flex-wrap: wrap; min-height: 36px; gap: 7px; padding-top: 4px; }
-  [role="toolbar"] > button, [role="toolbar"] > .ant-popover-open { width: auto; height: 30px; padding: 0 7px; gap: 7px; color: #687992; font-size: 18px; }
-  [role="toolbar"] > button > span:not(.anticon) { font-size: 12px; }
-  [role="toolbar"] button[aria-label="本地文件夹"] { border-left: 1px solid #e1e7ee; border-radius: 0 6px 6px 0; padding-left: 15px; color: #4f6d97; }
-  [role="toolbar"] button[aria-label="文件任务与报告"] { margin-left: auto; font-size: 11px; }
-  [role="toolbar"] button:disabled { opacity: .55; cursor: not-allowed; }
-  [data-composer-controls] { max-height: 44px; }
-  [data-composer-editor] { min-height: 64px; border: 1px solid #dde4ee; border-radius: 9px; margin: 5px 15px 11px; }
-  [data-composer-editor]:focus-within { border-color: #a5c6f7; }
-  .ck-content { padding: 6px 13px !important; font-size: 15px; line-height: 1.65; }
-  .ck-content > p { margin: 4px 0 !important; }
-  .desktop-composer-bottom { gap: 10px; padding: 4px 10px 8px !important; }
-  .desktop-composer-bottom > button { padding: 0 22px; height: 32px; border-radius: 6px; box-shadow: none; }
-  .desktop-composer-bottom > div .ant-btn { color: #7c8ba0; font-size: 11px; padding-left: 0; }
-  .desktop-send-shortcut { margin-left: auto; color: #8b97a9; font-size: 11px; white-space: nowrap; }
-  button[aria-label="更多聊天功能"], [aria-label="聊天扩展功能"] { display: none !important; }
+  > div {
+    border-top-color: #e4e9f0;
+  }
+  [role="toolbar"] {
+    display: flex !important;
+    flex-wrap: wrap;
+    min-height: 36px;
+    gap: 7px;
+    padding-top: 4px;
+  }
+  [role="toolbar"] > button,
+  [role="toolbar"] > .ant-popover-open {
+    width: auto;
+    height: 30px;
+    padding: 0 7px;
+    gap: 7px;
+    color: #687992;
+    font-size: 18px;
+  }
+  [role="toolbar"] > button > span:not(.anticon) {
+    font-size: 12px;
+  }
+  [role="toolbar"] button[aria-label="本地文件夹"] {
+    border-left: 1px solid #e1e7ee;
+    border-radius: 0 6px 6px 0;
+    padding-left: 15px;
+    color: #4f6d97;
+  }
+  [role="toolbar"] button[aria-label="文件任务与报告"] {
+    margin-left: auto;
+    font-size: 11px;
+  }
+  [role="toolbar"] button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  [data-composer-controls] {
+    max-height: 44px;
+  }
+  [data-composer-editor] {
+    min-height: 64px;
+    border: 1px solid #dde4ee;
+    border-radius: 9px;
+    margin: 5px 15px 11px;
+  }
+  [data-composer-editor]:focus-within {
+    border-color: #a5c6f7;
+  }
+  .ck-content {
+    padding: 6px 13px !important;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+  .ck-content > p {
+    margin: 4px 0 !important;
+  }
+  .desktop-composer-bottom {
+    gap: 10px;
+    padding: 4px 10px 8px !important;
+  }
+  .desktop-composer-bottom > button {
+    padding: 0 22px;
+    height: 32px;
+    border-radius: 6px;
+    box-shadow: none;
+  }
+  .desktop-composer-bottom > div .ant-btn {
+    color: #7c8ba0;
+    font-size: 11px;
+    padding-left: 0;
+  }
+  .desktop-send-shortcut {
+    margin-left: auto;
+    color: #8b97a9;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  button[aria-label="更多聊天功能"],
+  [aria-label="聊天扩展功能"] {
+    display: none !important;
+  }
+}
+
+.desktop-send-record {
+  margin: 2px 15px 4px;
+  padding: 7px 10px;
+  border: 1px solid #e1e7ee;
+  border-radius: 7px;
+  background: #f8fafc;
+  font-size: 12px;
+  line-height: 18px;
+  .desktop-send-error {
+    overflow-wrap: anywhere;
+  }
 }
 
 .personal-agent-desktop #chat-container {
   --chat-bubble: #fff;
   --chat-bubble-sender: #deecff;
-  [data-panel-id="chat-footer"] { min-height: 166px !important; max-height: 220px; }
+  [data-panel-id="chat-footer"] {
+    min-height: 166px !important;
+    max-height: 220px;
+  }
+  [data-panel-id="chat-footer"]:has([data-chat-outbox]) {
+    min-height: 228px !important;
+    max-height: 340px;
+  }
+  [data-panel-id="chat-footer"]:has([data-send-recovery]) {
+    min-height: 276px !important;
+  }
 }
