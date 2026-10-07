@@ -10,6 +10,7 @@ import { smokeResult, smokeProgress } from "../utils/smoke";
 import { getStore } from "./storeManage";
 import { validateResearchServiceUrl } from "../utils/researchService";
 import { desktopSessionCookie, startDesktopServer } from "../utils/desktopServer";
+import { getLogger } from "../utils/log";
 
 const url = process.env.VITE_DEV_SERVER_URL;
 let mainWindow: BrowserWindow | null = null;
@@ -164,7 +165,12 @@ export async function connectResearchService(address: unknown) {
   try {
     await desktopServer?.close();
     rendererOrigin = "";
-    desktopServer = await startDesktopServer(global.pathConfig.distPath, target);
+    const logger = getLogger(global.pathConfig.logsPath);
+    desktopServer = await startDesktopServer(
+      global.pathConfig.distPath,
+      target,
+      (failure) => logger.warn("desktop-api-transport", failure),
+    );
     rendererOrigin = desktopServer.origin;
     await mainWindow.loadURL(rendererOrigin);
     getStore().set("researchServiceUrl", target);
@@ -180,9 +186,18 @@ export async function connectResearchService(address: unknown) {
       // The token stays inside Electron's cookie store and is never sent to the UI.
       const previous = (await cookies.get({ url: target, name: "rap_session" }))[0];
       if (previous) {
-        await cookies.set({ url: rendererOrigin, name: cookieName, value: previous.value,
-          httpOnly: true, secure: false, path: "/", sameSite: "lax",
-          ...(previous.expirationDate ? { expirationDate: previous.expirationDate } : {}) });
+        await cookies.set({
+          url: rendererOrigin,
+          name: cookieName,
+          value: previous.value,
+          httpOnly: true,
+          secure: false,
+          path: "/",
+          sameSite: "lax",
+          ...(previous.expirationDate
+            ? { expirationDate: previous.expirationDate }
+            : {}),
+        });
         mainWindow.reload();
       }
     }

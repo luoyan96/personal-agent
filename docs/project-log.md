@@ -1,5 +1,22 @@
 # 项目进展日志
 
+## 2026-10-07：Windows 0.3.2 发送恢复
+
+- `fix/desktop-send-recovery`基于e1d38de：普通请求30秒总期限、附件120秒，包含会话准备与正文。取消传播到fetch；保留原文、原请求和原编号，手动重试核对原结果；不自动跳过失败前句。SDK文字同样有界且保留原nativeMessage。切换联系人暂停原记录，新scope不被旧pump锁住，迟到回执不能删除暂停记录。
+- 独立恢复卡完整呈现错误、原文、重试和移除本地记录；“停止等待”不声称撤回服务端消息。原生代理处理半截响应和总期限，诊断日志仅传输元数据。固定TLS / Origin / cookie规则不变。
+- renderer / Electron类型、生产API合成传输6项、生产proxy本地真实HTTP / 合成上游4项、Electron22 / Chromium108生产组件16项通过，pageErrors0；minimum1024×726与1280×820无遮挡，截图已查看。真实无凭据云 / 桌面proxy ready200 / 0.19、session401、无效POST400快速响应。未使用真实账号 / Key或发真实需求，不把合成回执称模型成功。
+- Git外`.runtime/desktop-send-recovery-20261007`保留证据及打包发布收据；CJS测试准备、fixture注释 / 缓存、宽API glob误拦源码失败保留。浏览器维护读取遭自动审批拒绝后提出明确授权请求，桌面工作继续，未绕过拒绝；那次云端具体故障尚未证实。两个交接文档补丁因标题不匹配未写入，改用准确标题后成功。
+- 无共享代码、SQL或后台部署修改。升级前复制旧版未确认需求：现有待发sessionStorage不跨软件重启。v0.3.2标签与Release / Git外收据记录准确软件与资产，main保留合并门禁，既有Windows基础CI超时不通过放宽生产期限解决。
+
+- 实际NSIS构建、更新资产门禁、隔离profile包启动通过；启动日志保留受限网络EACCES与有效元数据，不把启动判为云端回复。exe86286669字节，SHA256 `c0ecd187b8a5e84f37a8f652a99089c7a55d582a3874b6cf43e41a29fb38d6c2`，另存`PersonalAgent-Windows/0.3.2`；未安装 / 重启用户软件。Git外发布收据记录源提交、PR、CI和公开资产最终状态。
+
+## 2026-10-07：Windows 0.3.1 左下角更新按钮
+
+- 用户明确要求做好窗口左下角更新入口。分支`feature/desktop-update-button`基于main6122b91，客户端版本0.3.1；复用原生真实更新状态，增加只接受固定动作与同一候选版本的主frame IPC和preload方法。React先订阅再读取快照，并以revision避免迟到快照覆盖新进度；左下角发现新版 / 下载百分比 / 重启更新 / 失败重试，页面重开不重下。自动检测不打断聊天，手动托盘原生入口及明确安装确认保留。
+- renderer与Electron类型、既有5组控制器检查通过。真实Electron22 / Chromium108运行生产导航、主进程、IPC、preload方法和控制器，17项定向交互通过，1280×820无横溢出、按钮在左下角、pageerror0；过时候选 / 完成前安装 / 非主窗口均拒绝。发布执行器、安装版资格及OS响应为合成；安装器仅验证调用次数，未真实下载或安装，不能宣称旧安装版升级重启成功。
+- 实际NSIS构建、清单 / 安装包 / blockmap与公开GitHub更新源门禁通过；安装包86287581字节、SHA256 `bd7702604c996910baecef8d68c28f12b29a001486870aec6284637d2c945d89`，本机`D:/deepseek-agent/PersonalAgent-Windows/0.3.1/ResearchWeChat_0.3.1.exe`。源码发布以`v0.3.1`和Release固定，后续Git外发布收据记录精确源码、PR / CI、公开资产与最终状态；无共享代码 / 服务端 / 数据库变更。
+- Git外`.runtime/desktop-update-button-20261007`保存类型 / 交互 / 截图 / 打包 / 清单门禁，首次QA依赖解析失败、截图补拍字段遗漏、默认进程读取拒绝均保留失败记录。改正合成服务结构后只补拍按钮截图；残留自有验收进程已单独确认并清理，Vite已关闭，正常用户程序和账号未触碰。旧版须先更新至0.3.1，之后才能使用新按钮。
+
 ## 2026-10-07：Windows0.3.0桌面界面与真实状态呈现
 
 按用户要求，前端交给gpt-6.1-sol / high，独立分支`feature/desktop-agent-interface`；总控生成并检查完整设计参考、审查实际截图、修正汇总计数、打包与整合。桌面发布源码以GitHub `v0.3.0`标签及Release为准。当前交互机制及CopilotKit / AG-UI后续适配边界见[桌面说明](development/desktop-agent-workspace.md)。

@@ -16,6 +16,7 @@ import { getStore } from "./storeManage";
 import { changeLanguage } from "../i18n";
 import { registerLocalFolderBridge } from "./localFolderManage";
 import { registerDesktopWorkBridge } from "./desktopWorkManage";
+import { registerDesktopUpdateBridge } from "./updateManage";
 
 const store = getStore();
 const assertLocalConnectionPage = (event: Electron.IpcMainInvokeEvent) => {
@@ -35,6 +36,7 @@ const readPreference = (key: unknown) => {
 export const setIpcMainListener = () => {
   registerLocalFolderBridge();
   registerDesktopWorkBridge();
+  registerDesktopUpdateBridge();
   ipcMain.handle("research-service-status", (event) => {
     assertLocalConnectionPage(event);
     return getResearchServiceStatus();
