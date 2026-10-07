@@ -1,5 +1,18 @@
 # 项目进展日志
 
+## 2026-10-08：Windows 0.5.0 人与 Agent 协作工作区
+
+- `feature/desktop-social-workspace` 合并 0.3.3 的设置/更新和 019 定时任务基础。桌面使用消息、通讯录、工作台、广场四入口；微信式灰白绿、紧凑会话列表、方形头像、直接文件/图片/语音工具栏。实际历史搜索、引用、SDK 置顶/免打扰、分页群成员、连续输入/流式/发送恢复接入现有聊天。
+- 统一人和 Agent 的名片、创建/导入/兼容外部连接；本人能力明确公开或撤回，公开广场联系请求与本人同意后聊天。工作台展示实际提案、参与、群聊、运行、结果、指定消息验收，以及定时管理和当前身份原生报告。显式迁移 020，contract0.21/chat1.10；旧科研任务/资料/记忆权限保留。社交群中本人明确选择的自有 Agent 直接加入，其他人/Agent 仍须同意。
+- 群里开头 @一个已加入的站内 Agent 可请求处理；普通聊天和 @真人不调用模型。引用内容追加在原消息后，UTF-16 提及位置不移位。外部 Agent 仅支持既有 chat_completions 连接和逐次转发同意，不开放群资料自动外发，不宣称新接入 CopilotKit/AG-UI/A2A。
+- 最终工程检查通过：45 文件/568 项、2 项生产 020 CLI/HTTP、B0 真实进程、Web 生产隔离；renderer/Electron 类型、引用恢复 3 项、群提及 6 项通过。旧 accepted 跨空间 plan:null 的 403 测试期望经实际授权讨论群断言更新；待同意、科研资料、私有记忆和撤销后的边界仍拒绝，首次失败证据保留。
+- 真实 React/HTTP/SQLite 通讯录、任务、广场等 12 类交互分段闭合，pageerror0、1024×726 无横向溢出。隔离 Electron22 的聊天连续输入、流式、持久回复、SDK 免打扰、授权搜索及任务群 @/worker 结果关联通过；SDK 网络、原生报告桥与模型厂商明确为合成端口。Antd/Router 警告和夹具选择器失败保留。截图经过查看，未操作用户账号、模型 Key 或正常窗口。
+- 第一份实际 NSIS 候选通过资产门禁，但打包启动检查发现 preload 运行时导入浏览器 WASM SDK，在页面 URL 就绪前初始化 worker，出现 Invalid URL。preload 改为纯类型导入并使用 OpenIM 原生平台 ID；Electron 类型通过，重新生成安装包。隐藏窗口截图超时和诊断脚本 require 未定义是检查夹具错误，证据同样保留。
+- 证据在 Git 外 `.runtime/desktop-social-workspace-20261007`、`.runtime/desktop-social-workspace-20261008/frontend`、`.runtime/desktop-chat-final-review-20261008`。Windows 候选另存 `PersonalAgent-Windows/0.5.0`；最终资产摘要、固定源码及发布收据随后补充。用户正常客户端未安装或重启。
+- 云端此前记录仍 API/worker94b26d1、contract0.19/chat1.8/schema18。019/020 尚未执行；已有私有 Workbench 会话访问的自动审批拒绝未绕过，已明确询问本次备份、配对服务升级及两项迁移授权。服务器达到新版契约并验收前，0.5.0 保持安装候选，不公开自动更新。
+
+- 最终重打包实际启动通过：原生 SDK/preload 桥可用、平台ID3、登录 UI 正常；未登录 session401 保留。修正预加载后，打包运行暴露 SDK 必需 peer 未入包，构建依赖闭包现包含非可选 peer（Electron 自身除外），恢复 53 个实际已安装运行包，随后启动通过。最终 NSIS 86,295,352 字节，SHA256 `8baa1eeedbebc944e58bbaac47421cf7a5da7380c5ef3967d0151da79998ff49`；exe/blockmap/latest.yml 门禁通过，四资产另存0.5.0目录。2026-10-08公开云ready实际200/contract0.19，未把登录启动称为新版服务器验收。
+
 ## 2026-10-07：Windows 0.3.3 固定设置 / 版本更新入口
 
 - 22:21:46北京时间正式发布 [v0.3.3](https://github.com/luoyan96/personal-agent/releases/tag/v0.3.3)，源码 / 标签固定 `1fbb238ddc274bb7388d431756cd7d010ad37f13`；4个公开资产的size / SHA256 digest与本地一致，latest正确为0.3.3，0.4.0保持草稿。[PR19](https://github.com/luoyan96/personal-agent/pull/19)已创建 / 附加且未合入main；Foundation checks37635589030读取时运行中，未宣称全部CI通过。草稿未生成标签时按tag读取404，改为按发布列表读取准确ID核验后发布；未绕过资产门禁。

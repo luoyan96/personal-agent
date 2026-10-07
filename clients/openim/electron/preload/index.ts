@@ -3,16 +3,18 @@ import path from "path";
 import { DataPath, IElectronAPI } from "./../../src/types/globalExpose.d";
 import { contextBridge, ipcRenderer } from "electron";
 import "@openim/electron-client-sdk/lib/preload";
-import { Platform } from "@openim/wasm-client-sdk";
+import type { Platform } from "@openim/wasm-client-sdk";
 
-const getPlatform = () => {
+// Importing the browser SDK here starts its WASM worker before the page has
+// a URL. The native bridge only needs these stable OpenIM platform IDs.
+const getPlatform = (): Platform => {
   if (process.platform === "darwin") {
-    return Platform.MacOSX;
+    return 4;
   }
   if (process.platform === "win32") {
-    return Platform.Windows;
+    return 3;
   }
-  return Platform.Linux;
+  return 7;
 };
 
 const getDataPath = (key: DataPath) => {

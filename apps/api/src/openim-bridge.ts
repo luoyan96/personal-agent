@@ -35,8 +35,9 @@ export class OpenImBridge {
     return OpenImConversation.parse({researchConversationId:id,imConversationID,kind:group.kind,peerUserID,groupID,pinned:group.kind==='personal',transportStatus:reason?'unavailable':row.status==='ready'&&row.synced_version===group.version?'ready':'pending',reason})
   }
   contacts(chat:ChatService){
-    const ids=[...new Set([...chat.mineContactIds(),...this.db.prepare('SELECT id FROM chat_contacts WHERE lab_id=?').all(chat.c.actor.labId).map(row=>String(row.id))])]
-    const all=ids.flatMap(id=>{try{const contact=chat.contact(id);if(contact.labId!==chat.c.actor.labId&&!['own','accepted'].includes(contact.relationship.status))return [];return [this.identity(chat,contact.id)]}catch{return []}})
+    const shared=this.db.prepare("SELECT g.id FROM chat_conversations g JOIN chat_members self ON self.conversation_id=g.id AND self.contact_id=? AND self.status='joined'").all(chat.human().id).flatMap(row=>{try{return chat.conversation(String(row.id),false).members.filter(m=>m.status==='joined').map(m=>m.contactId)}catch{return []}})
+    const ids=[...new Set([...chat.mineContactIds(),...shared,...this.db.prepare('SELECT id FROM chat_contacts WHERE lab_id=?').all(chat.c.actor.labId).map(row=>String(row.id))])]
+    const all=ids.flatMap(id=>{try{const contact=chat.contact(id);if(contact.labId!==chat.c.actor.labId&&!shared.includes(id)&&!['own','accepted'].includes(contact.relationship.status))return [];return [this.identity(chat,contact.id)]}catch{return []}})
     return {contacts:all.slice(0,100),truncated:all.length>100}
   }
   conversations(chat:ChatService,imConversationID?:string){

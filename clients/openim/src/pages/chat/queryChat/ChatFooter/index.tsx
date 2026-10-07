@@ -2,6 +2,9 @@ import { useLatest } from "ahooks";
 import { Button } from "antd";
 import { t } from "i18next";
 import { memo, useEffect, useRef, useState } from "react";
+import { MessageType } from "@openim/wasm-client-sdk";
+import { CloseOutlined } from "@ant-design/icons";
+import { useChatReply, replyKey, clearChatReply } from "@/research/chat-reply";
 import { useResearchComposer } from "@/research/ResearchComposer";
 import { useResearchStore } from "@/research/store";
 
@@ -20,6 +23,7 @@ import { useScopedFileSender } from "@/research/useScopedFileSender";
 import { useAgentChatOperation } from "@/research/useAgentChatOperation";
 import type { AgentChatOperation } from "@/research/useAgentChatOperation";
 import { assertRequestActive, withRequestDeadline } from "@/research/request-deadline";
+import emitter from "@/utils/events";
 import "./desktop-chat.scss";
 import {
   chatDrafts,
@@ -44,6 +48,8 @@ const ChatFooter = () => {
   const imID = useConversationStore((s) => s.currentConversation?.conversationID || "");
   const actor = useResearchStore((s) => s.actor?.member.id);
   const generation = useResearchStore((s) => s.generation);
+  const activeReplyKey = replyKey(generation, imID);
+  const reply = useChatReply((s) => s.replies[activeReplyKey]);
   const drafts = useRef(chatDrafts);
   const editor = useRef<CKEditorRef>(null);
   const [html, setHtml] = useState("");
@@ -73,6 +79,9 @@ const ChatFooter = () => {
   useEffect(() => {
     setHtml(drafts.current.get(imID) || "");
   }, [imID, generation]);
+  useEffect(() => {
+    if (reply) editor.current?.focus();
+  }, [reply]);
   useEffect(() => {
     epoch.current++;
     mounted.current = true;
@@ -165,7 +174,15 @@ const ChatFooter = () => {
             await withRequestDeadline(
               async (signal) => {
                 const message =
-                  item.nativeMessage || (await IMSDK.createTextMessage(item.text)).data;
+                  item.nativeMessage ||
+                  (item.quoteMessage
+                    ? (
+                        await IMSDK.createQuoteMessage({
+                          text: item.text,
+                          message: JSON.stringify(item.quoteMessage),
+                        })
+                      ).data
+                    : (await IMSDK.createTextMessage(item.text)).data);
                 assertRequestActive(signal);
                 updateSubmission(item.id, { nativeMessage: message });
                 if (!tracked.operation.isCurrent())
@@ -233,7 +250,28 @@ const ChatFooter = () => {
     try {
       if (submissions.length >= 20 || useChatOutbox.getState().items.length >= 50)
         throw new Error("还有较多消息未发送，请先处理发送记录。");
-      const request = composer.prepareResearch(cleanText);
+      let text = cleanText;
+      let request = composer.prepareResearch(text);
+      if (
+        reply &&
+        (request ||
+          !reply.message ||
+          reply.message.contentType === MessageType.CustomMessage)
+      ) {
+        // Preserve leading group addresses and their original mention offsets.
+        // Quoted @ text is context, never a new addressee.
+        text = `${cleanText}\n\n> 引用 ${reply.sender.replace(
+          /[\r\n]/g,
+          " ",
+        )}：\n${reply.text
+          .split("\n")
+          .map((line) => `> ${line}`)
+          .join("\n")}`;
+        if (text.length > 8000)
+          throw new Error("回复与引用内容过长，请缩短回复后再发送。");
+        // Preserve the already accepted external consent and original request shape.
+        if (request) request = { ...request, body: { ...request.body, text } };
+      }
       const id = crypto.randomUUID(),
         operation = captureSend(),
         intent = composer.acceptSendIntent();
@@ -245,11 +283,18 @@ const ChatFooter = () => {
         recvID: conversation.userID,
         groupID: conversation.groupID,
         html: original,
-        text: cleanText,
+        text,
         request,
+        quoteMessage:
+          reply?.message &&
+          !request &&
+          reply.message.contentType !== MessageType.CustomMessage
+            ? reply.message
+            : undefined,
         state: "queued",
       };
       useChatOutbox.setState((s) => ({ items: [...s.items, item] }));
+      clearChatReply(activeReplyKey);
       saveChatDraft(conversation.conversationID, "");
       latestHtml.current = "";
       setHtml("");
@@ -285,6 +330,24 @@ const ChatFooter = () => {
       operation.dispose();
     }
   };
+  const latestDroppedFiles = useLatest(droppedFiles);
+  useEffect(() => {
+    const handleDrop = (request: {
+      conversationID: string;
+      generation: number;
+      files: File[];
+    }) => {
+      if (
+        request.conversationID === imID &&
+        request.generation === generation &&
+        imID === useConversationStore.getState().currentConversation?.conversationID &&
+        generation === useResearchStore.getState().generation
+      )
+        void latestDroppedFiles.current(request.files);
+    };
+    emitter.on("CHAT_FILES_DROPPED", handleDrop);
+    return () => emitter.off("CHAT_FILES_DROPPED", handleDrop);
+  }, [imID, generation]);
 
   return (
     <footer
@@ -309,6 +372,21 @@ const ChatFooter = () => {
           getSoundMessage={getSoundMessage}
           insertEmoji={(emoji) => editor.current?.insertText(emoji)}
         />
+        {reply && (
+          <div className="desktop-composer-quote" data-chat-quote>
+            <div>
+              <strong>回复 {reply.sender}</strong>
+              <p>{reply.text}</p>
+            </div>
+            <button
+              type="button"
+              aria-label="取消引用"
+              onClick={() => clearChatReply(activeReplyKey)}
+            >
+              <CloseOutlined />
+            </button>
+          </div>
+        )}
         {!!submissions.length && (
           <div
             className="desktop-send-record shrink-0"

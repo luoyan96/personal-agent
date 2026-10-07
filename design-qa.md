@@ -1,4 +1,28 @@
-# F0 设计对照
+# Windows0.5.0 桌面设计与交互对照
+
+final result: passed（本地隔离桌面/页面范围；不表示生产部署或用户安装升级）
+
+依据为用户提供的微信桌面聊天、详情侧栏、名片与通讯录四张截图。目标是保留微信的阅读和导航习惯，同时容纳人与Agent、持久任务及能力发现；没有复制微信图片/品牌素材。实际Electron22/Chromium108 CSS1280×820、deviceScaleFactor1；通讯录/工作台/广场另测1024×726。参考原图1760×1278不伪称逐像素同尺寸复刻。
+
+## 视觉核对
+
+- 布局：72px浅灰导航、280px聊天列表、白/浅灰聊天区，四入口消息/通讯录/工作台/广场。通讯录约300px列表与右侧名片；工作台列表/详情，广场真实能力卡。
+- 字体：系统中文无衬线、14px主要正文、12px辅助资料，长姓名/文件名截断或换行。取消旧大头像/多行重复标题与巨型输入卡。
+- 颜色：绿色导航/选中，本人气泡#95ec69，对方白气泡与浅灰底；错误/待确认保留文字，状态不只靠颜色。
+- 图像/图标：方形圆角头像、既有线性图标；电脑使用工具栏而非手机加号。没有抄用户截图内头像或文件内容。
+- 文案/状态：Agent身份、所属、能力和授权范围真实显示；AI结果与用户验收分别记录，公开需主动发布。无连接时保留失败入口和已保存Agent，不虚构聊天已打开。
+
+Git外截图已实际查看：`.runtime/desktop-social-workspace-20261007/{chat-streaming.png,chat-complete.png,chat-details.png,chat-search.png,task-group-chat.png}`与`.runtime/desktop-social-workspace-20261008/frontend/run-e948eb85/contacts-desktop.png`、`run-da814363/{workbench-1024.png,square-namecard-1024.png}`、`run-9fea4a47/scheduled-workbench-1024.png`。
+
+## 修正与边界
+
+已修正群引用导致@索引偏移、关闭抽屉时迟到更新、本人明确选择Agent仍须二次入群、联系人父路由双列表、新群打开前canonical mapping未刷新等P1/P2。完整CI568项+2生产检查通过，实际HTTP/SQLite任务/广场/通讯录与实际Electron聊天专项闭合。两种最小布局无横向溢出；管理页面pageerror0、最终群聊天pageerror0。原失败和Antd/Router开发告警保留。
+
+不覆盖本批生产服务器或真实模型/IM传输验收；检查用隔离合成账号/模型/SDK网络端口，用户窗口未安装/重启。无未解决本地P0/P1/P2。P3：系统字体与参考设备不同，长期复杂任务/广场内容更密集；按实际用户资料而非静态演示持续调整。
+
+---
+
+# 历史F0 设计对照
 
 final result: passed
 

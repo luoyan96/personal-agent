@@ -7,3 +7,4 @@ export * from './personal-models.js'
 export * from './agent-connections.js'
 
 export * from './personal-assistant.js'
+export * from './workspace.js'

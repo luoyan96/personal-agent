@@ -1,5 +1,7 @@
 # Research Agent Platform · Personal Agent 与人机协作
 
+Windows **0.5.0** 桌面改造已实现：微信式聊天、统一人与Agent通讯录、工作台、能力广场；群里明确@Agent分配任务，结果由用户确认后完成。定时任务、本机文件报告、记忆与模型管理、永久版本更新入口集中保留。功能与接入方式见[桌面协作工作区](docs/development/desktop-social-workspace.md)，安装发布及配套API/worker迁移019/020的准确进度见[当前状态](docs/current-state.md)。未升级服务器前不要把新版安装包当成已上线。
+
 Windows桌面 **0.3.3** 新增固定入口：**左下角设置 → 版本更新**，始终显示当前版本并支持检查、下载进度和安装重启；模型设置保留在同一菜单。自动检查仍为启动15秒后、每6小时及电脑唤醒，发现新版才提示。下载与准确受测范围见[当前状态](docs/current-state.md)及[Windows更新](docs/development/windows-updates.md)。保留0.3.2的发送等待恢复；升级前复制旧版未确认需求，待发内容尚不支持跨软件重启恢复。
 
 开发候选 **Windows0.4.0** 增加“定时任务”：一次、每天、每周提醒或让自己的 Agent 到点执行，支持聊天安排、暂停 / 修改和运行记录。共享 API / worker 需要升级到 contract0.20 / schema19；当前云端尚未迁移，准确进度见[当前状态](docs/current-state.md)，范围与部署见[定时任务](docs/development/recurring-agent-tasks.md)。

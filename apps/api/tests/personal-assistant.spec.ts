@@ -196,17 +196,19 @@ describe('personal assistant actual HTTP/SQLite; model callbacks are synthetic',
   release(modelResult(JSON.stringify({kind:'delegate',contactId:ownAgent.id,profile:null})));await pending
   expect(await s.turn(late.turn.id)).toMatchObject({status:'cancelled',failure:'INPUT_CHANGED',outputMessageId:null,usage:{inputTokens:100,outputTokens:100}})
  })
- it('does not invent cross-workspace collaboration or pass preferences to a friend',async()=>{
+ it('saves a cross-workspace collaboration proposal without inviting anyone or passing preferences',async()=>{
   const s=await setup(),own=await s.own(),other=await s.own(1),human=(await s.call('chatContacts',null,{},0,`?scope=global&search=${s.clients[1]!.username}`)).value.data.find((c:{identity:{kind:string}})=>c.identity.kind==='human')
   const relation=(await s.call('requestContact',{}, {id:human.id})).value.data.relationship
   await s.call('decideContactRequest',{expectedVersion:relation.version,decision:'accept'},{id:relation.requestId},1)
   await s.call('createPersonalMemory',{topic:'回复方式',content:'PRIVATE_PREFERENCE',scope:'general'})
   const sent=await s.send(own.conversation.id,`请安排和好友 ${human.displayName} 一起写论文`)
-  expect(sent.turn).toMatchObject({status:'succeeded',outputMessageId:expect.any(String)});expect(sent.turn.assistantReceipt).toBeUndefined()
+  expect(sent.turn.status).toBe('queued')
+  await s.tick(async input=>{expect(input.prompt).toContain(human.id);return modelResult(JSON.stringify({kind:'team',title:'合成跨空间建议',contactIds:[human.id]}))})
+  const final=await s.turn(sent.turn.id);expect(final).toMatchObject({status:'succeeded',assistantReceipt:{kind:'work_task',status:'proposed',conversationId:null}})
   const reply=(await s.call('chatMessages',null,{id:own.conversation.id})).value.data.at(-1)
-  expect(reply.text).toContain('跨个人空间');expect(reply.text).toContain('尚未建立群');expect(reply.text).not.toContain('PRIVATE_PREFERENCE')
-  expect(s.count('plans')).toBe(0);expect(s.count('chat_actions')).toBe(0);expect((await s.call('chatConversation',null,{id:own.conversation.id},1)).status).toBe(404)
-  expect(await s.tick(async()=>modelResult('不应模型处理未开放协作'))).toBe(false);expect(other.conversation.kind).toBe('personal')
+  expect(reply.text).toContain('确认后');expect(reply.text).not.toContain('PRIVATE_PREFERENCE')
+  expect(s.count('social_groups')).toBe(0);expect(s.count('plans')).toBe(0);expect(s.count('chat_actions')).toBe(0);expect((await s.call('chatConversation',null,{id:own.conversation.id},1)).status).toBe(404)
+  expect(other.conversation.kind).toBe('personal')
  })
  it('stops a recorded but pending IM reminder after cancellation while retaining its canonical record',async()=>{
   const s=await setup(false),due=Date.now()+1000,result=await s.call('createPersonalFollowup',{title:'取消提醒',body:'仅一次',dueAt:new Date(due).toISOString(),timeZone:'Asia/Shanghai',task:null,quietHours:null}),id=result.value.data.id
@@ -259,12 +261,12 @@ it('parses full local/relative dates, rejects DST gaps/overlaps, and keeps expli
  expect(reminderRequest('提醒我 2027年2月31日上午九点 交材料','Asia/Shanghai',now)).toBeNull()
  expect(outsideQuiet(Date.parse('2026-11-01T05:30Z'),'America/New_York',{start:'01:00',end:'02:00'})).toBe('2026-11-01T07:00:00.000Z')
 })
-it('migration017→019 changes no old table row and is repeatable',async()=>{
+it('migration017→020 changes no old table row and is repeatable',async()=>{
  const s=await setup(),own=await s.own();await s.send(own.conversation.id,'已有旧消息')
- s.db.exec('DROP TABLE personal_followup_runs; DROP TABLE personal_followups; DROP TABLE personal_memory_revisions; DROP TABLE personal_memories; DROP TABLE personal_memory_settings; DELETE FROM schema_migrations WHERE version>=18')
+ s.db.exec('DROP TABLE social_groups; DROP TABLE personal_work_participants; DROP TABLE personal_work_tasks; DROP TABLE capability_publications; DROP TABLE personal_followup_runs; DROP TABLE personal_followups; DROP TABLE personal_memory_revisions; DROP TABLE personal_memories; DROP TABLE personal_memory_settings; DELETE FROM schema_migrations WHERE version>=18')
  const tables=s.db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(r=>String(r.name))
  const digest=()=>Object.fromEntries(tables.filter(t=>t!=='schema_migrations').map(t=>[t,createHash('sha256').update(JSON.stringify(s.db.prepare(`SELECT * FROM ${t} ORDER BY rowid`).all())).digest('hex')]))
- const before=digest();migrate(s.db);migrate(s.db);expect(digest()).toEqual(before);expect(s.db.prepare('SELECT max(version) v FROM schema_migrations').get()!.v).toBe(19);expect(s.db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+ const before=digest();migrate(s.db);migrate(s.db);expect(digest()).toEqual(before);expect(s.db.prepare('SELECT max(version) v FROM schema_migrations').get()!.v).toBe(20);expect(s.db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
 })
 
 describe('recurring reminders and persistent local Agent jobs; synthetic model callbacks',{timeout:30000},()=>{
@@ -354,7 +356,7 @@ describe('recurring reminders and persistent local Agent jobs; synthetic model c
   const current=(await s.call('personalFollowup',null,{id:created.id})).value.data
   expect((await s.call('updatePersonalFollowup',{...fields(due+86400000),expectedVersion:current.version,recurrence:{frequency:'daily'},execution:{kind:'agent',contactId:own.agent.id}},{id:created.id})).status).toBe(200)
   expect((await s.call('personalFollowup',null,{id:created.id})).value.data.lastRun.status).toBe('cancelled');expect(await s.tick(async()=>result('旧指令不能执行'))).toBe(false)
-  s.db.exec('DELETE FROM personal_followup_runs; DROP TABLE personal_followup_runs; DELETE FROM schema_migrations WHERE version=19')
+  s.db.exec('DROP TABLE social_groups; DROP TABLE personal_work_participants; DROP TABLE personal_work_tasks; DROP TABLE capability_publications; DELETE FROM personal_followup_runs; DROP TABLE personal_followup_runs; DELETE FROM schema_migrations WHERE version>=19')
   const before=JSON.stringify(s.db.prepare('SELECT * FROM personal_followups ORDER BY id').all());migrate(s.db);migrate(s.db)
   expect(JSON.stringify(s.db.prepare('SELECT * FROM personal_followups ORDER BY id').all())).toBe(before);expect(s.db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
  })

@@ -2,7 +2,7 @@
   "name": "research-wechat-openim",
   "version": "0.5.0",
   "main": "dist-electron/main/bootstrap.js",
-  "description": "科研微信 · OpenIM Research Client",
+  "description": "Personal Agent · 人与智能体协作",
   "author": "blooming",
   "private": true,
   "packageManager": "pnpm@10.28.0",

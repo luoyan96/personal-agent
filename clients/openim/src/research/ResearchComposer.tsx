@@ -19,6 +19,7 @@ import { useResearchContactChat } from "./useResearchContactChat";
 import { CreatedAgentChatButton } from "./CreatedAgentChatButton";
 import { PersonalReceiptCard } from "./PersonalReceiptCard";
 import { registerAgentProgress } from "./agent-progress";
+import { groupMentions } from "./group-mentions";
 
 export type PreparedResearchSend =
   | {
@@ -164,6 +165,24 @@ export function useResearchComposer() {
   }, [imID, actorGeneration]);
   const prepareResearch = (text: string): PreparedResearchSend | undefined => {
     const advancedRequest = advanced && mode === "ask_agent";
+    const addressed = researchMode && mapping?.kind === "group" && !advanced
+      ? groupMentions(text, canonical.data?.data.members
+          .filter((member) => member.status === "joined")
+          .flatMap((member) => {
+            const contact = contacts.find((item) => item.contact.id === member.contactId)?.contact;
+            return contact ? [{ id: contact.id, displayName: contact.displayName,
+              agent: contact.identity.kind !== "human", external: !!contact.agentRuntime }] : [];
+          }) || [])
+      : undefined;
+    if (addressed) {
+      if (!mapping || !canonical.data?.data.allowedActions.includes("send"))
+        throw new Error("当前群聊尚未允许发送，请等待同步或接受邀请。");
+      return { route: "sendChatMessage", conversationId: mapping.researchConversationId,
+        body: { text, intent: addressed.agentContactId ? "ask_agent" : "chat",
+          agentContactId: addressed.agentContactId || null,
+          budget: addressed.agentContactId ? { maxTokens, maxSeconds } : null,
+          mentions: addressed.mentions, context: [] } };
+    }
     if (external && (!external.callerAllowed || !consentAvailable.current))
       throw new Error(
         external.callerAllowed
@@ -315,6 +334,11 @@ export function useResearchComposer() {
   const controls =
     researchMode && mapping ? (
       <>
+        {mapping.kind === "group" && !advanced && (
+          <p className="px-3 py-1 text-xs text-slate-500">
+            @群成员名 后空格写消息；@Agent 可分配任务。
+          </p>
+        )}
         {external && (
           <div className="px-3 py-2 text-xs leading-5 text-slate-600">
             <p className="truncate" title={external.serviceOrigin}>
@@ -377,7 +401,7 @@ export function useResearchComposer() {
               </>
             )}
             <span className="text-slate-500">
-              @ 不自动执行；建群、邀请和运行须明确确认。
+              选择实际群成员安排协作；建群和邀请需要确认。
             </span>
           </div>
         )}

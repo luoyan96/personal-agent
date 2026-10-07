@@ -1,5 +1,7 @@
 import {
   CloudDownloadOutlined,
+  ClockCircleOutlined,
+  HistoryOutlined,
   RightOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
@@ -12,8 +14,12 @@ const releasePage = "https://github.com/luoyan96/personal-agent/releases/latest"
 
 export default function DesktopSettings({
   onModelSettings,
+  onMemory,
+  onFollowups,
 }: {
   onModelSettings: () => void;
+  onMemory?: () => void;
+  onFollowups?: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false),
     [versionOpen, setVersionOpen] = useState(false);
@@ -91,6 +97,8 @@ export default function DesktopSettings({
               <span>模型设置</span>
               <RightOutlined />
             </button>
+            {onMemory && <button type="button" onClick={() => { setMenuOpen(false); onMemory(); }}><HistoryOutlined /><span>记忆与偏好</span><RightOutlined /></button>}
+            {onFollowups && <button type="button" onClick={() => { setMenuOpen(false); onFollowups(); }}><ClockCircleOutlined /><span>定时任务</span><RightOutlined /></button>}
             <button type="button" aria-label="版本更新" onClick={openVersion}>
               <CloudDownloadOutlined />
               <span>版本更新</span>

@@ -15,6 +15,7 @@ type EmitterEvents = {
     | void
     | { conversationID: string; actorGeneration: number; selfUserID: string };
   OPEN_RTC_MODAL: InviteData;
+  CHAT_FILES_DROPPED: { conversationID: string; generation: number; files: File[] };
   // message store
   PUSH_NEW_MSG: MessageItem;
   UPDATE_ONE_MSG: MessageItem;

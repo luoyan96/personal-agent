@@ -261,7 +261,7 @@ export function ModelSettings({
       open={open}
       onCancel={close}
       footer={null}
-      width={900}
+      width={800}
       centered
       className="model-settings-modal"
       title={
@@ -375,8 +375,8 @@ export function ModelSettings({
                     )}
                   </label>
                 </div>
-                <label>
-                  接口地址
+                <details className="model-api-details">
+                  <summary>接口信息</summary>
                   <Input
                     aria-label="接口地址"
                     value={
@@ -387,7 +387,7 @@ export function ModelSettings({
                     readOnly
                     title="官方服务的固定接口地址"
                   />
-                </label>
+                </details>
                 <div>
                   <label>
                     API Key

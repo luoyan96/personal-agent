@@ -18,6 +18,7 @@ export const PersonalFollowup=PersonalFollowupInput.extend({id:Id,status:z.enum(
 export const PersonalMemoryReceipt=z.strictObject({operation:z.enum(['saved','corrected','forgotten','candidate','clarify']),memoryId:Id.nullable(),topic:z.string().nullable(),status:PersonalMemoryStatus.nullable(),version:z.number().int().nonnegative(),question:z.string().nullable()})
 export const PersonalFollowupReceipt=z.strictObject({operation:z.enum(['created','clarify']),followupId:Id.nullable(),dueAt:Instant.nullable(),timeZone:Timezone.nullable(),question:z.string().nullable()})
 export const PersonalAssistantReceipt=z.discriminatedUnion('kind',[
+ z.strictObject({kind:z.literal('work_task'),taskId:Id,conversationId:Id.nullable(),status:z.enum(['proposed','ready'])}),
  z.strictObject({kind:z.literal('delegate'),contactId:Id,conversationId:Id,displayName:Title,reused:z.boolean(),messageId:Id,turnId:Id,status:z.enum(['queued','unavailable']),budget:z.strictObject({maxTokens:z.number().int().positive(),maxSeconds:z.number().int().positive()})}),
  z.strictObject({kind:z.literal('collaborate'),planId:Id,actionIds:z.array(Id).min(1).max(5)}),
 ])

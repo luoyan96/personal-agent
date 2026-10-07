@@ -18,6 +18,8 @@ import { researchMode } from "@/research/api";
 import { useResearchStore } from "@/research/store";
 import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
 import { MoreOutlined, TeamOutlined, UserOutlined } from "@ant-design/icons";
+import ChatDetailsDrawer from "./ChatDetailsDrawer";
+import HistorySearch from "./HistorySearch";
 
 const menuList = [
   {
@@ -45,6 +47,8 @@ i18n.on("languageChanged", () => {
 
 const ChatHeader = () => {
   const [aboutMe, setAboutMe] = useState(false);
+  const [details, setDetails] = useState(false);
+  const [history, setHistory] = useState(false);
   const singleSettingRef = useRef<OverlayVisibleHandle>(null);
   const groupSettingRef = useRef<OverlayVisibleHandle>(null);
 
@@ -69,6 +73,9 @@ const ChatHeader = () => {
   useUserStore((state) => state.appSettings.locale);
 
   useEffect(() => {
+    setDetails(false);
+    setHistory(false);
+    setAboutMe(false);
     if (singleSettingRef.current?.isOverlayOpen) {
       singleSettingRef.current?.closeOverlay();
     }
@@ -89,6 +96,10 @@ const ChatHeader = () => {
         });
         break;
       case 2:
+        if (window.electronAPI) {
+          setDetails(true);
+          break;
+        }
         if (researchMode && !isGroupSession) {
           emit("OPEN_USER_CARD", { userID: currentConversation?.userID });
           break;
@@ -111,21 +122,23 @@ const ChatHeader = () => {
     <Layout.Header className="desktop-chat-header relative border-b border-b-[var(--gap-text)] !bg-white !px-3">
       <div className="flex h-full items-center leading-none">
         <div className="flex flex-1 items-center overflow-hidden">
-          <OIMAvatar
-            src={currentConversation?.faceURL}
-            text={currentConversation?.showName}
-            isgroup={Boolean(currentConversation?.groupID)}
-            size={window.electronAPI ? 48 : 42}
-          />
+          {!window.electronAPI && (
+            <OIMAvatar
+              src={currentConversation?.faceURL}
+              text={currentConversation?.showName}
+              isgroup={Boolean(currentConversation?.groupID)}
+              size={42}
+            />
+          )}
           <div
             className={clsx(
-              "ml-3 flex !h-10.5 flex-1 flex-col justify-between overflow-hidden",
+              "desktop-chat-heading ml-3 flex !h-10.5 flex-1 flex-col justify-between overflow-hidden",
             )}
           >
             <div className="truncate text-base font-semibold">
               {contact?.displayName || currentConversation?.showName}
             </div>
-            {!isGroupSession && contact && (
+            {!window.electronAPI && !isGroupSession && contact && (
               <div className="truncate text-xs text-slate-500">
                 {contact.identity.kind === "human"
                   ? contact.username
@@ -136,7 +149,7 @@ const ChatHeader = () => {
                   : contact.profile.introduction || "AI 联系人 · 可以直接聊天"}
               </div>
             )}
-            {isGroupSession && currentUserIsInGroup && (
+            {!window.electronAPI && isGroupSession && currentUserIsInGroup && (
               <div className="flex items-center text-xs text-[var(--sub-text)]">
                 <img width={20} src={group_member} alt="member" />
                 <span>{currentGroupInfo?.memberCount}</span>
@@ -145,8 +158,19 @@ const ChatHeader = () => {
           </div>
         </div>
         <div className="mr-2 flex items-center">
-          {researchMode && isCoordinator && <Button className="desktop-about-me" type="text" size="small" icon={window.electronAPI ? <UserOutlined /> : undefined} onClick={() => setAboutMe(true)}>关于我</Button>}
+          {researchMode && isCoordinator && !window.electronAPI && (
+            <Button
+              className="desktop-about-me"
+              type="text"
+              size="small"
+              icon={<UserOutlined />}
+              onClick={() => setAboutMe(true)}
+            >
+              关于我
+            </Button>
+          )}
           {menuList.map((menu) => {
+            if (window.electronAPI && menu.idx !== 2) return null;
             if (menu.idx === 1 && (isSingleSession || (!inGroup && !isSingleSession))) {
               return null;
             }
@@ -156,13 +180,24 @@ const ChatHeader = () => {
 
             return (
               <Tooltip title={menu.title} key={menu.idx}>
-                {window.electronAPI ? <button type="button" className="desktop-chat-header-action" aria-label={menu.title} onClick={() => menuClick(menu.idx)}>{menu.idx === 2 ? <MoreOutlined /> : <TeamOutlined />}</button> : <img
-                  className="ml-5 cursor-pointer"
-                  width={20}
-                  src={menu.icon}
-                  alt=""
-                  onClick={() => menuClick(menu.idx)}
-                />}
+                {window.electronAPI ? (
+                  <button
+                    type="button"
+                    className="desktop-chat-header-action"
+                    aria-label={menu.title}
+                    onClick={() => menuClick(menu.idx)}
+                  >
+                    {menu.idx === 2 ? <MoreOutlined /> : <TeamOutlined />}
+                  </button>
+                ) : (
+                  <img
+                    className="ml-5 cursor-pointer"
+                    width={20}
+                    src={menu.icon}
+                    alt=""
+                    onClick={() => menuClick(menu.idx)}
+                  />
+                )}
               </Tooltip>
             );
           })}
@@ -170,7 +205,35 @@ const ChatHeader = () => {
       </div>
       <SingleSetting ref={singleSettingRef} />
       <GroupSetting ref={groupSettingRef} />
-      {researchMode && <PersonalAssistantPanel open={aboutMe} onClose={() => setAboutMe(false)} />}
+      {window.electronAPI && (
+        <>
+          <ChatDetailsDrawer
+            key={`details:${currentConversation?.conversationID}`}
+            open={details}
+            onClose={() => setDetails(false)}
+            onSearch={() => {
+              setDetails(false);
+              setHistory(true);
+            }}
+            onAboutMe={() => {
+              setDetails(false);
+              setAboutMe(true);
+            }}
+            onManage={() => {
+              setDetails(false);
+              groupSettingRef.current?.openOverlay();
+            }}
+          />
+          <HistorySearch
+            key={`history:${currentConversation?.conversationID}`}
+            open={history}
+            onClose={() => setHistory(false)}
+          />
+        </>
+      )}
+      {researchMode && (
+        <PersonalAssistantPanel open={aboutMe} onClose={() => setAboutMe(false)} />
+      )}
     </Layout.Header>
   );
 };

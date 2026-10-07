@@ -43,6 +43,20 @@ const router = createHashRouter([
             },
             children: contactRoutes,
           },
+          {
+            path: "workbench",
+            async lazy() {
+              const { DesktopWorkbench } = await import("@/research/DesktopWorkbench");
+              return { Component: DesktopWorkbench };
+            },
+          },
+          {
+            path: "square",
+            async lazy() {
+              const { CapabilitySquare } = await import("@/research/CapabilitySquare");
+              return { Component: CapabilitySquare };
+            },
+          },
         ],
       },
       {

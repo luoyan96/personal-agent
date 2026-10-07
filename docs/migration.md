@@ -73,3 +73,7 @@
 ## 2026-10-06：聊天附件阅读
 
 契约0.16 / chat1.5新增文件元数据与读取范围，SQLite仍迁移016。固定pdf-parse2.4.5 Apache-2.0及其锁定依赖用于隔离正文提取，来源见NOTICE.md；不复制上游Harness源。OpenIM仍负责文件消息，科研私有request_json保存提取正文，旧严格持久消息/turn格式保持兼容。默认4000/90不变，DS普通文件聊天通过固定官方provider公开off配置生成正文，max-tokens截断保留用量并失败，不自动重试。具体源码、部署、证据与回退见统一状态及文件聊天交接。
+
+## 2026-10-08：个人桌面协作工作区
+
+019定时记录与020社交工作区依次显式升级，不改001–019既有checksum。020新增四表/三索引，旧019所有表行hash保持；独立social_groups标记限定跨个人空间关系，不扩大旧科研group/plan/task/材料ACL。API/worker同步契约0.21/chat1.10，持久turn仍沿request_json扩展，不改变旧严格消息格式。回退不能只换旧镜像或恢复旧库覆盖新写入，应保持schema20兼容并停新流程。功能与部署顺序见[桌面协作交接](development/desktop-social-workspace.md)。
