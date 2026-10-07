@@ -328,3 +328,9 @@
 - Workbench上传网关两次NoSuchKey失败，GitHub单连接下载60秒timeout；完整含运维元数据包公开上传被自动审批拒绝。改用仅公开前端源码 / dist的封装上传既有v0.1.1，服务器八分段206 / Content-Range / 总SHA校验成功；助手与manifest从原私有SSH部署文件生成，helper精确hash0cb3b48e。没有新增SSH / Key / 端口，也没有公开该私有运维包。Windowsv0.1.1正式安装包、latest.yml与blockmap保持原样，未创建影响更新通道的新正式Release。
 - 用户现有Windows已登录会话实际验收：普通Ctrl+Shift+R不重载无菜单窗口，既有开发工具页面重载后，21:15原提问与原回复恢复，三个末页标记和全部13页阅读范围显示，权限占位消失、编辑器空白。没有发新消息、重新传附件、读取凭据或调用模型。开发工具已关闭，真实聊天窗口留给用户。这是历史显示修复，Windows本地文件夹实际模型 / IM以及真实安装升级重启仍另验。
 - Git外 `.runtime/desktop-message-query-20261007`保存 `runtime-query-proof-final.json`、前后合成报告 / 截图、types / build、源码CI、`release/deployment-verified.json` / `public-verified.json`和`live-desktop-verified.json` / `live-desktop-after.png`。私人会话与运维运行资料均未入Git，后续文档提交不重构建已上线的静态软件。
+
+### 2026-10-07：隔离桌面验收未捕获异常窗口修复
+
+- 用户截图 `Unexpected desktop review directory` 对应先前自有测试启动：目录前缀错误，且生产bootstrap在注册错误处理之前执行目录守卫。原失败日志保留。基于main e498fa7，分支 `fix/desktop-review-startup-error` 将同一守卫和userData设置移入既有try块、放在错误处理注册之后；没有放宽合法目录范围，也没有改用户正常启动逻辑。
+- Electron主进程类型检查通过。13:23:34北京时间，缓存的实际Electron22.3.27运行生产bootstrap / smoke源码：错误前缀和OS临时目录外路径均退出1且保留原拒绝错误；正确私有目录进入合成最小main、userData完全匹配并退出0。三组均无12秒超时；无业务renderer、网络、模型或账号，不声称完整软件验收。Git外 `.runtime/desktop-startup-error-20261007/report.json`和各组stdout / stderr保留，进程检查无自有测试残留。
+- 当前正常用户客户端继续运行，本批未操作其账号或重启软件。只同步源码及交接文档；未重发Windows安装包、修改更新清单或部署云端，线上b3eb215 + API94b26d1 / contract0.19 / chat1.8 / schema18保持。此次主进程源码修复将在下一次桌面打包纳入。
