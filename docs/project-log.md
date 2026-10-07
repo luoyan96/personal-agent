@@ -319,3 +319,12 @@
 - `live-final4/report.json`真实Electron22打包程序及electron-updater5.3生产网络执行器、公开GitHub源检测 / HTTPS下载 / 库SHA512校验通过，独立SHA256 / 大小完全一致、15次有效进度；autoDownload / autoInstallOnAppQuit / allowDowngrade / allowPrerelease均false。只明确模拟比较版本0.1.0与隔离缓存，实际程序0.1.1，没有执行安装器，不能称真实已安装旧版本升级重启通过。
 - 首轮自有验收`live-final3`传测试adapter，库不创建HTTP执行器，因此检测失败；原报告保留。改用库正常构造、仅模拟版本 / 缓存后通过，产品代码和已发布包未改。Git外 `.runtime/windows-updates-20261007`保存release-published、upload-verified、software-ci、live-final4证据；当前新文档提交不重构建安装包。
 - 用户0.1.0先手动安装一次0.1.1，再从安装快捷方式启动；随后可检测、点击下载 / 安装并重启，托盘可手动检查。用户机器安装执行与之前桌面真实账号 / 文件夹模型仍待验。云端UI8b42d35、API / worker94b26d1 / d56ee747、contract0.19 / chat1.8 / schema18保持，无云部署或迁移。
+
+### 2026-10-07：Windows历史消息查询兼容修复与真实桌面验收
+
+- 用户登录后本人和个人助理消息都误报“当前权限下无法读取”。分支 `fix/windows-message-query` 基于main32e6ab8，软件固定 `b3eb21536d696f25fc5535e6a3b2c6e854f03c18`、[PR12](https://github.com/luoyan96/personal-agent/pull/12)。真实打包Electron22.3.27 / Chromium108的 `URLSearchParams.size` 为undefined，导致GET分页 / 筛选全部丢失；生产researchApi改用序列化字符串非空判断，缺失fact改为真实未找到提示。没有放宽后端鉴权、修改契约或数据迁移。
+- renderer类型、Web及四SDK资源检查通过；固定软件[三平台CI37572397265](https://github.com/luoyan96/personal-agent/actions/runs/37572397265)全部通过。独立Electron22运行生产API及消息组件，41条HTTP事实 / SDK明确合成：旧代码复现两条误报；修复后第40 / 41条、afterSequence / limit、中文及&搜索、会话筛选、Unicode cursor编码、空查询与刷新去重通过，console / pageerror0。最终 `after-d401dc00/report.json`及前后截图保留；fixture误拦路由、错误临时目录前缀、隐藏窗口截图timeout和挂起中断均保留。最后实际showInactive后截图成功，自有Electron / Vite退出已确认。
+- 13:00:32北京时间固定b3eb215静态上线，精确首页SHA256 `92a23a8d1a9dd2446648da15dbb522e86e624dc471a2ecb11de41bff5cb6c773`。整包10259166字节 / SHA256 `0c32cd5126996d3dd816918548deac4665de8e9612209889cde60b57e4d2ebb4`、source / Web归档、两处修复源码及四SDK校验通过；八服务运行、API healthy、ready0.19，后台94b26d1及八镜像全部保持。13:01:16独立HTTPS同一首页 / ready核对通过。可依据Git外私有收据的Nginx副本回退静态UI至8b42d35 / 3a43637b；无需数据库恢复。
+- Workbench上传网关两次NoSuchKey失败，GitHub单连接下载60秒timeout；完整含运维元数据包公开上传被自动审批拒绝。改用仅公开前端源码 / dist的封装上传既有v0.1.1，服务器八分段206 / Content-Range / 总SHA校验成功；助手与manifest从原私有SSH部署文件生成，helper精确hash0cb3b48e。没有新增SSH / Key / 端口，也没有公开该私有运维包。Windowsv0.1.1正式安装包、latest.yml与blockmap保持原样，未创建影响更新通道的新正式Release。
+- 用户现有Windows已登录会话实际验收：普通Ctrl+Shift+R不重载无菜单窗口，既有开发工具页面重载后，21:15原提问与原回复恢复，三个末页标记和全部13页阅读范围显示，权限占位消失、编辑器空白。没有发新消息、重新传附件、读取凭据或调用模型。开发工具已关闭，真实聊天窗口留给用户。这是历史显示修复，Windows本地文件夹实际模型 / IM以及真实安装升级重启仍另验。
+- Git外 `.runtime/desktop-message-query-20261007`保存 `runtime-query-proof-final.json`、前后合成报告 / 截图、types / build、源码CI、`release/deployment-verified.json` / `public-verified.json`和`live-desktop-verified.json` / `live-desktop-after.png`。私人会话与运维运行资料均未入Git，后续文档提交不重构建已上线的静态软件。

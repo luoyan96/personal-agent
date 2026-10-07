@@ -23,6 +23,18 @@
 - 普通个人 / Agent 私聊默认只输入文本并发送；使用本人默认模型，保留真实档案、性格和授权记忆。任务、材料、预算与需求模板收在可选协作中；普通聊天不创建计划、群、任务或执行动作。主标题显示真实 Agent 名称，沿用原协调身份和置顶映射。
 - 设置入口改为“模型设置”，每个人管理自己的 DeepSeek / 通义千问 / 豆包配置、加密 Key、启用及默认选择。朋友使用本人 Key 与当前对话记忆，不能读取 Agent 主人的 Key 或私有记忆。既有 IFRC 未选择个人配置时兼容旧模型；明确作个人选择后不静默回退。
 
+## Windows 登录后历史消息误报权限（已上线并实际验收）
+
+用户2026-10-07截图中本人和个人助理的旧消息均显示“当前权限下无法读取”。固定修复 `b3eb21536d696f25fc5535e6a3b2c6e854f03c18`、[PR12](https://github.com/luoyan96/personal-agent/pull/12)：实际打包Electron22 / Chromium108没有 `URLSearchParams.size`，原客户端因此丢失全部GET查询参数，读取默认前30条后找不到后续canonical消息。改用 `query.toString()` 判断非空；未找到消息时显示真实未找到状态，不再误称权限不足。后端鉴权、共享API、contract0.19 / chat1.8 / schema18未改。
+
+renderer类型、Web构建及四个固定SDK资源通过；[源码三平台CI37572397265](https://github.com/luoyan96/personal-agent/actions/runs/37572397265)全部通过。自有隔离的真实Electron22运行生产researchApi / ResearchMessageRender，HTTP事实与SDK明确合成：旧代码复现两条误报，修复后第40 / 41条逐条取回，分页、中文搜索、会话筛选、cursor编码及刷新去重通过，console / pageerror均0。`after-d401dc00/report.json`为最终通过；隐藏窗口截图timeout、截图挂起中断和fixture初始化失败证据保留。
+
+2026-10-07 **13:00:32北京时间**，固定b3eb215静态发布完成，公网index SHA256 `92a23a8d1a9dd2446648da15dbb522e86e624dc471a2ecb11de41bff5cb6c773`。源码归档、两处修复源码、四个SDK资源、八服务运行 / API healthy / HTTPS ready0.19通过；后端94b26d1及八镜像保持，没有迁移。独立公网HTTP核验同一首页及ready通过。静态恢复依据私有部署收据中的Nginx副本，仅恢复上一版8b42d35首页3a43637b，核对健康与原镜像；不恢复数据库。
+
+真实用户已登录的Windows客户端重新加载后，截图中21:15的原提问与个人助理原回复均恢复，三个合成文件末尾标记和全部13页范围真实显示，权限误报消失，编辑器空白。此次没有发送新消息、调用模型、读取凭据或重新上传附件；这是历史消息显示验收，不能当作新的文件夹 / 模型 / IM端到端验收。普通Ctrl+Shift+R未重载Windows无菜单窗口，使用既有开发工具重载页面后成功，临时开发工具已关闭。
+
+Git外 `.runtime/desktop-message-query-20261007/`保存原因证明、前后截图、types / build、CI及`release/{deployment-verified,public-verified}.json`；`live-desktop-verified.json`和`live-desktop-after.png`为实际用户桌面证据，私人会话记录未入Git。Workbench网关两次NoSuchKey上传失败和单连接下载timeout保留，公开上传含运维信息的完整包被自动审批拒绝；改用只含公开前端源码与dist的资源包，运维助手 / manifest留在既有私有SSH会话，分段下载总hash符合候选。资源作为既有v0.1.1的补充附件上传，未建立新版Windows Release，也未替换EXE / latest.yml / blockmap。用户现有桌面重新加载云端UI即可，无需重装。
+
 ## Windows 软件更新（0.1.1已发布）
 
 用户要求检测新版本、提示并点击更新。分支 `feature/windows-updates` 基于main `abed83e792d4f4b8af3881d5aae1cc375db09d83`，只接原生 `electron-updater` 5.3.0与本项目公开GitHub Releases；共享API / 云端UI未改。安装版启动15秒、每6小时及唤醒检查，前台提示；后台结果回到窗口再提示。系统托盘有真实版本及“检查更新”。检测不下载，明确下载后库校验，再由本人“安装并重启”；退出不自动安装，不自动降级或选择预发布版。无renderer安装IPC / 自定URL / 嵌入Token，无TLS、webSecurity或签名检查放宽。
