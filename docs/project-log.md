@@ -2,6 +2,8 @@
 
 ## 2026-10-07：Windows 0.3.3 固定设置 / 版本更新入口
 
+- 22:21:46北京时间正式发布 [v0.3.3](https://github.com/luoyan96/personal-agent/releases/tag/v0.3.3)，源码 / 标签固定 `1fbb238ddc274bb7388d431756cd7d010ad37f13`；4个公开资产的size / SHA256 digest与本地一致，latest正确为0.3.3，0.4.0保持草稿。[PR19](https://github.com/luoyan96/personal-agent/pull/19)已创建 / 附加且未合入main；Foundation checks37635589030读取时运行中，未宣称全部CI通过。草稿未生成标签时按tag读取404，改为按发布列表读取准确ID核验后发布；未绕过资产门禁。
+
 - 用户要求左下角设置内随时可检查更新。分支 `feature/settings-version-updates` 从已发布0.3.2的6448412建立，新增固定“设置 → 版本更新”，同菜单保留模型设置。展示原生真实版本 / 检查结果 / 发布说明 / 下载进度 / 安装重启，设置红点与原左下角提示共用一个订阅；晚到快照不覆盖新状态。打开更新页会检查，下载中 / 已完成保留候选，关闭页面不重复下载。保留启动15秒、6小时、唤醒检查及原生重启确认。
 - renderer / Electron类型与既有5组控制器检查通过；真实Electron22 / Chromium108生产React / 原生IPC / preload方法 / 控制器18项定向交互完成。两次QA选择器重名失败保留，仅补余下安装确认、免安装指导、迟到快照与最终截图。最小1024×726及1280×820无溢出 / 遮挡，pageerror0；截图发现Badge图标颜色继承问题后修正并专门检查。开发Router / CSP / Antd告警保留，不称console全空。Browser插件不在环境中，使用隔离Playwright Electron，发布端口 / 安装资格 / OS响应及无关聊天均合成，未真实执行下载或安装器，用户profile和软件未触碰。
 - NSIS安装包及更新清单门禁、源码 / 资产SHA与GitHub收据保存在Git外 `.runtime/settings-version-updates-20261007`，正式源码以v0.3.3标签为准；另存 `PersonalAgent-Windows/0.3.3`。仅客户端变化，不改契约、数据库或云端。旧版先经托盘或安装包升级一次，再出现永久设置入口；待发内容需要用户先复制保存。

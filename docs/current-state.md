@@ -12,6 +12,8 @@ renderer / Electron类型、5组既有更新控制器检查通过。真实Electr
 
 ## 独立待上线：定时任务 Windows 0.4.0
 
+0.3.3发布结果：2026-10-07 **22:21:46北京时间**正式发布 [v0.3.3](https://github.com/luoyan96/personal-agent/releases/tag/v0.3.3)，成为公开latest；标签精确指向 `1fbb238ddc274bb7388d431756cd7d010ad37f13`。4个公开资产大小 / GitHub SHA256 digest全部与本地一致，[PR19](https://github.com/luoyan96/personal-agent/pull/19)已上传并保持审查状态，未合并main。[Foundation checks37635589030](https://github.com/luoyan96/personal-agent/actions/runs/37635589030)本次读取时仍在运行，不能称三平台CI全部通过。`published-release.json` / `uploaded-release.json`保存公开latest、标签SHA及0.4.0仍为草稿的核验收据。后续文档提交不改变该安装包源码。
+
 [PR18](https://github.com/luoyan96/personal-agent/pull/18)的 `feature/recurring-agent-tasks` 已准备0.4.0候选与GitHub草稿，runtime源 `f91b9d552c4f786b61434718dea114187ca9e1d2`，后续测试 / 文档提交 `d015b099ad7a8dacf9d56bad7289743aab731258`。该分支需要contract0.20 / chat1.9 / migration019；阿里云Workbench明确授权问题仍待回复，云端未升级，**0.4.0草稿不能提前公开**。本次0.3.3独立兼容现有后端，不把定时任务称为已上线。其证据在 `.runtime/recurring-agent-tasks-20261007`，安装候选在 `PersonalAgent-Windows/0.4.0`；不要拿本次更新入口验证代替定时任务部署验收。
 
 ## 上一版桌面源码：Windows 0.3.2 发送恢复
