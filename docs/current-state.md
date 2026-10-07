@@ -27,6 +27,8 @@
 
 用户要求 Windows 电脑版并试用本地目录。分支 `feature/windows-local-folder` 基于 main `eb18b6fb498975f94540ec6771705beacee3c2d3`，客户端版本独立为 `0.1.0`。安装包及免安装程序保存在 Git 外 `D:/deepseek-agent/PersonalAgent-Windows/0.1.0/`；[试用、开发与边界](development/windows-local-folder.md)。本批没有修改共享 API / contract0.19 / chat1.8 / schema18，没有迁移。
 
+固定实现 `8b42d35a9e47b5159bfd19e5ce4155508d53f7e0` 已推送，[PR10](https://github.com/luoyan96/personal-agent/pull/10)已创建，自动三平台检查已开始，本记录不将未确认的CI计通过。静态发布包已固定该SHA，41735965字节、SHA256 `2698a4defe5a89a625f5718119d4f822d2bed6ba29ee07a9f16bc00947477e48`，候选首页 `3a43637be852292eb7152c67e5208cfd029d73a1a40602ea854bd52b953e6cd1`。准备助手严格核对原622e84b首页9f2591、后端94b26d1 / 镜像d56ee747、schema18与八服务，不重启后台；收据在Git外 `static-release/bundle-receipt.json`。仍等待阿里云登录，尚未执行该助手。
+
 - 新增原生目录选择、相对文件列表、真实文字预览、选择与正式任务输入；一次合并 Markdown 附件走现有 SDK / 文件阅读 API。支持文字、代码、文字PDF / DOCX；最多10文件、52000 JSON传输字节，明确范围与超限，不自动裁剪，不写回目录。
 - 主进程授权只接受成功连接服务的主 frame；拒绝任意路径、junction与变动文件，取消 / 导航撤销。PDF / DOCX在独立有界utilityProcess解析。最终真实Electron22 / Node16主IPC五项通过，PDF第二页和DOCX真实正文读出；Node专项4组与两类类型检查通过，NSIS安装包和启动smoke生成通过。原生SDK DLL保持原hash，四Web SDK资源检查通过。
 - 前端12个必要场景分阶段通过，其bridge / SDK / API / model均合成。最终已打包完整React联调另两项通过：真实preload读取第二页和DOCX、原生临时附件回读与API正文完全一致，仅OSdialog / SDK / API / model为替身；SDK与API各一次。正常网络的真实桌面HTTPS登录入口成功，未登录或提交用户资料。用户免安装程序已启动；Windows操作工具新增应用审批超时，没有控制用户窗口。未称桌面模型/IM全流程通过。
