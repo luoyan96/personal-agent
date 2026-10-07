@@ -28,9 +28,17 @@
   .desktop-nav-item:hover { background: #3a4758; }
   .desktop-nav-item[aria-current] { background: #394b63; border-left-color: #4b9cff; color: #68afff; }
   .desktop-nav-item[aria-current] > div { color: #e4efff; }
-  .desktop-model-settings { margin-top: auto; margin-bottom: 28px; display: flex; flex-direction: column; gap: 9px; align-items: center; color: #ced6e2; width: 100%; padding: 10px 0; font-size: 11px; }
+  .desktop-navigation-bottom { margin-top: auto; margin-bottom: 18px; width: 100%; }
+  .desktop-model-settings { display: flex; flex-direction: column; gap: 9px; align-items: center; color: #ced6e2; width: 100%; padding: 10px 0; font-size: 11px; }
   .desktop-model-settings .anticon { font-size: 24px; }
+  .desktop-model-settings .ant-badge { color: inherit; }
   .desktop-model-settings:hover { background: #3a4758; color: #fff; }
+  .desktop-update-button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 62px; width: 100%; padding: 10px 3px; margin-top: 8px; background: #394b63; color: #8bc1ff; border-radius: 6px; font-size: 11px; }
+  .desktop-update-button .anticon { font-size: 22px; }
+  .desktop-update-button:hover:enabled { background: #435b7b; color: #fff; }
+  .desktop-update-button:disabled { cursor: default; }
+  .desktop-update-progress { width: 48px; height: 3px; border-radius: 2px; overflow: hidden; background: #607088; }
+  .desktop-update-progress > span { display: block; height: 100%; background: #8bc1ff; }
 
   .desktop-conversation-column { width: 300px; flex-shrink: 0; background: #fff; }
   .desktop-conversation-column aside { width: 300px; }
@@ -123,3 +131,21 @@
   .personal-agent-desktop button { transition: none; }
   .personal-agent-desktop .anticon-spin { animation: none; }
 }
+
+/* Ant Design renders these panels outside the desktop layout. */
+.desktop-settings-menu { width: 208px; padding: 4px; }
+.desktop-settings-menu > button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 13px 12px; border-radius: 7px; text-align: left; color: #344256; font-size: 14px; }
+.desktop-settings-menu > button:hover, .desktop-settings-menu > button:focus-visible { background: #f1f5fb; }
+.desktop-settings-menu > button > span:nth-child(2) { flex: 1; }
+.desktop-settings-menu > button > .anticon:last-child { color: #8b98ab; font-size: 11px; }
+.desktop-version-panel { padding-top: 10px; }
+.desktop-version-heading { display: flex; align-items: center; justify-content: space-between; padding-bottom: 24px; border-bottom: 1px solid #e8edf3; }
+.desktop-version-heading h2 { margin: 0 0 7px; color: #26354a; font-size: 24px; font-weight: 600; }
+.desktop-version-heading p { margin: 0; color: #748299; font-size: 14px; }
+.desktop-version-icon { color: #5596eb; font-size: 34px; padding: 12px; border-radius: 14px; background: #edf5ff; }
+.desktop-version-status { margin: 23px 0 16px; color: #35455c; font-size: 15px; line-height: 1.6; }
+.desktop-version-notes { max-height: 180px; overflow: auto; background: #f5f7fa; padding: 15px; margin-top: 16px; border-radius: 9px; }
+.desktop-version-notes h3 { margin: 0 0 8px; font-weight: 600; font-size: 13px; }
+.desktop-version-notes p { margin: 0; color: #617087; font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.desktop-version-actions { display: flex; justify-content: flex-end; margin-top: 24px; }
+.desktop-version-help { border-top: 1px solid #e8edf3; padding-top: 16px; margin-top: 23px; margin-bottom: 0; color: #8692a3; font-size: 12px; line-height: 1.7; }
