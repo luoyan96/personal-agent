@@ -21,9 +21,15 @@ export function currentTurnText(s:ChatService,turnId:string){
   const row=s.db.prepare('SELECT document,request_json FROM chat_turns WHERE id=? AND owner_id=?').get(turnId,s.c.actor.id);if(!row)fail('NOT_FOUND')
   const turn=JSON.parse(String(row.document)),input=JSON.parse(String(row.request_json)) as TurnInput
   const ids=input.continuous?.messageIds??[turn.inputMessageId]
-  const messages=ids.map(id=>{const message=s.projectedMessage(id);if(message.conversationId!==turn.conversationId||message.origin!=='human'||message.senderContactId!==s.human().id||message.sequence>input.inputSequence)fail('FORBIDDEN');return message})
-  // These are this batch's actual user submissions, not instructions extracted
-  // from history, files, profiles, a model answer, or another user's text.
+  const messages=ids.map(id=>{
+    const message=s.projectedMessage(id)
+    const scheduled=input.scheduledFollowupId&&input.scheduledRunId?s.db.prepare('SELECT r.message_id,r.turn_id,f.member_id FROM personal_followup_runs r JOIN personal_followups f ON f.id=r.followup_id WHERE r.id=? AND r.followup_id=?').get(input.scheduledRunId,input.scheduledFollowupId):null
+    const authorizedSchedule=scheduled?.turn_id===turnId&&scheduled.member_id===s.c.actor.id&&scheduled.message_id===message.id&&message.origin==='service'&&message.senderContactId===turn.agentContactId
+    if(message.conversationId!==turn.conversationId||message.sequence>input.inputSequence||!authorizedSchedule&&(message.origin!=='human'||message.senderContactId!==s.human().id))fail('FORBIDDEN')
+    return message
+  })
+  // Only actual user submissions or the exact persisted owner-authorized
+  // scheduled occurrence qualify; history, files and model answers never do.
   return messages.map(message=>message.text??'').join('\n')
 }
 export function supersedeTurn(s:ChatService,id:string,replacement?:string){

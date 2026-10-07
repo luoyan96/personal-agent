@@ -1,5 +1,7 @@
 # Research Agent Platform · Personal Agent 与人机协作
 
+开发候选 **Windows0.4.0** 增加“定时任务”：一次、每天、每周提醒或让自己的 Agent 到点执行，支持聊天安排、暂停 / 修改和运行记录。共享 API / worker 需要升级到 contract0.20 / schema19；当前云端尚未迁移，准确进度见[当前状态](docs/current-state.md)，范围与部署见[定时任务](docs/development/recurring-agent-tasks.md)。
+
 Windows桌面 **0.3.2** 修复发送等待和错误 / 重试入口被遮挡：30秒未确认保留原请求，重试沿用原编号；可停止等待、持续输入和切换联系人。下载与准确受测范围见[当前状态](docs/current-state.md)。升级前复制旧版未确认需求；本批未新增跨软件重启的待发恢复。
 
 **最终目标是以个人为中心的Personal Agent：采用类似微信的交流方式，人与Agent共用通讯录；个人助理根据任务类型和难度组织协作，积累获准的长期记忆，持续推进、主动跟进并从反馈中改进。** 科研小组是第一个验证场景，个人可以独立使用。

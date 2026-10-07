@@ -20,12 +20,12 @@ export function PersonalAssistantPanel({ open, onClose, initialTab = "memory" }:
     if (previous.current !== scope) { previous.current = scope; onClose(); }
   }, [scope, onClose]);
   useLayoutEffect(() => { setTab(initialTab); }, [open, initialTab, generation]);
-  return <Modal title="关于我 · 记忆与跟进" width={680} centered open={open && !!actorId}
+  return <Modal title="我的助理" width={760} centered open={open && !!actorId}
     onCancel={onClose} footer={null} destroyOnClose
     style={{ maxWidth: "calc(100vw - 24px)" }}
     styles={{ body: { maxHeight: "calc(100dvh - 160px)", overflowY: "auto", paddingRight: 4 } }}>
     <Tabs activeKey={tab} onChange={value => setTab(value as "memory" | "followups")}
       items={[{ key: "memory", label: "我的长期记忆", children: <PersonalMemoryPanel active={open && tab === "memory"} /> },
-        { key: "followups", label: "跟进与提醒", children: <PersonalFollowupPanel active={open && tab === "followups"} /> }]} />
+        { key: "followups", label: "定时任务与提醒", children: <PersonalFollowupPanel active={open && tab === "followups"} /> }]} />
   </Modal>;
 }
