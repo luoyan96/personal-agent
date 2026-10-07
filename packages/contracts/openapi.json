@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.19.0"
+    "version": "0.20.0"
   },
   "paths": {
     "/api/v1/me/memory-settings": {
@@ -2138,7 +2138,7 @@
     "/api/v1/me/followups": {
       "get": {
         "operationId": "personalFollowups",
-        "description": "Owner one-time reminders; canonical recorded and actual IM sent/uncertain are distinct. No phone push claim.",
+        "description": "Owner reminders and scheduled local Agent jobs; daily/weekly wall time in explicit timezone. Canonical recorded and actual IM sent/uncertain are distinct. No device push claim.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -2199,10 +2199,6 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "id": {
-                            "type": "string",
-                            "pattern": "^[A-Za-z0-9_-]{1,96}$"
-                          },
                           "title": {
                             "type": "string",
                             "minLength": 1,
@@ -2224,6 +2220,7 @@
                             "maxLength": 100
                           },
                           "task": {
+                            "default": null,
                             "anyOf": [
                               {
                                 "type": "object",
@@ -2250,6 +2247,7 @@
                             ]
                           },
                           "quietHours": {
+                            "default": null,
                             "anyOf": [
                               {
                                 "type": "object",
@@ -2273,6 +2271,110 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "recurrence": {
+                            "default": null,
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "frequency": {
+                                        "type": "string",
+                                        "const": "daily"
+                                      }
+                                    },
+                                    "required": [
+                                      "frequency"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "frequency": {
+                                        "type": "string",
+                                        "const": "weekly"
+                                      },
+                                      "weekdays": {
+                                        "minItems": 1,
+                                        "maxItems": 7,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 7
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "frequency",
+                                      "weekdays"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "execution": {
+                            "default": null,
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "agent"
+                                  },
+                                  "contactId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "budget": {
+                                    "default": {
+                                      "maxTokens": 4000,
+                                      "maxSeconds": 90
+                                    },
+                                    "type": "object",
+                                    "properties": {
+                                      "maxTokens": {
+                                        "type": "integer",
+                                        "minimum": 1000,
+                                        "maximum": 16000
+                                      },
+                                      "maxSeconds": {
+                                        "type": "integer",
+                                        "minimum": 10,
+                                        "maximum": 120
+                                      }
+                                    },
+                                    "required": [
+                                      "maxTokens",
+                                      "maxSeconds"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "contactId",
+                                  "budget"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,96}$"
                           },
                           "status": {
                             "type": "string",
@@ -2325,6 +2427,109 @@
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                           },
+                          "lastRun": {
+                            "default": null,
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
+                                  "scheduledAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  "messageId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "turnId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "outputMessageId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "recorded",
+                                      "queued",
+                                      "running",
+                                      "waiting_input",
+                                      "succeeded",
+                                      "unavailable",
+                                      "failed",
+                                      "interrupted",
+                                      "cancelled",
+                                      "skipped"
+                                    ]
+                                  },
+                                  "failure": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 200
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "delivery": {
+                                    "type": "string",
+                                    "enum": [
+                                      "scheduled",
+                                      "due",
+                                      "recorded",
+                                      "im_sent",
+                                      "im_uncertain",
+                                      "im_denied"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "scheduledAt",
+                                  "messageId",
+                                  "turnId",
+                                  "outputMessageId",
+                                  "status",
+                                  "failure",
+                                  "delivery"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "allowedActions": {
                             "maxItems": 5,
                             "type": "array",
@@ -2341,13 +2546,15 @@
                           }
                         },
                         "required": [
-                          "id",
                           "title",
                           "body",
                           "dueAt",
                           "timeZone",
                           "task",
                           "quietHours",
+                          "recurrence",
+                          "execution",
+                          "id",
                           "status",
                           "nextDeliveryAt",
                           "messageId",
@@ -2355,6 +2562,7 @@
                           "version",
                           "createdAt",
                           "updatedAt",
+                          "lastRun",
                           "allowedActions"
                         ],
                         "additionalProperties": false
@@ -2519,7 +2727,7 @@
       },
       "post": {
         "operationId": "createPersonalFollowup",
-        "description": "Owner explicit one-time future reminder, full instant/timezone. Optional full-authorized task version. No LLM required; no recurring unsupervised planning.",
+        "description": "Explicit future time, null/daily/weekly recurrence, optional owned local Agent execution and fixed per-run budget. Reminder needs no model; execution rechecks authority/model. No external agents, arbitrary tools or local filesystem grant. Missed dates coalesce into one occurrence; no catchup storm.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -2627,6 +2835,106 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "recurrence": {
+                    "default": null,
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "frequency": {
+                                "type": "string",
+                                "const": "daily"
+                              }
+                            },
+                            "required": [
+                              "frequency"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "frequency": {
+                                "type": "string",
+                                "const": "weekly"
+                              },
+                              "weekdays": {
+                                "minItems": 1,
+                                "maxItems": 7,
+                                "type": "array",
+                                "items": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 7
+                                }
+                              }
+                            },
+                            "required": [
+                              "frequency",
+                              "weekdays"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "execution": {
+                    "default": null,
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "agent"
+                          },
+                          "contactId": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                          },
+                          "budget": {
+                            "default": {
+                              "maxTokens": 4000,
+                              "maxSeconds": 90
+                            },
+                            "type": "object",
+                            "properties": {
+                              "maxTokens": {
+                                "type": "integer",
+                                "minimum": 1000,
+                                "maximum": 16000
+                              },
+                              "maxSeconds": {
+                                "type": "integer",
+                                "minimum": 10,
+                                "maximum": 120
+                              }
+                            },
+                            "required": [
+                              "maxTokens",
+                              "maxSeconds"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "contactId",
+                          "budget"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -2635,7 +2943,9 @@
                   "dueAt",
                   "timeZone",
                   "task",
-                  "quietHours"
+                  "quietHours",
+                  "recurrence",
+                  "execution"
                 ],
                 "additionalProperties": false
               },
@@ -2645,7 +2955,9 @@
                 "dueAt": "2026-09-21T08:00:00+08:00",
                 "timeZone": "Asia/Shanghai",
                 "task": null,
-                "quietHours": null
+                "quietHours": null,
+                "recurrence": null,
+                "execution": null
               }
             }
           }
@@ -2662,10 +2974,6 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "type": "string",
-                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
-                        },
                         "title": {
                           "type": "string",
                           "minLength": 1,
@@ -2687,6 +2995,7 @@
                           "maxLength": 100
                         },
                         "task": {
+                          "default": null,
                           "anyOf": [
                             {
                               "type": "object",
@@ -2713,6 +3022,7 @@
                           ]
                         },
                         "quietHours": {
+                          "default": null,
                           "anyOf": [
                             {
                               "type": "object",
@@ -2736,6 +3046,110 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "recurrence": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "frequency": {
+                                      "type": "string",
+                                      "const": "daily"
+                                    }
+                                  },
+                                  "required": [
+                                    "frequency"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "frequency": {
+                                      "type": "string",
+                                      "const": "weekly"
+                                    },
+                                    "weekdays": {
+                                      "minItems": 1,
+                                      "maxItems": 7,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 7
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "frequency",
+                                    "weekdays"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "execution": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "agent"
+                                },
+                                "contactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "budget": {
+                                  "default": {
+                                    "maxTokens": 4000,
+                                    "maxSeconds": 90
+                                  },
+                                  "type": "object",
+                                  "properties": {
+                                    "maxTokens": {
+                                      "type": "integer",
+                                      "minimum": 1000,
+                                      "maximum": 16000
+                                    },
+                                    "maxSeconds": {
+                                      "type": "integer",
+                                      "minimum": 10,
+                                      "maximum": 120
+                                    }
+                                  },
+                                  "required": [
+                                    "maxTokens",
+                                    "maxSeconds"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "contactId",
+                                "budget"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
                         },
                         "status": {
                           "type": "string",
@@ -2788,6 +3202,109 @@
                           "format": "date-time",
                           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                         },
+                        "lastRun": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "scheduledAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                "messageId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "turnId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "outputMessageId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "recorded",
+                                    "queued",
+                                    "running",
+                                    "waiting_input",
+                                    "succeeded",
+                                    "unavailable",
+                                    "failed",
+                                    "interrupted",
+                                    "cancelled",
+                                    "skipped"
+                                  ]
+                                },
+                                "failure": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 200
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "delivery": {
+                                  "type": "string",
+                                  "enum": [
+                                    "scheduled",
+                                    "due",
+                                    "recorded",
+                                    "im_sent",
+                                    "im_uncertain",
+                                    "im_denied"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "scheduledAt",
+                                "messageId",
+                                "turnId",
+                                "outputMessageId",
+                                "status",
+                                "failure",
+                                "delivery"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "allowedActions": {
                           "maxItems": 5,
                           "type": "array",
@@ -2804,13 +3321,15 @@
                         }
                       },
                       "required": [
-                        "id",
                         "title",
                         "body",
                         "dueAt",
                         "timeZone",
                         "task",
                         "quietHours",
+                        "recurrence",
+                        "execution",
+                        "id",
                         "status",
                         "nextDeliveryAt",
                         "messageId",
@@ -2818,6 +3337,7 @@
                         "version",
                         "createdAt",
                         "updatedAt",
+                        "lastRun",
                         "allowedActions"
                       ],
                       "additionalProperties": false
@@ -2830,13 +3350,15 @@
                 },
                 "example": {
                   "data": {
-                    "id": "synthetic",
                     "title": "synthetic",
                     "body": "synthetic",
                     "dueAt": "2026-09-21T08:00:00+08:00",
                     "timeZone": "Asia/Shanghai",
                     "task": null,
                     "quietHours": null,
+                    "recurrence": null,
+                    "execution": null,
+                    "id": "synthetic",
                     "status": "active",
                     "nextDeliveryAt": "2026-09-21T08:00:00+08:00",
                     "messageId": null,
@@ -2844,8 +3366,317 @@
                     "version": 1,
                     "createdAt": "2026-09-21T08:00:00+08:00",
                     "updatedAt": "2026-09-21T08:00:00+08:00",
+                    "lastRun": null,
                     "allowedActions": []
                   }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/followups/{id}/runs": {
+      "get": {
+        "operationId": "personalFollowupRuns",
+        "description": "Owner only; persistent scheduled occurrences newest first, actual turn status/output and delivery. No automatic retry of uncertain or failed model calls.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "default": 30,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                          },
+                          "scheduledAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          "messageId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "turnId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "outputMessageId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "recorded",
+                              "queued",
+                              "running",
+                              "waiting_input",
+                              "succeeded",
+                              "unavailable",
+                              "failed",
+                              "interrupted",
+                              "cancelled",
+                              "skipped"
+                            ]
+                          },
+                          "failure": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "delivery": {
+                            "type": "string",
+                            "enum": [
+                              "scheduled",
+                              "due",
+                              "recorded",
+                              "im_sent",
+                              "im_uncertain",
+                              "im_denied"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "scheduledAt",
+                          "messageId",
+                          "turnId",
+                          "outputMessageId",
+                          "status",
+                          "failure",
+                          "delivery"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 2048
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": [],
+                  "nextCursor": null
                 }
               }
             }
@@ -3017,10 +3848,6 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "type": "string",
-                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
-                        },
                         "title": {
                           "type": "string",
                           "minLength": 1,
@@ -3042,6 +3869,7 @@
                           "maxLength": 100
                         },
                         "task": {
+                          "default": null,
                           "anyOf": [
                             {
                               "type": "object",
@@ -3068,6 +3896,7 @@
                           ]
                         },
                         "quietHours": {
+                          "default": null,
                           "anyOf": [
                             {
                               "type": "object",
@@ -3091,6 +3920,110 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "recurrence": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "frequency": {
+                                      "type": "string",
+                                      "const": "daily"
+                                    }
+                                  },
+                                  "required": [
+                                    "frequency"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "frequency": {
+                                      "type": "string",
+                                      "const": "weekly"
+                                    },
+                                    "weekdays": {
+                                      "minItems": 1,
+                                      "maxItems": 7,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 7
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "frequency",
+                                    "weekdays"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "execution": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "agent"
+                                },
+                                "contactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "budget": {
+                                  "default": {
+                                    "maxTokens": 4000,
+                                    "maxSeconds": 90
+                                  },
+                                  "type": "object",
+                                  "properties": {
+                                    "maxTokens": {
+                                      "type": "integer",
+                                      "minimum": 1000,
+                                      "maximum": 16000
+                                    },
+                                    "maxSeconds": {
+                                      "type": "integer",
+                                      "minimum": 10,
+                                      "maximum": 120
+                                    }
+                                  },
+                                  "required": [
+                                    "maxTokens",
+                                    "maxSeconds"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "contactId",
+                                "budget"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
                         },
                         "status": {
                           "type": "string",
@@ -3143,6 +4076,109 @@
                           "format": "date-time",
                           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                         },
+                        "lastRun": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "scheduledAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                "messageId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "turnId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "outputMessageId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "recorded",
+                                    "queued",
+                                    "running",
+                                    "waiting_input",
+                                    "succeeded",
+                                    "unavailable",
+                                    "failed",
+                                    "interrupted",
+                                    "cancelled",
+                                    "skipped"
+                                  ]
+                                },
+                                "failure": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 200
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "delivery": {
+                                  "type": "string",
+                                  "enum": [
+                                    "scheduled",
+                                    "due",
+                                    "recorded",
+                                    "im_sent",
+                                    "im_uncertain",
+                                    "im_denied"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "scheduledAt",
+                                "messageId",
+                                "turnId",
+                                "outputMessageId",
+                                "status",
+                                "failure",
+                                "delivery"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "allowedActions": {
                           "maxItems": 5,
                           "type": "array",
@@ -3159,13 +4195,15 @@
                         }
                       },
                       "required": [
-                        "id",
                         "title",
                         "body",
                         "dueAt",
                         "timeZone",
                         "task",
                         "quietHours",
+                        "recurrence",
+                        "execution",
+                        "id",
                         "status",
                         "nextDeliveryAt",
                         "messageId",
@@ -3173,6 +4211,7 @@
                         "version",
                         "createdAt",
                         "updatedAt",
+                        "lastRun",
                         "allowedActions"
                       ],
                       "additionalProperties": false
@@ -3185,13 +4224,15 @@
                 },
                 "example": {
                   "data": {
-                    "id": "synthetic",
                     "title": "synthetic",
                     "body": "synthetic",
                     "dueAt": "2026-09-21T08:00:00+08:00",
                     "timeZone": "Asia/Shanghai",
                     "task": null,
                     "quietHours": null,
+                    "recurrence": null,
+                    "execution": null,
+                    "id": "synthetic",
                     "status": "active",
                     "nextDeliveryAt": "2026-09-21T08:00:00+08:00",
                     "messageId": null,
@@ -3199,6 +4240,7 @@
                     "version": 1,
                     "createdAt": "2026-09-21T08:00:00+08:00",
                     "updatedAt": "2026-09-21T08:00:00+08:00",
+                    "lastRun": null,
                     "allowedActions": []
                   }
                 }
@@ -3339,7 +4381,7 @@
       },
       "post": {
         "operationId": "updatePersonalFollowup",
-        "description": "Owner versioned edit before canonical notification; no edit replays a notified reminder.",
+        "description": "Owner versioned schedule edit; cancels old queued/running executions, retains history, never repeats an already-recorded one-time reminder.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -3457,6 +4499,106 @@
                       }
                     ]
                   },
+                  "recurrence": {
+                    "default": null,
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "frequency": {
+                                "type": "string",
+                                "const": "daily"
+                              }
+                            },
+                            "required": [
+                              "frequency"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "frequency": {
+                                "type": "string",
+                                "const": "weekly"
+                              },
+                              "weekdays": {
+                                "minItems": 1,
+                                "maxItems": 7,
+                                "type": "array",
+                                "items": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 7
+                                }
+                              }
+                            },
+                            "required": [
+                              "frequency",
+                              "weekdays"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "execution": {
+                    "default": null,
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "agent"
+                          },
+                          "contactId": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                          },
+                          "budget": {
+                            "default": {
+                              "maxTokens": 4000,
+                              "maxSeconds": 90
+                            },
+                            "type": "object",
+                            "properties": {
+                              "maxTokens": {
+                                "type": "integer",
+                                "minimum": 1000,
+                                "maximum": 16000
+                              },
+                              "maxSeconds": {
+                                "type": "integer",
+                                "minimum": 10,
+                                "maximum": 120
+                              }
+                            },
+                            "required": [
+                              "maxTokens",
+                              "maxSeconds"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "contactId",
+                          "budget"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "expectedVersion": {
                     "type": "integer",
                     "minimum": 1,
@@ -3470,6 +4612,8 @@
                   "timeZone",
                   "task",
                   "quietHours",
+                  "recurrence",
+                  "execution",
                   "expectedVersion"
                 ],
                 "additionalProperties": false
@@ -3481,6 +4625,8 @@
                 "timeZone": "Asia/Shanghai",
                 "task": null,
                 "quietHours": null,
+                "recurrence": null,
+                "execution": null,
                 "expectedVersion": 1
               }
             }
@@ -3498,10 +4644,6 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "type": "string",
-                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
-                        },
                         "title": {
                           "type": "string",
                           "minLength": 1,
@@ -3523,6 +4665,7 @@
                           "maxLength": 100
                         },
                         "task": {
+                          "default": null,
                           "anyOf": [
                             {
                               "type": "object",
@@ -3549,6 +4692,7 @@
                           ]
                         },
                         "quietHours": {
+                          "default": null,
                           "anyOf": [
                             {
                               "type": "object",
@@ -3572,6 +4716,110 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "recurrence": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "frequency": {
+                                      "type": "string",
+                                      "const": "daily"
+                                    }
+                                  },
+                                  "required": [
+                                    "frequency"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "frequency": {
+                                      "type": "string",
+                                      "const": "weekly"
+                                    },
+                                    "weekdays": {
+                                      "minItems": 1,
+                                      "maxItems": 7,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 7
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "frequency",
+                                    "weekdays"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "execution": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "agent"
+                                },
+                                "contactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "budget": {
+                                  "default": {
+                                    "maxTokens": 4000,
+                                    "maxSeconds": 90
+                                  },
+                                  "type": "object",
+                                  "properties": {
+                                    "maxTokens": {
+                                      "type": "integer",
+                                      "minimum": 1000,
+                                      "maximum": 16000
+                                    },
+                                    "maxSeconds": {
+                                      "type": "integer",
+                                      "minimum": 10,
+                                      "maximum": 120
+                                    }
+                                  },
+                                  "required": [
+                                    "maxTokens",
+                                    "maxSeconds"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "contactId",
+                                "budget"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
                         },
                         "status": {
                           "type": "string",
@@ -3624,6 +4872,109 @@
                           "format": "date-time",
                           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                         },
+                        "lastRun": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "scheduledAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                "messageId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "turnId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "outputMessageId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "recorded",
+                                    "queued",
+                                    "running",
+                                    "waiting_input",
+                                    "succeeded",
+                                    "unavailable",
+                                    "failed",
+                                    "interrupted",
+                                    "cancelled",
+                                    "skipped"
+                                  ]
+                                },
+                                "failure": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 200
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "delivery": {
+                                  "type": "string",
+                                  "enum": [
+                                    "scheduled",
+                                    "due",
+                                    "recorded",
+                                    "im_sent",
+                                    "im_uncertain",
+                                    "im_denied"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "scheduledAt",
+                                "messageId",
+                                "turnId",
+                                "outputMessageId",
+                                "status",
+                                "failure",
+                                "delivery"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "allowedActions": {
                           "maxItems": 5,
                           "type": "array",
@@ -3640,13 +4991,15 @@
                         }
                       },
                       "required": [
-                        "id",
                         "title",
                         "body",
                         "dueAt",
                         "timeZone",
                         "task",
                         "quietHours",
+                        "recurrence",
+                        "execution",
+                        "id",
                         "status",
                         "nextDeliveryAt",
                         "messageId",
@@ -3654,6 +5007,7 @@
                         "version",
                         "createdAt",
                         "updatedAt",
+                        "lastRun",
                         "allowedActions"
                       ],
                       "additionalProperties": false
@@ -3666,13 +5020,15 @@
                 },
                 "example": {
                   "data": {
-                    "id": "synthetic",
                     "title": "synthetic",
                     "body": "synthetic",
                     "dueAt": "2026-09-21T08:00:00+08:00",
                     "timeZone": "Asia/Shanghai",
                     "task": null,
                     "quietHours": null,
+                    "recurrence": null,
+                    "execution": null,
+                    "id": "synthetic",
                     "status": "active",
                     "nextDeliveryAt": "2026-09-21T08:00:00+08:00",
                     "messageId": null,
@@ -3680,6 +5036,7 @@
                     "version": 1,
                     "createdAt": "2026-09-21T08:00:00+08:00",
                     "updatedAt": "2026-09-21T08:00:00+08:00",
+                    "lastRun": null,
                     "allowedActions": []
                   }
                 }
@@ -3822,7 +5179,7 @@
     "/api/v1/me/followups/{id}/state": {
       "post": {
         "operationId": "changePersonalFollowup",
-        "description": "Owner versioned state transition; pause/complete/cancel stop future notification. Resume never repeats an already recorded one-time message.",
+        "description": "Owner versioned transition; pause/complete/cancel fence queued/running jobs. Resume recurring jobs at next future wall time, without replaying missed occurrences.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -3907,10 +5264,6 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "type": "string",
-                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
-                        },
                         "title": {
                           "type": "string",
                           "minLength": 1,
@@ -3932,6 +5285,7 @@
                           "maxLength": 100
                         },
                         "task": {
+                          "default": null,
                           "anyOf": [
                             {
                               "type": "object",
@@ -3958,6 +5312,7 @@
                           ]
                         },
                         "quietHours": {
+                          "default": null,
                           "anyOf": [
                             {
                               "type": "object",
@@ -3981,6 +5336,110 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "recurrence": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "frequency": {
+                                      "type": "string",
+                                      "const": "daily"
+                                    }
+                                  },
+                                  "required": [
+                                    "frequency"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "frequency": {
+                                      "type": "string",
+                                      "const": "weekly"
+                                    },
+                                    "weekdays": {
+                                      "minItems": 1,
+                                      "maxItems": 7,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 7
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "frequency",
+                                    "weekdays"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "execution": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "agent"
+                                },
+                                "contactId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "budget": {
+                                  "default": {
+                                    "maxTokens": 4000,
+                                    "maxSeconds": 90
+                                  },
+                                  "type": "object",
+                                  "properties": {
+                                    "maxTokens": {
+                                      "type": "integer",
+                                      "minimum": 1000,
+                                      "maximum": 16000
+                                    },
+                                    "maxSeconds": {
+                                      "type": "integer",
+                                      "minimum": 10,
+                                      "maximum": 120
+                                    }
+                                  },
+                                  "required": [
+                                    "maxTokens",
+                                    "maxSeconds"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "contactId",
+                                "budget"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
                         },
                         "status": {
                           "type": "string",
@@ -4033,6 +5492,109 @@
                           "format": "date-time",
                           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
                         },
+                        "lastRun": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                },
+                                "scheduledAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                "messageId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "turnId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "outputMessageId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "recorded",
+                                    "queued",
+                                    "running",
+                                    "waiting_input",
+                                    "succeeded",
+                                    "unavailable",
+                                    "failed",
+                                    "interrupted",
+                                    "cancelled",
+                                    "skipped"
+                                  ]
+                                },
+                                "failure": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 200
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "delivery": {
+                                  "type": "string",
+                                  "enum": [
+                                    "scheduled",
+                                    "due",
+                                    "recorded",
+                                    "im_sent",
+                                    "im_uncertain",
+                                    "im_denied"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "scheduledAt",
+                                "messageId",
+                                "turnId",
+                                "outputMessageId",
+                                "status",
+                                "failure",
+                                "delivery"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "allowedActions": {
                           "maxItems": 5,
                           "type": "array",
@@ -4049,13 +5611,15 @@
                         }
                       },
                       "required": [
-                        "id",
                         "title",
                         "body",
                         "dueAt",
                         "timeZone",
                         "task",
                         "quietHours",
+                        "recurrence",
+                        "execution",
+                        "id",
                         "status",
                         "nextDeliveryAt",
                         "messageId",
@@ -4063,6 +5627,7 @@
                         "version",
                         "createdAt",
                         "updatedAt",
+                        "lastRun",
                         "allowedActions"
                       ],
                       "additionalProperties": false
@@ -4075,13 +5640,15 @@
                 },
                 "example": {
                   "data": {
-                    "id": "synthetic",
                     "title": "synthetic",
                     "body": "synthetic",
                     "dueAt": "2026-09-21T08:00:00+08:00",
                     "timeZone": "Asia/Shanghai",
                     "task": null,
                     "quietHours": null,
+                    "recurrence": null,
+                    "execution": null,
+                    "id": "synthetic",
                     "status": "active",
                     "nextDeliveryAt": "2026-09-21T08:00:00+08:00",
                     "messageId": null,
@@ -4089,6 +5656,7 @@
                     "version": 1,
                     "createdAt": "2026-09-21T08:00:00+08:00",
                     "updatedAt": "2026-09-21T08:00:00+08:00",
+                    "lastRun": null,
                     "allowedActions": []
                   }
                 }
@@ -29046,7 +30614,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.19.0"
+                          "const": "0.20.0"
                         },
                         "checks": {
                           "type": "object",
@@ -29105,7 +30673,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.19.0",
+                    "contractVersion": "0.20.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -29279,7 +30847,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.19.0"
+                          "const": "0.20.0"
                         },
                         "checks": {
                           "type": "object",
@@ -29338,7 +30906,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.19.0",
+                    "contractVersion": "0.20.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -29490,7 +31058,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.19.0"
+                          "const": "0.20.0"
                         },
                         "checks": {
                           "type": "object",
@@ -29549,7 +31117,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.19.0",
+                    "contractVersion": "0.20.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",

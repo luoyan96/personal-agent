@@ -1,4 +1,4 @@
-import { ContactsOutlined, MessageOutlined, RightOutlined, SettingOutlined } from "@ant-design/icons";
+import { ClockCircleOutlined, ContactsOutlined, MessageOutlined, RightOutlined, SettingOutlined } from "@ant-design/icons";
 import { Badge, Divider, Layout, Popover, Upload, UploadProps } from "antd";
 import clsx from "clsx";
 import i18n, { t } from "i18next";
@@ -23,6 +23,7 @@ import { OverlayVisibleHandle } from "../../hooks/useOverlayVisible";
 import About from "./About";
 import styles from "./left-nav-bar.module.scss";
 import PersonalSettings from "./PersonalSettings";
+import DesktopUpdateButton from "./DesktopUpdateButton";
 import { researchMode } from "@/research/api";
 import { LabSettings } from "@/research/LabSettings";
 import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
@@ -163,6 +164,7 @@ const LeftNavBar = memo(() => {
   const [showProfile, setShowProfile] = useState(false);
   const [labSettings, setLabSettings] = useState(false);
   const [personal, setPersonal] = useState(false);
+  const [personalTab, setPersonalTab] = useState<"memory" | "followups">("memory");
   const selfInfo = useUserStore((state) => state.selfInfo);
   const userLogout = useUserStore((state) => state.userLogout);
   const updateSelfInfo = useUserStore((state) => state.updateSelfInfo);
@@ -185,7 +187,7 @@ const LeftNavBar = memo(() => {
         tryLogout();
         break;
       case 4:
-        setPersonal(true);
+        setPersonalTab("memory"); setPersonal(true);
         break;
       default:
         break;
@@ -302,12 +304,16 @@ const LeftNavBar = memo(() => {
         {NavList.map((nav) => (
           <NavItem nav={nav} key={nav.path} />
         ))}
-        {window.electronAPI && researchMode && <button type="button" className="desktop-model-settings" onClick={() => setLabSettings(true)} aria-label="模型设置"><SettingOutlined /><span>模型设置</span></button>}
+        {researchMode && <button type="button" className="desktop-nav-item mb-3 flex h-[52px] w-12 flex-col items-center justify-center rounded-md" aria-label="定时任务" onClick={() => { setPersonalTab("followups"); setPersonal(true); }}><ClockCircleOutlined /><span className="mt-1 text-xs">定时任务</span></button>}
+        {window.electronAPI && <div className="desktop-navigation-bottom">
+          {researchMode && <button type="button" className="desktop-model-settings" onClick={() => setLabSettings(true)} aria-label="模型设置"><SettingOutlined /><span>模型设置</span></button>}
+          <DesktopUpdateButton />
+        </div>}
       </div>
       <PersonalSettings ref={personalSettingsRef} />
       <About ref={aboutRef} />
       <LabSettings open={labSettings} onClose={() => setLabSettings(false)} />
-      {researchMode && <PersonalAssistantPanel open={personal} onClose={() => setPersonal(false)} />}
+      {researchMode && <PersonalAssistantPanel open={personal} initialTab={personalTab} onClose={() => setPersonal(false)} />}
     </Sider>
   );
 });

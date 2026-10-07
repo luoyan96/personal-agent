@@ -2,7 +2,41 @@
 
 更新日期：2026-10-07（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新桌面源码：Windows 0.3.0
+## 最新开发：重复提醒与定时 Agent 任务（本地，待云端部署）
+
+`feature/recurring-agent-tasks` 基于 Windows0.3.2 发布源码 `6448412cb2401082a3cf86a1077604fb69df44b4`，候选桌面0.4.0。一次 / 每天 / 每周多星期，提醒或指定自己的站内 Agent 执行；聊天明确时间指令可保存，左侧“定时任务”可查看、修改、暂停、恢复、结束及分页运行记录。使用现有模型设置和每次有界预算，结果沿既有权威聊天 / OpenIM 投递；客户端关闭后由持续运行的云 worker 调度。详见[定时任务交接](development/recurring-agent-tasks.md)。
+
+共享 contract0.20 / chat1.9 / 显式019新增运行记录表，旧018数据与checksum保留；发生记录 / 消息 / turn / 下次时间同事务、唯一发生去重。逾期多次合并一次，恢复只取未来时点；修改 / 暂停 / 取消栅栏旧运行，失败 / 不确定用量不自动重复调用。缺模型或聊天忙时记录跳过，不打断已有聊天；无新增通用工具、联网能力、后台本地目录读取或系统推送。
+
+后台8项新增专项通过，完整工程44文件 / 546项通过。首次旧迁移 / 契约 fixture 失败保留，版本期望同步后通过；生产入口019断言修正后2项通过，B0真实进程与Web生产隔离通过。桌面renderer类型、13项实际生产导航 / 表单 / 记录交互、Windows0.4.0 NSIS打包通过。隔离Electron22 / Chromium108验收修改 / 暂停 / 恢复 / 取消、失败保留文字、最小窗口不横溢出，pageErrors0；截图已查看，开发Router / CSP / Antd警告及故意503保留，不称console无输出。证据 `.runtime/recurring-agent-tasks-20261007`，模型 / SDK / 账号均合成，未使用用户 Key 或资料。候选安装文件另存 `D:/deepseek-agent/PersonalAgent-Windows/0.4.0`，尚未安装到用户窗口。
+
+**云端仍按下文既有 API / worker94b26d1、contract0.19 / chat1.8 / schema18 记录理解；019尚未在生产执行。** 这批需要成对升级 API / worker，匹配后端可用后再发布桌面更新，不能把 GitHub 源码或本地安装包当成已上线。先前浏览器维护会话读取被自动审批拒绝，未绕过；生产接入仍需明确授权与有效维护会话。
+
+固定候选源码 `f91b9d552c4f786b61434718dea114187ca9e1d2` 已推送[PR18](https://github.com/luoyan96/personal-agent/pull/18)。Windows0.4.0草稿发布已上传四资产，GitHub实际大小 / SHA256摘要全部与本机一致；安装包86290794字节、SHA256 `3d522eacce1a9242db2b84b6c02db16c858d1bce65277d80497759f63a2e6a2c`。草稿不触发公开自动更新，最新公开仍0.3.2；没有替用户安装 / 重启。
+
+候选[Actions37628593268](https://github.com/luoyan96/personal-agent/actions/runs/37628593268)的Ubuntu22.19 / 24完整CI实际通过，Windows545项通过、唯一旧001→019真实磁盘迁移测试超过框架5秒。只将该项test harness期限设为20秒，所有旧行 / checksum / 重复迁移断言及生产时限不变；窄迁移测试实际通过。失败日志保留，未绕过main门禁；后续同一运行源码的GitHub检查按实际结果读取。此修正只有测试 / 文档，运行代码与f91b9d5候选相同，无需重复桌面打包。
+
+## 最新桌面源码：Windows 0.3.2 发送恢复
+
+`fix/desktop-send-recovery`基于0.3.1发布源码e1d38de。普通API请求完整期限30秒（涵盖CSRF会话准备、连接与响应正文），附件读取保留120秒；SDK文字发送也有有界等待。超时 / 停止等待保留原文、请求体、原幂等键或nativeMessage；“重试原消息”核对原提交结果，后续句子等待前一条确认。切换联系人立即取消等待并暂停原记录，旧请求不能锁住新会话或用迟到结果删除暂停记录。恢复卡独立放在编辑器上方，错误和操作不会被遮住。
+
+原生代理增加120秒完整期限和上游正文中断处理；已开始的正文断开时关闭响应，不拼接错误JSON；无响应头时返回带requestId的有效错误信封。原生日志只含方法、原因、状态、耗时、系统错误码和随机requestId，不记URL / 文字 / Cookie / Header / 凭据；固定HTTPS / 来源约束不变。
+
+renderer / Electron类型、6项生产API合成传输、4项生产代理真实本地HTTP / 合成HTTPS、16项真实Electron22 / Chromium108生产组件交互通过，pageErrors0。1280×820 / minimum1024×726卡片与编辑器无遮挡，截图已查看。Git外`.runtime/desktop-send-recovery-20261007`保存检查、截图及失败准备记录：CJS默认导入设置、fixture注释 / 虚拟模块缓存 / 宽路由误拦源码。真实云端和已运行用户桌面代理无凭据检查ready200 / contract0.19、session401、无效请求400，均快速响应；不证明用户那次失败的云端原因，不替代真实模型回复验收。浏览器维护页面读取被自动审批拒绝，云日志诊断等待明确授权，未绕过拒绝；未用用户Cookie / Key或重启其软件。
+
+仅客户端 / Electron修改，无数据库 / API / worker部署变更。现有sessionStorage仅当前窗口刷新恢复，未新增跨软件重启待发恢复；升级前应复制现有未确认需求。准确发布源码 / 安装文件以v0.3.2标签、Release及Git外发布收据为准。既有共享Windows基础CI存在API文件解析与注册超时，本批不放宽生产期限、不绕过main合并门禁。
+
+实际Windows NSIS打包、更新资产一致性门禁与隔离profile的包启动通过；启动检查在网络受限环境记录EACCES传输元数据，证明界面 / 主进程 / SDK初始化与失败日志，不证明云端连接。安装包86286669字节，SHA256 `c0ecd187b8a5e84f37a8f652a99089c7a55d582a3874b6cf43e41a29fb38d6c2`；本机`D:/deepseek-agent/PersonalAgent-Windows/0.3.2/ResearchWeChat_0.3.2.exe`。exe / blockmap / latest.yml与固定公开GitHub更新源一致；实际安装和用户需求重发由用户自行操作。
+
+## 上一版桌面源码：Windows 0.3.1 左下角更新入口
+
+用户要求类似ChatGPT的窗口左下角更新按钮。`feature/desktop-update-button`在既有原生electron-updater状态机上增加固定动作的主frame桥、订阅与初始快照；发现新版才显示“更新”，点击下载后显示百分比，库确认候选下载完成后显示“重启更新”。安装仍经过原生保存提示，稍后不会退出时安装。自动检测保持启动15秒、每6小时和唤醒，但不再弹出打断聊天的自动提示；托盘手动检查保留。刷新 / 切换页面读取当前原生状态，不重复下载；失败可重试。旧版本需要先通过原托盘入口或手动安装升级一次到0.3.1，之后才有新按钮。
+
+renderer / Electron类型、既有5组更新控制器检查、真实Electron22 / Chromium108下17项定向更新交互、实际NSIS打包与更新资产一致性门禁通过。交互检查使用真实生产React导航 / 主进程 / IPC / preload方法 / 控制器，发布端口、安装版资格与OS确认响应明确合成；验收程序未真实下载或执行安装器，不称已安装旧版本重启升级通过。新桥拒绝另一窗口、未下载完成、过时版本的安装请求，候选来源仍固定公开GitHub，无自定URL / 路径 / Token或TLS放宽。
+
+安装包86287581字节，SHA256 `bd7702604c996910baecef8d68c28f12b29a001486870aec6284637d2c945d89`，本机`D:/deepseek-agent/PersonalAgent-Windows/0.3.1/ResearchWeChat_0.3.1.exe`；发布源码以GitHub `v0.3.1`标签和Release为准。Git外`.runtime/desktop-update-button-20261007`保存类型、交互、截图、构建及发布收据；首次QA esbuild依赖解析、截图准备requests数组遗漏与原生进程清理权限失败均保留记录，最终截图使用有效合成HTTP结构。用户正常客户端和账号未操作；服务端 / 云部署 / 数据库均未变。
+
+## 上一版桌面源码：Windows 0.3.0
 
 用户要求前端采用6.1 sol / high改进Windows桌面聊天界面。分支`feature/desktop-agent-interface`完成微信式三栏布局、会话真实名字筛选、模型设置入口、统一人与Agent通讯录样式、直接媒体工具栏、生成中继续输入、流式消息和可展开的文件任务卡。当前文件 / 字符范围、分析步骤、停止与已保存报告来自既有真实状态；群聊保留发送者署名。最终汇总步骤已纳入completed计数，原生报告错误去除IPC技术前缀。
 

@@ -1,4 +1,5 @@
 import { Platform } from "@openim/wasm-client-sdk";
+import type { DesktopUpdateSnapshot, DesktopUpdateAction } from "./desktopUpdates";
 import type { DesktopReportArtifact, DesktopReportScope } from "./desktopWork";
 import type {
   LocalFolderManifest,
@@ -9,6 +10,9 @@ import type {
 export type DataPath = "public" | "emojiData" | "sdkResources" | "logsPath";
 
 export interface IElectronAPI {
+  getDesktopUpdateState: () => Promise<DesktopUpdateSnapshot>;
+  onDesktopUpdateState: (callback: (state: DesktopUpdateSnapshot) => void) => () => void;
+  desktopUpdateAction: (action: DesktopUpdateAction, version?: string) => Promise<DesktopUpdateSnapshot>;
   createDesktopReport: (scope: DesktopReportScope, title: string, markdown: string, sources: string[]) => Promise<DesktopReportArtifact>;
   listDesktopReports: (scope: DesktopReportScope) => Promise<DesktopReportArtifact[]>;
   openDesktopReport: (scope: DesktopReportScope, id: string) => Promise<void>;

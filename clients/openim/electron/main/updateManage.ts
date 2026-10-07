@@ -1,14 +1,14 @@
-import { app, BrowserWindow, dialog, powerMonitor, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, powerMonitor, shell, type IpcMainInvokeEvent } from "electron";
 import { autoUpdater } from "electron-updater";
 import fs from "node:fs";
 import path from "node:path";
 import { DesktopUpdates } from "../utils/desktopUpdates";
-import { getWebContents, showWindow } from "./windowManage";
+import { getWebContents, getResearchServiceStatus, showWindow } from "./windowManage";
+import type { DesktopUpdateSnapshot } from "../../src/types/desktopUpdates";
 
 const releasePage = "https://github.com/luoyan96/personal-agent/releases/latest";
 let updates: DesktopUpdates | undefined;
 let promptBusy = false;
-let lastPromptVersion = "";
 let starting = false;
 function mainWindow() {
   const contents = getWebContents();
@@ -25,21 +25,61 @@ function installedWindows() {
     )
   );
 }
+function snapshot(): DesktopUpdateSnapshot {
+  return {
+    ...(updates?.state || { phase: "idle", currentVersion: app.getVersion() }),
+    supported: installedWindows(),
+  };
+}
+
+// Only the bundled main-frame UI can observe or act on the fixed release feed.
+function authority(event: IpcMainInvokeEvent, action = false) {
+  const contents = getWebContents();
+  const expected = getResearchServiceStatus().rendererOrigin;
+  if (
+    !expected || contents.isDestroyed() || event.sender !== contents ||
+    event.senderFrame !== contents.mainFrame || (action && contents.isLoadingMainFrame())
+  ) throw new Error("仅桌面主窗口可管理更新");
+  const url = new URL(event.senderFrame.url);
+  if (url.origin !== expected || new URL(contents.getURL()).origin !== expected)
+    throw new Error("仅桌面主窗口可管理更新");
+  return `${contents.id}:${event.senderFrame.processId}:${event.senderFrame.routingId}`;
+}
+
+export function registerDesktopUpdateBridge() {
+  ipcMain.handle("desktop-update-state", (event) => {
+    authority(event);
+    return snapshot();
+  });
+  ipcMain.handle("desktop-update-action", async (event, action: unknown, version: unknown) => {
+    const owner = authority(event, true);
+    if (!installedWindows() || !updates) throw new Error("更新需要 Windows 安装版");
+    if (action === "check") {
+      await updates.check();
+    } else if (action === "download") {
+      if (updates.state.phase !== "available" || version !== updates.state.version)
+        return snapshot();
+      await updates.download();
+    } else if (action === "install") {
+      if (updates.state.phase !== "downloaded" || version !== updates.state.version)
+        return snapshot();
+      // Keep the native confirmation so a web script cannot silently restart the app.
+      await present(() => authority(event, true) === owner);
+    } else throw new Error("不支持此更新操作");
+    if (authority(event, true) !== owner) throw new Error("桌面窗口已改变，请重试");
+    return snapshot();
+  });
+}
 async function message(options: Electron.MessageBoxOptions) {
   const win = mainWindow();
   return win ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options);
 }
-async function present(manual: boolean) {
+async function present(stillAllowed: () => boolean = () => true) {
   if (!updates || promptBusy) return;
   const state = { ...updates.state };
-  const win = mainWindow();
-  if (!manual && (!win?.isVisible() || !win.isFocused())) return;
-  if (!manual && state.version === lastPromptVersion) return;
-  if (!manual && !["available", "downloaded"].includes(state.phase)) return;
   promptBusy = true;
   try {
     if (state.phase === "available") {
-      lastPromptVersion = state.version!;
       const result = await message({
         type: "info",
         title: "发现新版本",
@@ -60,7 +100,7 @@ async function present(manual: boolean) {
       )
         return;
       await updates.download();
-      await present(true);
+      await present();
       return;
     }
     if (state.phase === "downloaded") {
@@ -77,6 +117,7 @@ async function present(manual: boolean) {
       });
       if (
         result.response === 0 &&
+        stillAllowed() &&
         updates.state.phase === "downloaded" &&
         updates.state.version === state.version
       )
@@ -127,7 +168,7 @@ async function performDesktopUpdateCheck(manual: boolean) {
   if (!updates) return;
   if (manual) showWindow();
   await updates.check();
-  await present(manual);
+  if (manual) await present();
 }
 export async function checkDesktopUpdates(manual = true) {
   try {
@@ -140,8 +181,8 @@ export function initDesktopUpdates() {
   if (starting || process.env.OPENIM_SMOKE_TEST === "1") return;
   if (!installedWindows()) return;
   starting = true;
-  // Public release feed is fixed by app-update.yml; never accept a renderer URL,
-  // renderer download/install IPC, GitHub token or a relaxed certificate check.
+  // The renderer can request only fixed actions for the verified current candidate;
+  // it cannot choose a feed URL, executable path, GitHub token or TLS policy.
   updates = new DesktopUpdates(
     autoUpdater,
     app.getVersion(),
@@ -150,6 +191,9 @@ export function initDesktopUpdates() {
       win?.setProgressBar(
         state.phase === "downloading" ? (state.percent || 0) / 100 : -1,
       );
+      const contents = win?.webContents;
+      if (contents && !contents.isDestroyed())
+        contents.send("desktop-update-state-changed", snapshot());
     },
     () => {
       global.forceQuit = true;
@@ -158,9 +202,6 @@ export function initDesktopUpdates() {
       global.forceQuit = false;
     },
   );
-  mainWindow()?.on("focus", () => {
-    void present(false).catch(() => {});
-  });
   const first = setTimeout(() => void checkDesktopUpdates(false), 15000);
   const periodic = setInterval(
     () => void checkDesktopUpdates(false),

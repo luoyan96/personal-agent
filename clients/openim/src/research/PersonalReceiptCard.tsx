@@ -40,7 +40,7 @@ export function PersonalReceiptCard({ turn, compact = false }: { turn: AgentTurn
       <strong>{followup.operation === "created" ? "跟进已安排" : "请补充提醒时间"}</strong>
       {followup.dueAt && followup.timeZone && <p>{personalDueLabel(followup.dueAt, followup.timeZone)}</p>}
       <p className="text-xs text-slate-600">{followup.operation === "clarify" ? followup.question : "到期由服务端处理并写回聊天；当前不表示设备已收到通知。"}</p>
-      {followup.followupId && <Button size="small" onClick={() => setPanel("followups")}>查看跟进</Button>}
+      {followup.followupId && <Button size="small" onClick={() => setPanel("followups")}>查看定时任务</Button>}
     </div>}
     {arrangement?.kind === "delegate" && <DelegateCard receipt={arrangement} />}
     {arrangement?.kind === "collaborate" && <p className="rounded-lg border p-3">已保存协作建议。请查看本条消息的协作建议并确认；成员加入、任务承接和执行仍需分别完成。</p>}
