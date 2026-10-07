@@ -71,7 +71,10 @@ export async function researchApi<K extends RouteName>(
   }
   let response: Response;
   try {
-    response = await fetch(path + (query.size ? `?${query}` : ""), {
+    // Electron 22 / Chromium 108 has no URLSearchParams.size. Check the
+    // serialized query so desktop requests retain pagination and filters.
+    const queryString = query.toString();
+    response = await fetch(path + (queryString ? `?${queryString}` : ""), {
       method: route.method,
       credentials: "same-origin",
       headers,
