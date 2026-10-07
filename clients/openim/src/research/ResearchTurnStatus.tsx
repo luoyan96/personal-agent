@@ -130,7 +130,6 @@ export function ResearchTurnStatus({
   const facts = (
     <div className="space-y-2 pt-2 text-slate-700" data-ai-turn-facts>
       <p>请求状态：{statusLabels[turn.status]}</p>
-      {turn.failure && <p className="break-all">失败代码：{turn.failure}</p>}
       <p>
         本次预算：上下文与回复合计 {turn.budget.maxTokens} Token，最多{" "}
         {turn.budget.maxSeconds} 秒。
@@ -149,13 +148,11 @@ export function ResearchTurnStatus({
           <AgentFileReadSummary read={read} status={turn.status} />
         </div>
       )}
-      <p className="break-all">
-        请求编号：{turn.id} · 版本 {turn.version}
-      </p>
-      <p className="break-all">
-        技术状态：{turn.status}
-        {turn.failure ? ` · ${turn.failure}` : ""}
-      </p>
+      <details className="text-xs text-slate-500">
+        <summary className="cursor-pointer">技术信息</summary>
+        <p className="break-all">请求编号：{turn.id} · 版本 {turn.version}</p>
+        <p className="break-all">技术状态：{turn.status}{turn.failure ? ` · ${turn.failure}` : ""}</p>
+      </details>
     </div>
   );
   const feedback = (
@@ -219,7 +216,7 @@ export function ResearchTurnStatus({
         </>
       )}
       <Modal
-        title="AI 请求详情"
+        title="回复详情"
         open={compact && detailsOpen}
         onCancel={() => setDetailsOpen(false)}
         footer={

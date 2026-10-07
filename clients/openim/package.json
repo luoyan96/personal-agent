@@ -1,6 +1,6 @@
 {
   "name": "research-wechat-openim",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "main": "dist-electron/main/bootstrap.js",
   "description": "科研微信 · OpenIM Research Client",
   "author": "blooming",
@@ -31,6 +31,7 @@
     "typecheck": "tsc --noEmit",
     "test:service": "node --test tests/research-service.test.mjs",
     "test:local-folder": "node --test tests/local-folder.test.mjs",
+    "test:desktop-work": "node --test tests/desktop-work.test.mjs tests/desktop-flow.test.mjs",
     "test:updates": "node --test tests/desktop-updates.test.mjs",
     "test:auth": "node --test tests/auth-input.test.mjs",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx src",

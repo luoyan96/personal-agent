@@ -295,13 +295,15 @@ export class LocalFolderStore {
     if (
       !request ||
       typeof request !== "object" ||
-      Object.keys(request).some((key) => !["grantId", "fileIds"].includes(key)) ||
+      Object.keys(request).some((key) => !["grantId", "fileIds", "mode"].includes(key)) ||
+      (request.mode !== undefined && request.mode !== "workspace") ||
       typeof request.grantId !== "string" ||
       !Array.isArray(request.fileIds) ||
       request.fileIds.length < 1 ||
       request.fileIds.length > 10 ||
       request.fileIds.some((id) => typeof id !== "string" || id.length > 100) ||
-      new Set(request.fileIds).size !== request.fileIds.length
+      new Set(request.fileIds).size !== request.fileIds.length ||
+      (request.mode === "workspace" && request.fileIds.length !== 1)
     )
       localFolderFail("LOCAL_FOLDER_INVALID_SELECTION");
     const grant = this.grants.get(request.grantId);
@@ -371,7 +373,9 @@ export class LocalFolderStore {
         if (!content.text.trim()) localFolderFail("LOCAL_FOLDER_NO_TEXT");
         selected.push({ ...entry.file, ...content });
         // All source text and path headers count; no file or tail is silently cut.
-        if (Buffer.byteLength(JSON.stringify(this.markdown(selected)), "utf8") > 52000)
+        if ((request.mode === "workspace" && content.text.length > 200000) ||
+          Buffer.byteLength(JSON.stringify(this.markdown(selected)), "utf8") >
+            (request.mode === "workspace" ? 512000 : 52000))
           localFolderFail("LOCAL_FOLDER_TOO_LARGE");
       }
       // Recheck the whole selection after slower PDF extraction, not just the last

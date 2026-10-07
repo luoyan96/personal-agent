@@ -130,8 +130,8 @@ const ChatHeader = () => {
                     ? `@${contact.username}`
                     : "真人"
                   : isCoordinator
-                  ? "你的 AI 联系人 · 可选需求与协作"
-                  : "AI 联系人"}
+                  ? "你的个人助理 · 聊天、文件与协作"
+                  : contact.profile.introduction || "AI 联系人 · 可以直接聊天"}
               </div>
             )}
             {isGroupSession && currentUserIsInGroup && (

@@ -1,0 +1,21 @@
+.personal-agent-desktop {
+  --primary: #3878d8;
+  --primary-active: #e8effa;
+  --base-black: #243041;
+  --sub-text: #7b8798;
+  --top-search-bar: #f0f2f5;
+  --chat-bubble: #fff;
+  --chat-bubble-sender: #dfecff;
+  background: #f5f6f8;
+
+  .desktop-titlebar { border-bottom: 1px solid #e1e5eb; height: 48px; min-height: 48px; position: relative; }
+  .desktop-app-name { position: absolute; left: 20px; font-weight: 650; font-size: 13px; color: #5e6b7d; letter-spacing: .15px; }
+  .desktop-contact-search { display: flex; align-items: center; gap: 8px; width: 250px; height: 30px; padding: 0 12px; border: 1px solid #e0e5ec; border-radius: 7px; background: #fafbfc; color: #8290a3; font-size: 12px; }
+  .desktop-contact-search:hover { border-color: #c0cee2; }
+  .desktop-titlebar button[aria-label="新建与添加"] { color: #63748b; margin-left: 12px; font-size: 18px; }
+  .desktop-titlebar img[alt^="win_"] { filter: brightness(.4); }
+  .desktop-titlebar button:focus-visible { outline-color: #3878d8; }
+  .ant-layout-header { background: #fafbfc; }
+  #chat-container > .ant-layout-header { padding-top: 4px; padding-bottom: 4px; }
+  #chat-list { padding-left: 8px; padding-right: 8px; }
+}

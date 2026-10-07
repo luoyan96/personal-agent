@@ -12,8 +12,9 @@ import {
   type AgentChatOperation,
 } from "./useAgentChatOperation";
 import type { SelectedFileKind } from "./useScopedFileSender";
+import { activeDesktopWork, runDesktopWork, useDesktopWork } from "./desktop-work";
+import DesktopWorkCard from "./DesktopWorkCard";
 
-const utf8Size = (value: string) => new TextEncoder().encode(value).byteLength;
 const readableError = (error: unknown) => {
   const text =
     error instanceof Error ? error.message : "文件夹读取失败，请重新选择后重试。";
@@ -92,6 +93,11 @@ export default function LocalFolderAction({
   const [busy, setBusy] = useState<"pick" | "preview" | "send">();
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [readCount, setReadCount] = useState(0);
+  const jobs = useDesktopWork((s) => s.jobs);
+  const workActive = jobs.some((job) => activeDesktopWork(job) &&
+    job.scope.actorId === research.actor?.member.id &&
+    job.scope.conversationId === mapping?.researchConversationId);
   const release = (api: IElectronAPI, id?: string) => {
     if (id) void api.releaseLocalFolder(id).catch(() => {});
   };
@@ -156,7 +162,7 @@ export default function LocalFolderAction({
   }, [scope, eligible]);
 
   const choose = async () => {
-    if (!eligible || !bridge || busyRef.current) return;
+    if (!eligible || !bridge || busyRef.current || workActive) return;
     clearLifecycle();
     const entry = {
       epoch: epoch.current,
@@ -209,6 +215,7 @@ export default function LocalFolderAction({
       const result = await entry.bridge.readLocalFolderSelection({
         grantId: entry.grant,
         fileIds: [id],
+        mode: "workspace",
       });
       if (current(entry) && sequence === request.current) {
         if (
@@ -245,61 +252,28 @@ export default function LocalFolderAction({
     busyRef.current = true;
     setBusy("send");
     setError("");
+    setReadCount(0);
     try {
-      // Re-read instead of sending a stale preview; the bridge verifies file identities.
-      const result = await entry.bridge.readLocalFolderSelection({
-        grantId: entry.grant,
-        fileIds: ids,
-      });
-      if (!current(entry)) return;
-      if (
-        result.grantId !== entry.grant ||
-        result.files.length !== ids.length ||
-        result.files.some((file) => !ids.includes(file.id)) ||
-        new Set(result.files.map((file) => file.id)).size !== ids.length
-      )
-        throw new Error("读取结果与所选文件不一致，请重新选择文件夹。");
-      const coverage = result.files
-        .map(
-          (file) =>
-            `- ${file.relativePath}：${
-              file.kind === "text" ? "文本内容" : "全部可提取文字"
-            }${file.pageCount === undefined ? "" : `（共${file.pageCount}页）`}，${
-              file.text.length
-            }字符`,
-        )
-        .join("\n");
-      const markdown = `# 本地文件夹资料\n\n## 本次资料范围\n已选择 ${
-        result.files.length
-      } 个文件；仅包含下列文件的文字，不包含未选文件、图片或无法提取的内容。未选择 ${
-        manifest.files.length - ids.length
-      } 个可读取文件，扫描排除 ${manifest.scan.excludedEntries} 项${
-        manifest.scan.truncated ? "；文件夹扫描达到上限，列表并非完整目录" : ""
-      }。\n${coverage}\n\n${result.markdown}`;
-      const bytes =
-          utf8Size(JSON.stringify(markdown)) + utf8Size(JSON.stringify(instruction)),
-        limit = Math.min(52000, manifest.limits.maxMergedBytes);
-      if (bytes > limit)
-        throw new Error(
-          `任务和所选文字合计 ${bytes} 字节，超过 ${limit} 字节。请减少文件或缩短任务；内容不会被自动裁剪。`,
-        );
-      const filename = `${
-        manifest.folderName.replace(/[\\/:*?"<>|\x00-\x1f]/g, "_").slice(0, 80) ||
-        "本地文件夹"
-      }-选中文件.md`;
-      const sent = await sendFile(
-        new File([markdown], filename, { type: "text/markdown" }),
-        "file",
-        () => current(entry),
-        instruction,
-      );
-      if (!current(entry)) return;
-      if (!sent)
-        throw new Error(
-          "本次未确认发送成功，选择和任务已保留。请先核对聊天中的附件，再明确重试，避免重复发送。",
-        );
+      const files: LocalFolderSelection["files"] = [];
+      // Each file has its own extraction limit. All selected sources are read before
+      // dispatch, so a failed local read never starts a half-selected model task.
+      for (const id of ids) {
+        const result = await entry.bridge.readLocalFolderSelection({ grantId: entry.grant, fileIds: [id], mode: "workspace" });
+        if (!current(entry)) return;
+        if (result.grantId !== entry.grant || result.files.length !== 1 || result.files[0].id !== id)
+          throw new Error("读取结果与所选文件不一致，请重新选择文件夹。");
+        files.push(result.files[0]);
+        setReadCount(files.length);
+      }
+      if (!current(entry) || !mapping || !research.actor) return;
+      const work = runDesktopWork({ imID: conversation!.conversationID,
+        scope: { actorId: research.actor.member.id, conversationId: mapping.researchConversationId },
+        folderName: manifest.folderName, files, task: instruction });
+      // The desktop runner retains its own actor and target-chat binding, so
+      // choosing another chat does not transfer source text to that new contact.
+      void work.catch((cause) => setNotice(readableError(cause)));
       close();
-      setNotice("合并附件已发送；Agent读取与回复状态见聊天。尚未确认模型已完成阅读。");
+      setNotice("文件任务已开始，可继续聊天，在文件工作区查看进度和报告。");
     } catch (cause) {
       if (current(entry)) setError(readableError(cause));
     } finally {
@@ -321,7 +295,8 @@ export default function LocalFolderAction({
             : "ml-1 flex h-8 items-center gap-1 rounded px-2 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
         }
         aria-label="本地文件夹"
-        title="选择本地文件夹并发送选中文字"
+        title={workActive ? "此Agent正在处理文件任务" : "选择文件 → 逐项分析 → 保存报告"}
+        disabled={workActive}
         onClick={() => void choose()}
       >
         <FolderOpenOutlined className="text-lg" />
@@ -337,7 +312,7 @@ export default function LocalFolderAction({
         </span>
       )}
       <Modal
-        title="选择文件夹内容"
+        title="让 Agent 处理本地文件"
         open={open}
         onCancel={close}
         width={900}
@@ -351,14 +326,14 @@ export default function LocalFolderAction({
               disabled={!!busy || !selected.length || !task.trim()}
               onClick={() => void send()}
             >
-              发送所选内容给Agent
+              {busy === "send" ? `读取文件 ${readCount}/${selected.length}` : "开始分析并生成报告"}
             </Button>
           </div>
         }
         styles={{ body: { maxHeight: "70vh", overflowY: "auto" } }}
       >
         <p className="mb-3 text-sm text-slate-600">
-          预览在本机进行。确认后，所选文字和任务将作为一个附件发送到当前科研服务，并交给此Agent使用的模型。不会修改本地文件。
+          先在本机预览。开始后，所选文字交给此 Agent 的在线模型逐项分析、汇总，报告保存在这台电脑。源文件保持原样。
         </p>
         {error && <Alert className="mb-3" type="error" showIcon message={error} />}
         {busy === "pick" ? (
@@ -482,15 +457,16 @@ export default function LocalFolderAction({
               placeholder="例如：比较选中的研究笔记，列出主要结论与待核对的问题"
             />
             <p className="mt-1 text-xs text-slate-600">
-              任务、文件路径和正文的传输文字总计不超过{" "}
-              {Math.min(52000, manifest.limits.maxMergedBytes)}{" "}
-              字节；超过时请减少选择，系统不会悄悄截断。
+              最多10个文件，每个最多20万字符 / 512KB提取文字；长文件自动分段，最多40步分析后汇总，会调用在线模型。扫描PDF和图片暂不支持。
             </p>
           </>
         ) : (
           <Button onClick={() => void choose()}>重新选择文件夹</Button>
         )}
       </Modal>
+      {mapping && research.actor && typeof bridge?.listDesktopReports === "function" &&
+        <DesktopWorkCard key={`${research.generation}:${mapping.researchConversationId}`}
+          scope={{ actorId: research.actor.member.id, conversationId: mapping.researchConversationId }} />}
     </>
   );
 }

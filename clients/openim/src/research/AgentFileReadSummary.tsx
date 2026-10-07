@@ -59,28 +59,19 @@ export function AgentFileReadSummary({
       ? "本次回复未完成；不能确认已阅读全文"
       : "本轮使用范围尚未确认";
   return (
-    <div
-      className="mt-2 min-w-0 break-words text-xs leading-5 text-slate-600"
+    <details
+      className="mt-3 min-w-0 break-words border-t border-slate-200/70 pt-2 text-xs leading-5 text-slate-600"
       data-agent-file-read-summary
     >
-      <p className="truncate" title={metadata.filename}>
-        {metadata.filename}
-      </p>
-      <p>
-        附件已解析：{metadata.pageCount} 页 · {metadata.characterCount} 字符
-      </p>
-      <p
-        className={`font-medium ${
-          succeeded && hasRanges
-            ? coverage?.complete
-              ? "text-green-700"
-              : "text-amber-800"
-            : "text-slate-700"
-        }`}
-        data-agent-file-coverage
-      >
-        {headline}
-      </p>
+      <summary className="cursor-pointer select-none" title={metadata.filename}>
+        <span
+          className={`font-medium ${succeeded && hasRanges ? coverage?.complete ? "text-slate-600" : "text-amber-800" : "text-slate-700"}`}
+          data-agent-file-coverage
+        >{headline}</span>
+        <span className="ml-2 text-slate-500">阅读详情</span>
+      </summary>
+      <p className="mt-2 break-all font-medium">{metadata.filename}</p>
+      <p>附件可提取文字：{metadata.pageCount} 页 · {metadata.characterCount} 字符</p>
       {hasRanges && coverage && (
         <p>
           {succeeded ? "本次使用" : "已选取"}：第 {coverage.pages.join("、")} 页 ·{" "}
@@ -88,8 +79,7 @@ export function AgentFileReadSummary({
         </p>
       )}
       {hasRanges && coverage && (
-        <details>
-          <summary className="cursor-pointer">查看使用页码与文字范围</summary>
+        <div className="mt-1">
           {succeeded && !coverage.complete && (
             <p>本次未使用完整文件；回答依据以下片段，不代表通读每页。</p>
           )}
@@ -100,8 +90,8 @@ export function AgentFileReadSummary({
             </p>
           ))}
           <p>范围以可提取文字的字符位置计；不包含扫描图片中的内容。</p>
-        </details>
+        </div>
       )}
-    </div>
+    </details>
   );
 }

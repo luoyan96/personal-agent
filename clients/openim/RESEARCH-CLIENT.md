@@ -1,5 +1,7 @@
 # 科研微信完整 OpenIM 客户端
 
+桌面新版 **0.2.0** 改为加载安装包内界面，通过本机受限API代理连接已有科研服务；新增分段文件任务、分层汇总和可打开的本机Markdown/HTML报告。具体范围、构建方法与版本交接见[桌面文件工作区](../../docs/development/desktop-agent-workspace.md)。下方线上网页历史不等于新版桌面界面。
+
 2026-10-07 10:24:26北京时间当前发布：客户端 `8b42d35a9e47b5159bfd19e5ce4155508d53f7e0`，API / worker `94b26d1d4871c45ace12a86f93d4c19cce377c4d`，contract0.19 / chat1.8 / schema18无迁移。Windows0.1.0及本地文件夹入口静态发布，公网精确首页、八服务与后台版本检查通过；上一日真实5页全文与13页合成PDF上传 / 解析 / 模型 / IM链路证据保留各自基线。准确证据与恢复见[统一状态](../../docs/current-state.md)。
 
 此目录保留 OpenIM `62d7ca7` 的完整 React/Electron 工程，来源与修改位置见 [ORIGIN.md](./ORIGIN.md)。原 README 和许可原文保留；科研功能说明以本文件为准。

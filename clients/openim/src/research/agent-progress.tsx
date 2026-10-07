@@ -4,6 +4,7 @@ import type { AgentTurn, AgentTurnProgress } from "@research-agent-platform/cont
 import { useConversationStore } from "@/store";
 import { researchApi } from "./api";
 import { useResearchStore } from "./store";
+import SafeMessageMarkdown from "./SafeMessageMarkdown";
 
 type Entry = {
   generation: number;
@@ -246,7 +247,7 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
                   ? "回复已生成 · 等待消息同步"
                   : "本次回复已停止"}
               </p>
-              {p!.text && <p className="whitespace-pre-wrap break-words">{p!.text}</p>}
+              {p!.text && <SafeMessageMarkdown text={p!.text} />}
             </>
           )}
         </div>

@@ -18,7 +18,7 @@ export type LocalFolderSelection = {
   markdown: string;
   utf8Bytes: number;
 };
-export type LocalFolderReadRequest = { grantId: string; fileIds: string[] };
+export type LocalFolderReadRequest = { grantId: string; fileIds: string[]; mode?: "workspace" };
 export type LocalFolderErrorCode =
   | "LOCAL_FOLDER_FORBIDDEN"
   | "LOCAL_FOLDER_REVOKED"

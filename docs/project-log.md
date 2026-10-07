@@ -1,5 +1,16 @@
 # 项目进展日志
 
+## 2026-10-07：Windows桌面0.2.0与文件工作区
+
+按用户“集中做好桌面端、先不管网页手机、不反复扩测”的要求，完成本批客户端/Electron改造，独立分支`feature/desktop-agent-workspace`；安装包发布源码以`v0.2.0`标签为准。说明见[桌面文件工作区](development/desktop-agent-workspace.md)。
+
+- 桌面携带自己的React界面，通过精确本机origin/固定HTTPS API代理连接已有后端；服务会话Cookie按服务域名区分。默认窗口1280×820，标题栏去除无功能空白框、提供联系人入口和Agent创建/接入；头像文字缩短，聊天安全Markdown排版，工具栏直接显示，输入区与技术/阅读回执收紧。
+- 所选文件先全部本机读取成功，再逐段提交既有Agent附件接口。每段12000字符、最多40步源资料分析，必要时分层汇总。切换聊天继续原目标，换身份停止后续；模型状态/实际段落范围来自服务，失败不伪造报告。退出程序后本地后续编排不恢复，已提交聊天/已保存报告保留。
+- 原生报告桥保存Markdown/转义HTML，账号和聊天分区、固定自身生成路径、checksum及重建模板核验。可列表/打开/定位。源文件保持原样，支持文字PDF/DOCX及UTF-8文字；工作区单文件提取20万字符/512KB，原合并52KB模式保留。无OCR、通用Shell/浏览器/MCP能力。
+- 客户端与Electron类型检查通过；最终集中专项3项通过：本机Origin/代理/会话隔离、真实长文字尾段→合成模型分步→持久报告、真实报告FS隔离/转义/篡改/路径。实际86MB Windows安装包打包成功。原生程序7项核心检查通过：本地界面/隔离preload、生产HTTPS公开健康、原生PDF/DOCX列表及完整提取、真实报告保存/列表/自身HTML打开、renderer未捕获异常0；模型编排测试为合成响应，不宣称真实模型质量验收。
+- 首次空配置的Cookie迁移放在首次导航前曾使隔离程序等待，已调整加载顺序并重新打包；早期启动失败证据保留。最终核心检查后的隐藏窗口截图超时单独记录，没有将截图计为通过，也没有为可选截图再跑整套。旧启动烟雾检查通过，但不足以代替本批新增桥接与业务检查。
+- Git外证据：`.runtime/desktop-modernization-20261007/{tests-final.log,build-final.log,native-core-report.json,native-core-initial-failure.json,native-core-capture-limitation.json}`和`core-*/core-report.json`、`backend/review.json`。安装包另存`PersonalAgent-Windows/0.2.0`；未使用用户真实目录、Key或新增服务器部署。数据库/API契约未修改。
+
 ## 2026-10-06：旧消息停留与阅读全文验收（22:01:49北京时间）
 
 固定客户端 `622e84bff20af8cefdd6d9004286da6ba6ba4a22` 已于2026-10-06 22:01:49静态上线；[PR8](https://github.com/luoyan96/personal-agent/pull/8)已合入main（288b56f），[三平台完整CI](https://github.com/luoyan96/personal-agent/actions/runs/37474793438)全部通过。发布标签 `personal-agent-2026-10-06.4` 指向这份源码；API / worker仍94b26d1、镜像d56ee747、contract0.19 / chat1.8 / schema18，没有迁移。
