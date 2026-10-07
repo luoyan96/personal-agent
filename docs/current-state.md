@@ -16,6 +16,8 @@
 
 安装文件在`D:/deepseek-agent/PersonalAgent-Windows/0.5.0/`，exe/blockmap/latest.yml/SHA256SUMS保持一致。本次不替用户安装或重启；保持原appId/更新文件名，快捷方式显示Personal Agent。阿里云Workbench私有维护会话的先前自动审批拒绝仍未绕过；已再次明确询问本次备份、API/worker升级和019/020迁移，等待回复。必须先完成配套迁移并验收，再公开自动更新。
 
+运行源码已本地提交 `5c9499800ec71f6b6ad444b2e9d89ba06d9a4808`，本地标签`v0.5.0`固定同修订。GitHub推送反复返回remote Internal Server Error，HTTP1.1/完整pack定向重试仍拒绝；远端未找到该分支或提交，**尚未创建PR或Release草稿**。不要把准备好的发布说明当已发布。固定源码tar摘要 `c7bea17d666eb156735ca83f408a1243c26f3789411298232f48c1e027b17c26` 和未执行部署计划留在Git外。后续恢复上传后创建/附加PR，服务器配套升级通过后再公开更新；运行标签不随文档收据移动。
+
 下列0.3.3/0.4.0及更早章节是各自历史记录，以本节和后续发布/部署收据判断当前版本。
 
 ## 最新桌面源码：Windows 0.3.3 设置与版本更新

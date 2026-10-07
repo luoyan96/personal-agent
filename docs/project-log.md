@@ -13,6 +13,8 @@
 
 - 最终重打包实际启动通过：原生 SDK/preload 桥可用、平台ID3、登录 UI 正常；未登录 session401 保留。修正预加载后，打包运行暴露 SDK 必需 peer 未入包，构建依赖闭包现包含非可选 peer（Electron 自身除外），恢复 53 个实际已安装运行包，随后启动通过。最终 NSIS 86,295,352 字节，SHA256 `8baa1eeedbebc944e58bbaac47421cf7a5da7380c5ef3967d0151da79998ff49`；exe/blockmap/latest.yml 门禁通过，四资产另存0.5.0目录。2026-10-08公开云ready实际200/contract0.19，未把登录启动称为新版服务器验收。
 
+- 本地运行提交 `5c9499800ec71f6b6ad444b2e9d89ba06d9a4808` 与标签v0.5.0固定。GitHub正常授权推送返回服务器内部错误；分开ref以及HTTP1.1/非thin完整pack定向恢复仍失败，远端API未找到该分支/提交。没有创建PR或Release草稿，不声称源码已上传。收据 `.runtime/desktop-social-workspace-20261007/github-push-final.log`；固定源码tar摘要 `c7bea17d666eb156735ca83f408a1243c26f3789411298232f48c1e027b17c26`，019/020部署计划已准备但未执行。自有4518/4519测试服务已关闭，用户软件未触碰。下一步：取得私有维护会话明确授权、完成配套部署、恢复GitHub上传/PR、验证公开更新资产后发布。
+
 ## 2026-10-07：Windows 0.3.3 固定设置 / 版本更新入口
 
 - 22:21:46北京时间正式发布 [v0.3.3](https://github.com/luoyan96/personal-agent/releases/tag/v0.3.3)，源码 / 标签固定 `1fbb238ddc274bb7388d431756cd7d010ad37f13`；4个公开资产的size / SHA256 digest与本地一致，latest正确为0.3.3，0.4.0保持草稿。[PR19](https://github.com/luoyan96/personal-agent/pull/19)已创建 / 附加且未合入main；Foundation checks37635589030读取时运行中，未宣称全部CI通过。草稿未生成标签时按tag读取404，改为按发布列表读取准确ID核验后发布；未绕过资产门禁。
