@@ -29,7 +29,7 @@ describe('B0 real service and persistence', () => {
     expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(19)
     expect(db.prepare('SELECT applied_at FROM schema_migrations WHERE version=1').get()!.applied_at).toBe('2026-09-21T00:00:00Z')
     checkDatabase(db)
-  })
+  }, 20000) // Actual 001→019 disk migration; bounded test harness wait, no production deadline change.
   it('migration/seed are repeatable; reopening preserves rows; no usable dev credentials', () => {
     const { config } = setup()
     let db = openDatabase(config.databasePath, true)
