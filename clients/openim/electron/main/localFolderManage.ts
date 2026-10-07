@@ -62,7 +62,8 @@ const store = new LocalFolderStore(
         if (
           value?.ok === true &&
           typeof value.text === "string" &&
-          Buffer.byteLength(JSON.stringify(value.text), "utf8") <= 52000 &&
+          value.text.length <= 200000 &&
+          Buffer.byteLength(JSON.stringify(value.text), "utf8") <= 512000 &&
           (value.pageCount === undefined ||
             (Number.isInteger(value.pageCount) &&
               value.pageCount >= 1 &&
@@ -117,7 +118,7 @@ function authority(event: IpcMainInvokeEvent) {
     localFolderFail("LOCAL_FOLDER_FORBIDDEN");
   let origin: string;
   try {
-    origin = new URL(status.address).origin;
+    origin = status.rendererOrigin || new URL(status.address).origin;
     if (
       origin === "null" ||
       new URL(event.senderFrame.url).origin !== origin ||

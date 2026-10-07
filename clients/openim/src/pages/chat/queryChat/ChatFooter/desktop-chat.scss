@@ -1,0 +1,28 @@
+// Keep the desktop editor usable without turning its receipts into another feed.
+@media (min-width: 601px) {
+  #chat-container {
+    --chat-bubble: #fff;
+    --chat-bubble-sender: #d8ecff;
+    background: #f5f6f8;
+
+    #chat-list { background: #f5f6f8; }
+    [data-panel-id="chat-footer"] {
+      min-height: 190px !important;
+      max-height: 240px;
+    }
+    [data-panel-resize-handle-id] { background: #e4e8ee; height: 1px; }
+  }
+  .desktop-chat-footer {
+    [data-composer-controls] { max-height: 48px; flex-shrink: 1; }
+    [data-composer-editor] { min-height: 92px; }
+    .ck-content { font-size: 15px; line-height: 1.65; word-break: break-word; }
+    .ck-content > p { margin: 5px 0 !important; }
+    [data-composer-editor] > div:last-child { padding-top: 4px; padding-bottom: 6px; }
+    [data-ai-turn-status] { padding-top: 1px; padding-bottom: 1px; }
+  }
+}
+
+.desktop-chat-footer.is-native-desktop {
+  [role="toolbar"] { display: flex !important; flex-wrap: wrap; min-height: 32px; }
+  button[aria-label="更多聊天功能"], [aria-label="聊天扩展功能"] { display: none !important; }
+}

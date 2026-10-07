@@ -9,6 +9,7 @@ import OpenIMSDKMain from "@openim/electron-client-sdk";
 import { smokeResult, smokeProgress } from "../utils/smoke";
 import { getStore } from "./storeManage";
 import { validateResearchServiceUrl } from "../utils/researchService";
+import { desktopSessionCookie, startDesktopServer } from "../utils/desktopServer";
 
 const url = process.env.VITE_DEV_SERVER_URL;
 let mainWindow: BrowserWindow | null = null;
@@ -17,6 +18,8 @@ let sdkInstance: OpenIMSDKMain | null = null;
 let attemptedServiceAddress = "";
 let serviceConnectionError = "";
 let serviceConnected = false;
+let rendererOrigin = "";
+let desktopServer: Awaited<ReturnType<typeof startDesktopServer>> | undefined;
 
 function createSplashWindow() {
   splashWindow = new BrowserWindow({
@@ -40,8 +43,8 @@ export function createMainWindow() {
     icon: join(global.pathConfig.publicPath, "favicon.ico"),
     frame: false,
     show: false,
-    width: 1024,
-    height: 726,
+    width: 1280,
+    height: 820,
     minWidth: 1024,
     minHeight: 726,
     titleBarStyle: "hiddenInset",
@@ -97,7 +100,7 @@ export function createMainWindow() {
   const researchUrl =
     process.env.RESEARCH_APP_URL ||
     (getStore().get("researchServiceUrl") as string | undefined) ||
-    (app.isPackaged && !smoke ? "https://chat.acceptcat.com/" : undefined);
+    (app.isPackaged ? "https://chat.acceptcat.com/" : undefined);
   if (researchUrl) {
     void connectResearchService(researchUrl).catch(() => {
       if (mainWindow && !mainWindow.webContents.getURL().startsWith("file:"))
@@ -159,12 +162,35 @@ export async function connectResearchService(address: unknown) {
   serviceConnected = false;
   if (!mainWindow) throw new Error("桌面窗口尚未就绪");
   try {
-    await mainWindow.loadURL(target);
+    await desktopServer?.close();
+    rendererOrigin = "";
+    desktopServer = await startDesktopServer(global.pathConfig.distPath, target);
+    rendererOrigin = desktopServer.origin;
+    await mainWindow.loadURL(rendererOrigin);
     getStore().set("researchServiceUrl", target);
     serviceConnectionError = "";
     serviceConnected = true;
+    // Chromium initializes its cookie service with the first navigation. Load
+    // the bundled UI before attempting a migration on an empty new profile.
+    const cookies = mainWindow.webContents.session.cookies;
+    const cookieName = desktopSessionCookie(target);
+    const existing = await cookies.get({ url: rendererOrigin, name: cookieName });
+    if (!existing.length) {
+      // Carry forward this service's own signed session after updating the desktop.
+      // The token stays inside Electron's cookie store and is never sent to the UI.
+      const previous = (await cookies.get({ url: target, name: "rap_session" }))[0];
+      if (previous) {
+        await cookies.set({ url: rendererOrigin, name: cookieName, value: previous.value,
+          httpOnly: true, secure: false, path: "/", sameSite: "lax",
+          ...(previous.expirationDate ? { expirationDate: previous.expirationDate } : {}) });
+        mainWindow.reload();
+      }
+    }
   } catch {
     serviceConnectionError = "连接失败，请核对地址和网络，再重新连接。";
+    rendererOrigin = "";
+    await desktopServer?.close();
+    desktopServer = undefined;
     await mainWindow.loadFile(global.pathConfig.indexHtml);
     throw new Error("连接失败，请核对服务地址和网络");
   }
@@ -172,6 +198,7 @@ export async function connectResearchService(address: unknown) {
 export function getResearchServiceStatus() {
   return {
     connected: serviceConnected,
+    rendererOrigin,
     address:
       attemptedServiceAddress || String(getStore().get("researchServiceUrl", "")),
     error: serviceConnectionError,

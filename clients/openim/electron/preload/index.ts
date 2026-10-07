@@ -101,6 +101,10 @@ const saveFileToDisk = async ({
 };
 
 const Api: IElectronAPI = {
+  createDesktopReport: (scope, title, markdown, sources) => ipcRenderer.invoke("create-desktop-report", scope, title, markdown, sources),
+  listDesktopReports: (scope) => ipcRenderer.invoke("list-desktop-reports", scope),
+  openDesktopReport: (scope, id) => ipcRenderer.invoke("open-desktop-report", scope, id),
+  revealDesktopReport: (scope, id) => ipcRenderer.invoke("reveal-desktop-report", scope, id),
   pickLocalFolder: () => ipcRenderer.invoke("pick-local-folder"),
   readLocalFolderSelection: (request) => ipcRenderer.invoke("read-local-folder-selection", request),
   releaseLocalFolder: (grantId) => ipcRenderer.invoke("release-local-folder", grantId),

@@ -85,7 +85,7 @@ export async function parseLocalDocument(
           : match[0].startsWith("<w:tab")
           ? "\t"
           : "\n";
-      if (Buffer.byteLength(JSON.stringify(text), "utf8") > 52000)
+      if (text.length > 200000 || Buffer.byteLength(JSON.stringify(text), "utf8") > 512000)
         localFolderFail("LOCAL_FOLDER_TOO_LARGE");
     }
     if (!text.trim()) localFolderFail("LOCAL_FOLDER_NO_TEXT");
@@ -137,7 +137,7 @@ export async function parseLocalDocument(
           )
           .join("");
       if (body.trim()) text += `### 第${pageNumber}页提取文字\n\n${body}\n\n`;
-      if (Buffer.byteLength(JSON.stringify(text), "utf8") > 52000)
+      if (text.length > 200000 || Buffer.byteLength(JSON.stringify(text), "utf8") > 512000)
         localFolderFail("LOCAL_FOLDER_TOO_LARGE");
       await page.cleanup();
     }

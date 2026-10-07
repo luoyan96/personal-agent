@@ -19,6 +19,7 @@ import { CreatedAgentChatButton } from "./CreatedAgentChatButton";
 import { AgentFileReadSummary, agentFileReadCoverage } from "./AgentFileReadSummary";
 import { PersonalReceiptCard } from "./PersonalReceiptCard";
 import { ContinueAgentFileReadingButton } from "./ContinueAgentFileReadingButton";
+import SafeMessageMarkdown from "./SafeMessageMarkdown";
 
 export default function ResearchMessageRender({ message }: IMessageItemProps) {
   const history = useContext(AgentProgressHistory);
@@ -130,7 +131,7 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
   return (
     <div
       data-canonical-message={read.data?.fact.id}
-      className={`${styles.bubble} max-w-[620px] text-sm`}
+      className={styles.bubble}
     >
       {!pointer && <Alert type="warning" message="这条消息暂无法显示" />}
       {read.error && (
@@ -141,7 +142,7 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
       )}
       {read.data && (
         <>
-          <p className="whitespace-pre-wrap break-words">{read.data.fact.text}</p>
+          {read.data.fact.text && <SafeMessageMarkdown text={read.data.fact.text} />}
           {read.data.fact.files?.map((file) => (
             <AgentFileReadSummary
               key={file.messageId}

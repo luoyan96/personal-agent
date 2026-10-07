@@ -10,6 +10,7 @@ import TopSearchBar from "./TopSearchBar";
 import { useGlobalEvent } from "./useGlobalEvents";
 import { researchMode } from "@/research/api";
 import { MobileNavigation } from "@/research/MobileNavigation";
+import "./desktop-layout.scss";
 
 export const MainContentLayout = () => {
   useGlobalEvent();
@@ -36,7 +37,7 @@ export const MainContentLayout = () => {
 
   return (
     <Spin className="!max-h-none" spinning={showLockLoading} tip={loadingTip}>
-      <Layout className="h-full">
+      <Layout className={`h-full ${window.electronAPI ? "personal-agent-desktop" : ""}`}>
         <TopSearchBar />
         {researchMode && <MobileNavigation />}
         <Layout>

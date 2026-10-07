@@ -19,6 +19,7 @@ import { useAgentFileReading } from "@/research/useAgentFileReading";
 import { useScopedFileSender } from "@/research/useScopedFileSender";
 import { useAgentChatOperation } from "@/research/useAgentChatOperation";
 import type { AgentChatOperation } from "@/research/useAgentChatOperation";
+import "./desktop-chat.scss";
 import {
   chatDrafts,
   saveChatDraft,
@@ -259,7 +260,7 @@ const ChatFooter = () => {
 
   return (
     <footer
-      className="relative h-full bg-white py-px"
+      className={`desktop-chat-footer relative h-full bg-white py-px ${window.electronAPI ? "is-native-desktop" : ""}`}
       onDragOver={(event) => {
         if (event.dataTransfer.types.includes("Files")) event.preventDefault();
       }}

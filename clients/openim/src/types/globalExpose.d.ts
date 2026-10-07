@@ -1,4 +1,5 @@
 import { Platform } from "@openim/wasm-client-sdk";
+import type { DesktopReportArtifact, DesktopReportScope } from "./desktopWork";
 import type {
   LocalFolderManifest,
   LocalFolderReadRequest,
@@ -8,6 +9,10 @@ import type {
 export type DataPath = "public" | "emojiData" | "sdkResources" | "logsPath";
 
 export interface IElectronAPI {
+  createDesktopReport: (scope: DesktopReportScope, title: string, markdown: string, sources: string[]) => Promise<DesktopReportArtifact>;
+  listDesktopReports: (scope: DesktopReportScope) => Promise<DesktopReportArtifact[]>;
+  openDesktopReport: (scope: DesktopReportScope, id: string) => Promise<void>;
+  revealDesktopReport: (scope: DesktopReportScope, id: string) => Promise<void>;
   getResearchServiceStatus: () => Promise<{ connected: boolean; address: string; error: string }>;
   configureResearchService: (address: string) => Promise<void>;
   pickLocalFolder: () => Promise<LocalFolderManifest | null>;

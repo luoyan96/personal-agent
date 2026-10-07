@@ -10,11 +10,12 @@
 
     .bubble {
       @apply w-fit rounded-lg px-3 py-2.5;
-      max-width: min(680px, 100%);
+      max-width: min(760px, 100%);
       font-size: 15px;
       line-height: 1.6;
       word-break: break-word;
       background-color: var(--chat-bubble);
+      border: 1px solid rgba(170, 185, 203, .16);
     }
 
     .suffix {
