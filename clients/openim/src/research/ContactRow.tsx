@@ -9,7 +9,7 @@ export function ContactRow({ contact, actorId, onOpen }: {
 }) {
   const human = contact.identity.kind === "human";
   const own = !human && contact.identity.kind !== "human" && contact.identity.ownerMemberId === actorId;
-  return <button type="button" onClick={onOpen} className="flex w-full min-w-0 items-center gap-3 rounded-lg p-3 text-left hover:bg-slate-50 focus-visible:outline focus-visible:outline-blue-500">
+  return <button type="button" onClick={onOpen} className="desktop-contact-row flex w-full min-w-0 items-center gap-3 rounded-lg p-3 text-left hover:bg-slate-50 focus-visible:outline focus-visible:outline-blue-500">
     <OIMAvatar text={contact.displayName.slice(0, 2)} />
     <div className="min-w-0 flex-1">
       <div className="flex flex-wrap items-center gap-2"><strong className="break-words text-sm">{contact.displayName}</strong><Tag className="!m-0 text-xs">{human ? "真人" : own ? "我的 Agent" : "Agent"}</Tag></div>

@@ -152,7 +152,7 @@ export async function runDesktopWork(input: {
     const answer = chunks.length === 1 ? analyses[0] : await analyse("逐文件分析.md", summaries.join("\n\n"),
       `用户目标：${input.task}\n请综合附件中的逐文件分析，给出最终报告：结论、对应文件依据、差异、尚待核对的问题和可执行的下一步。附件是前序分析而非原始全文；保留不确定性，不能声称检验图片或执行程序。`, "summary");
     assertCurrent();
-    update(id, { phase: "saving" });
+    update(id, { phase: "saving", completed: chunks.length + extraSteps + (chunks.length > 1 ? 1 : 0) });
     const sources = input.files.map(f => f.relativePath);
     const markdown = `# ${input.folderName} · 文件任务报告\n\n## 你的目标\n\n${input.task}\n\n## 最终结果\n\n${answer}\n\n## 资料范围\n\n${input.files.map(f => `- ${f.relativePath}：${f.text.length}字符${f.pageCount ? `，${f.pageCount}页可提取文字` : ""}`).join("\n")}\n\n以上文字共分${chunks.length}步分析。各步范围记录见下文；未读取其他文件或图片，未修改源文件。\n\n${chunks.length > 1 ? `## 逐段分析\n\n${analyses.join("\n\n")}` : ""}`;
     const artifact = await api.createDesktopReport(input.scope, job.title, markdown, sources);

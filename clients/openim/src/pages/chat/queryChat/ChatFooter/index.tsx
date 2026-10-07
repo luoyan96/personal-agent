@@ -375,8 +375,9 @@ const ChatFooter = () => {
             onEnter={() => void enterToSend()}
             onChange={onChange}
           />
-          <div className="flex items-center justify-between px-3 py-2">
+          <div className="desktop-composer-bottom flex items-center justify-between px-3 py-2">
             <div>{composer.advancedToggle}</div>
+            {window.electronAPI && <span className="desktop-send-shortcut">Enter 发送 · Shift+Enter 换行</span>}
             <Button
               className="w-fit px-6 py-1"
               type="primary"

@@ -105,6 +105,8 @@ test("real selected folder → chunked model API steps → persisted report", as
   await runDesktopWork({ imID: "im-synthetic", scope, folderName: "synthetic-notes", task: "比较资料差异并给出复核建议", files });
   const job = useDesktopWork.getState().jobs[0];
   assert.equal(job.phase, "succeeded", job.error);
+  assert.equal(job.completed, job.total, "Successful analysis includes the completed final summary step");
+  assert.equal(job.completed, requests.length, "Completed steps match actual submitted analyses and summaries");
   assert.equal(requests.length, Math.ceil(longText.length / 12000) + 2);
   assert.ok(requests.some(text => text.includes("末尾依据：样本来自批次B")));
   const reportPath = await artifacts.htmlPath(scope, job.artifact.id);

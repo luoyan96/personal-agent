@@ -76,7 +76,7 @@ const ContactSider = () => {
 
   return (
     <FlexibleSider needHidden={true}>
-      <div className="h-full bg-white">
+      <div className="desktop-contact-column h-full bg-white">
         <div className="pb-3 pl-5.5 pt-5.5 text-base font-extrabold">
           {t("placeholder.contact")}
         </div>

@@ -2,6 +2,7 @@ import { useMount } from "ahooks";
 import { Layout, Spin } from "antd";
 import { t } from "i18next";
 import { Outlet, useMatches, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 import { useUserStore } from "@/store";
 
@@ -21,6 +22,11 @@ export const MainContentLayout = () => {
   const syncState = useUserStore((state) => state.syncState);
   const reinstall = useUserStore((state) => state.reinstall);
   const isLogining = useUserStore((state) => state.isLogining);
+  useEffect(() => {
+    if (!window.electronAPI) return;
+    document.body.classList.add("personal-agent-native");
+    return () => document.body.classList.remove("personal-agent-native");
+  }, []);
 
   useMount(() => {
     const isRoot = !matches.find((item) => item.pathname !== "/");

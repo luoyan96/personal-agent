@@ -2,7 +2,7 @@
 
 **最终目标是以个人为中心的Personal Agent：采用类似微信的交流方式，人与Agent共用通讯录；个人助理根据任务类型和难度组织协作，积累获准的长期记忆，持续推进、主动跟进并从反馈中改进。** 科研小组是第一个验证场景，个人可以独立使用。
 
-Windows桌面新版 **0.2.0**：安装包内界面、清楚的Markdown聊天，以及本地文件逐段分析/汇总/报告保存。用法、能力边界与接手入口见[桌面文件工作区](docs/development/desktop-agent-workspace.md)。当前集中建设桌面端，云端部署记录与桌面版本分别维护。
+Windows桌面源码 **0.3.0**：微信式三栏界面、会话搜索、直接媒体工具栏、流式回复与聊天中的文件任务卡，以及本地文件逐段分析/汇总/报告保存。用法、协议接入边界与接手入口见[桌面文件工作区](docs/development/desktop-agent-workspace.md)。桌面发布以GitHub版本标签及Release为准，云端部署记录与桌面版本分别维护。
 
 主代码仓库为 [luoyan96/personal-agent](https://github.com/luoyan96/personal-agent)，`main` 是共同开发主线。每个人 / AI 用独立分支提交 PR，开发环境、客户端检查和版本回退见[协作说明](CONTRIBUTING.md)。当前发布标签 `personal-agent-2026-10-06.4` 指向已部署客户端622e84b；API代码与已部署94b26d1相同；此前协作基线 `.1` 与初始导入标签保留。GitHub代码更新和阿里云部署分别记录。
 

@@ -1,4 +1,4 @@
-import { RightOutlined } from "@ant-design/icons";
+import { ContactsOutlined, MessageOutlined, RightOutlined, SettingOutlined } from "@ant-design/icons";
 import { Badge, Divider, Layout, Popover, Upload, UploadProps } from "antd";
 import clsx from "clsx";
 import i18n, { t } from "i18next";
@@ -109,16 +109,19 @@ const NavItem = ({ nav: { icon, icon_active, title, path } }: { nav: NavItemType
 
   return (
     <Badge size="small" count={getBadge()}>
-      <div
+      <button
+        type="button"
+        aria-label={title}
+        aria-current={isActive ? "page" : undefined}
         className={clsx(
-          "mb-3 flex h-[52px] w-12 cursor-pointer flex-col items-center justify-center rounded-md",
+          "desktop-nav-item mb-3 flex h-[52px] w-12 cursor-pointer flex-col items-center justify-center rounded-md",
           { "bg-[#e9e9eb]": isActive },
         )}
         onClick={tryNavigate}
       >
-        <img width={20} src={isActive ? icon_active : icon} alt="" />
+        {window.electronAPI ? (path === "/chat" ? <MessageOutlined /> : <ContactsOutlined />) : <img width={20} src={isActive ? icon_active : icon} alt="" />}
         <div className="mt-1 text-xs text-gray-500">{title}</div>
-      </div>
+      </button>
     </Badge>
   );
 };
@@ -274,11 +277,11 @@ const LeftNavBar = memo(() => {
 
   return (
     <Sider
-      className="no-mobile border-r border-gray-200 !bg-[#F4F4F4] dark:border-gray-800 dark:!bg-[#141414]"
-      width={60}
+      className="desktop-navigation no-mobile border-r border-gray-200 !bg-[#F4F4F4] dark:border-gray-800 dark:!bg-[#141414]"
+      width={window.electronAPI ? 72 : 60}
       theme="light"
     >
-      <div className="mt-6 flex flex-col items-center">
+      <div className="desktop-navigation-content mt-6 flex flex-col items-center">
         <Popover
           content={ProfileContent}
           trigger="click"
@@ -299,6 +302,7 @@ const LeftNavBar = memo(() => {
         {NavList.map((nav) => (
           <NavItem nav={nav} key={nav.path} />
         ))}
+        {window.electronAPI && researchMode && <button type="button" className="desktop-model-settings" onClick={() => setLabSettings(true)} aria-label="模型设置"><SettingOutlined /><span>模型设置</span></button>}
       </div>
       <PersonalSettings ref={personalSettingsRef} />
       <About ref={aboutRef} />

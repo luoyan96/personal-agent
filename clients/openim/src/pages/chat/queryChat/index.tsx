@@ -86,7 +86,7 @@ export const QueryChat = () => {
           <Panel
             id="chat-footer"
             order={1}
-            defaultSize={25}
+            defaultSize={window.electronAPI ? 24 : 25}
             maxSize={60}
             className={researchMode ? "min-h-[280px]" : "min-h-[200px]"}
           >

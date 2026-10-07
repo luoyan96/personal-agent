@@ -78,7 +78,7 @@ export function ResearchContacts() {
   const openProfile = (id: string) => { setAdding(false); setSelectedContact(id); profile.current?.openOverlay(); };
   const filtered = data?.data.filter(c => c.displayName.toLowerCase().includes(search.toLowerCase()) || c.username?.includes(search)) || [];
   return (
-    <div className="h-full min-w-0 flex-1 space-y-4 overflow-auto bg-white p-5 max-[600px]:p-3">
+    <div className="desktop-contacts-content h-full min-w-0 flex-1 space-y-4 overflow-auto bg-white p-5 max-[600px]:p-3">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-bold">联系人</h2>
         <Button type="primary" onClick={() => { setAddTab("friend"); setAdding(true); }}>添加联系人</Button>

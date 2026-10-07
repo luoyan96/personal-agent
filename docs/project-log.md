@@ -1,5 +1,17 @@
 # 项目进展日志
 
+## 2026-10-07：Windows0.3.0桌面界面与真实状态呈现
+
+按用户要求，前端交给gpt-6.1-sol / high，独立分支`feature/desktop-agent-interface`；总控生成并检查完整设计参考、审查实际截图、修正汇总计数、打包与整合。桌面发布源码以GitHub `v0.3.0`标签及Release为准。当前交互机制及CopilotKit / AG-UI后续适配边界见[桌面说明](development/desktop-agent-workspace.md)。
+
+- 深色72px导航、300px会话栏及真实会话搜索，模型设置 / 添加联系人 / 创建或接入Agent均接已有动作。聊天头部、圆头像、蓝白气泡、Markdown及168px输入区统一；直接媒体 / 文件工具栏，群聊保留作者身份。
+- 既有模型增量以带头像的消息呈现；文件任务阶段 / 当前资料范围 / completed与total / 取消 / 报告均在可展开聊天卡呈现。计数按分析步骤而非文件数，最后汇总成功后计入completed；本机保存成功才显示完成。原生报告真实错误保留可读原因，移除IPC前缀。没有替换服务鉴权、授权目录或OpenIM投递机制。
+- renderer最终类型通过。真实Electron22.3.27 / Chromium108生产组件17项定向交互通过：已有会话搜索、任务详情 / 完整范围、生成中连续草稿、同身份报告打开及失败清理、生产runner精确取消、群聊作者、模型设置及人与Agent联系人添加 / 搜索，pageErrors0。1280×820、72 / 300 / 82px布局、168.24px输入区、无横向溢出；概念与实际聊天 / 联系人截图经view_image检查。Browser skill不在会话工具中，因此使用隔离Playwright Electron；SDK / HTTP / 报告桥明确合成，没有使用真实账号、Key、资料或模型。
+- 总控修复completed计数后，仅运行已有真实长文件→合成模型→持久报告用例，完成数与真实提交次数 / total一致，专项1项通过。没有重复旧整套文件/原生验收。开发Router / CSP / Antd废弃警告保留，不能称console完全无输出。
+- Windows0.3.0实际NSIS打包及只读发布门禁通过；EXE86284271字节，SHA256 `69e561754a6222e620ab274d0f9bfaba71221cd9d2ee6d020726ec7c2292565a`。exe / latest.yml版本、名称、大小 / SHA512、blockmap、公开GitHub更新源均一致，无嵌入Token。安装文件另存`PersonalAgent-Windows/0.3.0`，用户正常客户端未被安装或重启。
+- 隔离UI fixture首次宽API路由误拦源码、缺失早期监听、窗口发现超时、缺失合成原生桥以及取消文字多匹配的失败报告保留；均没有改动用户正常窗口。最后独立原生runtime成功检查，静态补拍只记录capture结果。自有Vite / Electron均已关闭。
+- Git外`.runtime/desktop-interface-20261007/{report.json,chat.png,contacts.png,capture.json,*failure*.json}`及`.runtime/desktop-ui-refresh-20261007/{concept.png,final-renderer-types.log,analysis-counter-test.log,windows-build.log}`。源码无fixture、截图、模型凭据或用户资料。此批不连接CopilotKit / AG-UI，不执行后台部署 / 数据迁移；正式发布及自动更新文件另外记录。
+
 ## 2026-10-07：Windows桌面0.2.0与文件工作区
 
 按用户“集中做好桌面端、先不管网页手机、不反复扩测”的要求，完成本批客户端/Electron改造，独立分支`feature/desktop-agent-workspace`；安装包发布源码以`v0.2.0`标签为准。说明见[桌面文件工作区](development/desktop-agent-workspace.md)。
