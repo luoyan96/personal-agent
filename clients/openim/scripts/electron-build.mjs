@@ -8,6 +8,7 @@ import {
   rmSync,
   existsSync,
   readFileSync,
+  realpathSync,
   readdirSync,
   unlinkSync,
   writeFileSync,
@@ -113,7 +114,7 @@ const resolvePackageManifestPath = (packageName, requiringManifestPath) => {
   for (const searchPath of packageRequire.resolve.paths(packageName) || []) {
     const manifestPath = path.join(searchPath, packageName, "package.json");
     if (existsSync(manifestPath) && JSON.parse(readFileSync(manifestPath, "utf8")).name === packageName)
-      return manifestPath;
+      return realpathSync(manifestPath);
   }
   let currentPath = path.dirname(packageRequire.resolve(packageName));
   while (true) {
