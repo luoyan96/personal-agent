@@ -41,3 +41,8 @@
 Git外`.runtime/desktop-social-workspace-20261007`保存共享CI、权限/迁移、实际Electron聊天与打包；`.runtime/desktop-social-workspace-20261008/frontend`保存真实React/HTTP/SQLite管理检查；`.runtime/desktop-chat-final-review-20261008`保存群引用和取消审查。
 
 使用隔离合成账号/数据库，不读取用户窗口或凭据。真实HTTP、SQLite、worker、组件与权限回调被验证；模型和IM网络端口明确合成，不作为生产模型或旧安装版升级验收。门禁结果见当前状态。
+
+
+## 2026-10-08正式部署补记
+
+Windows0.5.1与云端API/worker5c949980已正式上线（contract0.21/schema20）。019/020、备份恢复读取和旧行保持通过；16项真实HTTPS流程、真实OpenIM身份/群同步与实际到时提醒im_sent通过。本批未使用用户Key或重测真实模型/SDK媒体。准确源码、资产及中断恢复见[部署收据](../deployment/personal-agent-social-workspace.md)。此前本地模型/IM合成证据仍按各自范围理解。

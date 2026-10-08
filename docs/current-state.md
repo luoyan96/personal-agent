@@ -2,27 +2,25 @@
 
 更新日期：2026-10-08（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新开发：Windows0.5.0 人与Agent协作工作区
+## 当前已发布：Windows 0.5.1，云端工作台与广场
 
-2026-10-08后续：用户已明确授权使用Edge阿里云维护会话，备份后升级API/worker并执行019/020。旧线上0.19与桌面0.5.0不匹配导致工作台/广场列表404。桌面0.5.1补公共ready版本检查：旧服务明确提示需更新，不挂载新版读取或允许创建/发布；本机报告仍独立可用，真实权限错误保持。8项隔离定向界面检查与renderer类型通过，证据`.runtime/desktop-social-workspace-20261008/frontend/availability-7a3b25cf`。旧0.19/坏health/权限响应为受控测试，0.21数据来自真实loopback HTTP/SQLite；SDK/native仍合成。0.5.1安装与生产升级正在执行，以后续收据为准。
+2026-10-08 **10:08:00北京时间**，[v0.5.1](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.1)已正式发布并成为公开latest；标签固定桌面源码 `784de4231918e42301f82a979c238118e0405d04`。API/worker已实际升级为同一固定源码 `5c9499800ec71f6b6ad444b2e9d89ba06d9a4808`，实际镜像 `sha256:0c6929175fae18ad603eb25d558daf75cb3bfb66314e46f3fe9cdfc4bc98a555`；contract0.21/chat1.10/schema20，公网ready200。**019/020已部署，工作台/广场接口可用。** [PR20](https://github.com/luoyan96/personal-agent/pull/20)保留草稿、未合main；v0.5.0标签和0.4.0旧草稿保留。
 
-源码推送已恢复：[PR20](https://github.com/luoyan96/personal-agent/pull/20)保持草稿，`v0.5.0`已上传并固定5c949980。Workbench上传网关NoSuchKey失败保留；仅服务端固定源码子集归档627743字节，SHA256`a3370b55e3390e45966cf2394423020429992a1242c97d416abc26ba26b8b80d`，经公开GitHub源码资产取得，服务器同摘要核对通过。没有把私人运维资料上传到GitHub。云端尚未完成切换，下面“等待授权/推送失败”的文字是此前收据。
+桌面为微信式消息、通讯录、工作台、广场四入口。人与Agent共同名片、创建/导入/兼容外部连接、实际历史搜索/引用/群@、置顶/免打扰和连续输入/流式/恢复接入现有聊天。工作台管理提案、群确认、任务承接、实际结果和指定消息验收；本人主动公开/撤回能力，双方同意后联系。定时管理、本人记忆/模型设置与永久版本更新入口保留。详见[功能交接](development/desktop-social-workspace.md)。0.5.1增加公共ready版本检查，旧服务器给出明确更新说明、本机报告独立，真实权限错误保持。
 
-`feature/desktop-social-workspace` 已合并0.3.3设置/更新入口及019定时任务基础，改造消息、通讯录、工作台、广场四入口。聊天使用微信式浅灰/白/绿与方形头像，连续输入/流式/恢复保留，新增实际历史搜索、引用、群@分配、SDK置顶/免打扰、群成员详情及拖文件。统一联系人名片、创建/导入/外部兼容连接、本人明确能力公开/撤回；工作台关联实际提案、群聊、参与、turn、结果与指定消息验收。详见[功能交接](development/desktop-social-workspace.md)。
+之前“都是空的”的404来自桌面0.5.0与旧服务器0.19不匹配。用户明确授权维护会话后已备份、迁移并成对升级；研究库隔离恢复读取通过，78旧表的行/hash、旧迁移记录及外键/完整性保持。第一次备份只读WAL查询失败后确认schema18并恢复原服务，修正备份/恢复脚本后完成升级；上传、预检、权限及中断证据均保留。具体备份、镜像、回退约束见[本次部署收据](deployment/personal-agent-social-workspace.md)。
 
-契约0.21 / chat1.10 / 显式迁移020，需API与worker成对升级。020只增加个人任务/参与、能力公开、社交群标记，旧checksum与行保持。普通跨空间讨论群仅接受已同意联系人；旧科研plan/task/材料ACL不变。确认社交群时，本人明确选择的自有Agent立即加入；外国真人/Agent仍由各自同意，任务参与另行承接。群里开头@一个已加入Agent才请求处理；普通聊天和@真人不调用模型，外部群转发未开放。自己的私人记忆/文件没有随入群或公开授权。
+本地共享完整CI45文件/568项、生产020两项、B0/Web隔离与桌面类型通过；GitHub [37714297856](https://github.com/luoyan96/personal-agent/actions/runs/37714297856)Ubuntu22.19/24及Windows24全部通过。桌面实际React/HTTP/SQLite12类管理交互、Electron22连续聊天/群@/worker结果（模型与IM端口合成），0.5.1版本兼容8项和实际打包登录页/native桥通过。受限GPU失败与正常宿主原参数通过证据均保留，没有替用户安装或重启。
 
-根完整`pnpm run ci`通过：45文件 / 568项、2项生产020CLI/HTTP、B0真实进程与Web生产隔离。首次567项中的唯一旧plan:null跨空间403期望失败保留；新增accepted讨论群仍不开放科研资料的断言后通过，随后本人Agent二次入群修正一并进入最终CI。renderer/Electron类型通过；群@6项和引用恢复3项专项通过。
+云端两个新合成账号的**16项真实HTTPS检查通过**，包括跨空间真人/Agent联系同意、真实OpenIM授权回调/身份/群与私聊同步、提案/群确认、自有Agent加入、任务承接和真人结果精确验收、定时管理及到时后台提醒（一次run、实际im_sent、无模型turn）。测试公开资料已撤回、安排inactive、会话logout；合成账号/审计历史保留。没有使用用户账号/Key/文件；真实模型和SDK媒体收发此批未重测。原工具元数据覆盖汇总15的原报告保留，日志核实后仅修正报告为16/16，没有重复线上测试。
 
-真实React/HTTP/SQLite的通讯录、公开/撤回、关系同意、任务确认/指定结果验收、定时管理、报告当前actor范围、迟到读取隔离共12类检查分段闭合，pageerror0，1024×726无横向溢出。实际Electron22聊天验证连续输入、流式、持久回复、SDK免打扰调用、固定助理置顶、授权历史搜索，以及真实个人任务群@/worker结果关联；模型与IM网络端口明确合成。选择器/夹具失败、Antd/Router开发警告保留，不冒充厂商/用户旧安装版实际升级验收。证据在Git外`.runtime/desktop-social-workspace-20261007`、`.runtime/desktop-social-workspace-20261008/frontend`、`.runtime/desktop-chat-final-review-20261008`。
+Windows安装文件 `D:/deepseek-agent/PersonalAgent-Windows/0.5.1/ResearchWeChat_0.5.1.exe`，86296322字节，SHA256 `71d1086c9538effb756ab710d8751ec53c21d8f6f6d9596905fa74368fd58117`。四发布资产size/digest与本地一致，实际公共latest.yml为0.5.1。设置→版本更新可检查/下载/确认重启，也可自行退出旧软件后手动安装。升级前复制未确认发送的文字；待发记录尚不跨重启恢复。
 
-**生产服务器仍API/worker94b26d1、contract0.19 / chat1.8 / schema18；新019/020尚未部署。** 2026-10-08公开ready实际200/contract0.19。最终Windows0.5.0安装候选已构建，86,295,352字节，SHA256 `8baa1eeedbebc944e58bbaac47421cf7a5da7380c5ef3967d0151da79998ff49`；实际打包启动到登录页与原生preload桥通过，未登录session401按预期保留。首次启动暴露preload提前引入WASM、随后缺必需peer的问题均已修复，完整失败证据保留。固定源码、GitHub草稿与上传摘要随后记录。
+证据：Git外 `.runtime/desktop-social-workspace-20261007`（cloud-deployed-proof.png、发布/部署收据、backend/live-20261008020302496_4ff920cd）与 `.runtime/desktop-social-workspace-20261008`（界面与0.5.1包启动）。服务器备份/容器inspect包含私密配置，只留服务器私有目录，不进Git。
 
-安装文件在`D:/deepseek-agent/PersonalAgent-Windows/0.5.0/`，exe/blockmap/latest.yml/SHA256SUMS保持一致。本次不替用户安装或重启；保持原appId/更新文件名，快捷方式显示Personal Agent。阿里云Workbench私有维护会话的先前自动审批拒绝仍未绕过；已再次明确询问本次备份、API/worker升级和019/020迁移，等待回复。必须先完成配套迁移并验收，再公开自动更新。
+范围仍有边界：普通跨空间讨论群与科研资料ACL分开，自己的私人记忆/文件不随入群或公开；开头@一个已加入站内Agent才请求处理。外部Agent支持chat_completions兼容连接与逐条文字同意，不自动转发群资料，不是通用A2A/MCP。完整行为学习、任务匹配质量、条件跟进与策略自我改进仍依路线逐批验证。
 
-运行源码已本地提交 `5c9499800ec71f6b6ad444b2e9d89ba06d9a4808`，本地标签`v0.5.0`固定同修订。GitHub推送反复返回remote Internal Server Error，HTTP1.1/完整pack定向重试仍拒绝；远端未找到该分支或提交，**尚未创建PR或Release草稿**。不要把准备好的发布说明当已发布。固定源码tar摘要 `c7bea17d666eb156735ca83f408a1243c26f3789411298232f48c1e027b17c26` 和未执行部署计划留在Git外。后续恢复上传后创建/附加PR，服务器配套升级通过后再公开更新；运行标签不随文档收据移动。
-
-下列0.3.3/0.4.0及更早章节是各自历史记录，以本节和后续发布/部署收据判断当前版本。
+下列0.3.3/0.4.0及更早章节是历史记录；其中“未迁移/等待授权”的状态已由本节和本次部署收据更新，不能据旧章节判断当前云端。
 
 ## 最新桌面源码：Windows 0.3.3 设置与版本更新
 

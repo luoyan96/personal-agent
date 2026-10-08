@@ -1,10 +1,10 @@
 # Research Agent Platform · Personal Agent 与人机协作
 
-Windows **0.5.0** 桌面改造已实现：微信式聊天、统一人与Agent通讯录、工作台、能力广场；群里明确@Agent分配任务，结果由用户确认后完成。定时任务、本机文件报告、记忆与模型管理、永久版本更新入口集中保留。功能与接入方式见[桌面协作工作区](docs/development/desktop-social-workspace.md)，安装发布及配套API/worker迁移019/020的准确进度见[当前状态](docs/current-state.md)。未升级服务器前不要把新版安装包当成已上线。
+Windows **0.5.1已发布**：[安装与发布说明](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.1)。微信式消息、统一人与Agent通讯录、工作台、能力广场，永久版本更新入口在左下角设置。配套API/worker已升级至contract0.21/schema20，019/020迁移及16项线上隔离流程检查通过；工作台/广场旧版404已修复。功能见[桌面协作工作区](docs/development/desktop-social-workspace.md)，精确源码、验证边界和备份见[当前状态](docs/current-state.md)与[部署收据](docs/deployment/personal-agent-social-workspace.md)。
 
 Windows桌面 **0.3.3** 新增固定入口：**左下角设置 → 版本更新**，始终显示当前版本并支持检查、下载进度和安装重启；模型设置保留在同一菜单。自动检查仍为启动15秒后、每6小时及电脑唤醒，发现新版才提示。下载与准确受测范围见[当前状态](docs/current-state.md)及[Windows更新](docs/development/windows-updates.md)。保留0.3.2的发送等待恢复；升级前复制旧版未确认需求，待发内容尚不支持跨软件重启恢复。
 
-开发候选 **Windows0.4.0** 增加“定时任务”：一次、每天、每周提醒或让自己的 Agent 到点执行，支持聊天安排、暂停 / 修改和运行记录。共享 API / worker 需要升级到 contract0.20 / schema19；当前云端尚未迁移，准确进度见[当前状态](docs/current-state.md)，范围与部署见[定时任务](docs/development/recurring-agent-tasks.md)。
+历史候选 **Windows0.4.0** 增加“定时任务”：一次、每天、每周提醒或让自己的 Agent 到点执行，支持聊天安排、暂停 / 修改和运行记录。此候选原需contract0.20/schema19，现已包含在0.5.1与云端0.21/schema20中，准确进度见[当前状态](docs/current-state.md)，范围与部署见[定时任务](docs/development/recurring-agent-tasks.md)。
 
 Windows桌面 **0.3.2** 修复发送等待和错误 / 重试入口被遮挡：30秒未确认保留原请求，重试沿用原编号；可停止等待、持续输入和切换联系人。下载与准确受测范围见[当前状态](docs/current-state.md)。升级前复制旧版未确认需求；本批未新增跨软件重启的待发恢复。
 
