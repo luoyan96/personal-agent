@@ -482,3 +482,5 @@ feature/acceptcat-branding基于7e49368：原生窗口、标题栏、登录、�
 renderer / Electron类型、8项更新与地址检查、文档门禁、实际NSIS构建和更新资产校验通过。真实打包Electron22用新的隔离临时目录启动：窗口 / 登录页名称与科研定位、app.getName旧身份、原生SDK / Skill桥接通过，pageerror0，截图查看通过。类型检查发现跨项目品牌引用与旧Node解析问题；第一次打包启动缺品牌模块，移动后出现renderer声明输出依赖，最终两端各用纯品牌配置并核对；早期失败保留在工具输出与Git外证据，不计通过。构建保留既有Antd指令、Sass及大包告警。
 
 本地候选 `D:/deepseek-agent/AcceptCat-Windows/0.6.1/AcceptCat_0.6.1.exe`，86388221字节，SHA256 `e71a37d6af4a6d69391cc002edf8ff5f42d02090fbb4e5c18e9c10f6954e1c14`。证据 `.runtime/acceptcat-branding-20261008`，源码提交随本批feature分支记录。公开Release与API / worker仍为0.6.0 / 11cd20a，contract0.22 / chat1.11 / schema21；没有自动发布、部署、迁移、用户安装或真实模型调用。旧安装版实际覆盖升级尚未验收。本批不声称新科研工具完成；下一步围绕真实课题完善导师目标、学生 / Agent承接、阶段成果与反馈继续推进。完整绘图Skill执行仍待独立实现。
+
+AcceptCat0.6.1固定桌面源码73cffd8eb3db7f15b20c3b3dcb628ec3f55d578b，已推送feature/acceptcat-branding。后续本批文档提交不改变安装包代码；0.6.1仍未发布Release。

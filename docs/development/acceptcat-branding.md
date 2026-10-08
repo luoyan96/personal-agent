@@ -2,6 +2,8 @@
 
 日期：2026-10-08。分支feature/acceptcat-branding，基于7e49368；本批是Windows0.6.1本地候选，公开Release与API / worker仍为0.6.0 / 11cd20a，contract0.22 / chat1.11 / schema21。没有服务器部署或数据库迁移。
 
+固定桌面源码73cffd8eb3db7f15b20c3b3dcb628ec3f55d578b；之后文档提交只补充交接与校验事实。
+
 ## 名称和兼容
 
 界面使用AcceptCat，定位为“科研个人助理与课题组协作”。覆盖原生窗口、标题栏、登录与服务连接、设置版本页、托盘、更新确认、启动页和安装元数据。Windows安装文件AcceptCat_0.6.1.exe，快捷方式AcceptCat；renderer与原生各用纯品牌配置，打包检查核对二者名称一致。

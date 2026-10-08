@@ -4,6 +4,8 @@
 
 ## 最新本地候选：AcceptCat 0.6.1，近期聚焦科研
 
+固定桌面源码：73cffd8eb3db7f15b20c3b3dcb628ec3f55d578b（feature/acceptcat-branding）；后续本批文档提交不改变安装包代码。
+
 用户2026-10-08确定名称 **AcceptCat**，近期服务中国科研工作者，约半年先供本人和学生持续使用。保留微信式人与Agent联系人及长期Personal Agent目标；优先稳定聊天 / 文件、持续课题与学生协作、实际科研产出、跟进与背景复用。产品依据见[规划v0.8](product-plan.md)，旧探索来源及已迁入成果见[迁移记录](migration.md)。
 
 分支feature/acceptcat-branding基于7e49368，仅修改桌面品牌、安装兼容与方向文档：窗口 / 标题栏 / 登录 / 设置 / 托盘 / 更新确认 / 启动页 / 安装元数据统一AcceptCat；安装和快捷方式改名。appId、package.name、默认Electron数据身份、固定GitHub更新源保留，原生更新识别新旧卸载程序。renderer / Electron类型、8项更新与服务地址检查、内容门禁、真实NSIS构建、exe / blockmap / latest.yml校验通过。隔离实际打包Electron22的窗口 / 登录品牌、app.getName仍research-wechat-openim、原生SDK / Skill桥接和无pageerror通过，截图已查看。
