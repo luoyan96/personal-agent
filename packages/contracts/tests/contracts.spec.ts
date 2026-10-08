@@ -49,4 +49,3 @@ describe('B0 executable contract', () => {
     expect(errorStatus.MODEL_UNAVAILABLE).toBe(503)
   })
 })
-

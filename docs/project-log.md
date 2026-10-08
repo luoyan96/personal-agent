@@ -462,3 +462,13 @@
 上游 paper-framework-figure-studio-pro v3.2.15f 包依赖脚本和图片生成，当前只支持完整文字步骤，脚本和二进制素材不上传、不执行。执行依赖需在聊天中确认，不能把“安装”或“回复完成”说成完整绘图任务完成。Git外证据在 .runtime/private-skills-20261008。发布/部署收据未完成前，下方0.5.2 / API06262a6b仍是实际线上版本。
 
 
+
+## 2026-10-08 私人技能配套上线与Windows0.6.0发布
+
+2026-10-08 **18:01:21北京时间**，[v0.6.0](https://github.com/luoyan96/personal-agent/releases/tag/v0.6.0)正式发布，桌面与API / worker固定源码11cd20a92bd1a295120f7c87eea022da3ff9c411，contract0.22 / chat1.11 / schema21。工作台 → 我的技能支持文件夹、ZIP和GitHub固定提交安装，默认私人；绑定本人Agent、聊天选择技能 / 参考文字，独立公开介绍 / 好友调用 / 源码复制授权、启停、历史修订切换和本人真实调用记录。[PR23](https://github.com/luoyan96/personal-agent/pull/23)为草稿，依赖PR22，未合main。
+
+实际paper-framework-figure-studio-pro v3.2.15f的59120字符说明 / 120参考文字导入与完整模型上下文已验证，执行器目前仅文字流程；不执行包内脚本、不生成图片、不上传二进制素材。此包的完整绘图工作流尚未实现。[实现与使用边界](development/private-skills.md)。
+
+完整CI47文件 / 588项、生产021两项、B0 / Web隔离；原生导入3项、桌面类型 / 构建、真实隔离Electron22安装 / 绑定 / 聊天 / 调用记录与1024窗口通过。模型合成、原生选择器返回模拟为实际解析包。实际打包0.6.0启动 / 技能preload通过。固定源码11cd20a的[GitHub37759957391](https://github.com/luoyan96/personal-agent/actions/runs/37759957391)三平台全部通过；6项真实线上HTTPS安装 / 权限检查通过，合成记录停用 / 解绑 / 撤公开 / logout，未使用用户Key、资料或真实供应商。
+
+API / worker同镜像sha256:580d8333423e8fab0d7fb5f4216a6707fa073b3cbb975794565beb3cf18c6e9b；备份隔离恢复通过，迁移021新增3表，旧83表行摘要保持，integrity / FK通过。Windows安装文件D:/deepseek-agent/PersonalAgent-Windows/0.6.0/ResearchWeChat_0.6.0.exe，86384427字节，SHA25677f448b0f5bd56ac3412076d35265eb25fc8b9b97e0c63e01404cfcd29712908。四远端资产size / digest和实际公开latest.yml字节核对通过；左下角设置 → 版本更新可升级，也可手动运行安装包。未代替用户安装 / 重启，升级前复制未确认发送文字。[部署和回退收据](deployment/personal-agent-private-skills.md)。Git外证据.runtime/private-skills-20261008保留本地检查、实际截图、早期迁移 / 打包失败与发布收据。

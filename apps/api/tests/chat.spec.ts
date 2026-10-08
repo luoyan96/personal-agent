@@ -814,4 +814,3 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     expect(messages.flatMap((m:{resources:{kind:string}[]})=>m.resources)).toEqual([])
   })
 })
-

@@ -1,6 +1,6 @@
 # Research Agent Platform · Personal Agent 与人机协作
 
-私人技能0.6.0候选已完成本地安装 / 授权 / 聊天闭环；发布与配套迁移状态以 [当前状态](docs/current-state.md) 为准。
+Windows0.6.0私人技能和配套API / worker已发布（contract0.22 / schema21）；安装、授权、聊天文字流程与边界见 [当前状态](docs/current-state.md)。
 
 Windows **0.5.2已发布**：[安装与发布说明](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.2)。修复慢响应导致历史消息永久“正在加载消息”，读取失败提供明确重试，协作建议失败不隐藏正文；公开更新入口已核对。微信式消息、统一人与Agent通讯录、工作台、能力广场，版本更新入口在左下角设置。配套API/worker为06262a6b（contract0.21/schema20），019/020与工作台/广场上线验证保持，本批无后台部署或迁移。功能见[桌面协作工作区](docs/development/desktop-social-workspace.md)，精确源码、验证边界和备份见[当前状态](docs/current-state.md)与[上下文部署记录](docs/deployment/personal-agent-conversation-context.md)。
 

@@ -1,6 +1,6 @@
 # 开发路线图
 
-私人技能0.6.0候选已完成本地安装 / 授权 / 聊天闭环；发布与配套迁移状态以 [当前状态](current-state.md) 为准。
+Windows0.6.0私人技能和配套API / worker已发布（contract0.22 / schema21）；安装、授权、聊天文字流程与边界见 [当前状态](current-state.md)。
 
 ## 当前方向：以个人为中心的 Personal Agent（2026-10-06）
 

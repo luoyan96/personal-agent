@@ -60,4 +60,3 @@ describe("Frontend consumes shared contract", () => {
     });
   });
 });
-
