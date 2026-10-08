@@ -2,15 +2,19 @@
 
 更新日期：2026-10-08（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 本批上下文改造：待完整检查与后台部署
+## 最新后台：对话上下文分层已部署，现有 Windows 0.5.1 兼容
 
 `feature/conversation-context` 在Windows0.5.1配套后台上实现近期原文、早期有出处摘录、同对话历史检索、相关已确认记忆与实际工作任务状态。普通新建本地聊天总上限16000/90，输出仍4096；原队列/重试/创建/协调/定时/外部/文件预算保留。没有新增公开协议、数据库迁移或桌面安装包，现有Windows0.5.1兼容。详见[上下文实现与边界](development/conversation-context.md)。
 
-定向真实HTTP/SQLite/生产worker的7项新上下文检查和相关聊天、文件、账户/创建边界已通过；供应商明确合成。两次完整检查中先遇到任务结果可空编号的编译错误、再发现3项旧默认预算夹具不匹配，失败保留并修正；最新完整检查与云端切换尚待完成。下面的5c949980仍是当前实际部署，不能把候选源码当成上线。
+2026-10-08 **12:25北京时间**，API/worker已成对部署固定源码 `06262a6b7b0167b7434e4536b753ec2526e8d045`，同镜像 `sha256:7b2b77b62a5c37616268bb0190465a469ac38c2e8ea076dea4b25a82510bc663`，均running / unless-stopped。contract0.21/chat1.10/schema20、公网ready200；没有迁移或新的客户端安装要求。83表备份隔离恢复、全部行摘要保持、integrity/FK通过。部署与回退配置见[本批部署记录](deployment/personal-agent-conversation-context.md)。下面5c949980是上一轮后台版本。
+
+定向真实HTTP/SQLite/生产worker的7项新上下文检查和相关聊天、文件、账户/创建边界通过；供应商明确合成。最终完整 `pnpm run ci` **46文件/575项**、生产020 CLI/HTTP两项、B0进程与Web生产隔离全部通过。两次先前完整检查的可空任务结果编号编译错误、3项旧默认预算夹具失败保留，修正后完成完整检查。云端运行模块与受测源码编译结果核对通过；Windows chat.js模板串的5个CRLF统一LF后相同。证据在Git外 `.runtime/conversation-context-20261008`；源码审查[PR21](https://github.com/luoyan96/personal-agent/pull/21)为草稿，依赖PR20，未合main。未使用用户Key或资料做真实模型质量评估，关键词检索和有出处摘录的边界见实现说明。
+
+固定运行源码06262a6b的GitHub [37726801838](https://github.com/luoyan96/personal-agent/actions/runs/37726801838)三平台（Ubuntu22.19/24、Windows24）实际全部通过；后续部署日志文档提交不改变该运行源码或Windows发布标签。
 
 ## 当前已发布：Windows 0.5.1，云端工作台与广场
 
-2026-10-08 **10:08:00北京时间**，[v0.5.1](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.1)已正式发布并成为公开latest；标签固定桌面源码 `784de4231918e42301f82a979c238118e0405d04`。API/worker已实际升级为同一固定源码 `5c9499800ec71f6b6ad444b2e9d89ba06d9a4808`，实际镜像 `sha256:0c6929175fae18ad603eb25d558daf75cb3bfb66314e46f3fe9cdfc4bc98a555`；contract0.21/chat1.10/schema20，公网ready200。**019/020已部署，工作台/广场接口可用。** [PR20](https://github.com/luoyan96/personal-agent/pull/20)保留草稿、未合main；v0.5.0标签和0.4.0旧草稿保留。
+2026-10-08 **10:08:00北京时间**，[v0.5.1](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.1)已正式发布并成为公开latest；标签固定桌面源码 `784de4231918e42301f82a979c238118e0405d04`。该轮API/worker升级为固定源码 `5c9499800ec71f6b6ad444b2e9d89ba06d9a4808`、镜像 `sha256:0c6929175fae18ad603eb25d558daf75cb3bfb66314e46f3fe9cdfc4bc98a555`，已由本页上方06262a6b上下文后台替换；contract0.21/chat1.10/schema20保持。**019/020已部署，工作台/广场接口可用。** [PR20](https://github.com/luoyan96/personal-agent/pull/20)保留草稿、未合main；v0.5.0标签和0.4.0旧草稿保留。
 
 桌面为微信式消息、通讯录、工作台、广场四入口。人与Agent共同名片、创建/导入/兼容外部连接、实际历史搜索/引用/群@、置顶/免打扰和连续输入/流式/恢复接入现有聊天。工作台管理提案、群确认、任务承接、实际结果和指定消息验收；本人主动公开/撤回能力，双方同意后联系。定时管理、本人记忆/模型设置与永久版本更新入口保留。详见[功能交接](development/desktop-social-workspace.md)。0.5.1增加公共ready版本检查，旧服务器给出明确更新说明、本机报告独立，真实权限错误保持。
 
