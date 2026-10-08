@@ -21,6 +21,7 @@ import { readWorkspaceAvailability } from "./workspace-availability";
 import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 
 import { SkillLibrary } from "./SkillLibrary";
+import { TaskPlanning } from "./TaskPlanning";
 type Category = "ongoing" | "awaiting_me" | "completed";
 function WorkbenchOverview({
   card,
@@ -132,7 +133,11 @@ export function DesktopWorkbench() {
       ? "scheduled"
       : params.get("view") === "reports"
       ? "reports"
+      : params.get("view") === "planning" ||
+        (!params.get("view") && !params.get("task"))
+      ? "planning"
       : "tasks";
+  const [planningLaunch, setPlanningLaunch] = useState(0);
   const requestedTask = params.get("task");
   const requestedValid = !!requestedTask && Id.safeParse(requestedTask).success;
   const [category, setCategory] = useState<Category>("ongoing"),
@@ -194,13 +199,15 @@ export function DesktopWorkbench() {
         !(c.identity.kind === "human" && c.identity.memberId === actor?.member.id),
     );
   const setTab = (value: string) => {
+    if (value !== "planning") setPlanningLaunch(0);
     setSelected(undefined);
     setDetails(false);
     const next = new URLSearchParams(params);
     next.delete("task");
+    next.delete("plan");
+    next.delete("planning");
     next.delete("tab");
-    if (value === "tasks") next.delete("view");
-    else next.set("view", value);
+    next.set("view", value);
     setParams(next);
   };
   const select = (card: WorkbenchCard) => {
@@ -242,18 +249,23 @@ export function DesktopWorkbench() {
       <header className="workspace-heading">
         <div>
           <h1>工作台</h1>
-          <p>任务、定时安排和本机报告，都有实际进展可查。</p>
+          <p>把目标变成可推进的计划</p>
         </div>
         <Button
           type="primary"
           disabled={!supported}
           onClick={() => {
-            setCreating(true);
-            setFailure("");
-            setBusy(false);
+            if (tab === "tasks") {
+              setCreating(true);
+              setFailure("");
+              setBusy(false);
+            } else {
+              if (tab !== "planning") setTab("planning");
+              setPlanningLaunch((value) => value + 1);
+            }
           }}
         >
-          新建任务
+          {tab === "tasks" ? "新建单项任务" : "规划新任务"}
         </Button>
       </header>
       <div className="workspace-toolbar">
@@ -262,6 +274,7 @@ export function DesktopWorkbench() {
           value={tab}
           onChange={(value) => setTab(String(value))}
           options={[
+            { label: "任务规划", value: "planning" },
             { label: "我的任务", value: "tasks" },
             { label: "定时任务", value: "scheduled" },
             { label: "本机报告", value: "reports" },
@@ -297,6 +310,8 @@ export function DesktopWorkbench() {
           error={availability.error}
           onRetry={availability.refresh}
         />
+      ) : tab === "planning" ? (
+        <TaskPlanning launch={planningLaunch} onTasks={() => setTab("tasks")} />
       ) : tab === "scheduled" ? (
         <div className="workspace-full-panel">
           <PersonalFollowupPanel active />

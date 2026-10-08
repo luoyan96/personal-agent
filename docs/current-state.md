@@ -1,8 +1,20 @@
 # 新 AI 接手：当前项目状态
 
-更新日期：2026-10-08（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+更新日期：2026-10-09（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新本地候选：AcceptCat 0.6.1，近期聚焦科研
+## 最新本地候选：AcceptCat 0.7.0，科研任务规划
+
+固定桌面源码 **d3e8b19f1a722eafcbbc2a4d7f997442244bfbe5**（feature/research-task-planning，基于f611d3f / feature/acceptcat-branding）；后续本批文档提交不改变安装包代码。用户要求参考Today并直接完善任务规划，本批仅修改桌面客户端及交接文档，复用既有计划与任务API，无共享核心、契约、Skill或数据库变更。
+
+工作台默认“任务规划”：自然语言需求、AI异步拆解 / 生成记录 / 取消、论文阅读 / 实验推进 / 论文写作模板、可编辑步骤 / 交付物 / 验收标准 / 分工 / 依赖 / 截止日期、服务端保存与重开草案、同版本确认创建实际任务、验收计数及下一步操作。沿用原有单项任务、邀请、执行、提交与验收面板。日期未知不推测，邀请不等于承接，执行 / 回复 / 提交不等于验收完成。模型生成使用现有实验室科研规划服务；尚未迁移到个人默认模型。任意私人Agent / 跨空间好友的多步骤安排和完整科研工具执行仍未实现。[用法、参考依据、界面对照与边界](development/research-task-planning.md)。
+
+renderer / Electron类型、规划4项与既有更新 / 地址8项共12项、文档门禁159文件 / 10技能、真实NSIS构建与exe / blockmap / latest.yml校验通过。本地真正HTTP / SQLite / worker、隔离Electron22当前组件的7项流程通过，涵盖保存 / 重开、3个独立任务、提交验收后下一步、AI异步草案与1024×726；模型为注入合成，pageerror0。实际0.7.0 app.asar含新模块，新打包Electron22隔离启动 / 登录界面 / 版本 / SDK及Skill桥接通过，截图已查看；仅启动，不代表用户已登录或实际安装升级。组件宿主1600×1000和1024×726与概念对照已查看，保留纵向滚动。
+
+本地安装包 **D:/deepseek-agent/AcceptCat-Windows/0.7.0/AcceptCat_0.7.0.exe**，**86405556字节**，SHA256 **dc5e06358ecb0e7192b9b670fdf05ae3f3b20e877c043126195f427178006055**；同目录保留blockmap / latest.yml。本批没有发布Release、部署API / worker、迁移数据库、操作用户已安装软件或调用真实模型。公开更新与后台仍为下节0.6.0 / 11cd20a，contract0.22 / chat1.11 / schema21。构建使用publish never；旧安装版真实覆盖升级 / 自动更新重启尚未验收。
+
+Git外证据 `.runtime/task-planning-20261009`：ui-qa.json、model-input-proof.json、最终组件截图、build-windows.log、update-assets.json、packaged-planning.json和packaged-login.png。测试宿主文件已移出客户端，自有API / Vite / Electron测试进程已关闭；保留初始选择器、原生导航与asar分隔符检查失败，不算通过。实际启动成功后Playwright进程未自动退出，按记录中的自有进程树关闭；没有重新运行用户软件。
+
+## 前一本地候选：AcceptCat 0.6.1，近期聚焦科研
 
 固定桌面源码：73cffd8eb3db7f15b20c3b3dcb628ec3f55d578b（feature/acceptcat-branding）；后续本批文档提交不改变安装包代码。
 

@@ -2,7 +2,7 @@
 
 AcceptCat采用微信式聊天，真人和Agent共用通讯录。近期聚焦中国科研工作者，先服务本人及学生的真实课题：交代目标、明确分工、使用资料、提交成果、反馈验收并持续积累背景。接下来约半年以自己课题组持续使用为主，再判断推广。Windows桌面优先，科研功能的实际范围见[产品规划v0.8](docs/product-plan.md)与[开发路线](docs/roadmap.md)。
 
-2026-10-08：0.6.1为本地AcceptCat品牌候选，保留旧版安装身份、用户数据目录和GitHub更新源；公开发布与云端仍是下方0.6.0。本项目继续沿用现有代码和[早期迁移成果](docs/migration.md)，历史版本及验证记录保留。
+2026-10-09：本地AcceptCat **0.7.0** 新增[科研任务规划](docs/development/research-task-planning.md)：目标拆成可编辑步骤、科研模板、负责人 / 依赖 / 验收条件、服务端草案恢复、确认生成真实任务和下一步提示。保留0.6.1品牌候选的安装身份、数据目录和GitHub更新源；公开Release与云端仍是下方0.6.0，准确安装包与受测范围见[当前状态](docs/current-state.md)。本项目继续沿用现有代码和[早期迁移成果](docs/migration.md)，历史版本及验证记录保留。
 
 Windows0.6.0私人技能和配套API / worker已发布（contract0.22 / schema21）；安装、授权、聊天文字流程与边界见 [当前状态](docs/current-state.md)。
 
