@@ -4,6 +4,7 @@ import { useConversationStore, useUserStore } from "@/store";
 import { useResearchStore } from "./store";
 
 export type AgentChatOperation = {
+  signal: AbortSignal;
   isCurrent: () => boolean;
   allowTarget: (conversationID: string) => void;
   dispose: () => void;
@@ -38,6 +39,7 @@ export function useAgentChatOperation() {
     const selfID = useUserStore.getState().selfInfo.userID;
     let targetID: string | undefined;
     let cancelled = false;
+    const controller = new AbortController();
     const unsubscribe = useConversationStore.subscribe((next, previous) => {
       const nextID = next.currentConversation?.conversationID;
       if (
@@ -47,9 +49,10 @@ export function useAgentChatOperation() {
           next.selectingConversationID &&
           next.selectingConversationID !== targetID)
       )
-        cancelled = true;
+        operation.dispose();
     });
     const operation: AgentChatOperation = {
+      signal: controller.signal,
       isCurrent: () => {
         const state = useResearchStore.getState();
         const selectedID =
@@ -71,6 +74,7 @@ export function useAgentChatOperation() {
       },
       dispose: () => {
         cancelled = true;
+        controller.abort();
         unsubscribe();
         active.current.delete(operation);
       },

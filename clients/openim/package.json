@@ -1,8 +1,8 @@
 {
   "name": "research-wechat-openim",
-  "version": "0.3.0",
+  "version": "0.5.1",
   "main": "dist-electron/main/bootstrap.js",
-  "description": "科研微信 · OpenIM Research Client",
+  "description": "Personal Agent · 人与智能体协作",
   "author": "blooming",
   "private": true,
   "packageManager": "pnpm@10.28.0",
@@ -33,6 +33,7 @@
     "test:local-folder": "node --test tests/local-folder.test.mjs",
     "test:desktop-work": "node --test tests/desktop-work.test.mjs tests/desktop-flow.test.mjs",
     "test:updates": "node --test tests/desktop-updates.test.mjs",
+    "test:send-recovery": "node --test tests/send-recovery.test.mjs tests/desktop-proxy.test.mjs",
     "test:auth": "node --test tests/auth-input.test.mjs",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx src",
     "lint:fix": "eslint --ext .js,.jsx,.ts,.tsx --fix --quiet src",

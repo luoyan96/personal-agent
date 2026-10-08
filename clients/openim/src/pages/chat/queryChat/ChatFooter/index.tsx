@@ -2,6 +2,9 @@ import { useLatest } from "ahooks";
 import { Button } from "antd";
 import { t } from "i18next";
 import { memo, useEffect, useRef, useState } from "react";
+import { MessageType } from "@openim/wasm-client-sdk";
+import { CloseOutlined } from "@ant-design/icons";
+import { useChatReply, replyKey, clearChatReply } from "@/research/chat-reply";
 import { useResearchComposer } from "@/research/ResearchComposer";
 import { useResearchStore } from "@/research/store";
 
@@ -19,6 +22,8 @@ import { useAgentFileReading } from "@/research/useAgentFileReading";
 import { useScopedFileSender } from "@/research/useScopedFileSender";
 import { useAgentChatOperation } from "@/research/useAgentChatOperation";
 import type { AgentChatOperation } from "@/research/useAgentChatOperation";
+import { assertRequestActive, withRequestDeadline } from "@/research/request-deadline";
+import emitter from "@/utils/events";
 import "./desktop-chat.scss";
 import {
   chatDrafts,
@@ -43,6 +48,8 @@ const ChatFooter = () => {
   const imID = useConversationStore((s) => s.currentConversation?.conversationID || "");
   const actor = useResearchStore((s) => s.actor?.member.id);
   const generation = useResearchStore((s) => s.generation);
+  const activeReplyKey = replyKey(generation, imID);
+  const reply = useChatReply((s) => s.replies[activeReplyKey]);
   const drafts = useRef(chatDrafts);
   const editor = useRef<CKEditorRef>(null);
   const [html, setHtml] = useState("");
@@ -53,7 +60,11 @@ const ChatFooter = () => {
     (item) => item.generation === generation && item.conversationID === imID,
   );
   const pending = submissions.some((item) => item.state === "sending");
-  const busy = useRef(false);
+  const recovery = submissions.find(
+    (item) => item.state === "failed" || item.state === "paused",
+  );
+  const sending = submissions.find((item) => item.state === "sending");
+  const busy = useRef<number>();
   const mounted = useRef(false);
   const epoch = useRef(0);
   const wake = useRef<() => Promise<void>>();
@@ -69,6 +80,9 @@ const ChatFooter = () => {
     setHtml(drafts.current.get(imID) || "");
   }, [imID, generation]);
   useEffect(() => {
+    if (reply) editor.current?.focus();
+  }, [reply]);
+  useEffect(() => {
     epoch.current++;
     mounted.current = true;
     return () => {
@@ -80,8 +94,15 @@ const ChatFooter = () => {
         items: s.items.map((item) =>
           item.generation === generation &&
           item.conversationID === imID &&
-          item.state === "queued"
-            ? { ...item, state: "paused" as const }
+          (item.state === "queued" || item.state === "sending")
+            ? {
+                ...item,
+                state: "paused" as const,
+                error:
+                  item.state === "sending"
+                    ? "发送结果尚未确认，请重试原消息核对。"
+                    : item.error,
+              }
             : item,
         ),
       }));
@@ -110,9 +131,9 @@ const ChatFooter = () => {
   };
 
   const pump = async () => {
-    if (busy.current) return;
-    busy.current = true;
     const requestEpoch = epoch.current;
+    if (busy.current === requestEpoch) return;
+    busy.current = requestEpoch;
     try {
       while (
         mounted.current &&
@@ -138,6 +159,7 @@ const ChatFooter = () => {
               item.id,
               tracked.operation.isCurrent,
               tracked.intent,
+              tracked.operation.signal,
             );
           else {
             const current = useConversationStore.getState().currentConversation;
@@ -149,31 +171,54 @@ const ChatFooter = () => {
               throw new Error(
                 "原发送对象已变化，请核对后重新输入；不会转发到其他联系人。",
               );
-            const message =
-              item.nativeMessage || (await IMSDK.createTextMessage(item.text)).data;
-            updateSubmission(item.id, { nativeMessage: message });
-            if (!tracked.operation.isCurrent())
-              throw new Error("会话已切换，这条消息尚未发送。");
-            await sendMessage({
-              message,
-              recvID: item.recvID,
-              groupID: item.groupID,
-              isCurrent: tracked.operation.isCurrent,
-            });
+            await withRequestDeadline(
+              async (signal) => {
+                const message =
+                  item.nativeMessage ||
+                  (item.quoteMessage
+                    ? (
+                        await IMSDK.createQuoteMessage({
+                          text: item.text,
+                          message: JSON.stringify(item.quoteMessage),
+                        })
+                      ).data
+                    : (await IMSDK.createTextMessage(item.text)).data);
+                assertRequestActive(signal);
+                updateSubmission(item.id, { nativeMessage: message });
+                if (!tracked.operation.isCurrent())
+                  throw new Error("会话已切换，这条消息尚未发送。");
+                await sendMessage({
+                  message,
+                  recvID: item.recvID,
+                  groupID: item.groupID,
+                  isCurrent: () => tracked.operation.isCurrent() && !signal.aborted,
+                });
+                assertRequestActive(signal);
+              },
+              30000,
+              tracked.operation.signal,
+            );
           }
+          if (operations.current.get(item.id) !== tracked) break;
           removeSubmission(item.id);
           tracked.operation.dispose();
           operations.current.delete(item.id);
         } catch (error) {
-          updateSubmission(item.id, {
-            state: "failed",
-            error: error instanceof Error ? error.message : "发送失败，请核对后重试。",
-          });
+          if (operations.current.get(item.id) === tracked) {
+            tracked.operation.dispose();
+            updateSubmission(item.id, {
+              state: "failed",
+              error:
+                error instanceof Error && error.name !== "AbortError"
+                  ? error.message
+                  : "已停止等待，发送结果尚未确认。请重试原消息核对。",
+            });
+          }
           break; // Never silently skip a failed earlier sentence.
         }
       }
     } finally {
-      busy.current = false;
+      if (busy.current === requestEpoch) busy.current = undefined;
       const next = useChatOutbox
         .getState()
         .items.find(
@@ -205,7 +250,28 @@ const ChatFooter = () => {
     try {
       if (submissions.length >= 20 || useChatOutbox.getState().items.length >= 50)
         throw new Error("还有较多消息未发送，请先处理发送记录。");
-      const request = composer.prepareResearch(cleanText);
+      let text = cleanText;
+      let request = composer.prepareResearch(text);
+      if (
+        reply &&
+        (request ||
+          !reply.message ||
+          reply.message.contentType === MessageType.CustomMessage)
+      ) {
+        // Preserve leading group addresses and their original mention offsets.
+        // Quoted @ text is context, never a new addressee.
+        text = `${cleanText}\n\n> 引用 ${reply.sender.replace(
+          /[\r\n]/g,
+          " ",
+        )}：\n${reply.text
+          .split("\n")
+          .map((line) => `> ${line}`)
+          .join("\n")}`;
+        if (text.length > 8000)
+          throw new Error("回复与引用内容过长，请缩短回复后再发送。");
+        // Preserve the already accepted external consent and original request shape.
+        if (request) request = { ...request, body: { ...request.body, text } };
+      }
       const id = crypto.randomUUID(),
         operation = captureSend(),
         intent = composer.acceptSendIntent();
@@ -217,11 +283,18 @@ const ChatFooter = () => {
         recvID: conversation.userID,
         groupID: conversation.groupID,
         html: original,
-        text: cleanText,
+        text,
         request,
+        quoteMessage:
+          reply?.message &&
+          !request &&
+          reply.message.contentType !== MessageType.CustomMessage
+            ? reply.message
+            : undefined,
         state: "queued",
       };
       useChatOutbox.setState((s) => ({ items: [...s.items, item] }));
+      clearChatReply(activeReplyKey);
       saveChatDraft(conversation.conversationID, "");
       latestHtml.current = "";
       setHtml("");
@@ -257,10 +330,30 @@ const ChatFooter = () => {
       operation.dispose();
     }
   };
+  const latestDroppedFiles = useLatest(droppedFiles);
+  useEffect(() => {
+    const handleDrop = (request: {
+      conversationID: string;
+      generation: number;
+      files: File[];
+    }) => {
+      if (
+        request.conversationID === imID &&
+        request.generation === generation &&
+        imID === useConversationStore.getState().currentConversation?.conversationID &&
+        generation === useResearchStore.getState().generation
+      )
+        void latestDroppedFiles.current(request.files);
+    };
+    emitter.on("CHAT_FILES_DROPPED", handleDrop);
+    return () => emitter.off("CHAT_FILES_DROPPED", handleDrop);
+  }, [imID, generation]);
 
   return (
     <footer
-      className={`desktop-chat-footer relative h-full bg-white py-px ${window.electronAPI ? "is-native-desktop" : ""}`}
+      className={`desktop-chat-footer relative h-full bg-white py-px ${
+        window.electronAPI ? "is-native-desktop" : ""
+      }`}
       onDragOver={(event) => {
         if (event.dataTransfer.types.includes("Files")) event.preventDefault();
       }}
@@ -279,6 +372,84 @@ const ChatFooter = () => {
           getSoundMessage={getSoundMessage}
           insertEmoji={(emoji) => editor.current?.insertText(emoji)}
         />
+        {reply && (
+          <div className="desktop-composer-quote" data-chat-quote>
+            <div>
+              <strong>回复 {reply.sender}</strong>
+              <p>{reply.text}</p>
+            </div>
+            <button
+              type="button"
+              aria-label="取消引用"
+              onClick={() => clearChatReply(activeReplyKey)}
+            >
+              <CloseOutlined />
+            </button>
+          </div>
+        )}
+        {!!submissions.length && (
+          <div
+            className="desktop-send-record shrink-0"
+            data-chat-outbox
+            data-send-recovery={recovery ? "true" : undefined}
+          >
+            <p className="text-slate-500" role="status">
+              {pending ? "正在发送；可以继续输入" : "发送记录已保留"} ·{" "}
+              {submissions.length} 条
+            </p>
+            {sending && !recovery && (
+              <div className="flex items-center gap-2">
+                <p className="min-w-0 flex-1 truncate" title={sending.text}>
+                  {sending.text}
+                </p>
+                <Button
+                  size="small"
+                  title="只停止等待回执，发送结果需核对"
+                  onClick={() =>
+                    operations.current.get(sending.id)?.operation.dispose()
+                  }
+                >
+                  停止等待
+                </Button>
+              </div>
+            )}
+            {recovery && (
+              <div>
+                <p className="truncate" title={recovery.text}>
+                  {recovery.text}
+                </p>
+                <p className="desktop-send-error text-red-700" role="alert">
+                  {recovery.error || "离开会话后已暂停，请核对后继续。"}
+                </p>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  <Button
+                    size="small"
+                    disabled={pending}
+                    onClick={() => retrySubmission(recovery)}
+                  >
+                    重试原消息
+                  </Button>
+                  <Button
+                    size="small"
+                    disabled={pending}
+                    title="仅移除这条本地记录，不会撤回已到达服务器的消息"
+                    onClick={() => {
+                      operations.current.get(recovery.id)?.operation.dispose();
+                      operations.current.delete(recovery.id);
+                      removeSubmission(recovery.id);
+                      void pump();
+                    }}
+                  >
+                    移除此记录
+                  </Button>
+                  {submissions.length > 1 && (
+                    <span className="text-slate-500">后续消息等待此条处理</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <div
           className="max-h-[40%] min-h-0 shrink overflow-y-auto"
           data-composer-controls
@@ -293,49 +464,6 @@ const ChatFooter = () => {
                 知道了
               </button>
             </p>
-          )}
-          {!!submissions.length && (
-            <div className="px-3 py-1 text-xs" data-chat-outbox>
-              <p className="text-slate-500">
-                {pending ? "正在发送；可以继续输入" : "未发送内容已保留"} ·{" "}
-                {submissions.length} 条
-              </p>
-              {submissions
-                .filter((item) => item.state === "failed" || item.state === "paused")
-                .slice(0, 1)
-                .map((item) => (
-                  <div key={item.id}>
-                    <p className="truncate" title={item.text}>
-                      {item.text}
-                    </p>
-                    <p className="text-red-700">
-                      {item.error || "离开会话后暂停，尚未继续发送。"}{" "}
-                      后续消息也已暂停。
-                    </p>
-                    <Button size="small" onClick={() => retrySubmission(item)}>
-                      重试此条
-                    </Button>
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        operations.current.get(item.id)?.operation.dispose();
-                        operations.current.delete(item.id);
-                        removeSubmission(item.id);
-                        void pump();
-                      }}
-                    >
-                      不发送此条，继续
-                    </Button>
-                    <Button
-                      size="small"
-                      disabled={!!html}
-                      onClick={() => onChange(item.html)}
-                    >
-                      复制回输入框
-                    </Button>
-                  </div>
-                ))}
-            </div>
           )}
           {composer.controls}
           {fileReading.controls}
@@ -377,7 +505,11 @@ const ChatFooter = () => {
           />
           <div className="desktop-composer-bottom flex items-center justify-between px-3 py-2">
             <div>{composer.advancedToggle}</div>
-            {window.electronAPI && <span className="desktop-send-shortcut">Enter 发送 · Shift+Enter 换行</span>}
+            {window.electronAPI && (
+              <span className="desktop-send-shortcut">
+                Enter 发送 · Shift+Enter 换行
+              </span>
+            )}
             <Button
               className="w-fit px-6 py-1"
               type="primary"

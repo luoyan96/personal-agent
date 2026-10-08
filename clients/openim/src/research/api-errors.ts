@@ -10,8 +10,10 @@ export function validationMessage(issues: readonly ValidationIssue[]): string {
   if (field === "displayName") return "请填写显示姓名，最多 200 个字符。";
   if (field === "filename") return "文件名需为 1–200 个字符，不能包含路径。";
   if (field === "mediaType") return "只支持含文字的 PDF、TXT、Markdown 和 CSV。";
-  if (field === "contentBase64") return "文件内容或大小不符合读取要求，请选择不超过 10 MiB 的原文件。";
-  if (field === "endpoint") return "请填写完整的 HTTPS chat/completions 接口地址；不支持 URL 中的账号、参数或非 443 端口。";
+  if (field === "contentBase64")
+    return "文件内容或大小不符合读取要求，请选择不超过 10 MiB 的原文件。";
+  if (field === "endpoint")
+    return "请填写完整的 HTTPS chat/completions 接口地址；不支持 URL 中的账号、参数或非 443 端口。";
   if (field === "apiKey") return "API Key 至少 8 个字符，不会回显。";
   return "请检查必填内容、格式和长度后再试。";
 }
@@ -19,14 +21,17 @@ export function validationMessage(issues: readonly ValidationIssue[]): string {
 const messages: Record<string, string> = {
   AGENT_LIMIT_REACHED: "个人 Agent 数量已达上限，请先整理已有 Agent。",
   EXTERNAL_CONSENT_REQUIRED: "请先明确授权将本条文字发送到外部服务。",
-  EXTERNAL_FILES_UNSUPPORTED: "此 Agent 接入外部文字服务，只接收当前授权文字，不读取附件。",
-  EXTERNAL_SCOPE_UNSUPPORTED: "外部 Agent 仅支持当前文字聊天，不支持历史、记忆或协作任务。",
+  EXTERNAL_FILES_UNSUPPORTED:
+    "此 Agent 接入外部文字服务，只接收当前授权文字，不读取附件。",
+  EXTERNAL_SCOPE_UNSUPPORTED:
+    "外部 Agent 仅支持当前文字聊天，不支持历史、记忆或协作任务。",
   EXTERNAL_ENDPOINT_UNSAFE: "外部接口地址不符合安全连接要求，请核对 HTTPS 地址。",
   EXTERNAL_AUTH_FAILED: "外部服务拒绝了凭据，请让主人核对该服务的 API Key。",
   EXTERNAL_SERVICE_FAILED: "外部服务暂不可用，不会自动改用其他模型。",
   EXTERNAL_RESPONSE_INVALID: "外部服务返回内容无法读取，请让主人核对文字接口与模型。",
   EXTERNAL_TIMEOUT: "外部服务响应超时；请核对服务记录后再决定是否重新发送。",
-  EXTERNAL_OUTCOME_UNCERTAIN: "外部请求结果尚未确认，不会自动重复请求，请核对服务记录。",
+  EXTERNAL_OUTCOME_UNCERTAIN:
+    "外部请求结果尚未确认，不会自动重复请求，请核对服务记录。",
   UNAUTHENTICATED: "登录已失效，请重新登录。",
   FORBIDDEN: "你没有执行此操作的权限，请核对账号和当前授权。",
   NOT_FOUND: "内容不存在，或你已失去访问权限。",
@@ -54,6 +59,12 @@ export function serviceErrorMessage(
   status: number,
   route?: string,
 ): string {
+  if (
+    status === 404 &&
+    ["NOT_FOUND", "HTTP_ERROR", "NOT_IMPLEMENTED"].includes(code) &&
+    (route === "workbench" || route === "capabilityPublications")
+  )
+    return "服务器尚未启用此功能，请联系管理员完成服务更新。";
   if (code === "UNAUTHENTICATED" && route === "login")
     return "用户名或密码不正确，或账号已停用，请核对后重试。";
   return (

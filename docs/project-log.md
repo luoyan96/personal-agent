@@ -1,5 +1,71 @@
 # 项目进展日志
 
+## 2026-10-08：工作台/广场生产升级与Windows0.5.1正式发布
+
+- 用户明确授权现有Edge阿里云维护会话，已实际备份并升级API/worker为5c949980 / 同镜像0c692917，019/020已迁移，contract0.21/chat1.10/schema20、公开ready200。备份隔离研究库恢复读取、重复迁移、78旧表行/hash与旧迁移记录保持、FK/integrity通过。详见[部署收据](deployment/personal-agent-social-workspace.md)。原IM/组件镜像、凭据/端口及其他网站未改。
+- Workbench NoSuchKey、完整源包慢传、匿名Mongo卷预检、SQLite只读WAL备份失败及恢复查询失败、非执行脚本权限错误均保留。SQLite失败后schema18未迁移，旧服务恢复；改为只读查询+可写文件系统并修正恢复退出，再执行完整备份/切换成功。不能把中断视为零停机；未做完整组件或异地恢复演练。
+- 2026-10-08 10:03:02–10:03:25北京时间，两个合成个人账号16项真实HTTPS检查通过，包括跨空间联系人/Agent同意、真实OpenIM回调/身份/群与私聊同步、任务群/承接/指定结果验收、重复提醒管理和实际到时后台投递im_sent（一次run、无模型turn）。公开撤回、两安排inactive、两会话logout，账号和审计历史保留；无用户账号/Key/文件、无真实模型、SDK媒体未测。子任务sandbox EACCES零注册和工具status覆盖导致汇总15的原报告保留，root同脚本完成后仅修正报告为16/16，未重复请求。
+- 0.5.1固定运行源码784de423已推送标签；Windows安装包86296322字节、SHA25671d1086c9538effb756ab710d8751ec53c21d8f6f6d9596905fa74368fd58117。NSIS/更新清单和实际包登录页/native桥通过，三个受限GPU失败保留，同包正常宿主原参数通过。GitHub三平台37714297856全部通过；四发布资产size/digest核对、公开latest与下载清单0.5.1通过，**10:08:00北京时间正式发布**。PR20仍草稿、未合main，v0.5.0固定标签及0.4.0旧草稿保留；未安装/重启用户软件。
+- 证据在Git外 `.runtime/desktop-social-workspace-20261007`（云/发布、backend/live-20261008020302496_4ff920cd）和 `.runtime/desktop-social-workspace-20261008`（0.5.1兼容UI及打包）。历史候选/失败事实保留在后续条目；新的AI以当前状态和本批收据接手。
+
+## 2026-10-08：工作台/广场版本不匹配修复与授权部署准备
+
+- 用户已授权Edge阿里云维护会话的备份、API/worker成对升级及019/020。现有API镜像实际d56ee747、公开ready0.19，桌面新列表404不是账号资料丢失。固定5c949980后台源码子集627743字节、SHA256 a3370b55e3390e45966cf2394423020429992a1242c97d416abc26ba26b8b80d在服务器校验通过；Workbench文件网关NoSuchKey、完整包单连接过慢的失败证据保留，改用公开源代码资产。GitHub推送恢复，v0.5.0与草稿PR20已建立，生产切换仍在执行。
+- Windows0.5.1增加公共ready版本检查、旧服务明确更新说明、停止不兼容读取/创建/公开、本机报告独立可用，以及权限错误保留。8项隔离界面检查和renderer类型通过；旧health与权限响应受控，0.21工作台/广场数据走真实HTTP/SQLite。SDK与native桥合成，没有用户资料或真实模型调用。证据在Git外 `.runtime/desktop-social-workspace-20261008/frontend/availability-7a3b25cf`；尚不把本地验证称线上验收。打包/迁移结果随后记入收据。
+
+## 2026-10-08：Windows 0.5.0 人与 Agent 协作工作区
+
+- `feature/desktop-social-workspace` 合并 0.3.3 的设置/更新和 019 定时任务基础。桌面使用消息、通讯录、工作台、广场四入口；微信式灰白绿、紧凑会话列表、方形头像、直接文件/图片/语音工具栏。实际历史搜索、引用、SDK 置顶/免打扰、分页群成员、连续输入/流式/发送恢复接入现有聊天。
+- 统一人和 Agent 的名片、创建/导入/兼容外部连接；本人能力明确公开或撤回，公开广场联系请求与本人同意后聊天。工作台展示实际提案、参与、群聊、运行、结果、指定消息验收，以及定时管理和当前身份原生报告。显式迁移 020，contract0.21/chat1.10；旧科研任务/资料/记忆权限保留。社交群中本人明确选择的自有 Agent 直接加入，其他人/Agent 仍须同意。
+- 群里开头 @一个已加入的站内 Agent 可请求处理；普通聊天和 @真人不调用模型。引用内容追加在原消息后，UTF-16 提及位置不移位。外部 Agent 仅支持既有 chat_completions 连接和逐次转发同意，不开放群资料自动外发，不宣称新接入 CopilotKit/AG-UI/A2A。
+- 最终工程检查通过：45 文件/568 项、2 项生产 020 CLI/HTTP、B0 真实进程、Web 生产隔离；renderer/Electron 类型、引用恢复 3 项、群提及 6 项通过。旧 accepted 跨空间 plan:null 的 403 测试期望经实际授权讨论群断言更新；待同意、科研资料、私有记忆和撤销后的边界仍拒绝，首次失败证据保留。
+- 真实 React/HTTP/SQLite 通讯录、任务、广场等 12 类交互分段闭合，pageerror0、1024×726 无横向溢出。隔离 Electron22 的聊天连续输入、流式、持久回复、SDK 免打扰、授权搜索及任务群 @/worker 结果关联通过；SDK 网络、原生报告桥与模型厂商明确为合成端口。Antd/Router 警告和夹具选择器失败保留。截图经过查看，未操作用户账号、模型 Key 或正常窗口。
+- 第一份实际 NSIS 候选通过资产门禁，但打包启动检查发现 preload 运行时导入浏览器 WASM SDK，在页面 URL 就绪前初始化 worker，出现 Invalid URL。preload 改为纯类型导入并使用 OpenIM 原生平台 ID；Electron 类型通过，重新生成安装包。隐藏窗口截图超时和诊断脚本 require 未定义是检查夹具错误，证据同样保留。
+- 证据在 Git 外 `.runtime/desktop-social-workspace-20261007`、`.runtime/desktop-social-workspace-20261008/frontend`、`.runtime/desktop-chat-final-review-20261008`。Windows 候选另存 `PersonalAgent-Windows/0.5.0`；最终资产摘要、固定源码及发布收据随后补充。用户正常客户端未安装或重启。
+- 云端此前记录仍 API/worker94b26d1、contract0.19/chat1.8/schema18。019/020 尚未执行；已有私有 Workbench 会话访问的自动审批拒绝未绕过，已明确询问本次备份、配对服务升级及两项迁移授权。服务器达到新版契约并验收前，0.5.0 保持安装候选，不公开自动更新。
+
+- 最终重打包实际启动通过：原生 SDK/preload 桥可用、平台ID3、登录 UI 正常；未登录 session401 保留。修正预加载后，打包运行暴露 SDK 必需 peer 未入包，构建依赖闭包现包含非可选 peer（Electron 自身除外），恢复 53 个实际已安装运行包，随后启动通过。最终 NSIS 86,295,352 字节，SHA256 `8baa1eeedbebc944e58bbaac47421cf7a5da7380c5ef3967d0151da79998ff49`；exe/blockmap/latest.yml 门禁通过，四资产另存0.5.0目录。2026-10-08公开云ready实际200/contract0.19，未把登录启动称为新版服务器验收。
+
+- 本地运行提交 `5c9499800ec71f6b6ad444b2e9d89ba06d9a4808` 与标签v0.5.0固定。GitHub正常授权推送返回服务器内部错误；分开ref以及HTTP1.1/非thin完整pack定向恢复仍失败，远端API未找到该分支/提交。没有创建PR或Release草稿，不声称源码已上传。收据 `.runtime/desktop-social-workspace-20261007/github-push-final.log`；固定源码tar摘要 `c7bea17d666eb156735ca83f408a1243c26f3789411298232f48c1e027b17c26`，019/020部署计划已准备但未执行。自有4518/4519测试服务已关闭，用户软件未触碰。下一步：取得私有维护会话明确授权、完成配套部署、恢复GitHub上传/PR、验证公开更新资产后发布。
+
+## 2026-10-07：Windows 0.3.3 固定设置 / 版本更新入口
+
+- 22:21:46北京时间正式发布 [v0.3.3](https://github.com/luoyan96/personal-agent/releases/tag/v0.3.3)，源码 / 标签固定 `1fbb238ddc274bb7388d431756cd7d010ad37f13`；4个公开资产的size / SHA256 digest与本地一致，latest正确为0.3.3，0.4.0保持草稿。[PR19](https://github.com/luoyan96/personal-agent/pull/19)已创建 / 附加且未合入main；Foundation checks37635589030读取时运行中，未宣称全部CI通过。草稿未生成标签时按tag读取404，改为按发布列表读取准确ID核验后发布；未绕过资产门禁。
+
+- 用户要求左下角设置内随时可检查更新。分支 `feature/settings-version-updates` 从已发布0.3.2的6448412建立，新增固定“设置 → 版本更新”，同菜单保留模型设置。展示原生真实版本 / 检查结果 / 发布说明 / 下载进度 / 安装重启，设置红点与原左下角提示共用一个订阅；晚到快照不覆盖新状态。打开更新页会检查，下载中 / 已完成保留候选，关闭页面不重复下载。保留启动15秒、6小时、唤醒检查及原生重启确认。
+- renderer / Electron类型与既有5组控制器检查通过；真实Electron22 / Chromium108生产React / 原生IPC / preload方法 / 控制器18项定向交互完成。两次QA选择器重名失败保留，仅补余下安装确认、免安装指导、迟到快照与最终截图。最小1024×726及1280×820无溢出 / 遮挡，pageerror0；截图发现Badge图标颜色继承问题后修正并专门检查。开发Router / CSP / Antd告警保留，不称console全空。Browser插件不在环境中，使用隔离Playwright Electron，发布端口 / 安装资格 / OS响应及无关聊天均合成，未真实执行下载或安装器，用户profile和软件未触碰。
+- NSIS安装包及更新清单门禁、源码 / 资产SHA与GitHub收据保存在Git外 `.runtime/settings-version-updates-20261007`，正式源码以v0.3.3标签为准；另存 `PersonalAgent-Windows/0.3.3`。仅客户端变化，不改契约、数据库或云端。旧版先经托盘或安装包升级一次，再出现永久设置入口；待发内容需要用户先复制保存。
+- 定时任务PR18 / 0.4.0仍独立待部署，migration019与云端Workbench明确授权未完成；现有0.4.0草稿不公开，本批0.3.3兼容线上contract0.19 / schema18。交接入口分别记录，避免将安装包生成或GitHub推送误称为云端上线。
+
+## 2026-10-07：重复提醒与定时 Agent 执行（本地候选）
+
+- 固定候选 f91b9d552c4f786b61434718dea114187ca9e1d2 已推送[PR18](https://github.com/luoyan96/personal-agent/pull/18)，Windows0.4.0草稿四资产全部uploaded，大小 / GitHub SHA256摘要与本机一致。安装包86290794字节、SHA256 `3d522eacce1a9242db2b84b6c02db16c858d1bce65277d80497759f63a2e6a2c`；公共自动更新仍0.3.2。部署计划 / Git归档及上传核对收据Git外保存，维护会话权限已提出明确请求、尚无答复，没有接入生产。
+- Actions37628593268的两Ubuntu完整CI通过；Windows545项通过，唯一旧001→019磁盘迁移框架5秒超时。只增加这一测试harness期限到20秒，生产期限和全部断言保持；实际窄迁移检查1项通过 / 9项未运行。运行源码保持f91b9d5，未重打包 / 放宽服务限制或绕过main门禁。GitHub后续修正检查另读实际运行，原失败日志保留。
+
+- 用户要求补齐定时能力。分支 `feature/recurring-agent-tasks` 基于6448412，Windows候选0.4.0；contract0.20 / chat1.9 / 显式019。详情见[定时任务交接](development/recurring-agent-tasks.md)。尚未云端迁移 / 发布公共桌面更新，线上仍94b26d1 / schema18。
+- 增加日 / 周多星期重复、自然语言明确时点保存、指定本人站内Agent的有界文字任务、持久运行历史及暂停 / 修改 / 恢复 / 结束。历史018提醒默认不重复，019只新增发生表 / 索引。当前权限和原有模型 / 聊天栅栏保留，服务输入只授权准确匹配保存安排的发生轮次。
+- 每次发生事务去重、逾期合并一次、下一未来本地时间、DST歧义跳过、安静时段延后；失败 / 未知用量不自动重新调用，模型不可用 / 聊天忙明确记录。暂停 / 修改取消未完轮次，迟到结果不能写入。隔离恢复暂停全部active安排。
+- 新增8项真实HTTP / SQLite / 实际ChatWorker合成模型专项通过；最后工程44文件 / 546项通过，生产入口019同步后2项、B0进程 / Web隔离通过。第一次新增表fixture遗留、service输入原仅允许human、旧迁移 / 契约数断言失败均修正并保留原证据；生产断言18失败导致打开库未关闭，Windows清理报EPERM，该断言修正后通过，没有放宽权限或生产时限。
+- 桌面左侧“定时任务”与创建 / 编辑 / 运行记录表单接入生产组件。renderer类型、13项隔离Electron22 / Chromium108生产组件交互、实际Windows0.4.0 NSIS打包通过；修改 / 暂停 / 恢复 / 取消、保存失败保留原文、1024×726无横溢出，pageErrors0，截图已查看。开发Router / CSP / Antd警告及故意503保留。初次加号按钮可访问名、Select内输入点击受覆盖、旧Vite契约缓存、编辑文字多匹配失败报告保留；辅助fixture修正未控制用户窗口、账号或Key。证据Git外 `.runtime/recurring-agent-tasks-20261007`，候选安装文件另存 `PersonalAgent-Windows/0.4.0`。
+- 不能读取关闭客户端后的本地文件夹，也不新增搜索 / 通用工具 / 外部Agent调度 / OS通知。以现有模型和近期有界聊天文字生成结果；合成检查不能替代真实云模型验收。生产先备份 / 019迁移 / 配对API-worker发布，后公共桌面更新；schema19库不能直接回退schema18镜像或覆盖旧快照。
+
+## 2026-10-07：Windows 0.3.2 发送恢复
+
+- `fix/desktop-send-recovery`基于e1d38de：普通请求30秒总期限、附件120秒，包含会话准备与正文。取消传播到fetch；保留原文、原请求和原编号，手动重试核对原结果；不自动跳过失败前句。SDK文字同样有界且保留原nativeMessage。切换联系人暂停原记录，新scope不被旧pump锁住，迟到回执不能删除暂停记录。
+- 独立恢复卡完整呈现错误、原文、重试和移除本地记录；“停止等待”不声称撤回服务端消息。原生代理处理半截响应和总期限，诊断日志仅传输元数据。固定TLS / Origin / cookie规则不变。
+- renderer / Electron类型、生产API合成传输6项、生产proxy本地真实HTTP / 合成上游4项、Electron22 / Chromium108生产组件16项通过，pageErrors0；minimum1024×726与1280×820无遮挡，截图已查看。真实无凭据云 / 桌面proxy ready200 / 0.19、session401、无效POST400快速响应。未使用真实账号 / Key或发真实需求，不把合成回执称模型成功。
+- Git外`.runtime/desktop-send-recovery-20261007`保留证据及打包发布收据；CJS测试准备、fixture注释 / 缓存、宽API glob误拦源码失败保留。浏览器维护读取遭自动审批拒绝后提出明确授权请求，桌面工作继续，未绕过拒绝；那次云端具体故障尚未证实。两个交接文档补丁因标题不匹配未写入，改用准确标题后成功。
+- 无共享代码、SQL或后台部署修改。升级前复制旧版未确认需求：现有待发sessionStorage不跨软件重启。v0.3.2标签与Release / Git外收据记录准确软件与资产，main保留合并门禁，既有Windows基础CI超时不通过放宽生产期限解决。
+
+- 实际NSIS构建、更新资产门禁、隔离profile包启动通过；启动日志保留受限网络EACCES与有效元数据，不把启动判为云端回复。exe86286669字节，SHA256 `c0ecd187b8a5e84f37a8f652a99089c7a55d582a3874b6cf43e41a29fb38d6c2`，另存`PersonalAgent-Windows/0.3.2`；未安装 / 重启用户软件。Git外发布收据记录源提交、PR、CI和公开资产最终状态。
+
+## 2026-10-07：Windows 0.3.1 左下角更新按钮
+
+- 用户明确要求做好窗口左下角更新入口。分支`feature/desktop-update-button`基于main6122b91，客户端版本0.3.1；复用原生真实更新状态，增加只接受固定动作与同一候选版本的主frame IPC和preload方法。React先订阅再读取快照，并以revision避免迟到快照覆盖新进度；左下角发现新版 / 下载百分比 / 重启更新 / 失败重试，页面重开不重下。自动检测不打断聊天，手动托盘原生入口及明确安装确认保留。
+- renderer与Electron类型、既有5组控制器检查通过。真实Electron22 / Chromium108运行生产导航、主进程、IPC、preload方法和控制器，17项定向交互通过，1280×820无横溢出、按钮在左下角、pageerror0；过时候选 / 完成前安装 / 非主窗口均拒绝。发布执行器、安装版资格及OS响应为合成；安装器仅验证调用次数，未真实下载或安装，不能宣称旧安装版升级重启成功。
+- 实际NSIS构建、清单 / 安装包 / blockmap与公开GitHub更新源门禁通过；安装包86287581字节、SHA256 `bd7702604c996910baecef8d68c28f12b29a001486870aec6284637d2c945d89`，本机`D:/deepseek-agent/PersonalAgent-Windows/0.3.1/ResearchWeChat_0.3.1.exe`。源码发布以`v0.3.1`和Release固定，后续Git外发布收据记录精确源码、PR / CI、公开资产与最终状态；无共享代码 / 服务端 / 数据库变更。
+- Git外`.runtime/desktop-update-button-20261007`保存类型 / 交互 / 截图 / 打包 / 清单门禁，首次QA依赖解析失败、截图补拍字段遗漏、默认进程读取拒绝均保留失败记录。改正合成服务结构后只补拍按钮截图；残留自有验收进程已单独确认并清理，Vite已关闭，正常用户程序和账号未触碰。旧版须先更新至0.3.1，之后才能使用新按钮。
+
 ## 2026-10-07：Windows0.3.0桌面界面与真实状态呈现
 
 按用户要求，前端交给gpt-6.1-sol / high，独立分支`feature/desktop-agent-interface`；总控生成并检查完整设计参考、审查实际截图、修正汇总计数、打包与整合。桌面发布源码以GitHub `v0.3.0`标签及Release为准。当前交互机制及CopilotKit / AG-UI后续适配边界见[桌面说明](development/desktop-agent-workspace.md)。

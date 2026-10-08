@@ -295,3 +295,30 @@
     gap: 6px;
   }
 }
+
+.model-api-details {
+  color: var(--model-muted);
+  font-size: 12px;
+  summary { cursor: pointer; padding: 3px 0; }
+  .ant-input { margin-top: 8px; font-size: 12px; }
+}
+.personal-agent-native .model-settings-modal {
+  --model-accent: #07b56a;
+  --model-ink: #222;
+  --model-muted: #888;
+  --model-line: #e7e7e7;
+  .ant-modal-content { border-radius: 8px; }
+  .ant-modal-header { padding: 22px 24px 18px; }
+  h1 { font-size: 18px; }
+  h2 { font-size: 16px; }
+  p { font-size: 12px; }
+  .ant-input, .ant-input-affix-wrapper, .ant-select-selector { min-height: 36px; border-radius: 5px; }
+  .ant-input-affix-wrapper .ant-input { min-height: auto; }
+  .ant-btn { height: 34px; border-radius: 5px; }
+  .model-settings-layout { grid-template-columns: 190px minmax(0, 1fr); gap: 24px; }
+  .model-settings-list { background: #f5f5f5; }
+  .model-config-row[aria-pressed="true"] { background: #e1f5e9; color: #07864f; }
+  .model-form-description { margin-bottom: 16px; }
+  .model-form-fields { gap: 14px; }
+  .model-settings-footer { border-color: #e7e7e7; }
+}

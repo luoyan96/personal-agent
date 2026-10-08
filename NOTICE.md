@@ -26,3 +26,7 @@ B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `
 ## 2026-10-06 Agent 附件文字提取
 
 后端通过官方 npm 依赖使用 [mehmet-kozan/pdf-parse](https://github.com/mehmet-kozan/pdf-parse) 的固定版本 `2.4.5`，其安装包声明并保留 Apache-2.0 许可。`pdfjs-dist@5.4.296` 与 `@napi-rs/canvas@0.1.80` 由该版本依赖引入，解析器与平台包的完整性锁定在 `pnpm-lock.yaml`；各依赖保留自身许可。不复制上游源码，也不将附件解析等同于 OCR、联网检索或工具执行。
+
+## 2026-10-08 桌面界面与协作
+
+本次在已有OpenIM派生客户端内改造，保留原客户端及依赖许可。用户提供微信截图仅用于布局/交互参考，不复制其头像、照片、品牌图或源码。OpenMuse与Anet仅作为流式交互、持久任务、能力发现的设计参考，本次未引入其源码或新增CopilotKit/AG-UI/A2A依赖；实际传输仍是既有服务协议和OpenIM。

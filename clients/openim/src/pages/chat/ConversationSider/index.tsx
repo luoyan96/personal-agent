@@ -101,8 +101,8 @@ const ConversationSider = () => {
         wrapClassName="desktop-conversation-list left-2 right-2 top-1.5 flex flex-col"
       >
         {window.electronAPI && <div className="desktop-conversation-heading">
-          <div className="desktop-conversation-title"><h1>消息</h1><NewConversationButton /></div>
           <Input prefix={<SearchOutlined />} placeholder="搜索聊天" aria-label="搜索聊天" allowClear value={search} onChange={event => setSearch(event.target.value)} />
+          <NewConversationButton />
         </div>}
         {window.electronAPI && !filtered.length && <p className="desktop-conversation-empty">{search ? "没有匹配的聊天" : "聊天会显示在这里"}</p>}
         <Virtuoso

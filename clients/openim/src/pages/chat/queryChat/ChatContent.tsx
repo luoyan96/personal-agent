@@ -1,6 +1,14 @@
 import { Layout, Spin } from "antd";
 import clsx from "clsx";
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 
 import { SystemMessageTypes } from "@/constants/im";
@@ -9,6 +17,7 @@ import { useResearchStore } from "@/research/store";
 import { AgentReplyProgress, AgentProgressHistory } from "@/research/agent-progress";
 import { OpenImResearchPointer } from "@research-agent-platform/contracts";
 import emitter from "@/utils/events";
+import { formatMessageTime } from "@/utils/imCommon";
 
 import MessageItem from "./MessageItem";
 import NotificationMessage from "./NotificationMessage";
@@ -16,6 +25,7 @@ import { useHistoryMessageList } from "./useHistoryMessageList";
 
 const ChatContent = () => {
   const virtuoso = useRef<VirtuosoHandle>(null);
+  const [dragging, setDragging] = useState(false);
   const selfUserID = useUserStore((state) => state.selfInfo.userID);
   const actorGeneration = useResearchStore((state) => state.generation);
   const { conversationID, loadState, moreOldLoading, getMoreOldMessages } =
@@ -52,6 +62,18 @@ const ChatContent = () => {
     }
     return { messageIds, latestOwnId };
   }, [loadState.messageList, selfUserID]);
+  const timestampMessages = useMemo(
+    () =>
+      new Set(
+        loadState.messageList
+          .filter(
+            (message, index, list) =>
+              !list[index - 1] || message.sendTime - list[index - 1].sendTime > 300000,
+          )
+          .map((message) => message.clientMsgID),
+      ),
+    [loadState.messageList],
+  );
 
   const stopFollowing = useCallback(() => {
     historyPaused.current = true;
@@ -80,6 +102,7 @@ const ChatContent = () => {
   }, [scope, actorGeneration, selfUserID, conversationID]);
 
   useLayoutEffect(() => {
+    setDragging(false);
     historyPaused.current = false;
     touchY.current = undefined;
     downwardIntentUntil.current = 0;
@@ -167,6 +190,31 @@ const ChatContent = () => {
     <Layout.Content
       className="relative flex h-full overflow-hidden !bg-white"
       id="chat-main"
+      data-files-dragging={dragging ? "true" : undefined}
+      onDragEnterCapture={(event) => {
+        if (event.dataTransfer.types.includes("Files")) {
+          event.preventDefault();
+          setDragging(true);
+        }
+      }}
+      onDragOver={(event) => {
+        if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+          setDragging(false);
+      }}
+      onDropCapture={(event) => {
+        setDragging(false);
+        if (!event.dataTransfer.files.length || !conversationID) return;
+        event.preventDefault();
+        event.stopPropagation();
+        emitter.emit("CHAT_FILES_DROPPED", {
+          conversationID,
+          generation: actorGeneration,
+          files: Array.from(event.dataTransfer.files),
+        });
+      }}
       onWheelCapture={(event) => {
         if (event.deltaY < 0) stopFollowing();
         else if (event.deltaY > 0) markDownwardIntent();
@@ -259,16 +307,25 @@ const ChatContent = () => {
                 );
               }
               const isSender = selfUserID === message.sendID;
+              const showTime =
+                window.electronAPI && timestampMessages.has(message.clientMsgID);
               return (
-                <MessageItem
-                  key={message.clientMsgID}
-                  conversationID={conversationID}
-                  message={message}
-                  messageUpdateFlag={`${message.senderNickname ?? ""}${
-                    message.senderFaceUrl ?? ""
-                  }`}
-                  isSender={isSender}
-                />
+                <>
+                  {showTime && (
+                    <div className="desktop-message-time">
+                      {formatMessageTime(message.sendTime)}
+                    </div>
+                  )}
+                  <MessageItem
+                    key={message.clientMsgID}
+                    conversationID={conversationID}
+                    message={message}
+                    messageUpdateFlag={`${message.senderNickname ?? ""}${
+                      message.senderFaceUrl ?? ""
+                    }`}
+                    isSender={isSender}
+                  />
+                </>
               );
             }}
           />

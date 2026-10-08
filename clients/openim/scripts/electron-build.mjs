@@ -146,6 +146,13 @@ const collectInstalledDependencyNames = (rootPackageNames) => {
     for (const dependencyName of Object.keys(manifest.dependencies ?? {})) {
       visit(dependencyName, manifestPath);
     }
+    // Native packages may require peers at runtime (OpenIM requires the WASM
+    // package for its shared enums). Electron itself is supplied by the app.
+    for (const dependencyName of Object.keys(manifest.peerDependencies ?? {})) {
+      if (builtinPackages.has(dependencyName)) continue;
+      if (manifest.peerDependenciesMeta?.[dependencyName]?.optional) continue;
+      visit(dependencyName, manifestPath);
+    }
     for (const dependencyName of Object.keys(manifest.optionalDependencies ?? {})) {
       // PDF text extraction never renders a canvas. Do not package/rebuild the
       // optional native renderer against Electron's separate Node ABI.

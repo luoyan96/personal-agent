@@ -1,8 +1,16 @@
 # Research Agent Platform · Personal Agent 与人机协作
 
+Windows **0.5.1已发布**：[安装与发布说明](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.1)。微信式消息、统一人与Agent通讯录、工作台、能力广场，永久版本更新入口在左下角设置。配套API/worker已升级至contract0.21/schema20，019/020迁移及16项线上隔离流程检查通过；工作台/广场旧版404已修复。功能见[桌面协作工作区](docs/development/desktop-social-workspace.md)，精确源码、验证边界和备份见[当前状态](docs/current-state.md)与[部署收据](docs/deployment/personal-agent-social-workspace.md)。
+
+Windows桌面 **0.3.3** 新增固定入口：**左下角设置 → 版本更新**，始终显示当前版本并支持检查、下载进度和安装重启；模型设置保留在同一菜单。自动检查仍为启动15秒后、每6小时及电脑唤醒，发现新版才提示。下载与准确受测范围见[当前状态](docs/current-state.md)及[Windows更新](docs/development/windows-updates.md)。保留0.3.2的发送等待恢复；升级前复制旧版未确认需求，待发内容尚不支持跨软件重启恢复。
+
+历史候选 **Windows0.4.0** 增加“定时任务”：一次、每天、每周提醒或让自己的 Agent 到点执行，支持聊天安排、暂停 / 修改和运行记录。此候选原需contract0.20/schema19，现已包含在0.5.1与云端0.21/schema20中，准确进度见[当前状态](docs/current-state.md)，范围与部署见[定时任务](docs/development/recurring-agent-tasks.md)。
+
+Windows桌面 **0.3.2** 修复发送等待和错误 / 重试入口被遮挡：30秒未确认保留原请求，重试沿用原编号；可停止等待、持续输入和切换联系人。下载与准确受测范围见[当前状态](docs/current-state.md)。升级前复制旧版未确认需求；本批未新增跨软件重启的待发恢复。
+
 **最终目标是以个人为中心的Personal Agent：采用类似微信的交流方式，人与Agent共用通讯录；个人助理根据任务类型和难度组织协作，积累获准的长期记忆，持续推进、主动跟进并从反馈中改进。** 科研小组是第一个验证场景，个人可以独立使用。
 
-Windows桌面源码 **0.3.0**：微信式三栏界面、会话搜索、直接媒体工具栏、流式回复与聊天中的文件任务卡，以及本地文件逐段分析/汇总/报告保存。用法、协议接入边界与接手入口见[桌面文件工作区](docs/development/desktop-agent-workspace.md)。桌面发布以GitHub版本标签及Release为准，云端部署记录与桌面版本分别维护。
+Windows桌面源码 **0.3.1**：发现新版后在左下角显示“更新”，点击下载、显示进度，校验完成后可重启安装；保留微信式三栏、会话搜索、流式回复、文件任务卡与本地文件报告。更新用法见[Windows更新](docs/development/windows-updates.md)，文件与协议边界见[桌面文件工作区](docs/development/desktop-agent-workspace.md)。桌面发布以GitHub版本标签及Release为准，云端部署记录与桌面版本分别维护。
 
 主代码仓库为 [luoyan96/personal-agent](https://github.com/luoyan96/personal-agent)，`main` 是共同开发主线。每个人 / AI 用独立分支提交 PR，开发环境、客户端检查和版本回退见[协作说明](CONTRIBUTING.md)。当前发布标签 `personal-agent-2026-10-06.4` 指向已部署客户端622e84b；API代码与已部署94b26d1相同；此前协作基线 `.1` 与初始导入标签保留。GitHub代码更新和阿里云部署分别记录。
 

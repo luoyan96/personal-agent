@@ -72,7 +72,7 @@ const ConversationItem = ({ isActive, conversation }: IConversationProps) => {
           src={conversation.faceURL}
           isgroup={Boolean(conversation.groupID)}
           text={conversation.showName}
-          size={window.electronAPI ? 44 : 42}
+          size={window.electronAPI ? 40 : 42}
         />
       </Badge>
 
@@ -94,7 +94,7 @@ const ConversationItem = ({ isActive, conversation }: IConversationProps) => {
                 (isCoordinator ? contact?.displayName || conversation.showName : "")}
             </div>
           </div>
-          {isCoordinator && <PushpinOutlined className="desktop-conversation-pin" aria-label="个人助理置顶" />}
+          {(isCoordinator || conversation.isPinned) && <PushpinOutlined className="desktop-conversation-pin" aria-label={isCoordinator ? "个人助理置顶" : "聊天置顶"} />}
         </div>
       </div>
     </button>

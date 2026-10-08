@@ -14,6 +14,7 @@ export type ChatSubmission = {
   text: string;
   request?: PreparedResearchSend;
   nativeMessage?: MessageItem;
+  quoteMessage?: MessageItem;
   state: "queued" | "sending" | "failed" | "paused";
   error?: string;
 };
@@ -137,10 +138,21 @@ function restore(actor: ReturnType<typeof useResearchStore.getState>) {
       )
         throw new Error("Invalid stored request");
       if (
+        item.quoteMessage &&
+        (typeof item.quoteMessage.clientMsgID !== "string" ||
+          JSON.stringify(item.quoteMessage).length > 64000)
+      )
+        throw new Error("Invalid quote source");
+      if (
         item.nativeMessage &&
-        (item.nativeMessage.contentType !== 101 ||
+        (![101, 114].includes(item.nativeMessage.contentType) ||
           typeof item.nativeMessage.clientMsgID !== "string" ||
-          item.nativeMessage.textElem?.content !== item.text)
+          (item.nativeMessage.contentType === 114
+            ? !item.quoteMessage ||
+              item.nativeMessage.quoteElem?.text !== item.text ||
+              item.nativeMessage.quoteElem?.quoteMessage?.clientMsgID !==
+                item.quoteMessage.clientMsgID
+            : item.nativeMessage.textElem?.content !== item.text))
       )
         throw new Error("Invalid native draft");
       items.push({

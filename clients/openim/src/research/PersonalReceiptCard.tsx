@@ -1,5 +1,6 @@
 import { Button, Modal } from "antd";
 import { useLayoutEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { AgentTurn, PersonalAssistantReceipt } from "@research-agent-platform/contracts";
 import { researchApi } from "./api";
 import { useResearchRead } from "./useResearchRead";
@@ -22,6 +23,19 @@ function DelegateCard({ receipt }: { receipt: Extract<PersonalAssistantReceipt, 
   </div>;
 }
 
+function WorkTaskReceipt({ receipt }: { receipt: Extract<PersonalAssistantReceipt, { kind: "work_task" }> }) {
+  const navigate = useNavigate();
+  const read = useResearchRead(() => researchApi("personalWorkTask", { params: { id: receipt.taskId } }), `work-receipt:${receipt.taskId}`);
+  const task = read.data?.data;
+  const status = task && ({ proposed: "待你确认安排", ready: "等待成员参与", running: "正在处理", blocked: "需要处理的问题", awaiting_review: "结果已准备，待你确认", completed: "已验收完成", cancelled: "已结束" }[task.status]);
+  return <div className="space-y-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm">
+    <strong>{task?.title || "协作任务安排"}</strong>
+    <p className="text-xs text-gray-500">{read.error || status || "正在读取任务安排…"}</p>
+    {task?.status === "proposed" && <p className="text-xs text-gray-500">查看目标和成员，确认后建立协作群。受邀成员自行决定是否参与。</p>}
+    <Button size="small" onClick={() => navigate(`/workbench?task=${encodeURIComponent(receipt.taskId)}`)}>查看任务安排</Button>
+  </div>;
+}
+
 export function PersonalReceiptCard({ turn, compact = false }: { turn: AgentTurn; compact?: boolean }) {
   const scope = usePersonalOperation(true, `receipt:${turn.id}`);
   const [panel, setPanel] = useState<"memory" | "followups">(), [details, setDetails] = useState(false);
@@ -29,7 +43,7 @@ export function PersonalReceiptCard({ turn, compact = false }: { turn: AgentTurn
   const memory = turn.memoryReceipt, followup = turn.followupReceipt, arrangement = turn.assistantReceipt;
   if (!memory && !followup && !arrangement) return null;
   const memoryTitle = memory && ({ saved: "偏好已保存", corrected: "偏好已纠正", forgotten: "偏好已移除", candidate: "有一条记忆候选等待你确认", clarify: "请补充偏好信息" }[memory.operation]);
-  const title = arrangement ? arrangement.kind === "delegate" ? `已安排给 ${arrangement.displayName}` : "协作建议已保存，等待确认" : memoryTitle || (followup?.operation === "created" ? "跟进已安排" : "请补充提醒时间");
+  const title = arrangement ? arrangement.kind === "delegate" ? `已安排给 ${arrangement.displayName}` : "任务建议已保存" : memoryTitle || (followup?.operation === "created" ? "跟进已安排" : "请补充提醒时间");
   const content = <div className="space-y-3 text-sm">
     {memory && <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
       <strong>{memoryTitle}</strong>{memory.topic && <p className="break-words">{memory.topic}</p>}
@@ -40,9 +54,10 @@ export function PersonalReceiptCard({ turn, compact = false }: { turn: AgentTurn
       <strong>{followup.operation === "created" ? "跟进已安排" : "请补充提醒时间"}</strong>
       {followup.dueAt && followup.timeZone && <p>{personalDueLabel(followup.dueAt, followup.timeZone)}</p>}
       <p className="text-xs text-slate-600">{followup.operation === "clarify" ? followup.question : "到期由服务端处理并写回聊天；当前不表示设备已收到通知。"}</p>
-      {followup.followupId && <Button size="small" onClick={() => setPanel("followups")}>查看跟进</Button>}
+      {followup.followupId && <Button size="small" onClick={() => setPanel("followups")}>查看定时任务</Button>}
     </div>}
     {arrangement?.kind === "delegate" && <DelegateCard receipt={arrangement} />}
+    {arrangement?.kind === "work_task" && <WorkTaskReceipt receipt={arrangement} />}
     {arrangement?.kind === "collaborate" && <p className="rounded-lg border p-3">已保存协作建议。请查看本条消息的协作建议并确认；成员加入、任务承接和执行仍需分别完成。</p>}
   </div>;
   return <>

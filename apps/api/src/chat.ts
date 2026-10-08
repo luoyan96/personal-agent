@@ -1,6 +1,6 @@
 import { randomUUID, createHmac } from 'node:crypto'
 import { z } from 'zod'
-import { Contact, Conversation, ConversationMember, ConversationViewerState, ChatMessage, ChatAction, ChatActionPayload, AgentTurn, SendChatMessage, ChatResource, routes, chatRoutes, agentIntegrationRoutes, personalAssistantRoutes } from '@research-agent-platform/contracts'
+import { Contact, Conversation, ConversationMember, ConversationViewerState, ChatMessage, ChatAction, ChatActionPayload, AgentTurn, SendChatMessage, ChatResource, routes, chatRoutes, agentIntegrationRoutes, personalAssistantRoutes, workspaceRoutes } from '@research-agent-platform/contracts'
 import type { RequestFor } from '@research-agent-platform/contracts'
 import { Collaboration } from './collaboration.js'
 import { AiService, canonical, instant } from './ai.js'
@@ -20,11 +20,12 @@ import { personalWorkRequest,assistantDirectoryFingerprint,unsupportedCollaborat
 import { isAgentCreationCommand, legacyTurnDocument } from './agent-creation.js'
 import { startContinuous,extendContinuous,currentTurnText,supersedeTurn,turnProgress,abortChatCall } from './continuous-chat.js'
 import type { ContinuousInput } from './continuous-chat.js'
+import {workspaceCommands,workspaceAuthorize,workspaceHandle,workspaceReplay,isSocialGroup,socialContactAllowed,checkWorkTurn,personalWork,socialWorkContext,recordSocialWorkTurn} from './workspace.js'
 
-export type ChatCommand = keyof typeof chatRoutes | keyof typeof agentIntegrationRoutes | keyof typeof personalAssistantRoutes | 'imCreateGroup' | 'imInviteContact'
+export type ChatCommand = keyof typeof chatRoutes | keyof typeof agentIntegrationRoutes | keyof typeof personalAssistantRoutes | keyof typeof workspaceRoutes | 'imCreateGroup' | 'imInviteContact'
 type Resource = z.infer<typeof ChatResource>
-export type TurnInput = { continuous?:ContinuousInput; budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; personalAssistant?:boolean; assistantMode?:'coordinate'; delegatedByTurnId?:string; personalMemoryFingerprint?:string; assistantDirectoryFingerprint?:string; assistantReceipt?:AgentTurn['assistantReceipt'];memoryReceipt?:AgentTurn['memoryReceipt'];followupReceipt?:AgentTurn['followupReceipt']; externalConsent?:boolean; externalAgent?:boolean; externalConnectionVersion?:number; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED'; assistantFailure?:'AGENT_LIMIT_REACHED'; fileDocument?:FileDocument; fileSource?:AgentFileSelection; fileRead?:AgentTurn['fileRead']; modelOutputDiagnostic?:{stage:string;returnedTextLength:number;trimEmpty:boolean;maxOutputTokens:number;reasoningEffort:string;finishReason?:string;failure?:string;errorCategory?:string} }
-export type ChatRequest = { params: { id?: string; contactId?: string }; query: { cursor?: string; limit?: number; search?: string; afterSequence?: number; view?: 'directory'|'mine'; direction?: 'all'|'incoming'|'outgoing'; status?: 'all'|'pending'|'confirmed'|'candidate'|'revoked'|'active'|'paused'|'completed'|'cancelled'; scope?: 'private_agent'|'conversation'|'local'|'global'; scopeId?: string }; headers: { 'Idempotency-Key'?: string }; body: unknown }
+export type TurnInput = { workTaskId?:string; workTaskVersion?:number; scheduledFollowupId?:string; scheduledRunId?:string; continuous?:ContinuousInput; budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; personalAssistant?:boolean; assistantMode?:'coordinate'; delegatedByTurnId?:string; personalMemoryFingerprint?:string; assistantDirectoryFingerprint?:string; assistantReceipt?:AgentTurn['assistantReceipt'];memoryReceipt?:AgentTurn['memoryReceipt'];followupReceipt?:AgentTurn['followupReceipt']; externalConsent?:boolean; externalAgent?:boolean; externalConnectionVersion?:number; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED'; assistantFailure?:'AGENT_LIMIT_REACHED'; fileDocument?:FileDocument; fileSource?:AgentFileSelection; fileRead?:AgentTurn['fileRead']; modelOutputDiagnostic?:{stage:string;returnedTextLength:number;trimEmpty:boolean;maxOutputTokens:number;reasoningEffort:string;finishReason?:string;failure?:string;errorCategory?:string} }
+export type ChatRequest = { params: { id?: string; contactId?: string }; query: { cursor?: string; limit?: number; search?: string; afterSequence?: number; category?: 'all'|'ongoing'|'awaiting_me'|'completed'|'scheduled'; kind?: 'all'|'human'|'agent'; view?: 'directory'|'mine'|'public'; direction?: 'all'|'incoming'|'outgoing'; status?: 'all'|'pending'|'confirmed'|'candidate'|'revoked'|'active'|'paused'|'completed'|'cancelled'; scope?: 'private_agent'|'conversation'|'local'|'global'; scopeId?: string }; headers: { 'Idempotency-Key'?: string }; body: unknown }
 type Request = ChatRequest
 const decode = (value: unknown) => JSON.parse(String(value))
 const encode = JSON.stringify
@@ -89,15 +90,18 @@ export class ChatService {
   }
   conversation(id: string, withViewerState = true): Conversation {
     const row = this.db.prepare('SELECT * FROM chat_conversations WHERE id=?').get(id)
-    if(row && row.kind!=='direct' && row.lab_id!==this.c.actor.labId)fail('NOT_FOUND')
+    const social=!!row&&isSocialGroup(this,id)
+    if(row && row.kind!=='direct' && row.lab_id!==this.c.actor.labId&&!social)fail('NOT_FOUND')
     if (!row || (row.kind === 'personal' && row.owner_id !== this.c.actor.id)) fail('NOT_FOUND')
     const self = this.human().id
     // Authorizing an owned AI to participate is independent from the owner's
     // human browser membership. Agent-only acceptance must not reveal history.
     const joined = this.db.prepare("SELECT 1 FROM chat_members WHERE conversation_id=? AND status='joined' AND contact_id=?").get(id, self)
     if (!joined) fail('NOT_FOUND')
+    if(social&&!socialContactAllowed(this,String(row.owner_id),self))fail('NOT_FOUND')
     const value = Conversation.parse(decode(row.document))
     value.members = this.db.prepare('SELECT contact_id,role,status,version FROM chat_members WHERE conversation_id=? ORDER BY contact_id').all(id).map(r => ConversationMember.parse({ contactId: r.contact_id, role: r.role, status: r.status, version: r.version }))
+    if(social)for(const member of value.members)if(!socialContactAllowed(this,value.ownerMemberId,member.contactId))member.status='revoked'
     value.allowedActions = value.kind === 'group' && value.ownerMemberId === this.c.actor.id ? ['send', 'invite', 'manage'] : value.members.some(m => m.contactId === self && m.status === 'joined') ? ['send'] : []
     if(value.ownerMemberId===this.c.actor.id)value.allowedActions.push('manage_memory')
     // Task association is an ACL-filtered directory, not a grant.
@@ -134,17 +138,22 @@ export class ChatService {
     this.db.prepare('UPDATE chat_conversations SET document=? WHERE id=?').run(encode(document), value.id)
   }
   rawConversation(id: string): Conversation { return Conversation.parse(decode(this.db.prepare('SELECT document FROM chat_conversations WHERE id=?').get(id)!.document)) }
-  newConversation(kind: Conversation['kind'], title: string, contactIds: string[], scope: string | null, taskIds: string[] = []) {
+  newConversation(kind: Conversation['kind'], title: string, contactIds: string[], scope: string | null, taskIds: string[] = [],socialTaskId?:string|true) {
     if (scope) { const old = this.db.prepare('SELECT id FROM chat_conversations WHERE scope_key=?').get(scope); if (old) return this.conversation(String(old.id)) }
     const value = Conversation.parse({ id: randomUUID(), labId: this.c.actor.labId, kind, title, ownerMemberId: this.c.actor.id, version: 1, members: [], taskIds, lastSequence: 0, createdAt: instant(), updatedAt: instant(), allowedActions: [] })
     const { viewerState: _viewerState, ...document } = value
     this.db.prepare('INSERT INTO chat_conversations VALUES (?,?,?,?,?,?)').run(value.id, value.labId, value.ownerMemberId, kind, scope, encode(document))
+    if(socialTaskId){if(kind!=='group'||socialTaskId!==true&&!this.db.prepare("SELECT 1 FROM personal_work_tasks WHERE id=? AND owner_id=? AND status='proposed'").get(socialTaskId,this.c.actor.id))fail('FORBIDDEN');this.db.prepare('INSERT INTO social_groups VALUES (?,?)').run(value.id,socialTaskId===true?null:socialTaskId)}
     const self = this.human().id
     for (const contactId of new Set([self, ...contactIds])) {
       const contact = this.contact(contactId)
-      if(kind==='group' && contact.labId!==this.c.actor.labId)fail('FORBIDDEN')
-      const status = kind !== 'group' || contactId === self || contact.identity.kind === 'public_agent' ? 'joined' : 'invited'
+      if(kind==='group' && (socialTaskId?!socialContactAllowed(this,this.c.actor.id,contactId):contact.labId!==this.c.actor.labId))fail('FORBIDDEN')
+      // Selecting one's own Agent while explicitly confirming a social group
+      // is already its owner's consent. Other owners decide their invitations.
+      const ownedSocialAgent = !!socialTaskId && contact.identity.kind === 'personal_agent' && contact.identity.ownerMemberId === this.c.actor.id
+      const status = kind !== 'group' || contactId === self || contact.identity.kind === 'public_agent' || ownedSocialAgent ? 'joined' : 'invited'
       this.db.prepare('INSERT INTO chat_members VALUES (?,?,?,?,?)').run(value.id, contactId, status, 1, contactId === self ? 'owner' : 'member')
+      if(ownedSocialAgent&&typeof socialTaskId==='string')this.db.prepare("UPDATE personal_work_participants SET status='accepted' WHERE task_id=? AND contact_id=?").run(socialTaskId,contactId)
       if (status === 'invited') this.inviteDocument(value, contactId)
     }
     return this.conversation(value.id)
@@ -155,9 +164,10 @@ export class ChatService {
     this.db.prepare('INSERT INTO chat_invitations VALUES (?,?,?,?,?) ON CONFLICT(conversation_id,contact_id) DO UPDATE SET invited_by=excluded.invited_by,document=excluded.document').run(invitation.id, group.id, contactId, this.c.actor.id, encode(invitation))
   }
   invitation(id: string) {
-    const row = this.db.prepare('SELECT i.* FROM chat_invitations i JOIN chat_conversations c ON c.id=i.conversation_id WHERE i.id=? AND c.lab_id=?').get(id, this.c.actor.labId)
+    const row = this.db.prepare('SELECT i.*,c.owner_id group_owner FROM chat_invitations i JOIN chat_conversations c ON c.id=i.conversation_id WHERE i.id=? AND (c.lab_id=? OR EXISTS(SELECT 1 FROM social_groups s WHERE s.conversation_id=c.id))').get(id, this.c.actor.labId)
     if (!row) fail('NOT_FOUND')
     const contact = this.contact(String(row.contact_id))
+    if(isSocialGroup(this,String(row.conversation_id))&&!socialContactAllowed(this,String(row.group_owner),contact.id))fail('NOT_FOUND')
     if ((contact.identity.kind === 'human' && contact.identity.memberId !== this.c.actor.id) || (contact.identity.kind === 'personal_agent' && contact.identity.ownerMemberId !== this.c.actor.id) || contact.identity.kind === 'public_agent') fail('NOT_FOUND')
     return decode(row.document) as { id: string; conversationId: string; title: string; invitedContactId: string; invitedByMemberId: string; status: string; version: number }
   }
@@ -192,6 +202,15 @@ export class ChatService {
     const row = this.db.prepare('SELECT * FROM chat_turns WHERE id=?').get(turnId); if (!row) fail('NOT_FOUND')
     const input = decode(row.request_json) as TurnInput, turn = this.materializedTurn(row)
     const group = this.conversation(turn.conversationId, false); this.joinedAgent(group, turn.agentContactId)
+    checkWorkTurn(this,input,exact)
+    if(input.scheduledFollowupId&&exact){
+      const schedule=this.db.prepare('SELECT status,member_id,document FROM personal_followups WHERE id=?').get(input.scheduledFollowupId)
+      const run=this.db.prepare('SELECT turn_id FROM personal_followup_runs WHERE id=? AND followup_id=?').get(input.scheduledRunId??'',input.scheduledFollowupId)
+      if(!schedule||schedule.member_id!==this.c.actor.id||schedule.status!=='active'||run?.turn_id!==turnId)fail('FORBIDDEN')
+      const policy=decode(schedule.document)
+      if(policy.execution?.contactId!==turn.agentContactId||!input.dailyChat||input.assistantMode||input.externalAgent||input.context.length)fail('FORBIDDEN')
+      if(policy.task&&['completed','cancelled'].includes(this.c.task(policy.task.id).status))fail('FORBIDDEN')
+    }
     if(input.purpose==='create_agent') {
       const agent=this.contact(turn.agentContactId),message=this.projectedMessage(turn.inputMessageId)
       if(!input.dailyChat||group.kind!=='personal'||group.ownerMemberId!==this.c.actor.id||agent.identity.kind!=='personal_agent'||agent.identity.ownerMemberId!==this.c.actor.id||agent.profile.role!=='coordinator'||message.origin!=='human'||message.senderContactId!==this.human().id||!isAgentCreationCommand(currentTurnText(this,turnId)))fail('FORBIDDEN')
@@ -226,6 +245,7 @@ export class ChatService {
         else{receipt.turnId=String(child.id);receipt.displayName=contact.displayName}
       }catch{delete turn.assistantReceipt}
     }
+    if(turn.assistantReceipt?.kind==='work_task'){try{const work=personalWork(this,turn.assistantReceipt.taskId);turn.assistantReceipt.conversationId=work.conversationId;turn.assistantReceipt.status=work.status==='proposed'?'proposed':'ready'}catch{delete turn.assistantReceipt}}
     const attempts=this.db.prepare('SELECT turn_id,usage_json FROM chat_attempts WHERE root_id=?').all(row.root_id!)
     turn.budget=root.budget;turn.remainingBudget=null;turn.allowedActions=[]
     const unknown=attempts.some(r=>!r.usage_json||decode(r.usage_json).inputTokens===null||decode(r.usage_json).outputTokens===null)
@@ -321,6 +341,7 @@ export class ChatService {
     }
     if (group.kind !== 'group' || (payload.kind !== 'run_task' && group.ownerMemberId !== this.c.actor.id)) fail('FORBIDDEN')
     const contact = this.contact(payload.contactId)
+    if(payload.kind==='invite_contact'&&isSocialGroup(this,group.id)){if(!socialContactAllowed(this,group.ownerMemberId,contact.id))fail('FORBIDDEN');return}
     if(contact.labId!==this.c.actor.labId)fail('FORBIDDEN')
     if (payload.kind === 'invite_contact') return
     if (!group.members.some(m => m.contactId === contact.id && m.status === 'joined')) fail('NOT_FOUND')
@@ -338,7 +359,8 @@ export class ChatService {
   }
   validateGroupInput(payload:RequestFor<'imCreateGroup'>['body'],groupId:string) {
       if (new Set(payload.contactIds).size !== payload.contactIds.length) fail('VALIDATION_ERROR')
-      for(const id of payload.contactIds)if(this.contact(id).labId!==this.c.actor.labId)fail('FORBIDDEN')
+      const social=!payload.plan&&payload.contactIds.some(id=>this.contact(id).labId!==this.c.actor.labId)
+      for(const id of payload.contactIds)if(social?!socialContactAllowed(this,this.c.actor.id,id):this.contact(id).labId!==this.c.actor.labId)fail('FORBIDDEN')
       if(payload.plan){
       const plan = this.c.plan(payload.plan.id); this.c.checkVersion(plan.version, payload.plan.version)
       if (plan.status !== 'draft' || !plan.proposedItems.length || plan.proposedItems.length > 20) fail('INVALID_STATE')
@@ -360,7 +382,8 @@ export class ChatService {
     this.validateGroupInput(payload,personalId)
     const taskIds=payload.plan?(this.c.handlers.confirmPlan({params:{id:payload.plan.id},query:{},headers:{},body:{expectedVersion:payload.plan.version}}) as {data:{taskIds:string[]}}).data.taskIds:[]
     const sharedTaskIds=payload.sharedContext.artifactRefs.map(ref=>this.c.coordination.artifact(ref.id).model.taskId)
-    const group=this.newConversation('group',payload.title,payload.contactIds,null,[...new Set([...taskIds,...sharedTaskIds])])
+    const social=!payload.plan&&payload.contactIds.some(id=>this.contact(id).labId!==this.c.actor.labId)
+    const group=this.newConversation('group',payload.title,payload.contactIds,null,[...new Set([...taskIds,...sharedTaskIds])],social?true:undefined)
     const resources:Resource[]=taskIds.map(id=>({kind:'task',ref:{id,version:this.c.task(id).version}}))
     for(const taskId of taskIds)for(const assignment of this.db.prepare("SELECT id,version FROM assignments WHERE task_id=? AND status='pending'").all(taskId))resources.push({kind:'assignment',ref:{id:String(assignment.id),version:Number(assignment.version)}})
     const shared:Resource[]=[...resources,...payload.sharedContext.artifactRefs.map(ref=>({kind:'artifact' as const,ref}))]
@@ -420,6 +443,7 @@ export class ChatService {
   }
   cursorMac(value: string) { return createHmac('sha256', signingKey(this.db)).update(`chat:${value}`).digest('hex') }
   authorize(name: ChatCommand, req: Request) {
+    if(workspaceAuthorize(this,name,req))return
     if(personalCommands.includes(name)){if(req.params.id){if(name.toLowerCase().includes('followup'))followup(this,req.params.id);else memory(this,req.params.id)}return}
     if(this.directory.authorize(name,req))return
     const id = req.params.id
@@ -436,6 +460,7 @@ export class ChatService {
     if (cached) {
       if (cached.request_hash !== fingerprint) fail('IDEMPOTENCY_CONFLICT')
       const previous = decode(cached.response_json)
+      const workspaceResponse=workspaceReplay(this,name,previous);if(workspaceResponse)return route.response.parse(workspaceResponse)
       if(personalCommands.includes(name)){if(name==='updatePersonalMemorySettings')return route.response.parse({data:memorySettings(this)});return route.response.parse({data:name.toLowerCase().includes('followup')?followup(this,previous.data.id):memory(this,previous.data.id)})}
       if(['updateAgentConnection','disconnectAgentConnection'].includes(name))return route.response.parse({data:connectionStateForReplay(this,req.params.id!)})
       const directoryReplay=this.directory.replay(name,previous);if(directoryReplay)return route.response.parse(directoryReplay)
@@ -454,6 +479,7 @@ export class ChatService {
   }
   handle(name: ChatCommand, req: Request, parsedFile?:ParsedAgentFile): unknown {
     const id = req.params.id!, b = req.body
+    if(workspaceCommands.includes(name))return workspaceHandle(this,name,req)
     if(personalCommands.includes(name))return handleMemory(this,name,req)??handleFollowup(this,name,req)
     if((directoryCommands as readonly string[]).includes(name))return this.directory.handle(name,req)
     if(name==='imCreateGroup'){
@@ -564,7 +590,8 @@ export class ChatService {
       if(name==='agentFileMessage'&&!fileDocument)fail('INVALID_STATE')
       if(fileSource){const document=fileDocument??this.fileDocument(fileSource.messageId,group.id);const questionPages=pageNumbersFromQuestion(input.text),requested=fileSource.pageNumbers??(questionPages.length?questionPages:undefined),numbers=requested?[...new Set(requested)]:undefined;if(numbers?.some(n=>!document.pages.some(page=>page.pageNumber===n)))fail('FILE_PAGE_UNAVAILABLE');fileSource={...fileSource,...(numbers?{pageNumbers:numbers}:{} )}}
       if(fileSource)input.budget=fileReadingBudget(fileDocument??this.fileDocument(fileSource.messageId,group.id),fileSource)
-      const nextInput:TurnInput={budget:input.budget!,context:input.context,conversationVersion:group.version,inputSequence:message.sequence,dailyChat:name!=='sendChatMessage',...(external?{externalConsent:true}:{}),...(purpose?{purpose}:{}),...(name==='agentChatMessage'&&!purpose&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(input.text)?{personalAssistant:true,assistantMode:'coordinate' as const}:{}),...(fileDocument?{fileDocument}:{}),...(fileSource?{fileSource,fileRead:fileReadMetadata(fileDocument??this.fileDocument(fileSource.messageId,group.id))}:{})}
+      const workContext=input.intent==='ask_agent'&&isSocialGroup(this,group.id)?socialWorkContext(this,group.id,input.agentContactId!):{}
+      const nextInput:TurnInput={...workContext,budget:input.budget!,context:input.context,conversationVersion:group.version,inputSequence:message.sequence,dailyChat:name!=='sendChatMessage'||isSocialGroup(this,group.id),...(external?{externalConsent:true}:{}),...(purpose?{purpose}:{}),...(name==='agentChatMessage'&&!purpose&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(input.text)?{personalAssistant:true,assistantMode:'coordinate' as const}:{}),...(fileDocument?{fileDocument}:{}),...(fileSource?{fileSource,fileRead:fileReadMetadata(fileDocument??this.fileDocument(fileSource.messageId,group.id))}:{})}
       let turn:AgentTurn|null=null
       let merge=pending
       if(merge){try{this.checkTurnInput(String(merge.id))}catch{supersedeTurn(this,String(merge.id));merge=undefined}}
@@ -598,6 +625,7 @@ export class ChatService {
       }
       if(turn&&(continuous||name==='agentFileMessage'))for(const row of active)if(String(row.id)!==turn.id){const old=decode(this.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(row.id!)!.request_json) as TurnInput;if(old.continuous){old.continuous.supersededBy=turn.id;old.continuous.revision++;old.continuous.text='';old.continuous.updatedAt=instant();this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(encode(old),row.id!)}}
 
+      if(turn&&nextInput.workTaskId)recordSocialWorkTurn(this,nextInput.workTaskId,message.id,turn.id)
       if (turn) { message.turnId = turn.id; this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(legacyChatMessage(message)), message.id) }
       return { data: { message:this.projectedMessage(message.id), turn } }
     }

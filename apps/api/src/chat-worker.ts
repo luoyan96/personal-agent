@@ -17,7 +17,8 @@ import { externalForChat } from './agent-connections.js'
 import { callExternalAgent, externalAgentSystem, type ExternalAgentCall } from './external-agent-client.js'
 import { currentTurnText,registerChatCall,saveChatDelta } from './continuous-chat.js'
 import { personalMemoryContext } from './personal-memories.js'
-import { personalAssistantSystem,PersonalAssistantOutput,assistantCandidates,assistantPeople,rankedAssistantCandidates,assistantComplexRequest,delegateWork,AssistantBudgetError } from './personal-assistant.js'
+import { personalAssistantSystem,PersonalAssistantOutput,assistantCandidates,assistantPeople,assistantTeamAgents,rankedAssistantCandidates,assistantComplexRequest,delegateWork,AssistantBudgetError } from './personal-assistant.js'
+import {createWork,recordAssistantAnswerWork} from './workspace.js'
 
 // Local model protocol: validated JSON, no model-side tools or business authority.
 export const ChatModelOutput = z.strictObject({
@@ -66,9 +67,9 @@ export class ChatWorker {
         prompt=JSON.stringify({request:currentTurnText(s,turn.id)})
       } else if(input.assistantMode==='coordinate'){
         const current=currentTurnText(s,turn.id),agentContext=s.directory.modelContext(turn.agentContactId,group.id),personal=personalMemoryContext(s,agentContext.agent,group,current),complex=assistantComplexRequest(current)
-        system=personalAssistantSystem+(complex?'\nComplex collaboration: {kind:"collaborate",answer:string,group:Group}. Proposals need confirmation; humans accept independently. Share null or exactly currentRequest; no private memories/history.\n'+chatModelSystem({group:true,inviteContact:false,inviteTask:false,runTask:false}).split('\n').filter(line=>/^(Ref=|Group=|Item=|Schedule=)/.test(line)).join('\n'):'')
+        system=personalAssistantSystem+(complex?'\nComplex work: JSON {kind:"team",title:string,contactIds:[listed_ID]}. Save only a proposal. Owner confirms group creation; humans and Agent owners accept independently. No automatic execution or material sharing.':'')
         const candidates=rankedAssistantCandidates(s,current),shown:typeof candidates=[]
-        const serialize=()=>JSON.stringify({currentRequest:current,requestedAgent:{id:agentContext.agent.id,displayName:agentContext.agent.displayName,profile:Object.fromEntries(Object.entries(agentContext.agent.profile).filter(([key,value])=>key!=='version'&&value!==''))},...(personal.records.length?{personalMemories:personal.records}:{}),...(agentContext.memories.length?{memories:agentContext.memories}:{}),localSpecialists:shown,...(shown.length<candidates.length?{specialistsOmitted:true}:{}),...(complex?{labId:s.c.actor.labId,collaboratingHumans:assistantPeople(s)}:{})})
+        const serialize=()=>JSON.stringify({currentRequest:current,requestedAgent:{id:agentContext.agent.id,displayName:agentContext.agent.displayName,profile:Object.fromEntries(Object.entries(agentContext.agent.profile).filter(([key,value])=>key!=='version'&&value!==''))},...(personal.records.length?{personalMemories:personal.records}:{}),...(agentContext.memories.length?{memories:agentContext.memories}:{}),localSpecialists:shown,...(shown.length<candidates.length?{specialistsOmitted:true}:{}),...(complex?{labId:s.c.actor.labId,collaboratingHumans:assistantPeople(s),collaboratingAgents:assistantTeamAgents(s)}:{})})
         prompt=serialize()
         for(const candidate of candidates){if(shown.length>=3)break;shown.push(candidate);const trial=serialize();if(input.budget.maxTokens-chatInputTokenBound(system,trial)>=512)prompt=trial;else shown.pop()}
         prompt=serialize();input.agentContextFingerprint=agentContext.fingerprint
@@ -103,6 +104,7 @@ export class ChatWorker {
       const contactColumns=['id','displayName','identity','availability','profile']
       const selectedTasks=input.context.filter(ref=>ref.kind==='task').map(ref=>s.c.task(ref.ref.id))
       system=input.dailyChat?dailyChatSystem:chatModelSystem({group:group.kind==='personal'&&agentContext.agent.profile.role==='coordinator',inviteContact:group.kind==='group'&&group.ownerMemberId===s.c.actor.id,inviteTask:group.kind==='group'&&group.ownerMemberId===s.c.actor.id&&selectedTasks.some(task=>task.initiatorId===s.c.actor.id),runTask:group.kind==='group'&&selectedTasks.some(task=>task.leadId===s.c.actor.id)})
+      if(input.scheduledFollowupId)system+='\nThe latest service message is an explicitly owner-authorized scheduled instruction. Execute that instruction within the provided conversation text only, and return the result conversationally. It does not grant web browsing, tools, filesystem access, business mutations, contact creation, or further scheduling. State any missing inputs/access plainly; never claim to have performed actions outside this scope.'
       if(input.assistantMode==='coordinate')system=personalAssistantSystem+'\n'+chatModelSystem({group:true,inviteContact:false,inviteTask:false,runTask:false}).split('\n').filter(line=>/^(Ref=|Group=|Item=|Schedule=)/.test(line)).join('\n')
       const document=input.fileSource?s.fileDocument(input.fileSource.messageId,group.id):undefined
       if(document)system+=fileChatSystem
@@ -113,7 +115,7 @@ export class ChatWorker {
         const conversation={kind:group.kind,title:group.title,memberColumns:['sender','role','status'],members:group.members.map(m=>[senderIds.indexOf(m.contactId),m.role,m.status]),...(group.taskIds.length?{taskIds:group.taskIds}:{})}
         const messageColumns=['origin','sender','text',...(selected.some(m=>m.mentions.length)?['mentions']:[]),...(selected.some(m=>m.resources.length)?['resources']:[])]
         const messageRows=selected.map(m=>messageColumns.map(key=>key==='sender'?m.senderContactId===null?null:senderIds.indexOf(m.senderContactId):m[key as keyof typeof m]))
-        return JSON.stringify({ownerId:s.c.actor.id,labId:s.c.actor.labId,requestedAgent,conversation,contactColumns,contacts:contacts.map(c=>contactColumns.map(key=>c[key as keyof typeof c])),senderIds,messageColumns,messages:messageRows,...(agentContext.memories.length?{memories:agentContext.memories}:{}),...(personal.records.length?{personalMemories:personal.records}:{}),...(input.assistantMode==='coordinate'?{currentRequest:s.projectedMessage(turn.inputMessageId).text,localSpecialists:assistantCandidates(s),collaboratingHumans:assistantPeople(s)}:{}),...(context.length?{context}:{}),...(earlierMessagesOmitted?{earlierMessagesOmitted:true}:{}),...(read?{fileRead:read,fileExcerpts}:{})})
+        return JSON.stringify({ownerId:s.c.actor.id,labId:s.c.actor.labId,requestedAgent,conversation,contactColumns,contacts:contacts.map(c=>contactColumns.map(key=>c[key as keyof typeof c])),senderIds,messageColumns,messages:messageRows,...(agentContext.memories.length?{memories:agentContext.memories}:{}),...(personal.records.length?{personalMemories:personal.records}:{}),...(input.assistantMode==='coordinate'?{currentRequest:s.projectedMessage(turn.inputMessageId).text,localSpecialists:assistantCandidates(s),collaboratingHumans:assistantPeople(s),collaboratingAgents:assistantTeamAgents(s)}:{}),...(context.length?{context}:{}),...(earlierMessagesOmitted?{earlierMessagesOmitted:true}:{}),...(read?{fileRead:read,fileExcerpts}:{})})
       }
       prompt=serialize(messages)
       if(input.dailyChat){
@@ -228,7 +230,16 @@ export class ChatWorker {
           } else {
           const coordinated=job.input.assistantMode==='coordinate'?PersonalAssistantOutput.parse(JSON.parse(result.text)):null
           if(coordinated?.kind==='collaborate'&&!assistantComplexRequest(s.projectedMessage(turn.inputMessageId).text??''))throw new Error('INVALID_MODEL_OUTPUT')
-          if(coordinated?.kind==='delegate'){
+          if(coordinated?.kind==='team'){
+            if(!assistantComplexRequest(currentTurnText(s,turn.id)))throw new Error('INVALID_MODEL_OUTPUT')
+            const allowed=[...assistantPeople(s),...assistantTeamAgents(s)].map(c=>c.id)
+            if(coordinated.contactIds.some(id=>!allowed.includes(id)))throw new Error('INVALID_MODEL_OUTPUT')
+            outputStage='persistence'
+            const work=createWork(s,{title:coordinated.title,goal:currentTurnText(s,turn.id),contactIds:coordinated.contactIds,agentContactId:null},{turnId:turn.id,conversationId:group.id,messageId:turn.inputMessageId})
+            turn.assistantReceipt={kind:'work_task',taskId:work.id,conversationId:null,status:'proposed'}
+            const message=s.message(group.id,{senderContactId:turn.agentContactId,origin:'service',text:`已保存“${work.title}”协作任务建议。确认后才会创建群和发送邀请；其他参与者仍需自行接受，尚未执行或完成。`,mentions:[],resources:[],actionIds:[],turnId:turn.id})
+            turn.status='succeeded';turn.outputMessageId=message.id;turn.failure=null
+          }else if(coordinated?.kind==='delegate'){
             outputStage='persistence'
             turn.assistantReceipt=delegateWork(s,turn,job.input,coordinated,{tokens:result.inputTokens!+result.outputTokens!,seconds:result.elapsedMs/1000})
             const receipt=turn.assistantReceipt
@@ -259,6 +270,7 @@ export class ChatWorker {
           const actions = payloads.map(payload => s.addAction(turn, message.id, payload)); message.actionIds = actions.map(a => a.id)
           this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(JSON.stringify(message), message.id)
           turn.status = output.waitingInput ? 'waiting_input' : 'succeeded'; turn.outputMessageId = message.id; turn.failure = null
+          if(coordinated?.kind==='reply')turn.assistantReceipt=recordAssistantAnswerWork(s,turn.id,group.id,turn.agentContactId,currentTurnText(s,turn.id),message.id)
           if(coordinated?.kind==='collaborate'){const payload=payloads.find(p=>p.kind==='create_group')!;if(payload.kind==='create_group')turn.assistantReceipt={kind:'collaborate',planId:payload.plan.id,actionIds:actions.map(a=>a.id)}}
           }
           }

@@ -5,6 +5,7 @@ import { openImRoutes } from './openim.js'
 import { AccountUsername, AccountPassword, RegistrationCode } from './authentication.js'
 import { personalModelRoutes } from './personal-models.js'
 import { personalAssistantRoutes } from './personal-assistant.js'
+import { workspaceRoutes } from './workspace.js'
 import { agentIntegrationRoutes } from './agent-connections.js'
 
 const empty = z.strictObject({})
@@ -27,6 +28,7 @@ function route<P extends z.ZodType, Q extends z.ZodType, B extends z.ZodType, R 
 }
 export const routes = {
   ...personalAssistantRoutes,
+  ...workspaceRoutes,
   ...agentIntegrationRoutes,
   ...personalModelRoutes,
   ...openImRoutes,

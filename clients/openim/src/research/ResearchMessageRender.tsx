@@ -21,7 +21,7 @@ import { PersonalReceiptCard } from "./PersonalReceiptCard";
 import { ContinueAgentFileReadingButton } from "./ContinueAgentFileReadingButton";
 import SafeMessageMarkdown from "./SafeMessageMarkdown";
 
-export default function ResearchMessageRender({ message }: IMessageItemProps) {
+export default function ResearchMessageRender({ message, onReadableText }: IMessageItemProps) {
   const history = useContext(AgentProgressHistory);
   const imID = useConversationStore((s) => s.currentConversation?.conversationID);
   const manager = useResearchStore((s) => s.actor?.isLabManager || false);
@@ -77,6 +77,9 @@ export default function ResearchMessageRender({ message }: IMessageItemProps) {
       read.data?.fact.turnId === retried.turn.id)
       ? retried.turn
       : undefined;
+  useEffect(() => {
+    onReadableText?.(read.data?.fact.text || "");
+  }, [read.data?.fact.text, onReadableText]);
   const turnId = currentRetry?.id || read.data?.fact.turnId;
   const turn = useResearchRead(
     () => researchApi("chatTurn", { params: { id: turnId || "" } }),

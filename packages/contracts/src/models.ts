@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const contractVersion = '0.19.0' as const
+export const contractVersion = '0.21.0' as const
 export const Id = z.string().regex(/^[A-Za-z0-9_-]{1,96}$/)
 export const Text = z.string().min(1).max(8000)
 export const Title = z.string().min(1).max(200)

@@ -1,93 +1,116 @@
 .personal-agent-desktop {
-  --primary: #1677ff;
-  --primary-active: #e6f0ff;
-  --base-black: #202b3b;
-  --sub-text: #7d899a;
-  --gap-text: #e4e9f0;
+  --primary: #07b75b;
+  --primary-active: #07b75b;
+  --base-black: #222;
+  --sub-text: #999;
+  --gap-text: #e4e4e4;
   --top-search-bar: #f5f7fa;
   --chat-bubble: #fff;
-  --chat-bubble-sender: #deecff;
-  background: #f5f6f8;
+  --chat-bubble-sender: #95ec69;
+  background: #f5f5f5;
   font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
   color: var(--base-black);
 
   button { transition: background-color .15s, border-color .15s, color .15s; }
-  button:focus-visible, summary:focus-visible { outline: 2px solid #1677ff; outline-offset: 2px; }
+  button:focus-visible, summary:focus-visible { outline: 2px solid #07b75b; outline-offset: 2px; }
   .desktop-titlebar { border-bottom: 1px solid #e1e6ed; height: 36px; min-height: 36px; position: relative; background: #f5f7fa; }
   .desktop-app-name { display: flex; align-items: center; gap: 9px; margin-left: 14px; font-size: 13px; font-weight: 500; color: #303b49; }
   .desktop-app-name > .anticon { display: flex; align-items: center; justify-content: center; height: 22px; width: 22px; border-radius: 5px; color: #fff; background: #1677ff; font-size: 15px; }
   .desktop-titlebar img[alt^="win_"] { filter: brightness(.35); }
   .desktop-titlebar > div:last-of-type { top: 11px; }
 
-  .desktop-navigation { background: #303b49 !important; border-right: 0; }
-  .desktop-navigation-content { height: 100%; margin-top: 0; padding-top: 22px; }
+  .desktop-navigation { background: #e8e8eb !important; border-right: 1px solid #dedee1; }
+  .desktop-navigation-content { height: 100%; margin-top: 0; padding-top: 20px; }
   .desktop-navigation-content > .ant-avatar { height: 44px; width: 44px; margin-bottom: 28px; background: #627eaa !important; color: #fff !important; }
-  .desktop-nav-item { width: 72px; height: 70px; margin: 0 0 10px; border-radius: 0; border-left: 3px solid transparent; color: #c8d1dc; gap: 7px; }
+  .desktop-nav-item { width: 72px; height: 70px; margin: 0 0 10px; border-radius: 0; border-left: 3px solid transparent; color: #707075; gap: 7px; }
   .desktop-nav-item > .anticon { font-size: 23px; }
-  .desktop-nav-item > div { margin: 0; color: #c8d1dc; font-size: 12px; }
-  .desktop-nav-item:hover { background: #3a4758; }
-  .desktop-nav-item[aria-current] { background: #394b63; border-left-color: #4b9cff; color: #68afff; }
-  .desktop-nav-item[aria-current] > div { color: #e4efff; }
-  .desktop-model-settings { margin-top: auto; margin-bottom: 28px; display: flex; flex-direction: column; gap: 9px; align-items: center; color: #ced6e2; width: 100%; padding: 10px 0; font-size: 11px; }
+  .desktop-nav-item > div { margin: 0; color: #707075; font-size: 12px; }
+  .desktop-nav-item:hover { background: #dcdce0; }
+  .desktop-nav-item[aria-current] { background: transparent; border-left-color: transparent; color: #07b75b; }
+  .desktop-nav-item[aria-current] > div { color: #07b75b; }
+  .desktop-navigation-bottom { margin-top: auto; margin-bottom: 18px; width: 100%; }
+  .desktop-model-settings { display: flex; flex-direction: column; gap: 9px; align-items: center; color: #707075; width: 100%; padding: 10px 0; font-size: 11px; }
   .desktop-model-settings .anticon { font-size: 24px; }
-  .desktop-model-settings:hover { background: #3a4758; color: #fff; }
+  .desktop-model-settings .ant-badge { color: inherit; }
+  .desktop-model-settings:hover { background: #dcdce0; color: #333; }
+  .desktop-update-button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 62px; width: 100%; padding: 10px 3px; margin-top: 8px; background: #394b63; color: #8bc1ff; border-radius: 6px; font-size: 11px; }
+  .desktop-update-button .anticon { font-size: 22px; }
+  .desktop-update-button:hover:enabled { background: #435b7b; color: #fff; }
+  .desktop-update-button:disabled { cursor: default; }
+  .desktop-update-progress { width: 48px; height: 3px; border-radius: 2px; overflow: hidden; background: #607088; }
+  .desktop-update-progress > span { display: block; height: 100%; background: #8bc1ff; }
 
-  .desktop-conversation-column { width: 300px; flex-shrink: 0; background: #fff; }
-  .desktop-conversation-column aside { width: 300px; }
+  .desktop-conversation-column { width: 280px; flex-shrink: 0; background: #fff; }
+  .desktop-conversation-column aside { width: 280px; }
   .desktop-conversation-column aside > div:first-child { left: 0; right: 0; top: 0; }
-  .desktop-conversation-column aside > div:nth-child(2) { width: 300px; min-width: 300px; max-width: 300px; resize: none; }
-  .desktop-conversation-heading { padding: 20px 17px 12px; flex-shrink: 0; }
+  .desktop-conversation-column aside > div:nth-child(2) { width: 280px; min-width: 280px; max-width: 280px; resize: none; }
+  .desktop-conversation-heading { display: flex; align-items: center; gap: 10px; padding: 16px 14px; height: 64px; flex-shrink: 0; }
   .desktop-conversation-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
   .desktop-conversation-title h1 { font-size: 23px; line-height: 30px; font-weight: 650; color: #202b3b; }
   .desktop-new-conversation { display: flex; align-items: center; justify-content: center; height: 30px; width: 34px; border: 1px solid #dbe2eb; border-radius: 6px; font-size: 18px; color: #5d6c82; }
   .desktop-new-conversation:hover { background: #f1f5fb; }
-  .desktop-conversation-heading .ant-input-affix-wrapper { background: #f2f5f8; height: 36px; border-color: #e0e6ee; border-radius: 7px; padding: 4px 10px; box-shadow: none; }
+  .desktop-conversation-heading .ant-input-affix-wrapper { background: #ededed; height: 30px; border-color: transparent; border-radius: 4px; padding: 4px 10px; box-shadow: none; }
   .desktop-conversation-heading .ant-input { background: transparent; font-size: 13px; }
   .desktop-conversation-heading .ant-input-prefix { margin-right: 9px; color: #7b889a; font-size: 16px; }
-  .desktop-conversation-row { min-height: 78px; padding: 13px 17px; margin: 0; border: 0; border-radius: 0; }
-  .desktop-conversation-row:hover { background: #f0f5fb; }
-  .desktop-conversation-row[aria-current] { background: #e6f0ff; }
-  .desktop-conversation-row .font-medium { font-size: 15px; font-weight: 600; }
+  .desktop-conversation-heading .ant-input-affix-wrapper { min-width: 0; flex: 1; }
+  .desktop-new-conversation { background: #ededed; flex-shrink: 0; border: 0; border-radius: 4px; color: #666; }
+  .desktop-conversation-row { min-height: 66px; padding: 12px 14px; margin: 0; border: 0; border-radius: 0; }
+  .desktop-conversation-row:hover { background: #ececec; }
+  .desktop-conversation-row[aria-current] { background: #07b75b; color: #fff; }
+  .desktop-conversation-row[aria-current] .text-xs, .desktop-conversation-row[aria-current] .desktop-conversation-pin, .desktop-conversation-row[aria-current] .desktop-agent-label, .desktop-conversation-row[aria-current] [class*=truncate] { color: #fff !important; }
+  .desktop-conversation-row .font-medium { font-size: 14px; font-weight: 500; }
   .desktop-conversation-row .text-xs { font-size: 12px; }
   .desktop-agent-label { color: #8595ab; font-size: 10px !important; font-weight: 500; }
   .desktop-conversation-pin { margin-left: 6px; color: #91a0b4; font-size: 11px; }
   .desktop-conversation-empty { padding: 20px 17px; color: #8793a5; font-size: 13px; }
 
-  #chat-container { background: #f5f6f8; }
-  .desktop-chat-header { height: 82px; padding: 12px 22px !important; flex-shrink: 0; border-color: #e0e6ee; }
-  .desktop-chat-header .text-base { font-size: 19px; font-weight: 650; }
+  #chat-container { background: #f5f5f5; }
+  .desktop-chat-header { height: 64px; padding: 12px 24px !important; flex-shrink: 0; border-color: #e4e4e4; background: #f5f5f5 !important; }
+  .desktop-chat-header .text-base { font-size: 17px; font-weight: 500; }
   .desktop-chat-header .text-xs { font-size: 12px; line-height: 18px; }
+  .desktop-chat-heading { margin-left: 0; justify-content: center; }
   .desktop-chat-header .desktop-about-me { color: #65748a; margin-right: 4px; }
   .desktop-chat-header-action { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-left: 5px; border-radius: 7px; color: #65748a; font-size: 21px; }
   .desktop-chat-header-action:hover { background: #f0f4fa; }
-  #chat-list { background: #f5f6f8; padding: 10px 0 0; }
-  .desktop-message-row { padding: 10px 22px; }
-  .desktop-message-row [class*="message-profile"] { order: 2; margin-top: 5px; margin-bottom: 0; font-size: 11px; }
+  #chat-list { background: #f5f5f5; padding: 10px 0 0; }
+  #chat-main[data-files-dragging]::after { content: "松开发送文件到当前聊天"; position: absolute; inset: 12px; border: 2px dashed #07b75b; border-radius: 5px; background: #f1faf1e8; display: flex; align-items: center; justify-content: center; color: #07a950; z-index: 4; pointer-events: none; font-size: 16px; }
+  .desktop-message-row { padding: 9px 24px; }
+  .desktop-message-row [class*="message-profile"] { order: 0; margin-top: 0; margin-bottom: 4px; font-size: 11px; }
   .desktop-message-row-direct [class*="message-profile"] > div:first-child { display: none; }
+  .desktop-message-row [class*="message-profile"] > div:last-child { display: none; }
+  .desktop-message-row-direct [class*="message-profile"] { display: none; }
+  .desktop-message-row [class*="message-wrap"] { min-width: 0; flex: 0 1 auto; max-width: calc(100% - 48px); }
+  .desktop-message-row [class*="message-container"] { min-width: 0; }
+  .desktop-message-row [class*="menu-wrap"] { min-width: 0; }
+  .desktop-message-row-sender [class*="message-container"] { justify-content: flex-start; }
+  .desktop-reply-action { order: 2; color: #929292; font-size: 11px; line-height: 18px; padding: 2px 0 0; opacity: 0; }
+  .desktop-message-row [class*="message-profile"] > div:first-child { max-width: 100%; }
+  .desktop-image-download { position: absolute; right: 4px; bottom: 4px; background: #ffffffdf; color: #666; opacity: 0; }
+  .desktop-message-row:hover .desktop-image-download, .desktop-image-download:focus-visible { opacity: 1; }
+  .desktop-message-row:hover .desktop-reply-action, .desktop-reply-action:focus-visible { opacity: 1; }
+  .desktop-message-time { text-align: center; color: #a0a0a0; font-size: 11px; padding: 18px 0 9px; }
   .desktop-message-row [class*="menu-wrap"] { order: 1; max-width: 100%; }
-  .desktop-message-row [class*="bubble"] { padding: 12px 16px; border: 1px solid #e1e6ee; border-radius: 11px; font-size: 15px; line-height: 1.7; box-shadow: 0 1px 2px #25364d03; }
-  .desktop-message-row-direct.desktop-message-row-sender [class*="message-container"] > .ant-avatar { display: none; }
-  .desktop-message-row-direct.desktop-message-row-sender [class*="message-wrap"] { margin-right: 0; }
+  .desktop-message-row [class*="bubble"] { padding: 9px 12px; border: 0; border-radius: 4px; font-size: 14px; line-height: 1.65; box-shadow: none; max-width: min(680px, 100%); }
   .desktop-message-row-sender [class*="bubble"] { border-color: transparent; box-shadow: none; }
-  .desktop-agent-progress { padding: 10px 22px 22px; }
+  .desktop-agent-progress { padding: 9px 24px 20px; }
   .desktop-streaming-row { display: flex; gap: 12px; align-items: flex-start; padding-bottom: 12px; }
-  .desktop-streaming-content { max-width: min(620px, calc(100% - 48px)); min-width: 0; border: 1px solid #e1e6ee; border-radius: 11px; background: #fff; padding: 12px 16px; font-size: 15px; line-height: 1.7; }
+  .desktop-streaming-content { max-width: min(620px, calc(100% - 48px)); min-width: 0; border: 0; border-radius: 4px; background: #fff; padding: 9px 12px; font-size: 14px; line-height: 1.65; }
   .desktop-streaming-status { margin-bottom: 7px; color: #7d899a; font-size: 11px; }
   .desktop-work-in-chat { margin-left: 48px; max-width: 540px; }
-  .desktop-work-card { background: #fff; border: 1px solid #e0e6ef; border-radius: 11px; overflow: hidden; padding: 17px 17px 0; }
+  .desktop-work-card { background: #fff; border: 1px solid #e0e6ef; border-radius: 5px; overflow: hidden; padding: 14px 14px 0; }
   .desktop-work-card-heading { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
-  .desktop-work-icon { width: 42px; height: 42px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #1677ff; border-radius: 10px; background: #e9f2ff; font-size: 25px; }
+  .desktop-work-icon { width: 42px; height: 42px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #07a950; border-radius: 5px; background: #e8f5ea; font-size: 25px; }
   .desktop-work-card-title { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; }
   .desktop-work-card-title strong { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .desktop-work-card-title span { font-size: 12px; color: #78869a; }
-  .desktop-work-stop { color: #1677ff; border-color: #8db9fb; height: 30px; padding: 0 15px; border-radius: 6px; }
+  .desktop-work-stop { color: #07a950; border-color: #aad8b5; height: 30px; padding: 0 15px; border-radius: 6px; }
   .desktop-work-card .ant-progress { margin-bottom: 0; line-height: 1; }
-  .desktop-work-card .ant-progress-bg { background-color: #1677ff; }
+  .desktop-work-card .ant-progress-bg { background-color: #07b75b; }
   .desktop-work-step-count { color: #78869a; font-size: 12px; line-height: 18px; margin-top: 6px; margin-bottom: 10px; }
   .desktop-work-current-file { color: #6a7b93; font-size: 11px; margin-bottom: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .desktop-work-error { font-size: 12px; line-height: 1.65; color: #a25d20; padding-bottom: 12px; overflow-wrap: anywhere; }
-  .desktop-work-details { margin: 0 -17px; border-top: 1px solid #e7ebf2; font-size: 12px; color: #627187; }
-  .desktop-work-details summary { padding: 12px 17px; cursor: pointer; }
+  .desktop-work-details { margin: 0 -14px; border-top: 1px solid #e7ebf2; font-size: 12px; color: #627187; }
+  .desktop-work-details summary { padding: 10px 14px; cursor: pointer; }
   .desktop-work-details summary:hover { background: #f6f9fc; }
   .desktop-work-details dl { padding: 0 17px 5px; line-height: 1.65; }
   .desktop-work-details dl > div { display: flex; gap: 12px; padding: 5px 0; }
@@ -106,6 +129,37 @@
   .desktop-contact-row strong { font-size: 15px; }
 }
 
+.desktop-message-quote { border-left: 2px solid #b7c2b3; margin: 9px 0 0; padding: 6px 0 3px 9px; color: #757575; font-size: 12px; line-height: 1.5; }
+.desktop-message-quote strong { font-weight: 500; }
+.desktop-message-quote p { margin: 2px 0 0; white-space: pre-wrap; max-height: 75px; overflow: auto; }
+.desktop-chat-drawer {
+  .ant-drawer-content { background: #fff; }
+  .ant-drawer-header { border-bottom: 1px solid #ededed; padding: 19px 20px; }
+  .ant-drawer-title { font-size: 15px; font-weight: 500; }
+  .ant-drawer-body { padding: 20px; }
+  .ant-switch-checked, .ant-btn-primary { background: #07b75b; }
+  .ant-btn-primary:not(:disabled):hover { background: #08a852; }
+}
+.desktop-chat-members { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 10px; }
+.desktop-chat-members > button { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; color: #888; font-size: 11px; }
+.desktop-chat-members > button > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desktop-chat-member-add { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border: 1px dashed #d5d5d5; border-radius: 5px; font-size: 23px; color: #aaa; }
+.desktop-chat-detail-section { border-top: 1px solid #ededed; margin-top: 23px; padding-top: 12px; }
+.desktop-chat-detail-link { display: flex; width: 100%; align-items: center; gap: 9px; padding: 13px 0; font-size: 14px; text-align: left; color: #333; }
+.desktop-chat-detail-link > span:not(.anticon) { flex: 1; }
+.desktop-chat-detail-link > .anticon:last-child { color: #a5a5a5; font-size: 11px; }
+.desktop-chat-detail-setting { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; font-size: 14px; }
+.desktop-chat-introduction, .desktop-history-scope { color: #999; font-size: 12px; line-height: 1.7; margin: 10px 0; overflow-wrap: anywhere; }
+.desktop-chat-error { color: #ab4a32; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.desktop-history-empty { color: #888; font-size: 13px; padding: 22px 0; }
+.desktop-history-results > button { width: 100%; text-align: left; border-bottom: 1px solid #eee; padding: 14px 0; }
+.desktop-history-results > button:hover { background: #f7f7f7; }
+.desktop-history-results > button > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.desktop-history-results strong { font-size: 13px; font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.desktop-history-results time { color: #aaa; font-size: 10px; flex-shrink: 0; }
+.desktop-history-results p { font-size: 13px; color: #777; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; white-space: pre-wrap; word-break: break-word; margin-top: 5px; }
+.desktop-history-message .ant-modal-body { max-height: 60vh; overflow: auto; }
+
 .desktop-new-menu { min-width: 190px; padding: 6px; }
 .desktop-new-menu button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px; border-radius: 6px; text-align: left; font-size: 13px; color: #45566f; }
 .desktop-new-menu button:hover, .desktop-new-menu button:focus-visible { background: #eef4fd; }
@@ -123,3 +177,21 @@
   .personal-agent-desktop button { transition: none; }
   .personal-agent-desktop .anticon-spin { animation: none; }
 }
+
+/* Ant Design renders these panels outside the desktop layout. */
+.desktop-settings-menu { width: 208px; padding: 4px; }
+.desktop-settings-menu > button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 13px 12px; border-radius: 7px; text-align: left; color: #344256; font-size: 14px; }
+.desktop-settings-menu > button:hover, .desktop-settings-menu > button:focus-visible { background: #f1f5fb; }
+.desktop-settings-menu > button > span:nth-child(2) { flex: 1; }
+.desktop-settings-menu > button > .anticon:last-child { color: #8b98ab; font-size: 11px; }
+.desktop-version-panel { padding-top: 10px; }
+.desktop-version-heading { display: flex; align-items: center; justify-content: space-between; padding-bottom: 24px; border-bottom: 1px solid #e8edf3; }
+.desktop-version-heading h2 { margin: 0 0 7px; color: #26354a; font-size: 24px; font-weight: 600; }
+.desktop-version-heading p { margin: 0; color: #748299; font-size: 14px; }
+.desktop-version-icon { color: #5596eb; font-size: 34px; padding: 12px; border-radius: 14px; background: #edf5ff; }
+.desktop-version-status { margin: 23px 0 16px; color: #35455c; font-size: 15px; line-height: 1.6; }
+.desktop-version-notes { max-height: 180px; overflow: auto; background: #f5f7fa; padding: 15px; margin-top: 16px; border-radius: 9px; }
+.desktop-version-notes h3 { margin: 0 0 8px; font-weight: 600; font-size: 13px; }
+.desktop-version-notes p { margin: 0; color: #617087; font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.desktop-version-actions { display: flex; justify-content: flex-end; margin-top: 24px; }
+.desktop-version-help { border-top: 1px solid #e8edf3; padding-top: 16px; margin-top: 23px; margin-bottom: 0; color: #8692a3; font-size: 12px; line-height: 1.7; }

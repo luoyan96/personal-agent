@@ -11,6 +11,7 @@ import { ChatWorker } from '../src/chat-worker.js'
 import type { ModelCall, ModelResult } from '../src/execution-worker.js'
 import { PersonalFollowupWorker,outsideQuiet } from '../src/personal-followups.js'
 import { reminderRequest } from '../src/personal-time.js'
+import { nextRecurring,scheduledRequest } from '../src/recurring-time.js'
 import { personalWorkRequest } from '../src/personal-assistant.js'
 import { agentCreationBoundary } from '../src/agent-creation.js'
 import { chatInputTokenBound } from '../src/chat-model-input.js'
@@ -195,17 +196,19 @@ describe('personal assistant actual HTTP/SQLite; model callbacks are synthetic',
   release(modelResult(JSON.stringify({kind:'delegate',contactId:ownAgent.id,profile:null})));await pending
   expect(await s.turn(late.turn.id)).toMatchObject({status:'cancelled',failure:'INPUT_CHANGED',outputMessageId:null,usage:{inputTokens:100,outputTokens:100}})
  })
- it('does not invent cross-workspace collaboration or pass preferences to a friend',async()=>{
+ it('saves a cross-workspace collaboration proposal without inviting anyone or passing preferences',async()=>{
   const s=await setup(),own=await s.own(),other=await s.own(1),human=(await s.call('chatContacts',null,{},0,`?scope=global&search=${s.clients[1]!.username}`)).value.data.find((c:{identity:{kind:string}})=>c.identity.kind==='human')
   const relation=(await s.call('requestContact',{}, {id:human.id})).value.data.relationship
   await s.call('decideContactRequest',{expectedVersion:relation.version,decision:'accept'},{id:relation.requestId},1)
   await s.call('createPersonalMemory',{topic:'回复方式',content:'PRIVATE_PREFERENCE',scope:'general'})
   const sent=await s.send(own.conversation.id,`请安排和好友 ${human.displayName} 一起写论文`)
-  expect(sent.turn).toMatchObject({status:'succeeded',outputMessageId:expect.any(String)});expect(sent.turn.assistantReceipt).toBeUndefined()
+  expect(sent.turn.status).toBe('queued')
+  await s.tick(async input=>{expect(input.prompt).toContain(human.id);return modelResult(JSON.stringify({kind:'team',title:'合成跨空间建议',contactIds:[human.id]}))})
+  const final=await s.turn(sent.turn.id);expect(final).toMatchObject({status:'succeeded',assistantReceipt:{kind:'work_task',status:'proposed',conversationId:null}})
   const reply=(await s.call('chatMessages',null,{id:own.conversation.id})).value.data.at(-1)
-  expect(reply.text).toContain('跨个人空间');expect(reply.text).toContain('尚未建立群');expect(reply.text).not.toContain('PRIVATE_PREFERENCE')
-  expect(s.count('plans')).toBe(0);expect(s.count('chat_actions')).toBe(0);expect((await s.call('chatConversation',null,{id:own.conversation.id},1)).status).toBe(404)
-  expect(await s.tick(async()=>modelResult('不应模型处理未开放协作'))).toBe(false);expect(other.conversation.kind).toBe('personal')
+  expect(reply.text).toContain('确认后');expect(reply.text).not.toContain('PRIVATE_PREFERENCE')
+  expect(s.count('social_groups')).toBe(0);expect(s.count('plans')).toBe(0);expect(s.count('chat_actions')).toBe(0);expect((await s.call('chatConversation',null,{id:own.conversation.id},1)).status).toBe(404)
+  expect(other.conversation.kind).toBe('personal')
  })
  it('stops a recorded but pending IM reminder after cancellation while retaining its canonical record',async()=>{
   const s=await setup(false),due=Date.now()+1000,result=await s.call('createPersonalFollowup',{title:'取消提醒',body:'仅一次',dueAt:new Date(due).toISOString(),timeZone:'Asia/Shanghai',task:null,quietHours:null}),id=result.value.data.id
@@ -258,11 +261,104 @@ it('parses full local/relative dates, rejects DST gaps/overlaps, and keeps expli
  expect(reminderRequest('提醒我 2027年2月31日上午九点 交材料','Asia/Shanghai',now)).toBeNull()
  expect(outsideQuiet(Date.parse('2026-11-01T05:30Z'),'America/New_York',{start:'01:00',end:'02:00'})).toBe('2026-11-01T07:00:00.000Z')
 })
-it('migration017→018 changes no old table row and is repeatable',async()=>{
+it('migration017→020 changes no old table row and is repeatable',async()=>{
  const s=await setup(),own=await s.own();await s.send(own.conversation.id,'已有旧消息')
- s.db.exec('DROP TABLE personal_followups; DROP TABLE personal_memory_revisions; DROP TABLE personal_memories; DROP TABLE personal_memory_settings; DELETE FROM schema_migrations WHERE version=18')
+ s.db.exec('DROP TABLE social_groups; DROP TABLE personal_work_participants; DROP TABLE personal_work_tasks; DROP TABLE capability_publications; DROP TABLE personal_followup_runs; DROP TABLE personal_followups; DROP TABLE personal_memory_revisions; DROP TABLE personal_memories; DROP TABLE personal_memory_settings; DELETE FROM schema_migrations WHERE version>=18')
  const tables=s.db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(r=>String(r.name))
  const digest=()=>Object.fromEntries(tables.filter(t=>t!=='schema_migrations').map(t=>[t,createHash('sha256').update(JSON.stringify(s.db.prepare(`SELECT * FROM ${t} ORDER BY rowid`).all())).digest('hex')]))
- const before=digest();migrate(s.db);migrate(s.db);expect(digest()).toEqual(before);expect(s.db.prepare('SELECT max(version) v FROM schema_migrations').get()!.v).toBe(18);expect(s.db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+ const before=digest();migrate(s.db);migrate(s.db);expect(digest()).toEqual(before);expect(s.db.prepare('SELECT max(version) v FROM schema_migrations').get()!.v).toBe(20);expect(s.db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+})
+
+describe('recurring reminders and persistent local Agent jobs; synthetic model callbacks',{timeout:30000},()=>{
+ const fields=(due:number)=>({title:'合成周期事项',body:'根据提供的文字整理三条待办。',dueAt:new Date(due).toISOString(),timeZone:'Asia/Shanghai',task:null,quietHours:null})
+ const result=(text:string,failure:ModelResult['failure']=null):ModelResult=>({text,failure,inputTokens:100,outputTokens:50,elapsedMs:10})
+ it('parses explicit daily/weekly/workday commands in local time and skips DST gaps/overlaps',()=>{
+  const now=Date.parse('2026-10-07T06:00:00Z')
+  expect(scheduledRequest('每天上午九点提醒我交材料','Asia/Shanghai',now)).toMatchObject({due:Date.parse('2026-10-08T01:00:00Z'),body:'交材料',recurrence:{frequency:'daily'},execute:false})
+  expect(scheduledRequest('每周五下午六点帮我总结最近的聊天','Asia/Shanghai',now)).toMatchObject({due:Date.parse('2026-10-09T10:00:00Z'),recurrence:{frequency:'weekly',weekdays:[5]},execute:true})
+  expect(scheduledRequest('每个工作日上午九点提醒我整理待办','Asia/Shanghai',Date.parse('2026-10-09T12:00:00Z'))?.due).toBe(Date.parse('2026-10-12T01:00:00Z'))
+  expect(scheduledRequest('每天九点提醒我，只是举例','Asia/Shanghai',now)).toBeNull()
+  expect(scheduledRequest('每天九点能帮我吗？','Asia/Shanghai',now)).toBeNull()
+  expect(scheduledRequest('每天九点不要提醒我','Asia/Shanghai',now)).toBeNull()
+  expect(nextRecurring(Date.parse('2027-03-13T07:30Z'),'America/New_York',{frequency:'daily'},Date.parse('2027-03-13T08:00Z'))).toBe(Date.parse('2027-03-15T06:30Z'))
+  expect(nextRecurring(Date.parse('2026-10-31T05:30Z'),'America/New_York',{frequency:'daily'},Date.parse('2026-10-31T06:00Z'))).toBe(Date.parse('2026-11-02T06:30Z'))
+ })
+ it('creates recurring reminders and scheduled instructions from chat without executing immediately',async()=>{
+  const s=await setup(false),own=await s.own()
+  const reminded=await s.send(own.conversation.id,'每天上午九点提醒我整理待办')
+  const executed=await s.send(own.conversation.id,'每周五下午六点帮我总结最近的聊天')
+  expect((await s.call('personalFollowup',null,{id:reminded.turn.followupReceipt.followupId})).value.data).toMatchObject({recurrence:{frequency:'daily'},execution:null})
+  expect((await s.call('personalFollowup',null,{id:executed.turn.followupReceipt.followupId})).value.data).toMatchObject({recurrence:{frequency:'weekly',weekdays:[5]},execution:{contactId:own.agent.id,budget:{maxTokens:4000,maxSeconds:90}}})
+  expect(await s.tick(async()=>result('不应执行'))).toBe(false)
+ })
+ it('coalesces overdue periods, remains daily, and atomically deduplicates competing workers after restart',async()=>{
+  const s=await setup(false),due=Date.now()+60000,created=await s.call('createPersonalFollowup',{...fields(due),recurrence:{frequency:'daily'}}),id=created.value.data.id
+  expect(created.status,created.text).toBe(201);await s.restart()
+  const second=openDatabase(s.config.databasePath);cleanup.push(()=>second.close())
+  const now=due+3*86400000+5000,workers=[new PersonalFollowupWorker(s.db,s.config,()=>now),new PersonalFollowupWorker(second,s.config,()=>now)]
+  expect((await Promise.all(workers.map(w=>w.tick()))).filter(Boolean)).toHaveLength(1)
+  expect(s.count('personal_followup_runs')).toBe(1);expect(s.count('chat_messages')).toBe(1)
+  const record=(await s.call('personalFollowup',null,{id})).value.data;expect(Date.parse(record.dueAt)).toBeGreaterThan(now);expect(record.lastRun.status).toBe('recorded');expect(record.allowedActions).toContain('edit')
+  expect(await new PersonalFollowupWorker(s.db,s.config,()=>Date.parse(record.nextDeliveryAt)+1).tick()).toBe(true)
+  expect(s.count('personal_followup_runs')).toBe(2);expect(s.count('chat_messages')).toBe(2)
+  expect((await s.call('personalFollowupRuns',null,{id},1)).status).toBe(404)
+  const page=(await s.call('personalFollowupRuns',null,{id},0,'?limit=1')).value;expect(page.data).toHaveLength(1);expect(page.nextCursor).toBeTruthy()
+  expect((await s.call('personalFollowupRuns',null,{id},0,`?limit=1&cursor=${encodeURIComponent(page.nextCursor)}`)).value.data).toHaveLength(1)
+ })
+ it('executes a scheduled local Agent turn through the real ChatWorker and exposes its canonical response/history',async()=>{
+  const s=await setup(),own=await s.own(),due=Date.now()+60000
+  const created=await s.call('createPersonalFollowup',{...fields(due),execution:{kind:'agent',contactId:own.agent.id}});expect(created.status,created.text).toBe(201)
+  const worker=new PersonalFollowupWorker(s.db,s.config,()=>due+1);expect(await worker.tick()).toBe(true)
+  let calls=0
+  await s.tick(async input=>{calls++;expect(input.system).toContain('owner-authorized scheduled instruction');expect(input.prompt).toContain('根据提供的文字整理三条待办');expect(input.maxTokens).toBeLessThan(4000);return result('合成模型生成的三条待办')})
+  expect(await worker.tick()).toBe(true);expect(await worker.tick()).toBe(false);expect(calls,JSON.stringify((await s.call('personalFollowup',null,{id:created.value.data.id})).value.data)).toBe(1)
+  const record=(await s.call('personalFollowup',null,{id:created.value.data.id})).value.data
+  expect(record).toMatchObject({status:'completed',lastRun:{status:'succeeded',outputMessageId:expect.any(String)}})
+  expect(s.db.prepare('SELECT status FROM im_message_outbox WHERE message_id=?').get(record.lastRun.outputMessageId)?.status).toBe('pending')
+  expect((await s.call('chatMessages',null,{id:own.conversation.id})).value.data.at(-1).text).toBe('合成模型生成的三条待办')
+ })
+ it('shows failures once, never automatically reissues a failed or uncertain call, and keeps the next recurring date',async()=>{
+  const s=await setup(),own=await s.own(),due=Date.now()+60000,created=(await s.call('createPersonalFollowup',{...fields(due),recurrence:{frequency:'daily'},execution:{kind:'agent',contactId:own.agent.id}})).value.data
+  const worker=new PersonalFollowupWorker(s.db,s.config,()=>due+1);await worker.tick();let calls=0
+  await s.tick(async()=>{calls++;return result('', 'MODEL_FAILED')});await worker.tick()
+  expect(await worker.tick()).toBe(false);expect(await s.tick(async()=>{calls++;return result('不可自动重试')})).toBe(false);expect(calls).toBe(1)
+  const record=(await s.call('personalFollowup',null,{id:created.id})).value.data;expect(record).toMatchObject({status:'active',lastRun:{status:'failed',failure:'MODEL_FAILED',outputMessageId:expect.any(String)}})
+  expect(s.count('chat_messages')).toBe(2);expect(Date.parse(record.nextDeliveryAt)).toBeGreaterThan(due+1)
+ })
+ it('pausing during a model call fences a late response; resume uses the next future time',async()=>{
+  const s=await setup(),own=await s.own(),due=Date.now()+60000,created=(await s.call('createPersonalFollowup',{...fields(due),recurrence:{frequency:'daily'},execution:{kind:'agent',contactId:own.agent.id}})).value.data
+  const worker=new PersonalFollowupWorker(s.db,s.config,()=>due+1);await worker.tick()
+  let release!:(v:ModelResult)=>void,started!:()=>void;const ready=new Promise<void>(resolve=>started=resolve)
+  const pending=s.tick(async()=>{started();return new Promise<ModelResult>(resolve=>release=resolve)});await ready
+  const current=(await s.call('personalFollowup',null,{id:created.id})).value.data
+  expect((await s.call('changePersonalFollowup',{expectedVersion:current.version,action:'pause'},{id:created.id})).status).toBe(200)
+  release(result('迟到回复，不得保存'));await pending;await worker.tick()
+  expect(s.count('chat_messages')).toBe(1);expect((await s.call('personalFollowup',null,{id:created.id})).value.data.lastRun.status).toBe('cancelled')
+  const paused=(await s.call('personalFollowup',null,{id:created.id})).value.data
+  const resumed=(await s.call('changePersonalFollowup',{expectedVersion:paused.version,action:'resume'},{id:created.id})).value.data
+  expect(Date.parse(resumed.nextDeliveryAt)).toBeGreaterThan(Date.now());expect(s.count('personal_followup_runs')).toBe(1)
+ })
+ it('records a missing model and a busy conversation without interrupting existing user work',async()=>{
+  const s=await setup(false),own=await s.own(),due=Date.now()+60000
+  const unavailable=(await s.call('createPersonalFollowup',{...fields(due),execution:{kind:'agent',contactId:own.agent.id}})).value.data
+  await new PersonalFollowupWorker(s.db,s.config,()=>due+1).tick();expect((await s.call('personalFollowup',null,{id:unavailable.id})).value.data.lastRun).toMatchObject({status:'skipped',failure:'MODEL_UNAVAILABLE'});expect(s.count('chat_turns')).toBe(0)
+  await s.call('createPersonalModel',{name:'合成模型',provider:'deepseek',model:'deepseek-flash',enabled:true,apiKey:'synthetic-only-key'})
+  const original=await s.send(own.conversation.id,'普通消息保持待处理')
+  const busy=(await s.call('createPersonalFollowup',{...fields(due+1000),execution:{kind:'agent',contactId:own.agent.id}})).value.data
+  await new PersonalFollowupWorker(s.db,s.config,()=>due+1001).tick();expect((await s.call('personalFollowup',null,{id:busy.id})).value.data.lastRun).toMatchObject({status:'skipped',failure:'AGENT_BUSY'});expect((await s.turn(original.turn.id)).status).toBe('queued')
+ })
+ it('rejects other owners, keeps version conflicts, cancels queued work on edit and preserves existing schema18 rows',async()=>{
+  const s=await setup(),own=await s.own(),foreign=await s.own(1),due=Date.now()+60000
+  expect((await s.call('createPersonalFollowup',{...fields(due),execution:{kind:'agent',contactId:foreign.agent.id}})).status).toBe(403)
+  const created=(await s.call('createPersonalFollowup',{...fields(due),recurrence:{frequency:'daily'},execution:{kind:'agent',contactId:own.agent.id}})).value.data
+  await new PersonalFollowupWorker(s.db,s.config,()=>due+1).tick()
+  expect((await s.call('updatePersonalFollowup',{...fields(due+86400000),expectedVersion:created.version} ,{id:created.id})).status).toBe(409)
+  const current=(await s.call('personalFollowup',null,{id:created.id})).value.data
+  expect((await s.call('updatePersonalFollowup',{...fields(due+86400000),expectedVersion:current.version,recurrence:{frequency:'daily'},execution:{kind:'agent',contactId:own.agent.id}},{id:created.id})).status).toBe(200)
+  expect((await s.call('personalFollowup',null,{id:created.id})).value.data.lastRun.status).toBe('cancelled');expect(await s.tick(async()=>result('旧指令不能执行'))).toBe(false)
+  s.db.exec('DROP TABLE social_groups; DROP TABLE personal_work_participants; DROP TABLE personal_work_tasks; DROP TABLE capability_publications; DELETE FROM personal_followup_runs; DROP TABLE personal_followup_runs; DELETE FROM schema_migrations WHERE version>=19')
+  const before=JSON.stringify(s.db.prepare('SELECT * FROM personal_followups ORDER BY id').all());migrate(s.db);migrate(s.db)
+  expect(JSON.stringify(s.db.prepare('SELECT * FROM personal_followups ORDER BY id').all())).toBe(before);expect(s.db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+ })
 })
 

@@ -1,10 +1,10 @@
-import { ContactsOutlined, MessageOutlined, RightOutlined, SettingOutlined } from "@ant-design/icons";
+import { CompassOutlined, ContactsOutlined, FolderOpenOutlined, MessageOutlined, RightOutlined } from "@ant-design/icons";
 import { Badge, Divider, Layout, Popover, Upload, UploadProps } from "antd";
 import clsx from "clsx";
 import i18n, { t } from "i18next";
 import React, { memo, useRef, useState } from "react";
 import ImageResizer from "react-image-file-resizer";
-import { UNSAFE_NavigationContext, useResolvedPath } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { modal } from "@/AntdGlobalComp";
 import { updateBusinessUserInfo } from "@/api/login";
@@ -23,6 +23,7 @@ import { OverlayVisibleHandle } from "../../hooks/useOverlayVisible";
 import About from "./About";
 import styles from "./left-nav-bar.module.scss";
 import PersonalSettings from "./PersonalSettings";
+import DesktopSettings from "./DesktopSettings";
 import { researchMode } from "@/research/api";
 import { LabSettings } from "@/research/LabSettings";
 import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
@@ -41,6 +42,18 @@ const NavList = [
     icon_active: contact_icon_active,
     title: t("placeholder.contact"),
     path: "/contact",
+  },
+  {
+    icon: contact_icon,
+    icon_active: contact_icon_active,
+    title: "工作台",
+    path: "/workbench",
+  },
+  {
+    icon: contact_icon,
+    icon_active: contact_icon_active,
+    title: "广场",
+    path: "/square",
   },
 ];
 
@@ -68,17 +81,10 @@ const resizeFile = (file: File): Promise<File> =>
 type NavItemType = (typeof NavList)[0];
 
 const NavItem = ({ nav: { icon, icon_active, title, path } }: { nav: NavItemType }) => {
-  const resolvedPath = useResolvedPath(path);
-  const { navigator } = React.useContext(UNSAFE_NavigationContext);
-  const toPathname = navigator.encodeLocation
-    ? navigator.encodeLocation(path).pathname
-    : resolvedPath.pathname;
-  const locationPathname = location.pathname;
+  const navigate = useNavigate();
+  const locationPathname = useLocation().pathname;
   const isActive =
-    locationPathname === toPathname ||
-    (locationPathname.startsWith(toPathname) &&
-      locationPathname.charAt(toPathname.length) === "/") ||
-    location.hash.startsWith(`#${toPathname}`);
+    locationPathname === path || locationPathname.startsWith(`${path}/`);
 
   const unReadCount = useConversationStore((state) => state.unReadCount);
   const unHandleFriendApplicationCount = useContactStore(
@@ -93,8 +99,7 @@ const NavItem = ({ nav: { icon, icon_active, title, path } }: { nav: NavItemType
       return;
     }
 
-    // TODO Keep answering when jumping back to chat from another page (if there is one)
-    navigator.push(path);
+    navigate(path);
   };
 
   const getBadge = () => {
@@ -119,7 +124,9 @@ const NavItem = ({ nav: { icon, icon_active, title, path } }: { nav: NavItemType
         )}
         onClick={tryNavigate}
       >
-        {window.electronAPI ? (path === "/chat" ? <MessageOutlined /> : <ContactsOutlined />) : <img width={20} src={isActive ? icon_active : icon} alt="" />}
+        {window.electronAPI || path === "/workbench" || path === "/square" ? (
+          path === "/chat" ? <MessageOutlined /> : path === "/contact" ? <ContactsOutlined /> : path === "/workbench" ? <FolderOpenOutlined /> : <CompassOutlined />
+        ) : <img width={20} src={isActive ? icon_active : icon} alt="" />}
         <div className="mt-1 text-xs text-gray-500">{title}</div>
       </button>
     </Badge>
@@ -163,6 +170,7 @@ const LeftNavBar = memo(() => {
   const [showProfile, setShowProfile] = useState(false);
   const [labSettings, setLabSettings] = useState(false);
   const [personal, setPersonal] = useState(false);
+  const [personalTab, setPersonalTab] = useState<"memory" | "followups">("memory");
   const selfInfo = useUserStore((state) => state.selfInfo);
   const userLogout = useUserStore((state) => state.userLogout);
   const updateSelfInfo = useUserStore((state) => state.updateSelfInfo);
@@ -185,7 +193,7 @@ const LeftNavBar = memo(() => {
         tryLogout();
         break;
       case 4:
-        setPersonal(true);
+        setPersonalTab("memory"); setPersonal(true);
         break;
       default:
         break;
@@ -299,15 +307,21 @@ const LeftNavBar = memo(() => {
           />
         </Popover>
 
-        {NavList.map((nav) => (
+        {NavList.filter(nav => researchMode || ["/chat", "/contact"].includes(nav.path)).map((nav) => (
           <NavItem nav={nav} key={nav.path} />
         ))}
-        {window.electronAPI && researchMode && <button type="button" className="desktop-model-settings" onClick={() => setLabSettings(true)} aria-label="模型设置"><SettingOutlined /><span>模型设置</span></button>}
+        {window.electronAPI && <div className="desktop-navigation-bottom">
+          <DesktopSettings
+            onModelSettings={() => researchMode ? setLabSettings(true) : personalSettingsRef.current?.openOverlay()}
+            onMemory={researchMode ? () => { setPersonalTab("memory"); setPersonal(true); } : undefined}
+            onFollowups={researchMode ? () => { setPersonalTab("followups"); setPersonal(true); } : undefined}
+          />
+        </div>}
       </div>
       <PersonalSettings ref={personalSettingsRef} />
       <About ref={aboutRef} />
       <LabSettings open={labSettings} onClose={() => setLabSettings(false)} />
-      {researchMode && <PersonalAssistantPanel open={personal} onClose={() => setPersonal(false)} />}
+      {researchMode && <PersonalAssistantPanel open={personal} initialTab={personalTab} onClose={() => setPersonal(false)} />}
     </Sider>
   );
 });
