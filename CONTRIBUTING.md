@@ -1,6 +1,6 @@
 # 共同开发
 
-主仓库：[luoyan96/personal-agent](https://github.com/luoyan96/personal-agent)。产品目标是微信式 Personal Agent，人与 Agent 共用通讯录，科研是第一个验证场景。贡献可以是代码、方法、真实使用反馈或可公开的失败案例。
+主仓库：[luoyan96/personal-agent](https://github.com/luoyan96/personal-agent)。产品名称AcceptCat，近期聚焦中国科研工作者的个人助理与课题组协作，Windows桌面优先，人与Agent共用通讯录。本人和学生先持续使用，再判断推广；长期Personal Agent方向保留。贡献可以是代码、方法、真实使用反馈或可公开的失败案例。
 
 ## 第一次参与
 

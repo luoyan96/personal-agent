@@ -2,6 +2,14 @@
 
 更新日期：2026-10-08（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新本地候选：AcceptCat 0.6.1，近期聚焦科研
+
+用户2026-10-08确定名称 **AcceptCat**，近期服务中国科研工作者，约半年先供本人和学生持续使用。保留微信式人与Agent联系人及长期Personal Agent目标；优先稳定聊天 / 文件、持续课题与学生协作、实际科研产出、跟进与背景复用。产品依据见[规划v0.8](product-plan.md)，旧探索来源及已迁入成果见[迁移记录](migration.md)。
+
+分支feature/acceptcat-branding基于7e49368，仅修改桌面品牌、安装兼容与方向文档：窗口 / 标题栏 / 登录 / 设置 / 托盘 / 更新确认 / 启动页 / 安装元数据统一AcceptCat；安装和快捷方式改名。appId、package.name、默认Electron数据身份、固定GitHub更新源保留，原生更新识别新旧卸载程序。renderer / Electron类型、8项更新与服务地址检查、内容门禁、真实NSIS构建、exe / blockmap / latest.yml校验通过。隔离实际打包Electron22的窗口 / 登录品牌、app.getName仍research-wechat-openim、原生SDK / Skill桥接和无pageerror通过，截图已查看。
+
+本地安装包 `D:/deepseek-agent/AcceptCat-Windows/0.6.1/AcceptCat_0.6.1.exe`，86388221字节，SHA256 `e71a37d6af4a6d69391cc002edf8ff5f42d02090fbb4e5c18e9c10f6954e1c14`。本批未发布Release、部署服务器、迁移数据库或操作用户已安装软件；公开更新源与API / worker仍为下节0.6.0 / 11cd20a。真实旧安装版覆盖升级与重启未执行，也没有新增科研工具执行。失败的跨项目类型 / 品牌打包路径检查保留，最终已修正；证据在Git外 `.runtime/acceptcat-branding-20261008`。[具体范围与后续](development/acceptcat-branding.md)。
+
 ## 当前已发布：Windows0.6.0私人技能，API / worker配套已上线
 
 2026-10-08 **18:01:21北京时间**，[v0.6.0](https://github.com/luoyan96/personal-agent/releases/tag/v0.6.0)正式发布，桌面与API / worker固定源码11cd20a92bd1a295120f7c87eea022da3ff9c411，contract0.22 / chat1.11 / schema21。工作台 → 我的技能支持文件夹、ZIP和GitHub固定提交安装，默认私人；绑定本人Agent、聊天选择技能 / 参考文字，独立公开介绍 / 好友调用 / 源码复制授权、启停、历史修订切换和本人真实调用记录。[PR23](https://github.com/luoyan96/personal-agent/pull/23)为草稿，依赖PR22，未合main。

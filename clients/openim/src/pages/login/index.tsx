@@ -4,7 +4,7 @@ import { useCopyToClipboard } from "react-use";
 
 import login_bg from "@/assets/images/login/login_bg.png";
 import WindowControlBar from "@/components/WindowControlBar";
-import { APP_NAME, APP_VERSION, SDK_VERSION } from "@/config";
+import { APP_NAME, APP_TAGLINE, APP_VERSION, SDK_VERSION } from "@/config";
 import { feedbackToast } from "@/utils/common";
 import { getLoginMethod, setLoginMethod as saveLoginMethod } from "@/utils/storage";
 
@@ -49,8 +49,8 @@ export const Login = () => {
             <div className="research-auth-symbol">
               <MessageOutlined rev={undefined} />
             </div>
-            <h1>科研微信</h1>
-            <p>与人和 Agent，像朋友一样聊天。</p>
+            <h1>{APP_NAME}</h1>
+            <p>{APP_TAGLINE}</p>
             <ul>
               <li>
                 <TeamOutlined rev={undefined} />
@@ -123,7 +123,7 @@ const LeftBar = () => {
     <div className="flex min-h-[420] max-[900px]:hidden">
       <div className="mr-14 text-center">
         <div className="text-2xl">
-          {researchMode ? "科研微信" : t("placeholder.title")}
+          {researchMode ? APP_NAME : t("placeholder.title")}
         </div>
         <span className="text-sm text-gray-500">
           {researchMode

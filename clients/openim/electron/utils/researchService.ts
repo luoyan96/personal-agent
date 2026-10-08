@@ -1,6 +1,6 @@
 export function validateResearchServiceUrl(address: unknown): string {
   if (typeof address !== "string" || !address.trim())
-    throw new Error("请填写科研微信服务地址");
+    throw new Error("请填写科研服务地址");
   let url: URL;
   try {
     url = new URL(address.trim());

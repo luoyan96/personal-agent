@@ -472,3 +472,13 @@
 完整CI47文件 / 588项、生产021两项、B0 / Web隔离；原生导入3项、桌面类型 / 构建、真实隔离Electron22安装 / 绑定 / 聊天 / 调用记录与1024窗口通过。模型合成、原生选择器返回模拟为实际解析包。实际打包0.6.0启动 / 技能preload通过。固定源码11cd20a的[GitHub37759957391](https://github.com/luoyan96/personal-agent/actions/runs/37759957391)三平台全部通过；6项真实线上HTTPS安装 / 权限检查通过，合成记录停用 / 解绑 / 撤公开 / logout，未使用用户Key、资料或真实供应商。
 
 API / worker同镜像sha256:580d8333423e8fab0d7fb5f4216a6707fa073b3cbb975794565beb3cf18c6e9b；备份隔离恢复通过，迁移021新增3表，旧83表行摘要保持，integrity / FK通过。Windows安装文件D:/deepseek-agent/PersonalAgent-Windows/0.6.0/ResearchWeChat_0.6.0.exe，86384427字节，SHA25677f448b0f5bd56ac3412076d35265eb25fc8b9b97e0c63e01404cfcd29712908。四远端资产size / digest和实际公开latest.yml字节核对通过；左下角设置 → 版本更新可升级，也可手动运行安装包。未代替用户安装 / 重启，升级前复制未确认发送文字。[部署和回退收据](deployment/personal-agent-private-skills.md)。Git外证据.runtime/private-skills-20261008保留本地检查、实际截图、早期迁移 / 打包失败与发布收据。
+
+## 2026-10-08 AcceptCat名称与科研方向确定，Windows0.6.1本地候选
+
+用户确定AcceptCat名称，近期聚焦中国科研工作者，本人及学生持续使用约半年再判断推广。读取早期产品规划、科研桌面 / 技能 / 门户 / 设计探索；已有研究核心与Skill迁移继续沿用，来源记录和旧目录保留。产品规划升级v0.8，路线、README、协作说明与交接入口同步科研优先级；长期人与Agent共生、自动组织、获准记忆和主动跟进保留。
+
+feature/acceptcat-branding基于7e49368：原生窗口、标题栏、登录、服务连接、设置版本、托盘、更新确认、启动页、Windows安装文件与快捷方式统一AcceptCat。保留appId、package.name、默认数据身份、GitHub更新源；旧ResearchWeChat与新AcceptCat卸载程序均保留更新资格。没有修改共享核心、契约或Skill内容，没有重复根CI。
+
+renderer / Electron类型、8项更新与地址检查、文档门禁、实际NSIS构建和更新资产校验通过。真实打包Electron22用新的隔离临时目录启动：窗口 / 登录页名称与科研定位、app.getName旧身份、原生SDK / Skill桥接通过，pageerror0，截图查看通过。类型检查发现跨项目品牌引用与旧Node解析问题；第一次打包启动缺品牌模块，移动后出现renderer声明输出依赖，最终两端各用纯品牌配置并核对；早期失败保留在工具输出与Git外证据，不计通过。构建保留既有Antd指令、Sass及大包告警。
+
+本地候选 `D:/deepseek-agent/AcceptCat-Windows/0.6.1/AcceptCat_0.6.1.exe`，86388221字节，SHA256 `e71a37d6af4a6d69391cc002edf8ff5f42d02090fbb4e5c18e9c10f6954e1c14`。证据 `.runtime/acceptcat-branding-20261008`，源码提交随本批feature分支记录。公开Release与API / worker仍为0.6.0 / 11cd20a，contract0.22 / chat1.11 / schema21；没有自动发布、部署、迁移、用户安装或真实模型调用。旧安装版实际覆盖升级尚未验收。本批不声称新科研工具完成；下一步围绕真实课题完善导师目标、学生 / Agent承接、阶段成果与反馈继续推进。完整绘图Skill执行仍待独立实现。

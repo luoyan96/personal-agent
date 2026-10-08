@@ -16,6 +16,7 @@ import add_group from "@/assets/images/topSearchBar/add_group.png";
 import create_group from "@/assets/images/topSearchBar/create_group.png";
 import WindowControlBar from "@/components/WindowControlBar";
 import { CustomType } from "@/constants";
+import { APP_NAME } from "@/config/brand";
 import { OverlayVisibleHandle } from "@/hooks/useOverlayVisible";
 import ChooseModal, { ChooseModalState } from "@/pages/common/ChooseModal";
 import GroupCardModal from "@/pages/common/GroupCardModal";
@@ -176,30 +177,43 @@ const TopSearchBar = () => {
   };
 
   return (
-    <div className={`no-mobile app-drag flex h-10 min-h-[40px] items-center bg-[var(--top-search-bar)] dark:bg-[#141414] ${window.electronAPI ? "desktop-titlebar" : ""}`}>
-      {window.electronAPI && <span className="desktop-app-name"><RobotOutlined />Personal Agent</span>}
-      {!window.electronAPI && <div className="flex w-full items-center justify-center">
-        <div className="app-no-drag flex h-[26px] w-1/3 items-center justify-center rounded-md bg-[rgba(255,255,255,0.2)]"></div>
-        <Popover
-          content={<ActionPopContent actionClick={actionClick} research={researchMode} />}
-          arrow={false}
-          title={null}
-          trigger="click"
-          placement="bottom"
-          open={actionVisible}
-          onOpenChange={(vis) => setActionVisible(vis)}
-        >
-          <button
-            type="button"
-            className="app-no-drag ml-8 flex h-8 w-8 items-center justify-center rounded-md text-xl text-white hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-            aria-label="新建与添加"
-            aria-expanded={actionVisible}
-            aria-haspopup="menu"
+    <div
+      className={`no-mobile app-drag flex h-10 min-h-[40px] items-center bg-[var(--top-search-bar)] dark:bg-[#141414] ${
+        window.electronAPI ? "desktop-titlebar" : ""
+      }`}
+    >
+      {window.electronAPI && (
+        <span className="desktop-app-name">
+          <RobotOutlined />
+          {APP_NAME}
+        </span>
+      )}
+      {!window.electronAPI && (
+        <div className="flex w-full items-center justify-center">
+          <div className="app-no-drag flex h-[26px] w-1/3 items-center justify-center rounded-md bg-[rgba(255,255,255,0.2)]"></div>
+          <Popover
+            content={
+              <ActionPopContent actionClick={actionClick} research={researchMode} />
+            }
+            arrow={false}
+            title={null}
+            trigger="click"
+            placement="bottom"
+            open={actionVisible}
+            onOpenChange={(vis) => setActionVisible(vis)}
           >
-            <PlusOutlined />
-          </button>
-        </Popover>
-      </div>}
+            <button
+              type="button"
+              className="app-no-drag ml-8 flex h-8 w-8 items-center justify-center rounded-md text-xl text-white hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+              aria-label="新建与添加"
+              aria-expanded={actionVisible}
+              aria-haspopup="menu"
+            >
+              <PlusOutlined />
+            </button>
+          </Popover>
+        </div>
+      )}
       <WindowControlBar />
       <UserCardModal ref={userCardRef} {...userCardState} />
       <GroupCardModal ref={groupCardRef} groupData={groupCardData} />
@@ -247,7 +261,13 @@ const researchActionMenuList = [
   { idx: 2, title: "发起群聊", icon: create_group },
 ];
 
-const ActionPopContent = ({ actionClick, research }: { actionClick: (idx: number) => void; research: boolean }) => {
+const ActionPopContent = ({
+  actionClick,
+  research,
+}: {
+  actionClick: (idx: number) => void;
+  research: boolean;
+}) => {
   return (
     <div className="min-w-[160px] p-1" role="menu" aria-label="新建与添加菜单">
       {(research ? researchActionMenuList : actionMenuList).map((action) => (
@@ -258,7 +278,11 @@ const ActionPopContent = ({ actionClick, research }: { actionClick: (idx: number
           key={action.idx}
           onClick={() => actionClick?.(action.idx)}
         >
-          {action.icon ? <img width={20} src={action.icon} alt="" /> : <RobotOutlined className="text-xl text-[var(--primary)]" />}
+          {action.icon ? (
+            <img width={20} src={action.icon} alt="" />
+          ) : (
+            <RobotOutlined className="text-xl text-[var(--primary)]" />
+          )}
           <div className="ml-3">{action.title}</div>
         </button>
       ))}

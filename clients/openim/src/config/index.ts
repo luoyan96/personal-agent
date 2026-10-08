@@ -1,6 +1,6 @@
 import packageJson from "../../package.json";
 
-export const APP_NAME = "科研微信";
+export { APP_NAME, APP_TAGLINE } from "./brand";
 export const APP_VERSION = `v${packageJson.version}`;
 export const SDK_VERSION = window.electronAPI
   ? `SDK(FFI) 依赖版本 ${packageJson.dependencies["@openim/electron-client-sdk"]}`

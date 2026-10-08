@@ -1,6 +1,14 @@
-# Research Agent Platform · Personal Agent 与人机协作
+# AcceptCat · 科研个人助理与课题组协作
+
+AcceptCat采用微信式聊天，真人和Agent共用通讯录。近期聚焦中国科研工作者，先服务本人及学生的真实课题：交代目标、明确分工、使用资料、提交成果、反馈验收并持续积累背景。接下来约半年以自己课题组持续使用为主，再判断推广。Windows桌面优先，科研功能的实际范围见[产品规划v0.8](docs/product-plan.md)与[开发路线](docs/roadmap.md)。
+
+2026-10-08：0.6.1为本地AcceptCat品牌候选，保留旧版安装身份、用户数据目录和GitHub更新源；公开发布与云端仍是下方0.6.0。本项目继续沿用现有代码和[早期迁移成果](docs/migration.md)，历史版本及验证记录保留。
 
 Windows0.6.0私人技能和配套API / worker已发布（contract0.22 / schema21）；安装、授权、聊天文字流程与边界见 [当前状态](docs/current-state.md)。
+
+## 历史版本与实现记录
+
+以下内容按对应历史版本阅读，当前运行状态以[交接入口](docs/current-state.md)为准。
 
 Windows **0.5.2已发布**：[安装与发布说明](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.2)。修复慢响应导致历史消息永久“正在加载消息”，读取失败提供明确重试，协作建议失败不隐藏正文；公开更新入口已核对。微信式消息、统一人与Agent通讯录、工作台、能力广场，版本更新入口在左下角设置。配套API/worker为06262a6b（contract0.21/schema20），019/020与工作台/广场上线验证保持，本批无后台部署或迁移。功能见[桌面协作工作区](docs/development/desktop-social-workspace.md)，精确源码、验证边界和备份见[当前状态](docs/current-state.md)与[上下文部署记录](docs/deployment/personal-agent-conversation-context.md)。
 
