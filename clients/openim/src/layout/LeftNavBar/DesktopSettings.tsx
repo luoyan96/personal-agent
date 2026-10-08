@@ -7,6 +7,7 @@ import {
 } from "@ant-design/icons";
 import { Alert, Badge, Button, Modal, Popover, Progress } from "antd";
 import { useState } from "react";
+import { APP_NAME } from "@/config/brand";
 import DesktopUpdateButton from "./DesktopUpdateButton";
 import { useDesktopUpdates } from "./useDesktopUpdates";
 
@@ -97,8 +98,32 @@ export default function DesktopSettings({
               <span>模型设置</span>
               <RightOutlined />
             </button>
-            {onMemory && <button type="button" onClick={() => { setMenuOpen(false); onMemory(); }}><HistoryOutlined /><span>记忆与偏好</span><RightOutlined /></button>}
-            {onFollowups && <button type="button" onClick={() => { setMenuOpen(false); onFollowups(); }}><ClockCircleOutlined /><span>定时任务</span><RightOutlined /></button>}
+            {onMemory && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onMemory();
+                }}
+              >
+                <HistoryOutlined />
+                <span>记忆与偏好</span>
+                <RightOutlined />
+              </button>
+            )}
+            {onFollowups && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onFollowups();
+                }}
+              >
+                <ClockCircleOutlined />
+                <span>定时任务</span>
+                <RightOutlined />
+              </button>
+            )}
             <button type="button" aria-label="版本更新" onClick={openVersion}>
               <CloudDownloadOutlined />
               <span>版本更新</span>
@@ -131,7 +156,7 @@ export default function DesktopSettings({
         <section className="desktop-version-panel" aria-label="版本信息">
           <div className="desktop-version-heading">
             <div>
-              <h2>Personal Agent</h2>
+              <h2>{APP_NAME}</h2>
               <p>当前版本：{state?.currentVersion || "读取中"}</p>
             </div>
             <CloudDownloadOutlined className="desktop-version-icon" />

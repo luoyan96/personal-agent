@@ -18,7 +18,7 @@ for (const directory of ["assets", "font", "icons"])
   if (!existsSync(path.join(dist, directory)))
     throw new Error(`Missing web resource directory: ${directory}`);
 const html = readFileSync(path.join(dist, "index.html"), "utf8");
-if (!html.includes("<title>科研微信</title>"))
+if (!html.includes("<title>AcceptCat</title>"))
   throw new Error("Wrong research client HTML title");
 for (const match of html.matchAll(/(?:src|href)="\.\/(assets\/[^"?#]+)"/g))
   if (!existsSync(path.join(dist, match[1])))

@@ -13,7 +13,7 @@ const version = JSON.parse(
   readFileSync(path.join(root, "package.json"), "utf8"),
 ).version;
 const directory = path.join(root, "release", "Base", version);
-const name = `ResearchWeChat_${version}.exe`;
+const name = `AcceptCat_${version}.exe`;
 const bytes = readFileSync(path.join(directory, name));
 const manifest = load(readFileSync(path.join(directory, "latest.yml"), "utf8"));
 const feed = load(

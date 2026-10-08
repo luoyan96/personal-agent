@@ -1,8 +1,8 @@
 {
   "name": "research-wechat-openim",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "main": "dist-electron/main/bootstrap.js",
-  "description": "Personal Agent · 人与智能体协作",
+  "description": "AcceptCat · 科研个人助理与课题组协作",
   "author": "blooming",
   "private": true,
   "packageManager": "pnpm@10.28.0",

@@ -11,6 +11,7 @@ import { getStore } from "./storeManage";
 import { validateResearchServiceUrl } from "../utils/researchService";
 import { desktopSessionCookie, startDesktopServer } from "../utils/desktopServer";
 import { getLogger } from "../utils/log";
+import { APP_NAME } from "../utils/brand";
 
 const url = process.env.VITE_DEV_SERVER_URL;
 let mainWindow: BrowserWindow | null = null;
@@ -40,7 +41,7 @@ export function createMainWindow() {
   const smoke = process.env.OPENIM_SMOKE_TEST === "1";
   if (!smoke && process.env.OPENIM_HIDE_WINDOW !== "1") createSplashWindow();
   mainWindow = new BrowserWindow({
-    title: "科研微信",
+    title: APP_NAME,
     icon: join(global.pathConfig.publicPath, "favicon.ico"),
     frame: false,
     show: false,

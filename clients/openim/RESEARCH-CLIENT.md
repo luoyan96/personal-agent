@@ -1,4 +1,6 @@
-# 科研微信完整 OpenIM 客户端
+# AcceptCat OpenIM 桌面客户端
+
+2026-10-08：本地0.6.1统一AcceptCat名称、安装包和快捷方式，定位为科研个人助理与课题组协作。沿用appId、package.name、用户数据目录和固定GitHub更新源，并识别旧 / 新Windows卸载程序。此候选未发布，当前公开0.6.0及API状态见[交接入口](../../docs/current-state.md)。下方保留原受测批次，不当成最新部署。
 
 桌面新版 **0.2.0** 改为加载安装包内界面，通过本机受限API代理连接已有科研服务；新增分段文件任务、分层汇总和可打开的本机Markdown/HTML报告。具体范围、构建方法与版本交接见[桌面文件工作区](../../docs/development/desktop-agent-workspace.md)。下方线上网页历史不等于新版桌面界面。
 

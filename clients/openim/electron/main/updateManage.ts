@@ -1,8 +1,16 @@
-import { app, BrowserWindow, dialog, ipcMain, powerMonitor, shell, type IpcMainInvokeEvent } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  powerMonitor,
+  shell,
+  type IpcMainInvokeEvent,
+} from "electron";
 import { autoUpdater } from "electron-updater";
-import fs from "node:fs";
-import path from "node:path";
 import { DesktopUpdates } from "../utils/desktopUpdates";
+import { isInstalledWindowsApp } from "../utils/desktopInstallation";
+import { APP_NAME } from "../utils/brand";
 import { getWebContents, getResearchServiceStatus, showWindow } from "./windowManage";
 import type { DesktopUpdateSnapshot } from "../../src/types/desktopUpdates";
 
@@ -17,13 +25,7 @@ function mainWindow() {
     : null;
 }
 function installedWindows() {
-  return (
-    process.platform === "win32" &&
-    app.isPackaged &&
-    fs.existsSync(
-      path.join(path.dirname(app.getPath("exe")), "Uninstall ResearchWeChat.exe"),
-    )
-  );
+  return isInstalledWindowsApp(process.platform, app.isPackaged, app.getPath("exe"));
 }
 function snapshot(): DesktopUpdateSnapshot {
   return {
@@ -37,9 +39,13 @@ function authority(event: IpcMainInvokeEvent, action = false) {
   const contents = getWebContents();
   const expected = getResearchServiceStatus().rendererOrigin;
   if (
-    !expected || contents.isDestroyed() || event.sender !== contents ||
-    event.senderFrame !== contents.mainFrame || (action && contents.isLoadingMainFrame())
-  ) throw new Error("仅桌面主窗口可管理更新");
+    !expected ||
+    contents.isDestroyed() ||
+    event.sender !== contents ||
+    event.senderFrame !== contents.mainFrame ||
+    (action && contents.isLoadingMainFrame())
+  )
+    throw new Error("仅桌面主窗口可管理更新");
   const url = new URL(event.senderFrame.url);
   if (url.origin !== expected || new URL(contents.getURL()).origin !== expected)
     throw new Error("仅桌面主窗口可管理更新");
@@ -51,24 +57,27 @@ export function registerDesktopUpdateBridge() {
     authority(event);
     return snapshot();
   });
-  ipcMain.handle("desktop-update-action", async (event, action: unknown, version: unknown) => {
-    const owner = authority(event, true);
-    if (!installedWindows() || !updates) throw new Error("更新需要 Windows 安装版");
-    if (action === "check") {
-      await updates.check();
-    } else if (action === "download") {
-      if (updates.state.phase !== "available" || version !== updates.state.version)
-        return snapshot();
-      await updates.download();
-    } else if (action === "install") {
-      if (updates.state.phase !== "downloaded" || version !== updates.state.version)
-        return snapshot();
-      // Keep the native confirmation so a web script cannot silently restart the app.
-      await present(() => authority(event, true) === owner);
-    } else throw new Error("不支持此更新操作");
-    if (authority(event, true) !== owner) throw new Error("桌面窗口已改变，请重试");
-    return snapshot();
-  });
+  ipcMain.handle(
+    "desktop-update-action",
+    async (event, action: unknown, version: unknown) => {
+      const owner = authority(event, true);
+      if (!installedWindows() || !updates) throw new Error("更新需要 Windows 安装版");
+      if (action === "check") {
+        await updates.check();
+      } else if (action === "download") {
+        if (updates.state.phase !== "available" || version !== updates.state.version)
+          return snapshot();
+        await updates.download();
+      } else if (action === "install") {
+        if (updates.state.phase !== "downloaded" || version !== updates.state.version)
+          return snapshot();
+        // Keep the native confirmation so a web script cannot silently restart the app.
+        await present(() => authority(event, true) === owner);
+      } else throw new Error("不支持此更新操作");
+      if (authority(event, true) !== owner) throw new Error("桌面窗口已改变，请重试");
+      return snapshot();
+    },
+  );
 }
 async function message(options: Electron.MessageBoxOptions) {
   const win = mainWindow();
@@ -83,7 +92,7 @@ async function present(stillAllowed: () => boolean = () => true) {
       const result = await message({
         type: "info",
         title: "发现新版本",
-        message: `科研微信 ${state.version} 可以更新了`,
+        message: `${APP_NAME} ${state.version} 可以更新了`,
         detail: `当前版本：${state.currentVersion}\n${
           state.notes || "改进与修复见项目发布说明。"
         }\n\n点击后开始下载。下载完成后可选择安装并重启，请先发送或保存未完成的内容。`,
@@ -107,9 +116,8 @@ async function present(stillAllowed: () => boolean = () => true) {
       const result = await message({
         type: "info",
         title: "更新已准备好",
-        message: `科研微信 ${state.version} 已下载并校验`,
-        detail:
-          "安装会关闭并重新打开科研微信。请先发送或保存未完成的内容。选择稍后不会在退出软件时自动安装。",
+        message: `${APP_NAME} ${state.version} 已下载并校验`,
+        detail: `安装会关闭并重新打开 ${APP_NAME}。请先发送或保存未完成的内容。选择稍后不会在退出软件时自动安装。`,
         buttons: ["安装并重启", "稍后"],
         defaultId: 0,
         cancelId: 1,
@@ -139,7 +147,7 @@ async function present(stillAllowed: () => boolean = () => true) {
     await message({
       type: state.phase === "error" ? "warning" : "info",
       title: "软件更新",
-      message: `科研微信 ${state.currentVersion}`,
+      message: `${APP_NAME} ${state.currentVersion}`,
       detail,
       buttons: ["知道了"],
       noLink: true,
@@ -154,7 +162,7 @@ async function performDesktopUpdateCheck(manual: boolean) {
     const result = await message({
       type: "info",
       title: "软件更新",
-      message: `科研微信 ${app.getVersion()}`,
+      message: `${APP_NAME} ${app.getVersion()}`,
       detail:
         "自动更新适用于 Windows 安装版。请先下载安装版，并从桌面快捷方式启动；免安装文件夹不会被自动替换。",
       buttons: ["打开安装包下载页", "关闭"],

@@ -2,12 +2,13 @@ import { app, Menu, Tray } from "electron";
 import { t } from "i18next";
 import { hideWindow, showWindow } from "./windowManage";
 import { checkDesktopUpdates } from "./updateManage";
+import { APP_NAME } from "../utils/brand";
 
 let appTray: Tray;
 
 export const createTray = () => {
   const trayMenu = Menu.buildFromTemplate([
-    { label: `科研微信 ${app.getVersion()}`, enabled: false },
+    { label: `${APP_NAME} ${app.getVersion()}`, enabled: false },
     { label: "检查更新", click: () => void checkDesktopUpdates(true) },
     { type: "separator" },
     {
@@ -31,7 +32,7 @@ export const createTray = () => {
     },
   ]);
   appTray = new Tray(global.pathConfig.trayIcon);
-  appTray.setToolTip(app.getName());
+  appTray.setToolTip(APP_NAME);
   appTray.setIgnoreDoubleClickEvents(true);
   appTray.on("click", showWindow);
 

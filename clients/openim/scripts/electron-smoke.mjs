@@ -25,7 +25,7 @@ const getDefaultExecutable = () => {
     );
   }
   if (process.platform === "win32") {
-    return path.join(releaseRoot, "win-unpacked", "ResearchWeChat.exe");
+    return path.join(releaseRoot, "win-unpacked", "AcceptCat.exe");
   }
   return path.join(releaseRoot, "linux-unpacked", rootPackage.name);
 };

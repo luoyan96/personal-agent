@@ -1,6 +1,7 @@
 import { Alert, Button, Form, Input, Space } from "antd";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { APP_NAME } from "@/config/brand";
 
 import { clearIMProfile, setIMProfile } from "@/utils/storage";
 import { clearResearchSession, researchApi } from "./api";
@@ -161,15 +162,15 @@ export default function ResearchLogin() {
     <div>
       {location.protocol === "file:" ? (
         <>
-          <h1 className="mb-3 text-xl">连接科研微信</h1>
+          <h1 className="mb-3 text-xl">连接 {APP_NAME}</h1>
           <Alert
             type="info"
             showIcon
-            message="选择实验室的科研服务"
-            description="填写实验室提供的可信 HTTPS 地址，保存后进入该服务的登录页面。本机开发可填写 http://127.0.0.1:4317。"
+            message="选择科研服务"
+            description="填写可信的 HTTPS 服务地址，保存后进入登录页面。本机开发可填写 http://127.0.0.1:4317。"
           />
           <label className="mt-4 block">
-            科研微信服务地址
+            {APP_NAME} 服务地址
             <Input
               className="mt-2"
               value={serviceAddress}
@@ -256,12 +257,15 @@ export default function ResearchLogin() {
                 </Button>
               </Space>
               <LabSettings open={settings} onClose={() => setSettings(false)} />
-              <PersonalAssistantPanel open={personal} onClose={() => setPersonal(false)} />
+              <PersonalAssistantPanel
+                open={personal}
+                onClose={() => setPersonal(false)}
+              />
               <ResearchUserCard isSelf ref={profile} />
             </div>
           ) : (
             <>
-              <h1>{registering ? "创建账号" : "登录科研微信"}</h1>
+              <h1>{registering ? "创建账号" : `登录 ${APP_NAME}`}</h1>
               <p className="research-auth-subtitle">
                 {registering
                   ? "注册后即可添加好友，与 Agent 聊天。"

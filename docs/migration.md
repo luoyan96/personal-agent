@@ -77,3 +77,11 @@
 ## 2026-10-08：个人桌面协作工作区
 
 019定时记录与020社交工作区依次显式升级，不改001–019既有checksum。020新增四表/三索引，旧019所有表行hash保持；独立social_groups标记限定跨个人空间关系，不扩大旧科研group/plan/task/材料ACL。API/worker同步契约0.21/chat1.10，持久turn仍沿request_json扩展，不改变旧严格消息格式。回退不能只换旧镜像或恢复旧库覆盖新写入，应保持schema20兼容并停新流程。功能与部署顺序见[桌面协作交接](development/desktop-social-workspace.md)。
+
+## AcceptCat 名称与工程延续（2026-10-08）
+
+用户确定当前产品继续使用AcceptCat名称，近期聚焦中国科研工作者，本人及学生先持续使用约半年。当前OpenIM桌面、研究核心、任务后台与Skill模块继续沿用；没有新建替代工程或删除旧探索目录。
+
+本机已查看的来源包括：根目录《科研智能体平台产品规划-v0.1.md》、dsh-research-desktop、dsh-research-skills、research-agent-portal，以及designs/research-agent-platform-v1.1。早期规划中的课题组先用、持续背景、成员独立接手与当前科研方向衔接；既有研究核心和技能迁移来源仍按本文固定提交记录。旧桌面和门户只作为对应需求的实现参考，没有整包合并，也未发现并认定某一旧目录是完整AcceptCat成品。
+
+0.6.1本地桌面品牌候选统一AcceptCat显示名、Windows安装文件和快捷方式。保留appId `com.acceptcat.researchwechat`、package.name `research-wechat-openim`、默认用户数据身份及GitHub `luoyan96/personal-agent`更新源。更新资格同时识别旧ResearchWeChat和新AcceptCat卸载程序；历史版本名、来源声明和许可不改写。范围与验证见[品牌调整](development/acceptcat-branding.md)。

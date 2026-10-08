@@ -1,7 +1,31 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { DesktopUpdates } from "../electron/utils/desktopUpdates.ts";
+import { isInstalledWindowsApp } from "../electron/utils/desktopInstallation.ts";
+
+test("renamed and legacy Windows installations retain updates; unpacked apps do not", () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), "acceptcat-update-identity-"));
+  assert.equal(path.dirname(path.resolve(directory)), path.resolve(os.tmpdir()));
+  assert.ok(path.basename(directory).startsWith("acceptcat-update-identity-"));
+  const executable = path.join(directory, "AcceptCat.exe");
+  try {
+    assert.equal(isInstalledWindowsApp("win32", true, executable), false);
+    for (const name of ["Uninstall ResearchWeChat.exe", "Uninstall AcceptCat.exe"]) {
+      const uninstaller = path.join(directory, name);
+      writeFileSync(uninstaller, "synthetic installation marker");
+      assert.equal(isInstalledWindowsApp("win32", true, executable), true);
+      assert.equal(isInstalledWindowsApp("win32", false, executable), false);
+      assert.equal(isInstalledWindowsApp("linux", true, executable), false);
+      rmSync(uninstaller);
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 class Port extends EventEmitter {
   checks = 0;
   downloads = 0;

@@ -3,7 +3,7 @@
  */
 {
   appId: "com.acceptcat.researchwechat",
-  productName: "ResearchWeChat",
+  productName: "AcceptCat",
   asar: true,
   asarUnpack: ["**/*.node"],
   extends: null,
@@ -88,6 +88,6 @@
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
     deleteAppDataOnUninstall: false,
-    shortcutName: "Personal Agent",
+    shortcutName: "AcceptCat",
   },
 }
