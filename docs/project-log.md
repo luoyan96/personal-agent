@@ -484,3 +484,17 @@ renderer / Electron类型、8项更新与地址检查、文档门禁、实际NSI
 本地候选 `D:/deepseek-agent/AcceptCat-Windows/0.6.1/AcceptCat_0.6.1.exe`，86388221字节，SHA256 `e71a37d6af4a6d69391cc002edf8ff5f42d02090fbb4e5c18e9c10f6954e1c14`。证据 `.runtime/acceptcat-branding-20261008`，源码提交随本批feature分支记录。公开Release与API / worker仍为0.6.0 / 11cd20a，contract0.22 / chat1.11 / schema21；没有自动发布、部署、迁移、用户安装或真实模型调用。旧安装版实际覆盖升级尚未验收。本批不声称新科研工具完成；下一步围绕真实课题完善导师目标、学生 / Agent承接、阶段成果与反馈继续推进。完整绘图Skill执行仍待独立实现。
 
 AcceptCat0.6.1固定桌面源码73cffd8eb3db7f15b20c3b3dcb628ec3f55d578b，已推送feature/acceptcat-branding。后续本批文档提交不改变安装包代码；0.6.1仍未发布Release。
+
+## 2026-10-09 Today参考与AcceptCat0.7.0科研任务规划候选
+
+用户要求阅读Today中文产品文章并直接改善任务规划、交付优化版本。阅读公开产品介绍与个人Agent使用场景，未登录Today。借鉴目标到多步骤、明确完成条件、持续下一步与可检查结果，将现有桌面工作台串成科研计划的实际闭环，保留既有品牌与Windows身份。
+
+feature/research-task-planning基于f611d3f；固定源码 **d3e8b19f1a722eafcbbc2a4d7f997442244bfbe5**。新增TaskPlanning与规划校验 / 模板：自然语言异步草案、服务端生成记录、论文阅读 / 实验推进 / 写作模板、分工 / 交付物 / 验收标准 / 日期 / 依赖、保存 / 重开、同版本确认与真实任务面板、验收后下一步。任务生成使用新的真实任务ID，按planId及唯一不可修改标题对应；不把草案ID当实际任务ID。保存 / 读取按账号范围处理，版本冲突保留编辑，失败 / 撤权隐藏既有事实。共享契约0.22 / chat1.11 / schema21不变，无迁移、共享核心或Skill变更。
+
+renderer / Electron类型检查通过；规划校验4项与既有更新 / 地址8项共12项通过，最终内容门禁159文档 / 10技能。真实本地HTTP API / SQLite / worker与实际隔离Electron22当前React组件7项流程通过：编辑 / 保存、重新打开、3个实际步骤任务、提交成果后人工验收才推进下一步、原任务页导航、AI后台生成与持久草案、1024×726无水平溢出。模型为注入合成，没有用户账号、资料、真实Key或厂商调用。初始选择器和原生导航失败证据保留；任务ID映射问题修复后闭环通过。
+
+ImageGen概念已生成并展示；最终1600×1000 / 1024×726实际组件与概念、打包登录截图均查看。采用白 / 灰 / 绿色、左计划列表与编号步骤、紧凑展开表单；保持原生壳和工作台分段导航，概念中的虚构步数 / 开始日期未写成实际事实。Browser插件不可用且原生CUA禁用，使用Playwright的实际隔离Electron22；设计对照与文案差异在[功能说明](development/research-task-planning.md)记录。
+
+真实NSIS构建publish never、exe / blockmap / latest.yml和GitHub更新源校验通过。实际0.7.0 app.asar含新模块，新包隔离启动到登录、版本 / 数据身份 / SDK与Skill桥接及pageerror0通过。两个asar分隔符测试脚本失败保留，软件没有为此重建；成功报告写出后测试驱动未自动退出，关闭精确自有进程树。临时宿主文件移出客户端，API / Vite及自有Electron测试已关闭，证据保存Git外 `.runtime/task-planning-20261009`。
+
+安装候选 **D:/deepseek-agent/AcceptCat-Windows/0.7.0/AcceptCat_0.7.0.exe**，86405556字节，SHA256 **dc5e06358ecb0e7192b9b670fdf05ae3f3b20e877c043126195f427178006055**。公开Release与API / worker仍为0.6.0 / 11cd20a，未发布、部署、迁移、用户覆盖安装或自动重启。本批AI规划沿用实验室B3模型配置，尚未接个人默认模型；任意私人Agent / 跨空间好友的分步安排、完整科研执行和真实小组验收仍待后续，不能由本地合成验收推断完成。
