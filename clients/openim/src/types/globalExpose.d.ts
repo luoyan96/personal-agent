@@ -10,6 +10,8 @@ import type {
 export type DataPath = "public" | "emojiData" | "sdkResources" | "logsPath";
 
 export interface IElectronAPI {
+  inspectSkillGithub: (address:string) => Promise<{id:string;label:string;revision:string}[]>;
+  importPrivateSkill: (kind:"folder"|"zip"|"github", selection?:string) => Promise<import("@research-agent-platform/contracts").RequestFor<"installSkill">["body"]|null>;
   getDesktopUpdateState: () => Promise<DesktopUpdateSnapshot>;
   onDesktopUpdateState: (callback: (state: DesktopUpdateSnapshot) => void) => () => void;
   desktopUpdateAction: (action: DesktopUpdateAction, version?: string) => Promise<DesktopUpdateSnapshot>;

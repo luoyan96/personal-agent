@@ -454,3 +454,11 @@
 - 用户截图 `Unexpected desktop review directory` 对应先前自有测试启动：目录前缀错误，且生产bootstrap在注册错误处理之前执行目录守卫。原失败日志保留。基于main e498fa7，分支 `fix/desktop-review-startup-error` 将同一守卫和userData设置移入既有try块、放在错误处理注册之后；没有放宽合法目录范围，也没有改用户正常启动逻辑。
 - Electron主进程类型检查通过。13:23:34北京时间，缓存的实际Electron22.3.27运行生产bootstrap / smoke源码：错误前缀和OS临时目录外路径均退出1且保留原拒绝错误；正确私有目录进入合成最小main、userData完全匹配并退出0。三组均无12秒超时；无业务renderer、网络、模型或账号，不声称完整软件验收。Git外 `.runtime/desktop-startup-error-20261007/report.json`和各组stdout / stderr保留，进程检查无自有测试残留。
 - 当前正常用户客户端继续运行，本批未操作其账号或重启软件。只同步源码及交接文档；未重发Windows安装包、修改更新清单或部署云端，线上b3eb215 + API94b26d1 / contract0.19 / chat1.8 / schema18保持。此次主进程源码修复将在下一次桌面打包纳入。
+
+## 2026-10-08 私人技能本地闭环
+
+本批 feature/private-skills 基于 ead4331，新增工作台“我的技能”：文件夹 / ZIP / 固定提交 GitHub 导入、私人保存、本人站内 Agent 绑定、聊天选择、版本切换、独立的公开介绍 / 好友调用 / 源码复制授权与本人实际调用记录。契约0.22 / chat1.11，显式迁移021。完整CI47文件 / 588项、生产021两项、B0与Web隔离通过；桌面类型 / 构建、原生导入3项与隔离Electron22实际组件安装 / 绑定 / 聊天 / 调用记录和1024窗口通过。原生实际GitHub固定提交下载与完整59120字符说明进入合成模型请求通过。没有用户账号 / Key / 实际模型 / 绘图执行验证。详细边界见[私人技能](development/private-skills.md)。
+
+上游 paper-framework-figure-studio-pro v3.2.15f 包依赖脚本和图片生成，当前只支持完整文字步骤，脚本和二进制素材不上传、不执行。执行依赖需在聊天中确认，不能把“安装”或“回复完成”说成完整绘图任务完成。Git外证据在 .runtime/private-skills-20261008。发布/部署收据未完成前，下方0.5.2 / API06262a6b仍是实际线上版本。
+
+

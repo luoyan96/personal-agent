@@ -103,6 +103,8 @@ const saveFileToDisk = async ({
 };
 
 const Api: IElectronAPI = {
+  inspectSkillGithub: (address) => ipcRenderer.invoke("inspect-skill-github", address),
+  importPrivateSkill: (kind, selection) => ipcRenderer.invoke("import-private-skill", kind, selection),
   getDesktopUpdateState: () => ipcRenderer.invoke("desktop-update-state"),
   onDesktopUpdateState: (callback) => subscribe("desktop-update-state-changed", callback),
   desktopUpdateAction: (action, version) => ipcRenderer.invoke("desktop-update-action", action, version),

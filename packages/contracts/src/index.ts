@@ -8,3 +8,4 @@ export * from './agent-connections.js'
 
 export * from './personal-assistant.js'
 export * from './workspace.js'
+export * from './skills.js'

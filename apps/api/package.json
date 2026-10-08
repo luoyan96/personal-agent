@@ -13,6 +13,7 @@
   "dependencies": {
     "@research-agent-platform/contracts": "workspace:*",
     "@research-agent-platform/research-core": "workspace:*",
+    "@research-agent-platform/research-skills": "workspace:*",
     "fastify": "5.12.5",
     "pdf-parse": "2.4.5",
     "zod": "4.1.12"

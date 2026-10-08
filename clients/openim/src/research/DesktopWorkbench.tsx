@@ -20,6 +20,7 @@ import "./workspace.scss";
 import { readWorkspaceAvailability } from "./workspace-availability";
 import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 
+import { SkillLibrary } from "./SkillLibrary";
 type Category = "ongoing" | "awaiting_me" | "completed";
 function WorkbenchOverview({
   card,
@@ -125,7 +126,9 @@ function WorkbenchOverview({
 export function DesktopWorkbench() {
   const [params, setParams] = useSearchParams();
   const tab =
-    params.get("view") === "scheduled" || params.get("tab") === "scheduled"
+    params.get("view") === "skills"
+      ? "skills"
+      : params.get("view") === "scheduled" || params.get("tab") === "scheduled"
       ? "scheduled"
       : params.get("view") === "reports"
       ? "reports"
@@ -138,7 +141,7 @@ export function DesktopWorkbench() {
   const availability = useResearchRead(
     readWorkspaceAvailability,
     "workspace-availability",
-    tab !== "reports",
+    tab !== "reports" && tab !== "skills",
   );
   const supported = availability.data?.available === true;
   const read = useResearchRead(
@@ -262,6 +265,7 @@ export function DesktopWorkbench() {
             { label: "我的任务", value: "tasks" },
             { label: "定时任务", value: "scheduled" },
             { label: "本机报告", value: "reports" },
+            { label: "我的技能", value: "skills" },
           ]}
         />
         {tab === "tasks" && (
@@ -282,7 +286,11 @@ export function DesktopWorkbench() {
           />
         )}
       </div>
-      {tab !== "reports" && !supported ? (
+      {tab === "skills" ? (
+        <div className="workspace-full-panel">
+          <SkillLibrary />
+        </div>
+      ) : tab !== "reports" && !supported ? (
         <WorkspaceUnavailable
           feature="工作台"
           pending={!availability.data && !availability.error}

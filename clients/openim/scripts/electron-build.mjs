@@ -108,6 +108,13 @@ const resolvePackageManifestPath = (packageName, requiringManifestPath) => {
     }
   }
 
+  // Packages can expose only subpaths. Discover the installed manifest without
+  // requiring or executing the package's root entry.
+  for (const searchPath of packageRequire.resolve.paths(packageName) || []) {
+    const manifestPath = path.join(searchPath, packageName, "package.json");
+    if (existsSync(manifestPath) && JSON.parse(readFileSync(manifestPath, "utf8")).name === packageName)
+      return manifestPath;
+  }
   let currentPath = path.dirname(packageRequire.resolve(packageName));
   while (true) {
     const manifestPath = path.join(currentPath, "package.json");

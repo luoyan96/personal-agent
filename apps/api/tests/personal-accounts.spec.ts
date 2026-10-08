@@ -268,7 +268,7 @@ it('upgrades exact populated015 twice, preserving IFRC accounts, sessions, chat 
  db.prepare('INSERT INTO im_identities(contact_id,lab_id,user_id,updated_at) VALUES (?,?,?,?)').run('contact_member_old_A','lab_ifrc','u_preserved_old',at)
  const prior={accounts:db.prepare('SELECT * FROM auth_accounts').all(),lab:db.prepare('SELECT * FROM labs').all(),key:db.prepare('SELECT * FROM lab_ai_settings').all(),document:db.prepare('SELECT document FROM chat_conversations').get()!.document,identity:db.prepare('SELECT * FROM im_identities').all()}
  migrate(db);migrate(db);checkDatabase(db)
- expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(20)
+ expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(21)
  expect(db.prepare('SELECT * FROM auth_accounts').all()).toEqual(prior.accounts);expect(db.prepare('SELECT * FROM labs').all()).toEqual(prior.lab);expect(db.prepare('SELECT * FROM lab_ai_settings').all()).toEqual(prior.key);expect(db.prepare('SELECT * FROM im_identities').all()).toEqual(prior.identity);expect(db.prepare('SELECT document FROM chat_conversations').get()!.document).toBe(prior.document)
  expect(db.prepare('SELECT relation_key FROM chat_contact_requests').get()!.relation_key).toBe('human:member_old_A:member_old_B')
  expect(db.prepare('SELECT scope_key FROM chat_conversations').get()!.scope_key).toBe('direct:member_old_A:member_old_B')

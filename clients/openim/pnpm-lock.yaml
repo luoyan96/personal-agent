@@ -37,6 +37,9 @@ importers:
       '@research-agent-platform/contracts':
         specifier: file:../../packages/contracts
         version: file:../../packages/contracts
+      '@research-agent-platform/research-skills':
+        specifier: file:../../packages/research-skills
+        version: file:../../packages/research-skills
       adm-zip:
         specifier: ^0.5.10
         version: 0.5.16
@@ -1492,6 +1495,9 @@ packages:
 
   '@research-agent-platform/contracts@file:../../packages/contracts':
     resolution: {directory: ../../packages/contracts, type: directory}
+
+  '@research-agent-platform/research-skills@file:../../packages/research-skills':
+    resolution: {directory: ../../packages/research-skills, type: directory}
 
   '@sindresorhus/is@4.6.0':
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
@@ -5143,6 +5149,11 @@ packages:
     resolution: {integrity: sha512-2eHWfjaoXgTBC2jNM1LRef62VQa0umtvRiDSk6HSzW7RvS5YtkabJrwYLLEKWBc8a5U2PTSCs+dJjUTJdlHsWQ==}
     engines: {node: '>= 14'}
 
+  yaml@2.8.3:
+    resolution: {integrity: sha512-AvbaCLOO2Otw/lW5bmh9d/WEdcDFdQp2Z2ZUH3pX9U2ihyUY0nvLv7J6TrWowklRGPYbB/IuIMfYgxaCPg5Bpg==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   yaml@2.9.0:
     resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
     engines: {node: '>= 14.6'}
@@ -6434,7 +6445,7 @@ snapshots:
       '@types/node': 20.5.1
       chalk: 4.1.2
       cosmiconfig: 8.3.6(typescript@4.9.5)
-      cosmiconfig-typescript-loader: 4.4.0(@types/node@20.5.1)(cosmiconfig@8.3.6(typescript@5.1.6))(ts-node@10.9.2(@types/node@20.5.1)(typescript@4.9.5))(typescript@4.9.5)
+      cosmiconfig-typescript-loader: 4.4.0(@types/node@20.5.1)(cosmiconfig@8.3.6(typescript@5.1.6))(ts-node@10.9.2(@types/node@20.5.1)(typescript@5.1.6))(typescript@4.9.5)
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       lodash.uniq: 4.5.0
@@ -6882,6 +6893,10 @@ snapshots:
   '@research-agent-platform/contracts@file:../../packages/contracts':
     dependencies:
       zod: 4.1.12
+
+  '@research-agent-platform/research-skills@file:../../packages/research-skills':
+    dependencies:
+      yaml: 2.8.3
 
   '@sindresorhus/is@4.6.0': {}
 
@@ -7800,7 +7815,7 @@ snapshots:
   core-util-is@1.0.2:
     optional: true
 
-  cosmiconfig-typescript-loader@4.4.0(@types/node@20.5.1)(cosmiconfig@8.3.6(typescript@5.1.6))(ts-node@10.9.2(@types/node@20.5.1)(typescript@4.9.5))(typescript@4.9.5):
+  cosmiconfig-typescript-loader@4.4.0(@types/node@20.5.1)(cosmiconfig@8.3.6(typescript@5.1.6))(ts-node@10.9.2(@types/node@20.5.1)(typescript@5.1.6))(typescript@4.9.5):
     dependencies:
       '@types/node': 20.5.1
       cosmiconfig: 8.3.6(typescript@4.9.5)
@@ -11038,6 +11053,8 @@ snapshots:
   yallist@4.0.0: {}
 
   yaml@2.3.1: {}
+
+  yaml@2.8.3: {}
 
   yaml@2.9.0:
     optional: true
