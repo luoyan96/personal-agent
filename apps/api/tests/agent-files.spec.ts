@@ -212,7 +212,7 @@ describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{ti
  })
  it('retains queued file batch and legacy4000 budgets, splits source/page/mode changes, and keeps known or unknown usage on explicit retry',async()=>{
   const s=await setup(),own=await s.own(),continuous=(text:string,fileSelection?:{messageId:string;pageNumbers?:number[]})=>s.call('agentChatMessage',{text,continuous:true,...(fileSelection?{fileSelection}:{})},{id:own.conversation.id})
-  const ordinary=await continuous('你好');expect(ordinary.value.data.turn.budget).toEqual({maxTokens:4000,maxSeconds:90})
+  const ordinary=await continuous('你好');expect(ordinary.value.data.turn.budget).toEqual({maxTokens:16000,maxSeconds:90})
   const uploaded=await s.call('agentFileMessage',uploadBody(),{id:own.conversation.id});expect((await s.turn(ordinary.value.data.turn.id)).status).toBe('cancelled');expect(s.count('chat_attempts')).toBe(0);await s.tick(async()=>result())
   const source={messageId:uploaded.value.data.message.id,pageNumbers:[1]},first=await continuous('分析第一页',source),supplement=await continuous('再说局限',{...source,pageNumbers:[1,1]})
   expect(supplement.value.data.turn.id).toBe(first.value.data.turn.id);expect(supplement.value.data.turn.budget).toEqual(first.value.data.turn.budget)

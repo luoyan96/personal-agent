@@ -190,7 +190,7 @@ describe('public accounts and owned models over real local HTTP, synthetic crede
   expect((await s.call('chatMemories',null,{},1,`?scope=private_agent&scopeId=${agent.id}`)).status).toBe(404)
   expect((await s.call('createPersonalModel',modelInput('qwen','qwen-plus','synthetic-requester-key'),{},1)).status).toBe(201)
   const key=randomUUID(),sent=await s.call('agentChatMessage',{text:'你好，我们自然聊天即可。'},{id:direct.id},1,'',key)
-  expect(sent.status,sent.text).toBe(201);expect(sent.value.data.turn).toMatchObject({status:'queued',budget:{maxTokens:4000,maxSeconds:90}})
+  expect(sent.status,sent.text).toBe(201);expect(sent.value.data.turn).toMatchObject({status:'queued',budget:{maxTokens:16000,maxSeconds:90}})
   expect((await s.call('agentChatMessage',{text:'你好，我们自然聊天即可。'},{id:direct.id},1,'',key)).value.data.message.id).toBe(sent.value.data.message.id)
   let callCount=0
   const worker=new ChatWorker(s.db,s.config,async(input,_signal,credential)=>{
