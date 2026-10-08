@@ -82,7 +82,7 @@ describe('continuous local chat: actual HTTP/SQLite, synthetic ModelCall only',{
   // Another worker may process the new batch while the old provider ignores abort.
   await s.tick(async()=>result('可以，只聊思路。'));release(result(JSON.stringify({kind:'create_agent',profile}),{inputTokens:350,outputTokens:80}));await waiting
   expect(await s.turn(old.turn.id)).toMatchObject({status:'cancelled',usage:{inputTokens:350,outputTokens:80},outputMessageId:null});expect((await s.turn(old.turn.id)).allowedActions).not.toContain('retry')
-  expect(await s.turn(replacement.turn.id)).toMatchObject({status:'succeeded',budget:{maxTokens:4000,maxSeconds:90}})
+  expect(await s.turn(replacement.turn.id)).toMatchObject({status:'succeeded',budget:{maxTokens:16000,maxSeconds:90}})
   expect(s.count('chat_contacts')).toBe(2);expect(s.count('chat_conversations')).toBe(1);expect(s.count('chat_actions')).toBe(0)
  })
  it('clears drafts on memory/config revocation or cancellation and never finalizes provisional/unknown usage',async()=>{
@@ -110,7 +110,7 @@ describe('continuous local chat: actual HTTP/SQLite, synthetic ModelCall only',{
  it('never exposes structured JSON through the draft endpoint and budgets all merged current messages without trimming',async()=>{
   const s=await setup(),sent=await s.send('普通聊天。');let release!:(v:ModelResult)=>void,enter!:()=>void;const ready=new Promise<void>(r=>{enter=r})
   const wait=s.tick(async(_i,_sig,_cred,delta)=>{delta?.('{"kind":"delegate","profile":{"personality":"secret"}}');enter();return new Promise(r=>{release=r})});await ready;expect((await s.progress(sent.turn.id)).text).toBe('');release(result('普通回复'));await wait
-  const huge=await s.send('甲'.repeat(1800));await s.send('乙'.repeat(1800));expect(await s.tick(async()=>{throw new Error('must not call over-budget batch')})).toBe(false);expect(await s.turn(huge.turn.id)).toMatchObject({status:'failed',failure:'BUDGET_EXCEEDED'})
+  const huge=await s.send('甲'.repeat(3200));await s.send('乙'.repeat(3200));expect(await s.tick(async()=>{throw new Error('must not call over-budget batch')})).toBe(false);expect(await s.turn(huge.turn.id)).toMatchObject({status:'failed',failure:'BUDGET_EXCEEDED'})
  })
  it('exposes a validated clarification as final reply while retaining waiting_input business state',async()=>{
   const s=await setup(),sent=await s.send('帮我创建一个 Agent。')

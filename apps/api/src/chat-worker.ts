@@ -19,6 +19,7 @@ import { currentTurnText,registerChatCall,saveChatDelta } from './continuous-cha
 import { personalMemoryContext } from './personal-memories.js'
 import { personalAssistantSystem,PersonalAssistantOutput,assistantCandidates,assistantPeople,assistantTeamAgents,rankedAssistantCandidates,assistantComplexRequest,delegateWork,AssistantBudgetError } from './personal-assistant.js'
 import {createWork,recordAssistantAnswerWork} from './workspace.js'
+import {recentDialogue,olderDialogue,dialogueTaskState,packDialogueLayers,saveDialogueSelection,memoryContextSources,dialogueContextSystem,type DialogueLayers} from './dialogue-context.js'
 
 // Local model protocol: validated JSON, no model-side tools or business authority.
 export const ChatModelOutput = z.strictObject({
@@ -67,18 +68,24 @@ export class ChatWorker {
         prompt=JSON.stringify({request:currentTurnText(s,turn.id)})
       } else if(input.assistantMode==='coordinate'){
         const current=currentTurnText(s,turn.id),agentContext=s.directory.modelContext(turn.agentContactId,group.id),personal=personalMemoryContext(s,agentContext.agent,group,current),complex=assistantComplexRequest(current)
+        input.memoryContextSources=memoryContextSources(s,personal.records,agentContext.memories)
+        const required=new Set(input.continuous?.messageIds??[turn.inputMessageId]),recent=recentDialogue(s,group.id,input.inputSequence,[...required]),notes=olderDialogue(s,group.id,input.inputSequence,recent,current),tasks=dialogueTaskState(s,group,current)
+        let layers:DialogueLayers={messages:[],notes:{method:'source_quotes',scope:'current_conversation',summary:[],recalled:[]},tasks:[]}
         system=personalAssistantSystem+(complex?'\nComplex work: JSON {kind:"team",title:string,contactIds:[listed_ID]}. Save only a proposal. Owner confirms group creation; humans and Agent owners accept independently. No automatic execution or material sharing.':'')
+        const baseSystem=system,contextSystem=(selection:DialogueLayers)=>baseSystem+(selection.notes.summary.length||selection.notes.recalled.length||selection.tasks.length?'\n'+dialogueContextSystem:'')
         const candidates=rankedAssistantCandidates(s,current),shown:typeof candidates=[]
-        const serialize=()=>JSON.stringify({currentRequest:current,requestedAgent:{id:agentContext.agent.id,displayName:agentContext.agent.displayName,profile:Object.fromEntries(Object.entries(agentContext.agent.profile).filter(([key,value])=>key!=='version'&&value!==''))},...(personal.records.length?{personalMemories:personal.records}:{}),...(agentContext.memories.length?{memories:agentContext.memories}:{}),localSpecialists:shown,...(shown.length<candidates.length?{specialistsOmitted:true}:{}),...(complex?{labId:s.c.actor.labId,collaboratingHumans:assistantPeople(s),collaboratingAgents:assistantTeamAgents(s)}:{})})
+        const serialize=(selection=layers)=>JSON.stringify({currentRequest:current,requestedAgent:{id:agentContext.agent.id,displayName:agentContext.agent.displayName,profile:Object.fromEntries(Object.entries(agentContext.agent.profile).filter(([key,value])=>key!=='version'&&value!==''))},...(personal.records.length?{personalMemories:personal.records}:{}),...(personal.omitted?{personalMemoriesOmitted:true}:{}),...(agentContext.memories.length?{memories:agentContext.memories}:{}),localSpecialists:shown,...(shown.length<candidates.length?{specialistsOmitted:true}:{}),...(complex?{labId:s.c.actor.labId,collaboratingHumans:assistantPeople(s),collaboratingAgents:assistantTeamAgents(s)}:{}),...(selection.messages.some(m=>!required.has(m.id))?{recentDialogue:selection.messages.filter(m=>!required.has(m.id))}:{}),...(selection.notes.summary.length||selection.notes.recalled.length?{dialogueContext:selection.notes}:{}),...(selection.tasks.length?{taskState:selection.tasks.map(t=>t.value)}:{})})
         prompt=serialize()
         for(const candidate of candidates){if(shown.length>=3)break;shown.push(candidate);const trial=serialize();if(input.budget.maxTokens-chatInputTokenBound(system,trial)>=512)prompt=trial;else shown.pop()}
-        prompt=serialize();input.agentContextFingerprint=agentContext.fingerprint
+        layers=packDialogueLayers(recent,required,notes,tasks,trial=>input.budget.maxTokens-chatInputTokenBound(contextSystem(trial),serialize(trial))>=512)
+        system=contextSystem(layers);prompt=serialize();input.agentContextFingerprint=agentContext.fingerprint
+        saveDialogueSelection(s,turn.id,input,layers,layers.messages.length<input.inputSequence)
         this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(JSON.stringify(input),turn.id)
       } else {
       // Snapshot the context and bounded message window; normal chat never creates a job.
       let remainingText=32000
-      const messages = this.db.prepare('SELECT id FROM chat_messages WHERE conversation_id=? AND sequence<=? ORDER BY sequence DESC LIMIT ?').all(group.id, input.inputSequence,Math.max(20,input.continuous?.messageIds.length??1)).flatMap(r => {
-        try { const m = s.projectedMessage(String(r.id));if(!input.dailyChat&&(m.text?.length??0)>remainingText)return [];remainingText-=m.text?.length??0;return [{ id:m.id,origin: m.origin, text: m.text, senderContactId: m.senderContactId,mentions:m.mentions,resources:m.resources }] } catch { return [] }
+      const messages = input.dailyChat?recentDialogue(s,group.id,input.inputSequence,input.continuous?.messageIds??[turn.inputMessageId]):this.db.prepare('SELECT id FROM chat_messages WHERE conversation_id=? AND sequence<=? ORDER BY sequence DESC LIMIT ?').all(group.id, input.inputSequence,20).flatMap(r => {
+        try { const m = s.projectedMessage(String(r.id));if(!input.dailyChat&&(m.text?.length??0)>remainingText)return [];remainingText-=m.text?.length??0;return [{ id:m.id,sequence:m.sequence,origin: m.origin, text: m.text, senderContactId: m.senderContactId,mentions:m.mentions,resources:m.resources }] } catch { return [] }
       }).reverse()
       let context: unknown[]
       try { context = input.context.map(ref => {
@@ -99,6 +106,7 @@ export class ChatWorker {
       const contacts = candidates.flatMap(id => { try { return [publicContact(s.contact(id))] } catch { return [] } }).slice(0, 100)
       const agentContext=s.directory.modelContext(turn.agentContactId,group.id),requestedAgent=publicContact(agentContext.agent)
       const personal=personalMemoryContext(s,agentContext.agent,group,currentTurnText(s,turn.id))
+      input.memoryContextSources=memoryContextSources(s,personal.records,agentContext.memories)
       input.agentContextFingerprint=agentContext.fingerprint
       this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(JSON.stringify(input),turn.id)
       const contactColumns=['id','displayName','identity','availability','profile']
@@ -108,14 +116,17 @@ export class ChatWorker {
       if(input.assistantMode==='coordinate')system=personalAssistantSystem+'\n'+chatModelSystem({group:true,inviteContact:false,inviteTask:false,runTask:false}).split('\n').filter(line=>/^(Ref=|Group=|Item=|Schedule=)/.test(line)).join('\n')
       const document=input.fileSource?s.fileDocument(input.fileSource.messageId,group.id):undefined
       if(document)system+=fileChatSystem
+      const notes=input.dailyChat?olderDialogue(s,group.id,input.inputSequence,messages,currentTurnText(s,turn.id)):undefined,tasks=input.dailyChat?dialogueTaskState(s,group,currentTurnText(s,turn.id)):[]
+      let layers:DialogueLayers={messages:[],notes:{method:'source_quotes',scope:'current_conversation',summary:[],recalled:[]},tasks:[]}
+      const baseSystem=system,contextSystem=(selection:DialogueLayers)=>baseSystem+(selection.notes.summary.length||selection.notes.recalled.length||selection.tasks.length?'\n'+dialogueContextSystem:'')
       // Lossless rows: budget selection may omit an oldest DAILY message, never
       // trim a retained message/profile/memory. Collaboration keeps its window.
-      const serialize=(selected:typeof messages,earlierMessagesOmitted=false,read=document?fileReadMetadata(document):undefined,fileExcerpts:unknown[]=[])=>{
+      const serialize=(selected:typeof messages,earlierMessagesOmitted=false,read=document?fileReadMetadata(document):undefined,fileExcerpts:unknown[]=[],selection=layers)=>{
         const senderIds=[...new Set([...group.members.map(m=>m.contactId),...selected.map(m=>m.senderContactId).filter((id):id is string=>id!==null)])]
         const conversation={kind:group.kind,title:group.title,memberColumns:['sender','role','status'],members:group.members.map(m=>[senderIds.indexOf(m.contactId),m.role,m.status]),...(group.taskIds.length?{taskIds:group.taskIds}:{})}
         const messageColumns=['origin','sender','text',...(selected.some(m=>m.mentions.length)?['mentions']:[]),...(selected.some(m=>m.resources.length)?['resources']:[])]
         const messageRows=selected.map(m=>messageColumns.map(key=>key==='sender'?m.senderContactId===null?null:senderIds.indexOf(m.senderContactId):m[key as keyof typeof m]))
-        return JSON.stringify({ownerId:s.c.actor.id,labId:s.c.actor.labId,requestedAgent,conversation,contactColumns,contacts:contacts.map(c=>contactColumns.map(key=>c[key as keyof typeof c])),senderIds,messageColumns,messages:messageRows,...(agentContext.memories.length?{memories:agentContext.memories}:{}),...(personal.records.length?{personalMemories:personal.records}:{}),...(input.assistantMode==='coordinate'?{currentRequest:s.projectedMessage(turn.inputMessageId).text,localSpecialists:assistantCandidates(s),collaboratingHumans:assistantPeople(s),collaboratingAgents:assistantTeamAgents(s)}:{}),...(context.length?{context}:{}),...(earlierMessagesOmitted?{earlierMessagesOmitted:true}:{}),...(read?{fileRead:read,fileExcerpts}:{})})
+        return JSON.stringify({ownerId:s.c.actor.id,labId:s.c.actor.labId,requestedAgent,conversation,contactColumns,contacts:contacts.map(c=>contactColumns.map(key=>c[key as keyof typeof c])),senderIds,messageColumns,messages:messageRows,...(agentContext.memories.length?{memories:agentContext.memories}:{}),...(personal.records.length?{personalMemories:personal.records}:{}),...(personal.omitted?{personalMemoriesOmitted:true}:{}),...(input.assistantMode==='coordinate'?{currentRequest:s.projectedMessage(turn.inputMessageId).text,localSpecialists:assistantCandidates(s),collaboratingHumans:assistantPeople(s),collaboratingAgents:assistantTeamAgents(s)}:{}),...(context.length?{context}:{}),...(earlierMessagesOmitted?{earlierMessagesOmitted:true}:{}),...(read?{fileRead:read,fileExcerpts}:{}),...(selection.notes.summary.length||selection.notes.recalled.length?{dialogueContext:selection.notes}:{}),...(selection.tasks.length?{taskState:selection.tasks.map(t=>t.value)}:{})})
       }
       prompt=serialize(messages)
       if(input.dailyChat){
@@ -123,29 +134,24 @@ export class ChatWorker {
         if(!current){turn.status='failed';turn.failure='INPUT_CHANGED';turn.version++;turn.updatedAt=instant();s.saveTurn(turn);return null}
         const required=new Set(input.continuous?.messageIds??[current.id]);const currentBatch=messages.filter(m=>required.has(m.id))
         if(currentBatch.length!==required.size){turn.status='failed';turn.failure='INPUT_CHANGED';turn.version++;turn.updatedAt=instant();s.saveTurn(turn);return null}
-        const base=serialize(currentBatch,messages.length>currentBatch.length)
+        const base=serialize(currentBatch,input.inputSequence>currentBatch.length)
         const minimumOutput=input.budget.maxTokens-chatInputTokenBound(system,base)>=512?512:64
-        let selected=messages
-        while(selected.length>currentBatch.length&&input.budget.maxTokens-chatInputTokenBound(system,prompt)<minimumOutput){
-          const oldest=selected.findIndex(m=>!required.has(m.id))
-          selected=selected.filter((_,i)=>i!==oldest)
-          prompt=serialize(selected,true)
-        }
+        let read=document?fileReadMetadata(document):undefined,excerpts:unknown[]=[],desiredOutput=minimumOutput
         if(document){
           // Select the best authorized file content with only the complete
           // current batch. Old history may use spare room, never displace that
           // content or reduce the bounded reply allowance.
-          const result=selectFileExcerpts(document,input.fileSource,currentTurnText(s,turn.id),system,(read,excerpts)=>serialize(currentBatch,currentBatch.length<messages.length,read,excerpts),input.budget.maxTokens)
-          const desiredOutput=Math.min(4096,input.budget.maxTokens-chatInputTokenBound(system,result.prompt))
-          prompt=serialize(selected,selected.length<messages.length,result.read,result.excerpts)
-          while(selected.length>currentBatch.length&&input.budget.maxTokens-chatInputTokenBound(system,prompt)<desiredOutput){
-            const oldest=selected.findIndex(message=>!required.has(message.id))
-            selected=selected.filter((_,index)=>index!==oldest);prompt=serialize(selected,true,result.read,result.excerpts)
-          }
+          const result=selectFileExcerpts(document,input.fileSource,currentTurnText(s,turn.id),system,(read,excerpts)=>serialize(currentBatch,input.inputSequence>currentBatch.length,read,excerpts),input.budget.maxTokens)
+          desiredOutput=Math.min(4096,input.budget.maxTokens-chatInputTokenBound(system,result.prompt));read=result.read;excerpts=result.excerpts
           if(!result.read.ranges.length){turn.status='failed';turn.failure='BUDGET_EXCEEDED';turn.version++;turn.updatedAt=instant();s.saveTurn(turn);return null}
           input.fileRead=result.read;turn.fileRead=result.read
           this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(JSON.stringify(input),turn.id)
         }
+        layers=packDialogueLayers(messages,required,notes!,tasks,trial=>input.budget.maxTokens-chatInputTokenBound(contextSystem(trial),serialize(trial.messages,trial.messages.length<input.inputSequence,read,excerpts,trial))>=desiredOutput)
+        system=contextSystem(layers)
+        const omitted=layers.messages.length<input.inputSequence
+        prompt=serialize(layers.messages,omitted,read,excerpts)
+        saveDialogueSelection(s,turn.id,input,layers,omitted)
       }
       }
       const remainingOutput=input.budget.maxTokens-chatInputTokenBound(system,prompt)

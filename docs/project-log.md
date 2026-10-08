@@ -1,5 +1,21 @@
 # 项目进展日志
 
+## 2026-10-08：对话上下文完整检查与后台上线
+
+- 最终固定运行源码 `06262a6b7b0167b7434e4536b753ec2526e8d045`，已推送草稿[PR21](https://github.com/luoyan96/personal-agent/pull/21)，基于PR20分支；未合main。完整 `pnpm run ci` 46文件/575项、生产020 CLI/HTTP两项、B0真实进程与Web生产隔离通过。7项上下文专项使用实际HTTP/SQLite/worker、模型端口明确合成，不把流程验证称为真实供应商质量评估。
+- 12:25北京时间成对升级API/worker，实际同镜像 `sha256:7b2b77b62a5c37616268bb0190465a469ac38c2e8ea076dea4b25a82510bc663`，running / unless-stopped，公开ready200 / contract0.21；chat1.10 / schema20保持，无迁移、新安装包或桌面重启。原OpenIM组件/端口/凭据未改。现有Windows0.5.1直接使用新后台。
+- 一致备份 `/srv/research-openim-backups/context-06262a6b-20261008T042418Z`，runtime.tar.gz SHA256 `646d0b2810ee33842339a39e7a28bc93af544bcea9c72074052e9df41c92a7db`。隔离展开研究库与原库83表全部行/hash一致、schema20 integrity/FK通过；完整项目runtime归档校验通过。没有重测其他组件恢复或异地恢复。停两个服务取得一致快照，不声称零停机。
+- 原raw.githubusercontent.com下载SSL连接重置，尚未停服务；改为现有授权Workbench终端传送四个已公开API源码文件及部署脚本，摘要与Git规范化LF源相同。继承原固定镜像，无新依赖、构建关闭网络。三个编译模块字节完全相同；chat.js仅Windows模板串5处CRLF与Linux LF差别，规范化后摘要相同。一次本机PowerShell公开ready请求TLS EOF，随后curl及服务器公开TLS ready成功，失败元数据保留。
+- 证据Git外 `.runtime/conversation-context-20261008`：完整ci.log、部署脚本/收据、原终端收据和cloud-deployed-proof.png；服务器备份含私密数据仅留服务器私有目录。新AI以current-state与[本批部署记录](deployment/personal-agent-conversation-context.md)为入口。关键词检索、有出处摘录、相关确认记忆和任务状态仍有界，不承诺完整永久回忆或自动扫描本地文件夹。
+
+- 实际读取运行源码06262a6b的GitHub [37726801838](https://github.com/luoyan96/personal-agent/actions/runs/37726801838)，Ubuntu22.19/24与Windows24全部SUCCESS。后续只提交部署日志/文档，固定运行源码与客户端发布资产不变。
+
+## 2026-10-08：对话上下文分层候选
+
+- 用户要求修改软件上下文管理。新增有界近期原文、同对话全历史关键词/中文双字检索、带消息出处的早期摘录、相关确认记忆和实际工作任务状态；来源指纹/任务版本改变会取消旧结果，保留迟到用量。记忆管理回执不再作为普通聊天学习，依赖旧记忆版本的模型回复不会自动找回。
+- 新普通本地聊天16000/90、单次输出仍4096；已有队列/合并/重试及创建、协调、定时、外部、文件既有预算保留，文件提取正文先于旧聊天分配。长期记忆挑选有界，省略有标记；不额外调用摘要/嵌入模型。没有新增迁移、公共协议或安装包。
+- 新7项真实HTTP/SQLite/生产worker合成模型检查覆盖640条以上历史、重启、隔离、来源变更、记忆更正/撤回、任务验收、连续输入、原预算、外部许可、大记忆集合及协调历史授权。相关创建/账户26项、聊天/文件53项定向通过；第一次共享CI编译可空任务结果编号失败，修正后第二次发现3项旧默认预算夹具失败，保留旧4000准入检查、调整新默认预期后定向通过。完整CI与部署结果将在实际完成后另记。
+
 ## 2026-10-08：工作台/广场生产升级与Windows0.5.1正式发布
 
 - 用户明确授权现有Edge阿里云维护会话，已实际备份并升级API/worker为5c949980 / 同镜像0c692917，019/020已迁移，contract0.21/chat1.10/schema20、公开ready200。备份隔离研究库恢复读取、重复迁移、78旧表行/hash与旧迁移记录保持、FK/integrity通过。详见[部署收据](deployment/personal-agent-social-workspace.md)。原IM/组件镜像、凭据/端口及其他网站未改。

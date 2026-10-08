@@ -49,7 +49,10 @@ async function setup(){
   const specialists=(actor=0)=>Number(db.prepare("SELECT count(*) n FROM chat_contacts WHERE kind='personal_agent' AND owner_id=? AND principal<>owner_id").get(clients[actor]!.id)!.n)
   const tick=(callModel:ModelCall)=>new ChatWorker(db,config,callModel).tick()
   const legacyStored=()=>{for(const row of db.prepare('SELECT document FROM chat_turns').all())expect(LegacyTurn.safeParse(JSON.parse(String(row.document))).success).toBe(true)}
-  return {db,config,call,own,send,turn,count,specialists,tick,clients,legacyStored,restart:async()=>{await app.close();app=createServer(config);url=await app.listen({host:'127.0.0.1',port:0})}}
+  // These historical admission tests deliberately exercise an already queued
+  // 4000-token request, independently of the larger fresh ordinary-chat default.
+  const legacyBudget=(id:string)=>{const row=db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(id)!,input=JSON.parse(String(row.request_json));input.budget={maxTokens:4000,maxSeconds:90};db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(JSON.stringify(input),id)}
+  return {db,config,call,own,send,turn,count,specialists,tick,clients,legacyStored,legacyBudget,restart:async()=>{await app.close();app=createServer(config);url=await app.listen({host:'127.0.0.1',port:0})}}
 }
 
 describe('explicit Agent creation over actual HTTP/SQLite with synthetic model only',{timeout:20000},()=>{
@@ -180,7 +183,7 @@ describe('explicit Agent creation over actual HTTP/SQLite with synthetic model o
     const agent=(await s.call('createPersonalAgent',large)).value.data,direct=(await s.call('createDirectConversation',{contactId:agent.id})).value.data
     const reply=text('合成讨论回复：',260),proofs:{cap:number;messages:number;omitted:boolean}[]=[]
     for(const current of ['你擅长什么？两句话回答','请再说一遍完整观点，直接一点。','继续讨论，当前请求文字须完整保留。']){
-      const sent=await s.send(direct.id,current);let calls=0
+      const sent=await s.send(direct.id,current);s.legacyBudget(sent.turn.id);let calls=0
       expect(await s.tick(async input=>{
         calls++;const p=JSON.parse(input.prompt),column=p.messageColumns.indexOf('text'),rows=p.messages as unknown[][]
         expect(rows.at(-1)![column]).toBe(current);expect(rows.length).toBeLessThanOrEqual(20)
@@ -202,6 +205,7 @@ describe('explicit Agent creation over actual HTTP/SQLite with synthetic model o
     const privateMemory='OWNER_PRIVATE_MEMORY_MUST_STAY_COMPLETE',memory=(await s.call('createChatMemory',{scope:'private_agent',scopeId:agent.id,content:privateMemory,source:null})).value.data
     for(let i=0;i<10;i++)expect((await s.call('sendChatMessage',{text:`旧资料${i}：`+'史'.repeat(260)},{id:direct.id})).status).toBe(201)
     const current='CURRENT_REQUEST_'+ '完整新句'.repeat(40),sent=await s.send(direct.id,current)
+    s.legacyBudget(sent.turn.id)
     await s.tick(async input=>{const p=JSON.parse(input.prompt),column=p.messageColumns.indexOf('text');expect(p.earlierMessagesOmitted).toBe(true);expect(p.messages.at(-1)[column]).toBe(current);expect(p.memories.some((m:any)=>m.content===privateMemory)).toBe(true);expect(input.maxTokens).toBeGreaterThanOrEqual(512);return modelResult('完整保留当前请求和获准记忆。')})
     expect((await s.turn(sent.turn.id)).status).toBe('succeeded')
     const foreign=(await s.call('requestContact',{}, {id:agent.id},1)).value.data.relationship;await s.call('decideContactRequest',{expectedVersion:foreign.version,decision:'accept'},{id:foreign.requestId})
@@ -211,6 +215,7 @@ describe('explicit Agent creation over actual HTTP/SQLite with synthetic model o
     for(const mode of ['current','memory'] as const){
       if(mode==='memory')await s.call('reviseChatMemory',{content:'记'.repeat(2000),source:null,expectedVersion:memory.version},{id:memory.id})
       const huge=mode==='current'?'完整当前请求：'+'新'.repeat(2400):'当前短问题，记忆本身超预算。',rejected=await s.send(direct.id,huge);let calls=0
+      s.legacyBudget(rejected.turn.id)
       expect(await s.tick(async()=>{calls++;return modelResult('不能调用')})).toBe(false);expect(calls).toBe(0);expect(await s.turn(rejected.turn.id)).toMatchObject({status:'failed',failure:'BUDGET_EXCEEDED',usage:null})
       expect(JSON.parse(String(s.db.prepare('SELECT document FROM chat_messages WHERE id=?').get(rejected.message.id)!.document)).text).toBe(huge)
     }

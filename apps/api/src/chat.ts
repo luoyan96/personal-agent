@@ -20,11 +20,12 @@ import { personalWorkRequest,assistantDirectoryFingerprint,unsupportedCollaborat
 import { isAgentCreationCommand, legacyTurnDocument } from './agent-creation.js'
 import { startContinuous,extendContinuous,currentTurnText,supersedeTurn,turnProgress,abortChatCall } from './continuous-chat.js'
 import type { ContinuousInput } from './continuous-chat.js'
+import {dialogueSourcesCurrent,taskSourcesCurrent,type DialogueSelection} from './dialogue-context.js'
 import {workspaceCommands,workspaceAuthorize,workspaceHandle,workspaceReplay,isSocialGroup,socialContactAllowed,checkWorkTurn,personalWork,socialWorkContext,recordSocialWorkTurn} from './workspace.js'
 
 export type ChatCommand = keyof typeof chatRoutes | keyof typeof agentIntegrationRoutes | keyof typeof personalAssistantRoutes | keyof typeof workspaceRoutes | 'imCreateGroup' | 'imInviteContact'
 type Resource = z.infer<typeof ChatResource>
-export type TurnInput = { workTaskId?:string; workTaskVersion?:number; scheduledFollowupId?:string; scheduledRunId?:string; continuous?:ContinuousInput; budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; personalAssistant?:boolean; assistantMode?:'coordinate'; delegatedByTurnId?:string; personalMemoryFingerprint?:string; assistantDirectoryFingerprint?:string; assistantReceipt?:AgentTurn['assistantReceipt'];memoryReceipt?:AgentTurn['memoryReceipt'];followupReceipt?:AgentTurn['followupReceipt']; externalConsent?:boolean; externalAgent?:boolean; externalConnectionVersion?:number; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED'; assistantFailure?:'AGENT_LIMIT_REACHED'; fileDocument?:FileDocument; fileSource?:AgentFileSelection; fileRead?:AgentTurn['fileRead']; modelOutputDiagnostic?:{stage:string;returnedTextLength:number;trimEmpty:boolean;maxOutputTokens:number;reasoningEffort:string;finishReason?:string;failure?:string;errorCategory?:string} }
+export type TurnInput = DialogueSelection & { workTaskId?:string; workTaskVersion?:number; scheduledFollowupId?:string; scheduledRunId?:string; continuous?:ContinuousInput; budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; personalAssistant?:boolean; assistantMode?:'coordinate'; delegatedByTurnId?:string; personalMemoryFingerprint?:string; assistantDirectoryFingerprint?:string; assistantReceipt?:AgentTurn['assistantReceipt'];memoryReceipt?:AgentTurn['memoryReceipt'];followupReceipt?:AgentTurn['followupReceipt']; externalConsent?:boolean; externalAgent?:boolean; externalConnectionVersion?:number; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED'; assistantFailure?:'AGENT_LIMIT_REACHED'; fileDocument?:FileDocument; fileSource?:AgentFileSelection; fileRead?:AgentTurn['fileRead']; modelOutputDiagnostic?:{stage:string;returnedTextLength:number;trimEmpty:boolean;maxOutputTokens:number;reasoningEffort:string;finishReason?:string;failure?:string;errorCategory?:string} }
 export type ChatRequest = { params: { id?: string; contactId?: string }; query: { cursor?: string; limit?: number; search?: string; afterSequence?: number; category?: 'all'|'ongoing'|'awaiting_me'|'completed'|'scheduled'; kind?: 'all'|'human'|'agent'; view?: 'directory'|'mine'|'public'; direction?: 'all'|'incoming'|'outgoing'; status?: 'all'|'pending'|'confirmed'|'candidate'|'revoked'|'active'|'paused'|'completed'|'cancelled'; scope?: 'private_agent'|'conversation'|'local'|'global'; scopeId?: string }; headers: { 'Idempotency-Key'?: string }; body: unknown }
 type Request = ChatRequest
 const decode = (value: unknown) => JSON.parse(String(value))
@@ -202,6 +203,8 @@ export class ChatService {
     const row = this.db.prepare('SELECT * FROM chat_turns WHERE id=?').get(turnId); if (!row) fail('NOT_FOUND')
     const input = decode(row.request_json) as TurnInput, turn = this.materializedTurn(row)
     const group = this.conversation(turn.conversationId, false); this.joinedAgent(group, turn.agentContactId)
+    if(exact&&input.dialogueSources&&!dialogueSourcesCurrent(this,input.dialogueSources))fail('VERSION_CONFLICT')
+    if(exact&&input.dialogueTaskSources&&!taskSourcesCurrent(this,input.dialogueTaskSources))fail('VERSION_CONFLICT')
     checkWorkTurn(this,input,exact)
     if(input.scheduledFollowupId&&exact){
       const schedule=this.db.prepare('SELECT status,member_id,document FROM personal_followups WHERE id=?').get(input.scheduledFollowupId)
@@ -592,6 +595,10 @@ export class ChatService {
       if(fileSource)input.budget=fileReadingBudget(fileDocument??this.fileDocument(fileSource.messageId,group.id),fileSource)
       const workContext=input.intent==='ask_agent'&&isSocialGroup(this,group.id)?socialWorkContext(this,group.id,input.agentContactId!):{}
       const nextInput:TurnInput={...workContext,budget:input.budget!,context:input.context,conversationVersion:group.version,inputSequence:message.sequence,dailyChat:name!=='sendChatMessage'||isSocialGroup(this,group.id),...(external?{externalConsent:true}:{}),...(purpose?{purpose}:{}),...(name==='agentChatMessage'&&!purpose&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(input.text)?{personalAssistant:true,assistantMode:'coordinate' as const}:{}),...(fileDocument?{fileDocument}:{}),...(fileSource?{fileSource,fileRead:fileReadMetadata(fileDocument??this.fileDocument(fileSource.messageId,group.id))}:{})}
+      // A fresh ordinary local conversation gets more room for continuity.
+      // Explicit collaboration/file/external/creation/schedule budgets and all
+      // already queued or retried requests keep their original total limits.
+      if(name==='agentChatMessage'&&!external&&!purpose&&!fileSource&&!nextInput.assistantMode)nextInput.budget={maxTokens:16000,maxSeconds:90}
       let turn:AgentTurn|null=null
       let merge=pending
       if(merge){try{this.checkTurnInput(String(merge.id))}catch{supersedeTurn(this,String(merge.id));merge=undefined}}

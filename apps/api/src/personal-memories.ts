@@ -3,6 +3,7 @@ import { PersonalMemory,PersonalMemoryInput,PersonalMemorySettings,personalAssis
 import { hash } from './auth.js'
 import { fail } from './errors.js'
 import type { ChatService,ChatRequest } from './chat.js'
+import {contextTerms,relatedScore} from './dialogue-context.js'
 export const personalCommands=Object.keys(personalAssistantRoutes)
 export function memorySettings(s:ChatService){s.db.prepare('INSERT INTO personal_memory_settings(member_id) VALUES(?) ON CONFLICT DO NOTHING').run(s.c.actor.id);const r=s.db.prepare('SELECT * FROM personal_memory_settings WHERE member_id=?').get(s.c.actor.id)!;return PersonalMemorySettings.parse({candidateLearning:r.candidate_learning===1,timeZone:r.time_zone,quietHours:r.quiet_hours_json?JSON.parse(String(r.quiet_hours_json)):null,version:r.version})}
 export function memory(s:ChatService,id:string){const r=s.db.prepare('SELECT * FROM personal_memories WHERE id=? AND member_id=?').get(id,s.c.actor.id);if(!r)fail('NOT_FOUND');return PersonalMemory.parse({id:r.id,topic:r.topic,content:r.content,scope:r.scope,status:r.status,origin:r.origin,sourceMessageId:r.source_message_id,version:r.version,createdAt:r.created_at,updatedAt:r.updated_at,allowedActions:r.status==='revoked'?[]:r.status==='candidate'?['edit','confirm','revoke']:['edit','revoke']})}
@@ -40,12 +41,14 @@ export function handleMemory(s:ChatService,name:string,req:ChatRequest):unknown{
 }
 export function ownLocalMemoryScope(s:ChatService,agent:Contact,group:Conversation){return ['personal','direct'].includes(group.kind)&&agent.identity.kind==='personal_agent'&&agent.identity.ownerMemberId===s.c.actor.id&&!agent.agentRuntime}
 export function personalMemoryContext(s:ChatService,agent:Contact,group:Conversation,text:string){
- if(!ownLocalMemoryScope(s,agent,group))return {fingerprint:null,records:[]}
+ if(!ownLocalMemoryScope(s,agent,group))return {fingerprint:null,records:[],omitted:false}
  const settings=memorySettings(s),all=s.db.prepare('SELECT id,version,status FROM personal_memories WHERE member_id=? ORDER BY id').all(s.c.actor.id)
  const fingerprint=hash(JSON.stringify({settings:settings.version,all}))
- const match=(topic:string)=>{const target=(text+' '+agent.displayName+' '+agent.profile.capabilityDescription).toLocaleLowerCase(),tokens=topic.toLocaleLowerCase().match(/[a-z0-9_]{2,}|[\p{Script=Han}]{2,}/gu)??[];return tokens.some(term=>target.includes(term))}
- const records=s.db.prepare("SELECT id FROM personal_memories WHERE member_id=? AND status='confirmed' ORDER BY updated_at DESC,id").all(s.c.actor.id).map(r=>memory(s,String(r.id))).filter(v=>v.scope==='general'||match(v.topic)).map(v=>({id:v.id,topic:v.topic,content:v.content,scope:v.scope,origin:v.origin}))
- return {fingerprint,records}
+ const match=(topic:string)=>{const target=(text+' '+agent.displayName+' '+agent.profile.capabilityDescription).normalize('NFKC').toLocaleLowerCase();return contextTerms(topic).some(term=>target.includes(term))}
+ const candidates=s.db.prepare("SELECT id FROM personal_memories WHERE member_id=? AND status='confirmed' ORDER BY updated_at DESC,id").all(s.c.actor.id).map(r=>memory(s,String(r.id))).filter(v=>v.scope==='general'||match(v.topic)).sort((a,b)=>Number(['回复方式','称呼','语言'].includes(b.topic))-Number(['回复方式','称呼','语言'].includes(a.topic))||relatedScore(b.topic+' '+b.content,text)-relatedScore(a.topic+' '+a.content,text)).map(v=>({id:v.id,topic:v.topic,content:v.content,scope:v.scope,origin:v.origin}))
+ const records:typeof candidates=[];let bytes=0
+ for(const record of candidates){const size=Buffer.byteLength(JSON.stringify(record),'utf8');if(records.length>=12||bytes+size>3500)continue;records.push(record);bytes+=size}
+ return {fingerprint,records,omitted:records.length<candidates.length}
 }
 function memoryTopic(content:string){
  if(/称呼|叫我|名字/.test(content))return '称呼'
