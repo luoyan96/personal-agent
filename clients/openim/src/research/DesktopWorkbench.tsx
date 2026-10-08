@@ -17,6 +17,8 @@ import {
 import { ResearchTaskPanel } from "./ResearchTaskPanel";
 import SafeMessageMarkdown from "./SafeMessageMarkdown";
 import "./workspace.scss";
+import { readWorkspaceAvailability } from "./workspace-availability";
+import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 
 type Category = "ongoing" | "awaiting_me" | "completed";
 function WorkbenchOverview({
@@ -133,10 +135,16 @@ export function DesktopWorkbench() {
   const [category, setCategory] = useState<Category>("ongoing"),
     [pages, setPages] = useState<(string | undefined)[]>([undefined]);
   const cursor = pages[pages.length - 1];
+  const availability = useResearchRead(
+    readWorkspaceAvailability,
+    "workspace-availability",
+    tab !== "reports",
+  );
+  const supported = availability.data?.available === true;
   const read = useResearchRead(
     () => workspaceApi.tasks(category, cursor),
     `workbench:${category}:${cursor || ""}`,
-    tab === "tasks",
+    tab === "tasks" && supported,
   );
   const [selected, setSelected] = useState<WorkbenchCard>(),
     [details, setDetails] = useState(false);
@@ -152,8 +160,14 @@ export function DesktopWorkbench() {
     contactIds: [] as string[],
     agentContactId: null as string | null,
   });
-  const operation = usePersonalOperation(creating, "create-workspace-task"),
+  const operation = usePersonalOperation(
+      creating && supported,
+      "create-workspace-task",
+    ),
     inFlight = useRef(false);
+  useLayoutEffect(() => {
+    if (!supported) setCreating(false);
+  }, [supported]);
   useLayoutEffect(() => {
     setSelected(undefined);
     setDetails(false);
@@ -194,7 +208,8 @@ export function DesktopWorkbench() {
     setParams(next, { replace: true });
   };
   const create = async () => {
-    if (inFlight.current || !form.title.trim() || !form.goal.trim()) return;
+    if (!supported || inFlight.current || !form.title.trim() || !form.goal.trim())
+      return;
     const { isCurrent } = operation.capture();
     inFlight.current = true;
     setBusy(true);
@@ -228,6 +243,7 @@ export function DesktopWorkbench() {
         </div>
         <Button
           type="primary"
+          disabled={!supported}
           onClick={() => {
             setCreating(true);
             setFailure("");
@@ -266,7 +282,14 @@ export function DesktopWorkbench() {
           />
         )}
       </div>
-      {tab === "scheduled" ? (
+      {tab !== "reports" && !supported ? (
+        <WorkspaceUnavailable
+          feature="工作台"
+          pending={!availability.data && !availability.error}
+          error={availability.error}
+          onRetry={availability.refresh}
+        />
+      ) : tab === "scheduled" ? (
         <div className="workspace-full-panel">
           <PersonalFollowupPanel active />
         </div>
