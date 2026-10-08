@@ -1,4 +1,4 @@
-import { Alert } from "antd";
+import { Alert, Button } from "antd";
 import { OpenImResearchPointer } from "@research-agent-platform/contracts";
 import { IMessageItemProps } from "@/pages/chat/queryChat/MessageItem";
 import { researchApi } from "./api";
@@ -21,7 +21,10 @@ import { PersonalReceiptCard } from "./PersonalReceiptCard";
 import { ContinueAgentFileReadingButton } from "./ContinueAgentFileReadingButton";
 import SafeMessageMarkdown from "./SafeMessageMarkdown";
 
-export default function ResearchMessageRender({ message, onReadableText }: IMessageItemProps) {
+export default function ResearchMessageRender({
+  message,
+  onReadableText,
+}: IMessageItemProps) {
   const history = useContext(AgentProgressHistory);
   const imID = useConversationStore((s) => s.currentConversation?.conversationID);
   const manager = useResearchStore((s) => s.actor?.isLabManager || false);
@@ -43,32 +46,41 @@ export default function ResearchMessageRender({ message, onReadableText }: IMess
   }
   const pointer = parsed.success ? parsed.data : null;
   const read = useResearchRead(
-    async () => {
+    async (signal) => {
       if (!pointer) throw new Error("该自定义消息不是可读取的科研回执");
-      const [messages, actions] = await Promise.all([
-        researchApi("chatMessages", {
-          params: { id: pointer.conversationId },
-          query: { afterSequence: pointer.sequence - 1, limit: 1 },
-        }),
-        researchApi("chatActions", {
-          params: { id: pointer.conversationId },
-          query: { limit: 100 },
-        }),
-      ]);
+      const messages = await researchApi("chatMessages", {
+        params: { id: pointer.conversationId },
+        query: { afterSequence: pointer.sequence - 1, limit: 1 },
+        signal,
+      });
       const fact = messages.data.find(
         (m) => m.id === pointer.messageId && m.sequence === pointer.sequence,
       );
       if (!fact) throw new Error("暂未找到这条消息，请稍后重试。");
-      return {
-        fact,
-        actions: actions.data.filter((a) => fact.actionIds.includes(a.id)),
-      };
+      return { fact };
     },
     `${imID}:${
-      pointer ? `${pointer.conversationId}:${pointer.messageId}` : message.clientMsgID
+      pointer
+        ? `${pointer.conversationId}:${pointer.messageId}:${pointer.sequence}`
+        : message.clientMsgID
     }`,
     !!pointer && !!imID,
   );
+  // Most everyday messages have no collaboration suggestions. Read the body
+  // first; an optional suggestion error must not hide an authorized message.
+  const actionIds = read.data?.fact.actionIds || [];
+  const actions = useResearchRead(
+    (signal) =>
+      researchApi("chatActions", {
+        params: { id: pointer?.conversationId || "" },
+        query: { limit: 100 },
+        signal,
+      }),
+    `${imID}:actions:${pointer?.conversationId}:${actionIds.join(",")}`,
+    !!read.data && actionIds.length > 0 && !!imID,
+  );
+  const readableActions =
+    actions.data?.data.filter((action) => actionIds.includes(action.id)) || [];
   const currentRetry =
     retried?.generation === actorGeneration &&
     retried.imID === imID &&
@@ -82,7 +94,7 @@ export default function ResearchMessageRender({ message, onReadableText }: IMess
   }, [read.data?.fact.text, onReadableText]);
   const turnId = currentRetry?.id || read.data?.fact.turnId;
   const turn = useResearchRead(
-    () => researchApi("chatTurn", { params: { id: turnId || "" } }),
+    (signal) => researchApi("chatTurn", { params: { id: turnId || "" }, signal }),
     `${imID}:${turnId || ""}`,
     !!turnId,
   );
@@ -132,13 +144,23 @@ export default function ResearchMessageRender({ message, onReadableText }: IMess
     history,
   ]);
   return (
-    <div
-      data-canonical-message={read.data?.fact.id}
-      className={styles.bubble}
-    >
+    <div data-canonical-message={read.data?.fact.id} className={styles.bubble}>
       {!pointer && <Alert type="warning" message="这条消息暂无法显示" />}
       {read.error && (
-        <Alert type="warning" message="这条消息当前无法读取" description={read.error} />
+        <Alert
+          type="warning"
+          message="这条消息当前无法读取"
+          description={read.error}
+          action={
+            <Button
+              size="small"
+              loading={read.loading}
+              onClick={() => void read.refresh()}
+            >
+              重试读取消息
+            </Button>
+          }
+        />
       )}
       {pointer && !read.data && !read.error && (
         <p className="text-slate-500">正在加载消息…</p>
@@ -177,10 +199,22 @@ export default function ResearchMessageRender({ message, onReadableText }: IMess
               ))}
             </details>
           )}
-          {!!read.data.actions.length && (
+          {actions.error && (
+            <div className="mt-2 text-xs text-slate-600">
+              协作建议暂时无法读取：{actions.error}
+              <Button
+                size="small"
+                loading={actions.loading}
+                onClick={() => void actions.refresh()}
+              >
+                重试读取建议
+              </Button>
+            </div>
+          )}
+          {!!readableActions.length && (
             <details className="mt-2">
-              <summary>协作建议（{read.data.actions.length}）</summary>
-              {read.data.actions.map((action) => (
+              <summary>协作建议（{readableActions.length}）</summary>
+              {readableActions.map((action) => (
                 <ResearchActionCard
                   key={action.id + ":" + action.version + ":" + action.status}
                   action={action}
