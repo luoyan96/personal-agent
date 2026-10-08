@@ -1,6 +1,6 @@
 # Research Agent Platform · Personal Agent 与人机协作
 
-Windows **0.5.1已发布**：[安装与发布说明](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.1)。微信式消息、统一人与Agent通讯录、工作台、能力广场，永久版本更新入口在左下角设置。配套API/worker已升级至contract0.21/schema20，019/020迁移及16项线上隔离流程检查通过；工作台/广场旧版404已修复。功能见[桌面协作工作区](docs/development/desktop-social-workspace.md)，精确源码、验证边界和备份见[当前状态](docs/current-state.md)与[部署收据](docs/deployment/personal-agent-social-workspace.md)。
+Windows **0.5.2已发布**：[安装与发布说明](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.2)。修复慢响应导致历史消息永久“正在加载消息”，读取失败提供明确重试，协作建议失败不隐藏正文；公开更新入口已核对。微信式消息、统一人与Agent通讯录、工作台、能力广场，版本更新入口在左下角设置。配套API/worker为06262a6b（contract0.21/schema20），019/020与工作台/广场上线验证保持，本批无后台部署或迁移。功能见[桌面协作工作区](docs/development/desktop-social-workspace.md)，精确源码、验证边界和备份见[当前状态](docs/current-state.md)与[上下文部署记录](docs/deployment/personal-agent-conversation-context.md)。
 
 Windows桌面 **0.3.3** 新增固定入口：**左下角设置 → 版本更新**，始终显示当前版本并支持检查、下载进度和安装重启；模型设置保留在同一菜单。自动检查仍为启动15秒后、每6小时及电脑唤醒，发现新版才提示。下载与准确受测范围见[当前状态](docs/current-state.md)及[Windows更新](docs/development/windows-updates.md)。保留0.3.2的发送等待恢复；升级前复制旧版未确认需求，待发内容尚不支持跨软件重启恢复。
 

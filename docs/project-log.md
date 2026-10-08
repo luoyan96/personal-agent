@@ -1,12 +1,19 @@
 # 项目进展日志
 
+## 2026-10-08：Windows 0.5.2 正式发布与公开更新核对
+
+- 16:07:37北京时间正式发布[v0.5.2](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.2)，标签固定受测/打包源码 `5740c821c020e9b7d9db4ca5e5a705588fc53ec3`。[PR22](https://github.com/luoyan96/personal-agent/pull/22)依赖PR21、保留草稿，未自动合main。API/worker仍06262a6b，未迁移或重新部署服务器。
+- 安装器、blockmap、latest.yml与SHA256SUMS共4个GitHub资产的大小/摘要全部与本地一致。公开latest API不带授权头实际返回v0.5.2；真实公开更新清单下载后与本地344字节latest.yml完全一致。Git外 `published-release.json`、`public-update-proof.json` 和 `public-latest.yml` 保存受测事实，未安装或重启用户正常客户端。
+- 固定修复源码的GitHub[37744484688](https://github.com/luoyan96/personal-agent/actions/runs/37744484688)Ubuntu22.19/24与Windows24三平台实际全部SUCCESS；本批本地只执行必要的客户端类型、6项真实组件/合成HTTP检查、10项既有发送/代理回归、实际打包和资产/启动门禁，没有重复此前通过的575项根工程CI。
+- GitHub CLI及curl多次TLS/连接超时，草稿按tag读取404保留。公开Node HTTPS元数据读取耗时17.415秒后成功；改用有界HTTPS和连接复用，按实际Release编号管理草稿，先核对4个资产再公开。现有GitHub CLI凭据仅在内存使用，目标限定该仓库api/uploads，TLS校验保留；无密钥写入源码或证据。失败记录、上传/发布/公开入口和CI收据在 `.runtime/message-loading-20261008`，不是另一个生产网络服务。
+
 ## 2026-10-08：Windows 0.5.2 消息永久加载修复候选
 
 - 用户截图显示历史文字全部“正在加载消息”，普通OpenIM文件卡仍正常。隔离实际组件/HTTP复现旧hook：6.5秒读取在每5秒轮询时失效，12.5秒后仍2个加载提示、无正文。修复为当前作用域单个在途读取，30秒有界期限、15秒失败退避与可见重试；会话/账号切换取消旧请求并拒绝迟到结果。
 - 消息正文与协作建议读取分离；普通无建议消息不请求100条动作列表，实际正文包含的建议编号才读取并过滤。建议失败单独显示错误/重试，正文不被遮挡。既有权限失败清空旧事实、流式状态和文件阅读范围保留；无协议、数据库、服务端或模型配置变更。
 - renderer类型、6项实际Electron22/Chromium108组件+合成HTTP检查、既有发送/原生代理10项通过。慢响应、重试、可选建议失败、旧会话取消/迟到拒绝、真实30秒超时与最小桌面可读性通过。模型未调用、用户账号与profile未触碰；Browser插件不可用且原生界面控制关闭，因此用隔离Playwright Electron。
 - 实际0.5.2 NSIS构建、公开更新源/清单/摘要门禁与隔离profile包启动通过；登录页/版本0.5.2/native平台3与桥实际可用，未登录session401保留。安装文件86293535字节、SHA256 `feeb0cc3f2b67d45cbef327d2f94dd8d32a1289ea7ae45feabe25b509145fce5`，另存 `PersonalAgent-Windows/0.5.2`，未替用户安装或重启。
-- Git外 `.runtime/message-loading-20261008` 保留前后结果、截图、超时/建议503、开发CSP告警、夹具导入路径错误及隐藏窗口截图超时；修正夹具后实际完成6项检查。GitHub两次发布读取TLS握手超时保留，不能称0.5.2已发布。当前后台仍06262a6b，现有0.5.1公开发布保持到新资产验证完成。
+- Git外 `.runtime/message-loading-20261008` 保留前后结果、截图、超时/建议503、开发CSP告警、夹具导入路径错误及隐藏窗口截图超时；修正夹具后实际完成6项检查。候选阶段GitHub两次发布读取TLS握手超时保留，当时不能称0.5.2已发布。后台仍06262a6b；0.5.1公开发布保持到新资产验证完成，再按本页上方的正式发布记录切换。
 
 ## 2026-10-08：对话上下文完整检查与后台上线
 

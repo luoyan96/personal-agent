@@ -2,13 +2,15 @@
 
 更新日期：2026-10-08（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新桌面候选：Windows 0.5.2 消息读取修复
+## 当前已发布：Windows 0.5.2 消息读取修复
 
-`fix/desktop-message-loading` 基于 PR21 的文档提交 `9ee9ba6`。旧只读 hook 每5秒开启下一次请求并使上次请求失效；响应超过5秒时，即使服务端正常返回也一直显示“正在加载消息”。现在同账号/同会话的轮询和手动刷新共享正在执行的读取，30秒总期限后显示明确错误和重试；切换会话或身份取消旧读取，迟到结果不显示。失败后自动读取退避15秒，手动重试可立即执行。普通正文独立读取，仅消息实际包含协作建议编号时请求建议；建议失败不会隐藏正文。
+2026-10-08 **16:07:37北京时间**，[v0.5.2](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.2)已正式发布，固定源码 `5740c821c020e9b7d9db4ca5e5a705588fc53ec3`。`fix/desktop-message-loading` 基于 PR21 的文档提交 `9ee9ba6`，[PR22](https://github.com/luoyan96/personal-agent/pull/22)保留草稿、未合main。旧只读 hook 每5秒开启下一次请求并使上次请求失效；响应超过5秒时，即使服务端正常返回也一直显示“正在加载消息”。现在同身份/消息作用域的轮询和手动刷新共享正在执行的读取，30秒总期限后显示明确错误和重试；切换会话或身份取消旧读取，迟到结果不显示。失败后自动读取退避15秒，手动重试可立即执行。普通正文独立读取，仅消息实际包含协作建议编号时请求建议；建议失败不会隐藏正文。
 
 renderer 类型、6项真实 Electron22/Chromium108 组件与 HTTP 检查、10项既有发送/原生代理回归通过；覆盖6.5秒慢响应、错误重试、建议503、会话切换、真实30秒挂起期限和1024×726无横溢出。账号/正文/响应服务均合成，没有读取用户聊天、Key或调用模型。实际0.5.2打包登录页、版本与原生桥启动通过，未登录401保留；没有安装或重启用户软件。无共享代码/迁移/后台部署变化，线上 API/worker 仍 `06262a6b`，contract0.21/chat1.10/schema20。
 
-安装候选 `D:/deepseek-agent/PersonalAgent-Windows/0.5.2/ResearchWeChat_0.5.2.exe`，86293535字节，SHA256 `feeb0cc3f2b67d45cbef327d2f94dd8d32a1289ea7ae45feabe25b509145fce5`；exe/blockmap/latest.yml及固定公开GitHub源门禁通过。尚未公开更新，正式发布与精确标签随后记录；此时公开latest仍0.5.1。证据在 Git外 `.runtime/message-loading-20261008`，包含旧版复现、修复后的截图/结果、打包日志、资产摘要、启动401和夹具准备失败。后续发布收据不能代替这些实际交互证据。
+安装文件 `D:/deepseek-agent/PersonalAgent-Windows/0.5.2/ResearchWeChat_0.5.2.exe`，86293535字节，SHA256 `feeb0cc3f2b67d45cbef327d2f94dd8d32a1289ea7ae45feabe25b509145fce5`；exe/blockmap/latest.yml及固定公开GitHub源门禁通过。4个远端资产size/SHA256与本地一致；**未使用授权头**读取公开latest确认v0.5.2，并下载实际公开latest.yml，字节与本地清单一致。左下角设置→版本更新可检查/下载/确认重启；升级前复制尚未确认发送的文字，待发记录目前不跨重启恢复。GitHub运行源码5740c82的[37744484688](https://github.com/luoyan96/personal-agent/actions/runs/37744484688)Ubuntu22.19/24与Windows24三平台全部通过；后续文档提交不改变该安装包源码。
+
+证据在 Git外 `.runtime/message-loading-20261008`，包含旧版复现、修复后的截图/结果、打包日志、资产摘要、启动401和夹具准备失败，以及draft/uploaded/published-release.json、public-update-proof.json和实际公开latest.yml。GitHub CLI/连接超时与草稿按tag读取404保留；改用有界HTTPS、实际返回的Release编号和仅内存复用现有CLI授权完成发布，TLS校验保留，密钥不写入记录。后续发布收据不能代替实际交互证据。
 
 ## 最新后台：对话上下文分层已部署，现有 Windows 0.5.1 兼容
 
@@ -20,7 +22,7 @@ renderer 类型、6项真实 Electron22/Chromium108 组件与 HTTP 检查、10�
 
 固定运行源码06262a6b的GitHub [37726801838](https://github.com/luoyan96/personal-agent/actions/runs/37726801838)三平台（Ubuntu22.19/24、Windows24）实际全部通过；后续部署日志文档提交不改变该运行源码或Windows发布标签。
 
-## 当前已发布：Windows 0.5.1，云端工作台与广场
+## 上一版发布：Windows 0.5.1，云端工作台与广场
 
 2026-10-08 **10:08:00北京时间**，[v0.5.1](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.1)已正式发布并成为公开latest；标签固定桌面源码 `784de4231918e42301f82a979c238118e0405d04`。该轮API/worker升级为固定源码 `5c9499800ec71f6b6ad444b2e9d89ba06d9a4808`、镜像 `sha256:0c6929175fae18ad603eb25d558daf75cb3bfb66314e46f3fe9cdfc4bc98a555`，已由本页上方06262a6b上下文后台替换；contract0.21/chat1.10/schema20保持。**019/020已部署，工作台/广场接口可用。** [PR20](https://github.com/luoyan96/personal-agent/pull/20)保留草稿、未合main；v0.5.0标签和0.4.0旧草稿保留。
 
