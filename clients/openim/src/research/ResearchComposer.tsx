@@ -21,6 +21,7 @@ import { PersonalReceiptCard } from "./PersonalReceiptCard";
 import { registerAgentProgress } from "./agent-progress";
 import { groupMentions } from "./group-mentions";
 
+import { useSkillChatSelection } from "./SkillLibrary";
 export type PreparedResearchSend =
   | {
       route: "agentChatMessage";
@@ -88,6 +89,11 @@ export function useResearchComposer() {
     !!mapping && mapping.kind !== "group" && !!peer && peer.identity.kind !== "human";
   const external = isDirectAgent ? peer?.agentRuntime : undefined;
   const externalReady = !!external && peer?.availability.status === "available";
+  const skillChat = useSkillChatSelection(
+    peer?.id,
+    `${actorGeneration}:${imID}`,
+    researchMode && isDirectAgent && !external && !advanced,
+  );
   const externalScope = `${imID}:${actorGeneration}:${external?.serviceOrigin}:${external?.callerAllowed}`;
   const consentAvailable = useRef(externalConsent);
   consentAvailable.current = externalConsent;
@@ -165,23 +171,44 @@ export function useResearchComposer() {
   }, [imID, actorGeneration]);
   const prepareResearch = (text: string): PreparedResearchSend | undefined => {
     const advancedRequest = advanced && mode === "ask_agent";
-    const addressed = researchMode && mapping?.kind === "group" && !advanced
-      ? groupMentions(text, canonical.data?.data.members
-          .filter((member) => member.status === "joined")
-          .flatMap((member) => {
-            const contact = contacts.find((item) => item.contact.id === member.contactId)?.contact;
-            return contact ? [{ id: contact.id, displayName: contact.displayName,
-              agent: contact.identity.kind !== "human", external: !!contact.agentRuntime }] : [];
-          }) || [])
-      : undefined;
+    const addressed =
+      researchMode && mapping?.kind === "group" && !advanced
+        ? groupMentions(
+            text,
+            canonical.data?.data.members
+              .filter((member) => member.status === "joined")
+              .flatMap((member) => {
+                const contact = contacts.find(
+                  (item) => item.contact.id === member.contactId,
+                )?.contact;
+                return contact
+                  ? [
+                      {
+                        id: contact.id,
+                        displayName: contact.displayName,
+                        agent: contact.identity.kind !== "human",
+                        external: !!contact.agentRuntime,
+                      },
+                    ]
+                  : [];
+              }) || [],
+          )
+        : undefined;
     if (addressed) {
       if (!mapping || !canonical.data?.data.allowedActions.includes("send"))
         throw new Error("当前群聊尚未允许发送，请等待同步或接受邀请。");
-      return { route: "sendChatMessage", conversationId: mapping.researchConversationId,
-        body: { text, intent: addressed.agentContactId ? "ask_agent" : "chat",
+      return {
+        route: "sendChatMessage",
+        conversationId: mapping.researchConversationId,
+        body: {
+          text,
+          intent: addressed.agentContactId ? "ask_agent" : "chat",
           agentContactId: addressed.agentContactId || null,
           budget: addressed.agentContactId ? { maxTokens, maxSeconds } : null,
-          mentions: addressed.mentions, context: [] } };
+          mentions: addressed.mentions,
+          context: [],
+        },
+      };
     }
     if (external && (!external.callerAllowed || !consentAvailable.current))
       throw new Error(
@@ -226,6 +253,7 @@ export function useResearchComposer() {
           body: {
             text,
             ...(external ? { externalConsent: true } : { continuous: true }),
+            ...(skillChat.selection ? { skill: skillChat.selection } : {}),
           },
         };
   };
@@ -369,6 +397,7 @@ export function useResearchComposer() {
             <PersonalReceiptCard turn={currentTurn} compact />
           </div>
         )}
+        {skillChat.controls}
         {advanced && (
           <div className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs">
             <strong>需求与协作</strong>
@@ -529,14 +558,15 @@ export function useResearchComposer() {
         </Button>
       ) : null,
     invalid:
-      researchMode &&
-      ((advanced && mode === "ask_agent") || isDirectAgent) &&
-      ((!!external &&
-        (!external.callerAllowed || !externalReady || !externalConsent)) ||
-        !canonical.data?.data.allowedActions.includes("send") ||
-        (advanced && mode === "ask_agent"
-          ? !agents.some((a) => a.id === agentId)
-          : agents.length !== 1)),
+      skillChat.invalid ||
+      (researchMode &&
+        ((advanced && mode === "ask_agent") || isDirectAgent) &&
+        ((!!external &&
+          (!external.callerAllowed || !externalReady || !externalConsent)) ||
+          !canonical.data?.data.allowedActions.includes("send") ||
+          (advanced && mode === "ask_agent"
+            ? !agents.some((a) => a.id === agentId)
+            : agents.length !== 1))),
   };
 }
 function ContextTask({

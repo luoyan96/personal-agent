@@ -4,6 +4,7 @@ import { AiService, aiCommands } from './ai.js'
 import type { AiCommand } from './ai.js'
 import { reconcile } from './execution-worker.js'
 import Fastify from 'fastify'
+import {runSkills,type SkillCommand} from './skills.js'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { contractVersion, data, Health, ErrorResponse, errorStatus, routes } from '@research-agent-platform/contracts'
@@ -156,6 +157,7 @@ export function createServer(config: Config, options:{imClient?:OpenImClient;ext
         collaboration = new Collaboration(connection,actor,config.blobRoot,labAi)
         reconcile(connection,config)
         reconcileChat(connection,config)
+        if(route.stage==='SKILL1'){const result=runSkills(new ChatService(collaboration,config),name as SkillCommand,parsed.data as RequestFor<SkillCommand>);reconcileChat(connection,config);return result}
         if(route.stage==='CHAT1'||route.stage==='IM1'){const result=new ChatService(collaboration,config).run(name as ChatCommand,parsed.data as RequestFor<ChatCommand>);reconcileChat(connection,config);return result}
         if((reuseCommands as readonly string[]).includes(name)){const result=new ReuseService(collaboration).run(name as ReuseCommand,parsed.data as RequestFor<ReuseCommand>);reconcile(connection,config);return result}
         if((aiCommands as readonly string[]).includes(name))return new AiService(collaboration,labAi.enabled,labAi.model).run(name as AiCommand,parsed.data as RequestFor<AiCommand>)

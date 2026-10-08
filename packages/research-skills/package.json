@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }, "./import": { "types": "./dist/import.d.ts", "import": "./dist/import.js", "require": "./dist/import.cjs" }
   },
   "files": ["dist", "README.md"],
   "scripts": {
-    "build": "tsc -p tsconfig.json && node ../../scripts/copy-skills.mjs",
+    "build": "tsc -p tsconfig.json && node ../../scripts/copy-skills.mjs && node ../../scripts/build-skill-import.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.check.json"
   },
   "dependencies": { "yaml": "2.8.3" }

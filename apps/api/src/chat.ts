@@ -1,3 +1,4 @@
+import {skillContext,type SkillCall} from './skills.js'
 import { randomUUID, createHmac } from 'node:crypto'
 import { z } from 'zod'
 import { Contact, Conversation, ConversationMember, ConversationViewerState, ChatMessage, ChatAction, ChatActionPayload, AgentTurn, SendChatMessage, ChatResource, routes, chatRoutes, agentIntegrationRoutes, personalAssistantRoutes, workspaceRoutes } from '@research-agent-platform/contracts'
@@ -25,7 +26,7 @@ import {workspaceCommands,workspaceAuthorize,workspaceHandle,workspaceReplay,isS
 
 export type ChatCommand = keyof typeof chatRoutes | keyof typeof agentIntegrationRoutes | keyof typeof personalAssistantRoutes | keyof typeof workspaceRoutes | 'imCreateGroup' | 'imInviteContact'
 type Resource = z.infer<typeof ChatResource>
-export type TurnInput = DialogueSelection & { workTaskId?:string; workTaskVersion?:number; scheduledFollowupId?:string; scheduledRunId?:string; continuous?:ContinuousInput; budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; personalAssistant?:boolean; assistantMode?:'coordinate'; delegatedByTurnId?:string; personalMemoryFingerprint?:string; assistantDirectoryFingerprint?:string; assistantReceipt?:AgentTurn['assistantReceipt'];memoryReceipt?:AgentTurn['memoryReceipt'];followupReceipt?:AgentTurn['followupReceipt']; externalConsent?:boolean; externalAgent?:boolean; externalConnectionVersion?:number; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED'; assistantFailure?:'AGENT_LIMIT_REACHED'; fileDocument?:FileDocument; fileSource?:AgentFileSelection; fileRead?:AgentTurn['fileRead']; modelOutputDiagnostic?:{stage:string;returnedTextLength:number;trimEmpty:boolean;maxOutputTokens:number;reasoningEffort:string;finishReason?:string;failure?:string;errorCategory?:string} }
+export type TurnInput = DialogueSelection & { skill?:SkillCall; workTaskId?:string; workTaskVersion?:number; scheduledFollowupId?:string; scheduledRunId?:string; continuous?:ContinuousInput; budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; personalAssistant?:boolean; assistantMode?:'coordinate'; delegatedByTurnId?:string; personalMemoryFingerprint?:string; assistantDirectoryFingerprint?:string; assistantReceipt?:AgentTurn['assistantReceipt'];memoryReceipt?:AgentTurn['memoryReceipt'];followupReceipt?:AgentTurn['followupReceipt']; externalConsent?:boolean; externalAgent?:boolean; externalConnectionVersion?:number; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED'; assistantFailure?:'AGENT_LIMIT_REACHED'; fileDocument?:FileDocument; fileSource?:AgentFileSelection; fileRead?:AgentTurn['fileRead']; modelOutputDiagnostic?:{stage:string;returnedTextLength:number;trimEmpty:boolean;maxOutputTokens:number;reasoningEffort:string;finishReason?:string;failure?:string;errorCategory?:string} }
 export type ChatRequest = { params: { id?: string; contactId?: string }; query: { cursor?: string; limit?: number; search?: string; afterSequence?: number; category?: 'all'|'ongoing'|'awaiting_me'|'completed'|'scheduled'; kind?: 'all'|'human'|'agent'; view?: 'directory'|'mine'|'public'; direction?: 'all'|'incoming'|'outgoing'; status?: 'all'|'pending'|'confirmed'|'candidate'|'revoked'|'active'|'paused'|'completed'|'cancelled'; scope?: 'private_agent'|'conversation'|'local'|'global'; scopeId?: string }; headers: { 'Idempotency-Key'?: string }; body: unknown }
 type Request = ChatRequest
 const decode = (value: unknown) => JSON.parse(String(value))
@@ -206,6 +207,7 @@ export class ChatService {
     if(exact&&input.dialogueSources&&!dialogueSourcesCurrent(this,input.dialogueSources))fail('VERSION_CONFLICT')
     if(exact&&input.dialogueTaskSources&&!taskSourcesCurrent(this,input.dialogueTaskSources))fail('VERSION_CONFLICT')
     checkWorkTurn(this,input,exact)
+    if(input.skill&&exact)skillContext(this,input.skill,turn.agentContactId)
     if(input.scheduledFollowupId&&exact){
       const schedule=this.db.prepare('SELECT status,member_id,document FROM personal_followups WHERE id=?').get(input.scheduledFollowupId)
       const run=this.db.prepare('SELECT turn_id FROM personal_followup_runs WHERE id=? AND followup_id=?').get(input.scheduledRunId??'',input.scheduledFollowupId)
@@ -575,18 +577,20 @@ export class ChatService {
       if (input.intent === 'ask_agent') this.joinedAgent(group, input.agentContactId!)
       const external=input.agentContactId&&connectionRow(this,input.agentContactId)?.configured===1
       if(external){if(name==='agentFileMessage'||(b as {fileSelection?:unknown}).fileSelection)fail('EXTERNAL_FILES_UNSUPPORTED');if(name!=='agentChatMessage'||group.kind!=='direct')fail('EXTERNAL_SCOPE_UNSUPPORTED');if((b as {externalConsent?:boolean}).externalConsent!==true)fail('EXTERNAL_CONSENT_REQUIRED');const contact=this.contact(input.agentContactId!);if(!contact.agentRuntime?.callerAllowed)fail('FORBIDDEN')}
+      const skill=name==='agentChatMessage'?(b as {skill?:SkillCall}).skill:undefined
+      if(skill){if(external)fail('FORBIDDEN');skillContext(this,skill,input.agentContactId!)}
       const continuous=name==='agentChatMessage'&&(b as {continuous?:boolean}).continuous===true
       const active=continuous||name==='agentFileMessage'?this.db.prepare("SELECT * FROM chat_turns WHERE owner_id=? AND conversation_id=? AND status IN ('queued','running','waiting_input') ORDER BY rowid DESC").all(this.c.actor.id,id):[]
       let pending=continuous&&!external?active.find(row=>row.status==='queued'&&(decode(row.request_json) as TurnInput).continuous&&this.clock()<=(decode(row.request_json) as TurnInput).continuous!.dueAt&&(decode(row.request_json) as TurnInput).continuous!.messageIds.length<100):undefined
       for(const row of active)if(row!==pending)supersedeTurn(this,String(row.id))
       const message = this.message(id, { senderContactId: this.human().id, origin: 'human', text: input.text, mentions: input.mentions, resources: input.context, actionIds: [], turnId: null })
       const agent=input.agentContactId?this.contact(input.agentContactId):null
-      const purpose=name==='agentChatMessage'&&!(b as {fileSelection?:AgentFileSelection}).fileSelection&&group.kind==='personal'&&group.ownerMemberId===this.c.actor.id&&agent?.identity.kind==='personal_agent'&&agent.identity.ownerMemberId===this.c.actor.id&&agent.profile.role==='coordinator'&&isAgentCreationCommand(input.text)?'create_agent' as const:undefined
+      const purpose=name==='agentChatMessage'&&!skill&&!(b as {fileSelection?:AgentFileSelection}).fileSelection&&group.kind==='personal'&&group.ownerMemberId===this.c.actor.id&&agent?.identity.kind==='personal_agent'&&agent.identity.ownerMemberId===this.c.actor.id&&agent.profile.role==='coordinator'&&isAgentCreationCommand(input.text)?'create_agent' as const:undefined
       // A fresh explicit creation/work imperative after small talk is a new
       // request, not permission inferred from a quoted/older first sentence.
       if(pending){const old=decode(pending.request_json) as TurnInput;if(purpose&&old.purpose!=='create_agent'||!purpose&&!old.assistantMode&&!old.fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(input.text)){supersedeTurn(this,String(pending.id));pending=undefined}}
-      const management=name==='agentChatMessage'&&!purpose&&!(b as {fileSelection?:unknown}).fileSelection&&agent&&ownLocalMemoryScope(this,agent,group)?{memory:memoryCommand(this,input.text,message),followup:followupCommand(this,input.text,message)}:null
-      const limitation=name==='agentChatMessage'&&!purpose&&!(b as {fileSelection?:unknown}).fileSelection&&group.kind==='personal'&&agent?.profile.role==='coordinator'?unsupportedCollaboration(this,input.text):null
+      const management=name==='agentChatMessage'&&!skill&&!purpose&&!(b as {fileSelection?:unknown}).fileSelection&&agent&&ownLocalMemoryScope(this,agent,group)?{memory:memoryCommand(this,input.text,message),followup:followupCommand(this,input.text,message)}:null
+      const limitation=name==='agentChatMessage'&&!skill&&!purpose&&!(b as {fileSelection?:unknown}).fileSelection&&group.kind==='personal'&&agent?.profile.role==='coordinator'?unsupportedCollaboration(this,input.text):null
       if(management?.memory||management?.followup||limitation){if(pending)supersedeTurn(this,String(pending.id));const turn=this.newTurn(group,message,input.agentContactId!,{budget:input.budget!,context:[],conversationVersion:group.version,inputSequence:message.sequence,dailyChat:true,personalAssistant:true});const result=management?.memory??management?.followup;if(management?.memory)turn.memoryReceipt=management.memory.receipt;else if(management?.followup)turn.followupReceipt=management.followup.receipt;const response=this.message(group.id,{senderContactId:input.agentContactId!,origin:'service',text:result?.text??limitation!,mentions:[],resources:[],actionIds:[],turnId:turn.id});turn.status='succeeded';turn.failure=null;turn.outputMessageId=response.id;turn.version++;turn.updatedAt=instant();this.saveTurn(turn);message.turnId=turn.id;this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(legacyChatMessage(message)),message.id);return {data:{message:this.projectedMessage(message.id),turn:this.turn(turn.id)}}}
       let fileSource=name==='agentFileMessage'?{messageId:message.id}:name==='agentChatMessage'&&!purpose&&!external?this.dailyFileSource(group.id,(b as {fileSelection?:AgentFileSelection}).fileSelection):undefined
       const fileDocument=name==='agentFileMessage'&&parsedFile?{...parsedFile,metadata:{...parsedFile.metadata,messageId:message.id}}:undefined
@@ -594,15 +598,15 @@ export class ChatService {
       if(fileSource){const document=fileDocument??this.fileDocument(fileSource.messageId,group.id);const questionPages=pageNumbersFromQuestion(input.text),requested=fileSource.pageNumbers??(questionPages.length?questionPages:undefined),numbers=requested?[...new Set(requested)]:undefined;if(numbers?.some(n=>!document.pages.some(page=>page.pageNumber===n)))fail('FILE_PAGE_UNAVAILABLE');fileSource={...fileSource,...(numbers?{pageNumbers:numbers}:{} )}}
       if(fileSource)input.budget=fileReadingBudget(fileDocument??this.fileDocument(fileSource.messageId,group.id),fileSource)
       const workContext=input.intent==='ask_agent'&&isSocialGroup(this,group.id)?socialWorkContext(this,group.id,input.agentContactId!):{}
-      const nextInput:TurnInput={...workContext,budget:input.budget!,context:input.context,conversationVersion:group.version,inputSequence:message.sequence,dailyChat:name!=='sendChatMessage'||isSocialGroup(this,group.id),...(external?{externalConsent:true}:{}),...(purpose?{purpose}:{}),...(name==='agentChatMessage'&&!purpose&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(input.text)?{personalAssistant:true,assistantMode:'coordinate' as const}:{}),...(fileDocument?{fileDocument}:{}),...(fileSource?{fileSource,fileRead:fileReadMetadata(fileDocument??this.fileDocument(fileSource.messageId,group.id))}:{})}
+      const nextInput:TurnInput={...(skill?{skill}:{}),...workContext,budget:input.budget!,context:input.context,conversationVersion:group.version,inputSequence:message.sequence,dailyChat:name!=='sendChatMessage'||isSocialGroup(this,group.id),...(external?{externalConsent:true}:{}),...(purpose?{purpose}:{}),...(name==='agentChatMessage'&&!skill&&!purpose&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(input.text)?{personalAssistant:true,assistantMode:'coordinate' as const}:{}),...(fileDocument?{fileDocument}:{}),...(fileSource?{fileSource,fileRead:fileReadMetadata(fileDocument??this.fileDocument(fileSource.messageId,group.id))}:{})}
       // A fresh ordinary local conversation gets more room for continuity.
       // Explicit collaboration/file/external/creation/schedule budgets and all
       // already queued or retried requests keep their original total limits.
-      if(name==='agentChatMessage'&&!external&&!purpose&&!fileSource&&!nextInput.assistantMode)nextInput.budget={maxTokens:16000,maxSeconds:90}
+      if(name==='agentChatMessage'&&!external&&!purpose&&!fileSource&&!nextInput.assistantMode)nextInput.budget={maxTokens:skill?128000:16000,maxSeconds:90}
       let turn:AgentTurn|null=null
       let merge=pending
       if(merge){try{this.checkTurnInput(String(merge.id))}catch{supersedeTurn(this,String(merge.id));merge=undefined}}
-      if(merge){const previous=decode(merge.request_json) as TurnInput;if(encode(previous.fileSource??null)!==encode(fileSource??null)){supersedeTurn(this,String(merge.id));merge=undefined}}
+      if(merge){const previous=decode(merge.request_json) as TurnInput;if(encode(previous.skill??null)!==encode(skill??null)||encode(previous.fileSource??null)!==encode(fileSource??null)){supersedeTurn(this,String(merge.id));merge=undefined}}
       if(merge){
         const previous=decode(merge.request_json) as TurnInput
         // A queued supplement is the original authorized batch: retain its
@@ -630,6 +634,7 @@ export class ChatService {
         if(continuous){nextInput.continuous=startContinuous(message.id,this.clock());if(external)nextInput.continuous.dueAt=this.clock()}
         turn=this.newTurn(group,message,input.agentContactId!,nextInput)
       }
+      if(turn&&skill)this.db.prepare('INSERT INTO installed_skill_uses VALUES (?,?,?,?,?,?) ON CONFLICT(turn_id) DO NOTHING').run(turn.id,skill.id,this.c.actor.id,Number(this.db.prepare('SELECT revision FROM installed_skills WHERE id=?').get(skill.id)!.revision),encode(skill),instant())
       if(turn&&(continuous||name==='agentFileMessage'))for(const row of active)if(String(row.id)!==turn.id){const old=decode(this.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(row.id!)!.request_json) as TurnInput;if(old.continuous){old.continuous.supersededBy=turn.id;old.continuous.revision++;old.continuous.text='';old.continuous.updatedAt=instant();this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(encode(old),row.id!)}}
 
       if(turn&&nextInput.workTaskId)recordSocialWorkTurn(this,nextInput.workTaskId,message.id,turn.id)

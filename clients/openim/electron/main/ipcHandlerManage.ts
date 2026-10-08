@@ -14,6 +14,7 @@ import { t } from "i18next";
 import { IpcRenderToMain } from "../constants";
 import { getStore } from "./storeManage";
 import { changeLanguage } from "../i18n";
+import {registerSkillBridge} from "./skillManage";
 import { registerLocalFolderBridge } from "./localFolderManage";
 import { registerDesktopWorkBridge } from "./desktopWorkManage";
 import { registerDesktopUpdateBridge } from "./updateManage";
@@ -35,6 +36,7 @@ const readPreference = (key: unknown) => {
 
 export const setIpcMainListener = () => {
   registerLocalFolderBridge();
+  registerSkillBridge();
   registerDesktopWorkBridge();
   registerDesktopUpdateBridge();
   ipcMain.handle("research-service-status", (event) => {

@@ -26,6 +26,9 @@ importers:
       '@research-agent-platform/research-core':
         specifier: workspace:*
         version: link:../../packages/research-core
+      '@research-agent-platform/research-skills':
+        specifier: workspace:*
+        version: link:../../packages/research-skills
       fastify:
         specifier: 5.12.5
         version: 5.12.5

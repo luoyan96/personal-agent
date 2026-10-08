@@ -2,6 +2,22 @@
 
 更新日期：2026-10-08（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 当前已发布：Windows0.6.0私人技能，API / worker配套已上线
+
+2026-10-08 **18:01:21北京时间**，[v0.6.0](https://github.com/luoyan96/personal-agent/releases/tag/v0.6.0)正式发布，桌面与API / worker固定源码11cd20a92bd1a295120f7c87eea022da3ff9c411，contract0.22 / chat1.11 / schema21。工作台 → 我的技能支持文件夹、ZIP和GitHub固定提交安装，默认私人；绑定本人Agent、聊天选择技能 / 参考文字，独立公开介绍 / 好友调用 / 源码复制授权、启停、历史修订切换和本人真实调用记录。[PR23](https://github.com/luoyan96/personal-agent/pull/23)为草稿，依赖PR22，未合main。
+
+实际paper-framework-figure-studio-pro v3.2.15f的59120字符说明 / 120参考文字导入与完整模型上下文已验证，执行器目前仅文字流程；不执行包内脚本、不生成图片、不上传二进制素材。此包的完整绘图工作流尚未实现。[实现与使用边界](development/private-skills.md)。
+
+完整CI47文件 / 588项、生产021两项、B0 / Web隔离；原生导入3项、桌面类型 / 构建、真实隔离Electron22安装 / 绑定 / 聊天 / 调用记录与1024窗口通过。模型合成、原生选择器返回模拟为实际解析包。实际打包0.6.0启动 / 技能preload通过。固定源码11cd20a的[GitHub37759957391](https://github.com/luoyan96/personal-agent/actions/runs/37759957391)三平台全部通过；6项真实线上HTTPS安装 / 权限检查通过，合成记录停用 / 解绑 / 撤公开 / logout，未使用用户Key、资料或真实供应商。
+
+API / worker同镜像sha256:580d8333423e8fab0d7fb5f4216a6707fa073b3cbb975794565beb3cf18c6e9b；备份隔离恢复通过，迁移021新增3表，旧83表行摘要保持，integrity / FK通过。Windows安装文件D:/deepseek-agent/PersonalAgent-Windows/0.6.0/ResearchWeChat_0.6.0.exe，86384427字节，SHA25677f448b0f5bd56ac3412076d35265eb25fc8b9b97e0c63e01404cfcd29712908。四远端资产size / digest和实际公开latest.yml字节核对通过；左下角设置 → 版本更新可升级，也可手动运行安装包。未代替用户安装 / 重启，升级前复制未确认发送文字。[部署和回退收据](deployment/personal-agent-private-skills.md)。Git外证据.runtime/private-skills-20261008保留本地检查、实际截图、早期迁移 / 打包失败与发布收据。
+
+## 本批历史：Windows0.6.0本地准备
+
+本批 feature/private-skills 基于 ead4331，新增工作台“我的技能”：文件夹 / ZIP / 固定提交 GitHub 导入、私人保存、本人站内 Agent 绑定、聊天选择、版本切换、独立的公开介绍 / 好友调用 / 源码复制授权与本人实际调用记录。契约0.22 / chat1.11，显式迁移021。完整CI47文件 / 588项、生产021两项、B0与Web隔离通过；桌面类型 / 构建、原生导入3项与隔离Electron22实际组件安装 / 绑定 / 聊天 / 调用记录和1024窗口通过。原生实际GitHub固定提交下载与完整59120字符说明进入合成模型请求通过。没有用户账号 / Key / 实际模型 / 绘图执行验证。详细边界见[私人技能](development/private-skills.md)。
+
+上游 paper-framework-figure-studio-pro v3.2.15f 包依赖脚本和图片生成，当前只支持完整文字步骤，脚本和二进制素材不上传、不执行。执行依赖需在聊天中确认，不能把“安装”或“回复完成”说成完整绘图任务完成。Git外证据在 .runtime/private-skills-20261008。发布/部署收据未完成前，下方0.5.2 / API06262a6b仍是实际线上版本。
+
 ## 当前已发布：Windows 0.5.2 消息读取修复
 
 2026-10-08 **16:07:37北京时间**，[v0.5.2](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.2)已正式发布，固定源码 `5740c821c020e9b7d9db4ca5e5a705588fc53ec3`。`fix/desktop-message-loading` 基于 PR21 的文档提交 `9ee9ba6`，[PR22](https://github.com/luoyan96/personal-agent/pull/22)保留草稿、未合main。旧只读 hook 每5秒开启下一次请求并使上次请求失效；响应超过5秒时，即使服务端正常返回也一直显示“正在加载消息”。现在同身份/消息作用域的轮询和手动刷新共享正在执行的读取，30秒总期限后显示明确错误和重试；切换会话或身份取消旧读取，迟到结果不显示。失败后自动读取退避15秒，手动重试可立即执行。普通正文独立读取，仅消息实际包含协作建议编号时请求建议；建议失败不会隐藏正文。
