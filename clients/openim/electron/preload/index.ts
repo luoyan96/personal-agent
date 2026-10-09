@@ -4,6 +4,7 @@ import { DataPath, IElectronAPI } from "./../../src/types/globalExpose.d";
 import { contextBridge, ipcRenderer } from "electron";
 import "@openim/electron-client-sdk/lib/preload";
 import type { Platform } from "@openim/wasm-client-sdk";
+import { imagePasteLimits } from "../utils/imagePasteLimits";
 
 // Importing the browser SDK here starts its WASM worker before the page has
 // a URL. The native bridge only needs these stable OpenIM platform IDs.
@@ -103,6 +104,19 @@ const saveFileToDisk = async ({
 };
 
 const Api: IElectronAPI = {
+  saveImageBytesToDisk: async (filename, bytes) => {
+    if (!(bytes instanceof Uint8Array) || !bytes.length || bytes.length > imagePasteLimits.bytes) throw new Error("图片数据无效或超过 10 MB。");
+    const saveDir = getDataPath("sdkResources");
+    await fs.promises.mkdir(saveDir, { recursive: true });
+    const name = path.basename(filename || "粘贴图片.png");
+    if (name === "." || name === "..") throw new Error("图片名称无效。");
+    const savePath = getUniqueSavePath(path.join(saveDir, name));
+    await fs.promises.writeFile(savePath, Buffer.from(bytes), { flag: "wx" });
+    return savePath;
+  },
+  readChatClipboardImages: () => ipcRenderer.invoke("read-chat-clipboard-images"),
+  recognizeChatImage: (id, bytes) => ipcRenderer.invoke("recognize-chat-image", { id, bytes }),
+  cancelChatImageOcr: (id) => ipcRenderer.invoke("cancel-chat-image-ocr", id),
   inspectSkillGithub: (address) => ipcRenderer.invoke("inspect-skill-github", address),
   importPrivateSkill: (kind, selection) => ipcRenderer.invoke("import-private-skill", kind, selection),
   getDesktopUpdateState: () => ipcRenderer.invoke("desktop-update-state"),

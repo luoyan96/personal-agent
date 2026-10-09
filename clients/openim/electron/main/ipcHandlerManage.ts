@@ -16,6 +16,7 @@ import { getStore } from "./storeManage";
 import { changeLanguage } from "../i18n";
 import {registerSkillBridge} from "./skillManage";
 import { registerLocalFolderBridge } from "./localFolderManage";
+import { registerImageClipboardBridge } from "./imageClipboardManage";
 import { registerDesktopWorkBridge } from "./desktopWorkManage";
 import { registerDesktopUpdateBridge } from "./updateManage";
 
@@ -36,6 +37,7 @@ const readPreference = (key: unknown) => {
 
 export const setIpcMainListener = () => {
   registerLocalFolderBridge();
+  registerImageClipboardBridge();
   registerSkillBridge();
   registerDesktopWorkBridge();
   registerDesktopUpdateBridge();
