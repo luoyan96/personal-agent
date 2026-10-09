@@ -2,7 +2,17 @@
 
 更新日期：2026-10-09（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新本地候选：AcceptCat 0.8.3，沿用Catnap桌面橘猫图标
+## 最新本地候选：AcceptCat 0.8.4，猫咪科研登录、注册与启动页
+
+固定桌面源码 **f8e2645c5c7ac8e559e98d4e9400a6b96b8901d3**（feature/acceptcat-cat-entry，基于0f9dcd2 / 0.8.3）。按用户指定查看 `E:/acceptcat/frontend/public` 和旧项目科研工作区，将原科研书桌/猫咪书房图原样用于登录、注册、服务连接、启动页。白底、科研场景、鼠尾草绿表单与Windows字体统一；保留蜷睡橘猫应用图标、八位密码及普通无邀请码注册。[入口交接](development/acceptcat-cat-entry.md)。
+
+客户端类型、3项认证输入检查、实际NSIS publish never构建、exe/blockmap/latest.yml核对、app.asar版本/素材原图散列/图标/身份检查和打包启动门禁通过。实际Electron22/生产打包React入口用隔离合成认证响应完成10项流程：登录、密码显示、Enter发送/挂起/错误恢复、格式校验、无邀请码注册成功、重复用户名、1024×726滚动可达、390×844紧凑布局、服务地址原生校验、440×330启动图。概念与最终桌面截图已查看，renderer pageerror0；预期401/409测试响应与已有electron-log重复初始化告警单独记录。未重复聊天/OCR/共享核心CI，不声称真实账号登录或覆盖安装已测。
+
+安装包 **D:/deepseek-agent/AcceptCat-Windows/0.8.4/AcceptCat_0.8.4.exe**，**87323352字节**，SHA256 **bbb13ee8673e3cce007afa0e4bb25b2afa734da3c71c287e8cbfdacd5d248ff4**。同目录有更新资产、散列、说明及实际新版截图。源码与素材可经Git协作；本地候选尚未公开Release，自动更新不会发现此包。未安装或重启用户窗口，未部署阿里云。服务/contract/schema沿用最后部署记录11cd20a / 0.22 / chat1.11 / 021，本批未重新核验线上。
+
+Git外证据 `.runtime/cat-entry-20261009`；首次图片截图取帧过早、隐藏窗口rAF等待、测试启动期间重载导航竞争、在登录页调用仅限连接页的IPC和Windows ASAR路径分隔符诊断均不计最终验收。修正测试方法后以固定最终源码完成上述检查；自有隔离窗口已关闭，用户原客户端与旧项目未修改。
+
+## 上一本地候选：AcceptCat 0.8.3，沿用Catnap桌面橘猫图标
 
 固定桌面源码 **064c9f276c0bc74a07750724c0f6600f525aaa4c**（chore/acceptcat-cat-icon，基于9f5f78c / 0.8.2）。按用户截图，从原Catnap Desktop快捷方式指向的旧EXE提取蜷睡橘猫；原ICO七档16–256px完整保留，透明PNG用于标题栏和关于页。Windows安装包/程序/托盘、原生窗口和标题栏图标统一；没有合并或启动旧Catnap。0.8.2图片识字回复仍包含在本版。[来源和范围](development/acceptcat-cat-icon.md)。
 
