@@ -1,5 +1,12 @@
 # 项目进展日志
 
+## 2026-10-09：Windows 0.8.4 猫咪科研入口
+
+- 用户指出登录仍是通用蓝色界面，并指定 `E:/acceptcat/frontend/public` 旧探索。查看旧README、素材registry、科研论文/绘图/任务模块，原样复用两张猫咪书桌/书房图；登录、注册、服务连接和原生启动页统一，保留0.8.3橘猫图标、SDK、账号、用户数据与服务身份。未复制旧演示认证或未接通的功能。[来源](../clients/openim/public/assets/acceptcat/ORIGIN.md)。
+- 固定源码 **f8e2645c5c7ac8e559e98d4e9400a6b96b8901d3**；类型、3项认证检查、真实NSIS publish never、更新资产、包内素材/图标/身份及打包启动门禁通过。实际Electron22生产组件以独立profile和合成认证响应完成10项入口流程，pageerror0。预期401/409与既有electron-log初始化提示保留；没有重复聊天、OCR或核心CI，也未实测真实账号登录/覆盖安装。
+- 概念与最终登录/注册/最小窗口/启动图对照查看，Windows字体与表单尺寸据实际截图调整。首次过早截屏、rAF等待、导航竞争、连接管理IPC作用域及Windows ASAR路径诊断保留在Git外，不计通过；最终检查方法有界且不重载正在初始化的页面。
+- 安装包 **D:/deepseek-agent/AcceptCat-Windows/0.8.4/AcceptCat_0.8.4.exe**，**87323352字节**，SHA256 **bbb13ee8673e3cce007afa0e4bb25b2afa734da3c71c287e8cbfdacd5d248ff4**。复制后散列一致，同目录附安装说明、更新资产和真实截图。未公开Release、部署服务器或安装/重启用户窗口；最新云端版本仍按统一状态中的最后部署记录，不当作本轮重新核验。[交接](development/acceptcat-cat-entry.md)。
+
 ## 2026-10-08：Windows 0.5.2 正式发布与公开更新核对
 
 - 16:07:37北京时间正式发布[v0.5.2](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.2)，标签固定受测/打包源码 `5740c821c020e9b7d9db4ca5e5a705588fc53ec3`。[PR22](https://github.com/luoyan96/personal-agent/pull/22)依赖PR21、保留草稿，未自动合main。API/worker仍06262a6b，未迁移或重新部署服务器。

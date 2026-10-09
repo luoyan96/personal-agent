@@ -88,6 +88,8 @@
 
 ## 2026-10-09：OpenMuse风格的Windows界面
 
+0.8.4 根据用户指定的 `E:/acceptcat/frontend/public`，将两张既有白猫书桌/书房场景原样用于登录、注册、服务连接和启动页，保留 0.8.3 橘猫应用图标。旧项目 README、素材 registry、productScope 及论文/绘图/任务工作区模块作为科研方向参考；本批没有合并旧本地认证或尚未接通的功能。实际素材来源与散列见 [ORIGIN](../clients/openim/public/assets/acceptcat/ORIGIN.md)，认证协议、SDK 和服务身份继续沿用。
+
 另行的0.8.3桌面图标调整仅沿用用户明确指定的Catnap蜷睡橘猫：从本机旧安装程序图标组1提取完整ICO，保留透明像素和七档尺寸。没有合并或启动旧Catnap工程。AcceptCat的appId、数据目录、更新源、账号和服务沿用，具体来源和验证见[图标交接](development/acceptcat-cat-icon.md)。
 
 0.8.0基于0.7.0科研规划，研究OpenMuse固定提交 `1ac68f3909f2478ab6280883f1ab5ea65eb5719d` 的React Native/Expo界面，将主题和布局模式适配到当前React DOM/Electron。原生OpenIM SDK、科研API、账号关系、计划/任务存储、更新源和Windows数据身份保持；没有引入第二套账号/IM/数据库，也没有安装CopilotKit Intelligence、AG-UI或A2A运行时。上游MIT保留在客户端public静态资源，已有客户端许可仍独立适用。

@@ -26,10 +26,11 @@ let desktopServer: Awaited<ReturnType<typeof startDesktopServer>> | undefined;
 function createSplashWindow() {
   splashWindow = new BrowserWindow({
     frame: false,
-    width: 200,
-    height: 200,
+    width: 440,
+    height: 330,
     resizable: false,
     transparent: true,
+    icon: join(global.pathConfig.publicPath, "favicon.ico"),
   });
   splashWindow.loadFile(global.pathConfig.splashHtml);
   splashWindow.on("closed", () => {

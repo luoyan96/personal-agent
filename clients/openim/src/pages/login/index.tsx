@@ -3,8 +3,9 @@ import { useCallback, useState } from "react";
 import { useCopyToClipboard } from "react-use";
 
 import login_bg from "@/assets/images/login/login_bg.png";
+import brandIcon from "@/assets/images/profile/logo.png";
 import WindowControlBar from "@/components/WindowControlBar";
-import { APP_NAME, APP_TAGLINE, APP_VERSION, SDK_VERSION } from "@/config";
+import { APP_NAME, APP_VERSION, SDK_VERSION } from "@/config";
 import { feedbackToast } from "@/utils/common";
 import { getLoginMethod, setLoginMethod as saveLoginMethod } from "@/utils/storage";
 
@@ -14,7 +15,6 @@ import ModifyForm from "./ModifyForm";
 import RegisterForm from "./RegisterForm";
 import ResearchLogin from "@/research/ResearchLogin";
 import { researchMode } from "@/research/api";
-import { MessageOutlined, TeamOutlined, BlockOutlined } from "@ant-design/icons";
 import "@/research/auth-page.scss";
 
 export type FormType = 0 | 1 | 2;
@@ -39,39 +39,38 @@ export const Login = () => {
   if (researchMode)
     return (
       <div className="research-auth-page">
-        {window.electronAPI && (
-          <div className="app-drag absolute left-0 right-0 top-0 h-10">
-            <WindowControlBar />
+        <header className="research-auth-titlebar app-drag">
+          <div className="research-auth-wordmark">
+            <img src={brandIcon} alt="" width={24} height={24} />
+            <span>{APP_NAME}</span>
           </div>
-        )}
-        <aside className="research-auth-brand">
-          <div className="research-auth-brand-content">
-            <div className="research-auth-symbol">
-              <MessageOutlined rev={undefined} />
+          {window.electronAPI && <WindowControlBar />}
+        </header>
+        <div className="research-auth-body">
+          <aside className="research-auth-brand">
+            <div className="research-auth-scene">
+              <img
+                src="./assets/acceptcat/research-desk.jpg"
+                alt="白猫陪伴的科研书桌，窗边有樱花、笔记本电脑和台灯"
+                width={1440}
+                height={900}
+                decoding="async"
+              />
             </div>
-            <h1>{APP_NAME}</h1>
-            <p>{APP_TAGLINE}</p>
-            <ul>
-              <li>
-                <TeamOutlined rev={undefined} />
-                一个账号，连接朋友与 Agent
-              </li>
-              <li>
-                <MessageOutlined rev={undefined} />
-                熟悉的聊天、文件与语音
-              </li>
-              <li>
-                <BlockOutlined rev={undefined} />
-                为自己的 Agent 选择模型
-              </li>
-            </ul>
-          </div>
-        </aside>
-        <section className="research-auth-panel">
-          <div className="research-auth-form">
-            <ResearchLogin />
-          </div>
-        </section>
+            <div className="research-auth-caption">
+              <h2>让科研，每天向前一点。</h2>
+              <p>阅读文献、推进课题，与人和 Agent 一起协作。</p>
+            </div>
+          </aside>
+          <section className="research-auth-panel" aria-label="账号登录与注册">
+            <div className="research-auth-form">
+              <ResearchLogin />
+            </div>
+            <footer className="research-auth-version">
+              {APP_NAME} {APP_VERSION.replace(/^v/, "")}
+            </footer>
+          </section>
+        </div>
       </div>
     );
 
