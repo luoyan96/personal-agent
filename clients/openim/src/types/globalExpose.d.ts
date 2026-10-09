@@ -10,6 +10,10 @@ import type {
 export type DataPath = "public" | "emojiData" | "sdkResources" | "logsPath";
 
 export interface IElectronAPI {
+  saveImageBytesToDisk: (filename: string, bytes: Uint8Array) => Promise<string>;
+  readChatClipboardImages: () => Promise<import("./imageClipboard").ClipboardImages>;
+  recognizeChatImage: (id: string, bytes: Uint8Array) => Promise<import("./imageClipboard").ImageOcrResult>;
+  cancelChatImageOcr: (id: string) => Promise<void>;
   inspectSkillGithub: (address:string) => Promise<{id:string;label:string;revision:string}[]>;
   importPrivateSkill: (kind:"folder"|"zip"|"github", selection?:string) => Promise<import("@research-agent-platform/contracts").RequestFor<"installSkill">["body"]|null>;
   getDesktopUpdateState: () => Promise<DesktopUpdateSnapshot>;

@@ -1,4 +1,4 @@
-import { AudioOutlined, CloseOutlined, FileOutlined, PictureOutlined, PlusOutlined, SmileOutlined } from "@ant-design/icons";
+import { AudioOutlined, CloseOutlined, FileOutlined, PictureOutlined, PlusOutlined, SmileOutlined, CopyOutlined } from "@ant-design/icons";
 import { MessageItem } from "@openim/wasm-client-sdk";
 import { Button, Popover } from "antd";
 import clsx from "clsx";
@@ -33,11 +33,15 @@ const SendActionBar = ({
   sendFile,
   getSoundMessage,
   insertEmoji,
+  stageImages,
+  pasteImages,
 }: {
   sendMessage: (params: SendMessageParams) => Promise<void>;
   sendFile: (file: File, kind: SelectedFileKind, isCurrent?: () => boolean, agentFileText?: string) => Promise<boolean>;
   getSoundMessage: (file: File, duration: number) => Promise<MessageItem>;
   insertEmoji: (emoji: string) => void;
+  stageImages?: (files: File[]) => void;
+  pasteImages?: () => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [voiceVisible, setVoiceVisible] = useState(false);
@@ -87,6 +91,7 @@ const SendActionBar = ({
     }
     void (async () => {
       try {
+        if (kind === "image" && stageImages) { stageImages(files); return; }
         for (const file of files) {
           if (!intent.operation.isCurrent()) break;
           await sendFile(file, kind, intent.operation.isCurrent);
@@ -102,6 +107,7 @@ const SendActionBar = ({
           <button type="button" className={toolbarClass} aria-label="表情" title="表情"><SmileOutlined />{window.electronAPI && <span>表情</span>}</button>
         </Popover>
         <button type="button" className={toolbarClass} aria-label="发送图片" title="图片" onClick={() => chooseFile("image")}><PictureOutlined />{window.electronAPI && <span>图片</span>}</button>
+        {window.electronAPI && pasteImages && <button type="button" className={toolbarClass} aria-label="粘贴图片" title="从剪贴板粘贴图片 · Ctrl+V" onClick={pasteImages}><CopyOutlined /></button>}
         <button type="button" className={toolbarClass} aria-label="发送文件" title="文件" onClick={() => chooseFile("file")}><FileOutlined />{window.electronAPI && <span>文件</span>}</button>
         <button type="button" className={toolbarClass} aria-label="打开语音面板" title="语音消息" onClick={() => { setEmojiMode(undefined); setVoiceVisible(true); }}><AudioOutlined />{window.electronAPI && <span>语音</span>}</button>
         <LocalFolderAction sendFile={sendFile} />

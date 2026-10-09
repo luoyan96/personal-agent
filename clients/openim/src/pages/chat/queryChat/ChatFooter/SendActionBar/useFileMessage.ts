@@ -67,7 +67,13 @@ export function useFileMessage() {
     });
 
   const localPath = async (file: FileWithPath) =>
-    file.path || (await window.electronAPI!.saveFileToDisk({ file, sync: true }));
+    file.path ||
+    (file.type.startsWith("image/") && window.electronAPI?.saveImageBytesToDisk
+      ? await window.electronAPI.saveImageBytesToDisk(
+          file.name,
+          new Uint8Array(await file.arrayBuffer()),
+        )
+      : await window.electronAPI!.saveFileToDisk({ file, sync: true }));
   const getFileMessage = async (file: FileWithPath): Promise<MessageItem> => {
     if (window.electronAPI) {
       return assertMessage(

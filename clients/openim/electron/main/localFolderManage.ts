@@ -104,7 +104,7 @@ function observe(contents: WebContents) {
   contents.on("destroyed", revoke);
   contents.on("render-process-gone", revoke);
 }
-function authority(event: IpcMainInvokeEvent) {
+export function authority(event: IpcMainInvokeEvent) {
   const contents = getWebContents(),
     status = getResearchServiceStatus();
   observe(contents);

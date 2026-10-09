@@ -57,3 +57,19 @@
 @media (max-width: 1100px) {
   .personal-agent-desktop .desktop-chat-footer.is-native-desktop { width: calc(100% - 28px); margin-bottom: 16px; }
 }
+.image-paste-tray { flex-shrink: 0; padding: 8px 16px; border-bottom: 1px solid #e9edf0; }
+.image-paste-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; font-size: 12px; color: #64748b; }
+.image-paste-heading > div { display: flex; gap: 6px; }
+.image-paste-previews { display: flex; gap: 8px; overflow-x: auto; padding-top: 8px; }
+.image-paste-preview { position: relative; flex: 0 0 74px; height: 68px; background: #f1f5f9; border: 1px solid #dbe2e8; border-radius: 8px; }
+.image-paste-preview img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
+.image-paste-preview > span { position: absolute; bottom: 2px; left: 3px; background: #fff; border-radius: 4px; padding: 0 4px; font-size: 11px; }
+.image-paste-remove { position: absolute; top: 0; right: 0; width: 22px; height: 22px; border-radius: 50%; color: #334155; background: #fff; border: 1px solid #cbd5e1; font-size: 11px; }
+.image-paste-notice { display: flex; justify-content: space-between; gap: 8px; padding: 8px 16px; font-size: 12px; color: #526274; flex-shrink: 0; }
+.image-paste-notice button { flex-shrink: 0; }
+.image-ocr-results { max-height: 50vh; overflow-y: auto; }
+.image-ocr-results section { margin: 0 0 18px; }
+.image-ocr-results h3 { font-size: 13px; color: #526274; overflow-wrap: anywhere; margin: 0 0 6px; }
+.image-ocr-error { color: #b91c1c; font-size: 13px; }
+.image-ocr-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+.image-ocr-actions > span { font-size: 12px; color: #64748b; }

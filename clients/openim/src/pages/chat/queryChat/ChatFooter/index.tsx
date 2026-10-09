@@ -16,6 +16,7 @@ import { useConversationStore } from "@/store";
 import { feedbackToast } from "@/utils/common";
 
 import SendActionBar from "./SendActionBar";
+import ImagePasteTray, { type ImagePasteTrayRef } from "@/research/ImagePasteTray";
 import { useFileMessage } from "./SendActionBar/useFileMessage";
 import { useSendMessage } from "./useSendMessage";
 import { useAgentFileReading } from "@/research/useAgentFileReading";
@@ -52,6 +53,7 @@ const ChatFooter = () => {
   const reply = useChatReply((s) => s.replies[activeReplyKey]);
   const drafts = useRef(chatDrafts);
   const editor = useRef<CKEditorRef>(null);
+  const imageTray = useRef<ImagePasteTrayRef>(null);
   const [html, setHtml] = useState("");
   const latestHtml = useLatest(html);
   const outbox = useChatOutbox((s) => s.items);
@@ -320,9 +322,11 @@ const ChatFooter = () => {
   };
 
   const droppedFiles = async (files: File[]) => {
+    const images = files.filter(file => file.type.startsWith("image/"));
+    if (images.length) imageTray.current?.stage(images);
     const operation = captureFileDrop();
     try {
-      for (const file of files) {
+      for (const file of files.filter(file => !file.type.startsWith("image/"))) {
         if (!operation.isCurrent()) break;
         await sendFile(file, "auto", operation.isCurrent);
       }
@@ -351,6 +355,7 @@ const ChatFooter = () => {
 
   return (
     <footer
+      onPasteCapture={(event) => imageTray.current?.paste(event)}
       className={`desktop-chat-footer relative bg-white py-px ${
         window.electronAPI ? "is-native-desktop" : ""
       }`}
@@ -371,7 +376,10 @@ const ChatFooter = () => {
           sendFile={sendFile}
           getSoundMessage={getSoundMessage}
           insertEmoji={(emoji) => editor.current?.insertText(emoji)}
+          stageImages={(files) => imageTray.current?.stage(files)}
+          pasteImages={() => imageTray.current?.readClipboard()}
         />
+        <ImagePasteTray key={scope} ref={imageTray} sendFile={sendFile} insertText={(text) => editor.current?.insertText(text)} />
         {reply && (
           <div className="desktop-composer-quote" data-chat-quote>
             <div>

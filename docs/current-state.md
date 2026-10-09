@@ -2,7 +2,17 @@
 
 更新日期：2026-10-09（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新本地候选：AcceptCat 0.8.0，OpenMuse风格Windows界面
+## 最新本地候选：AcceptCat 0.8.1，图片粘贴与本机识字
+
+固定桌面源码 **6c6f9a48f419857f7482661556f74236313d0fa7**（feature/desktop-image-paste-ocr，基于2027291 / feature/openmuse-desktop-ui）。输入区支持Ctrl+V图片、工具栏粘贴、图片多选和拖入，共用可移除的本机预览；Windows10/11本机逐图OCR、长图完整分段与重叠去重，结果可编辑/复制/TXT保存/插入草稿。图片无原始文件路径时按字节写入SDK缓存，普通文字粘贴和原发送队列保留。[使用方法及微信格式边界](development/desktop-image-paste-ocr.md)。
+
+renderer / Electron类型、4项图片检查和6项原发送恢复检查通过。新打包0.8.1的原生preload / IPC / WinRT OCR与生产React组件，在隔离本地HTTPS/API中九条流程通过：多图、真实中英文数字、5500px长图底部和边界去重、编辑插入、原队列发送、无路径图片SDK消息、损坏图错误保留、1024×726可操作和切换联系人清理。SDK回执是合成夹具，不是生产IM或模型调用。真实OCR包含中文误识，数字/专有名词需校对；实际用户微信私有多选格式、语言包缺失和覆盖安装未实测。未读取或修改用户系统剪贴板，Windows文件列表测试使用独立原生内存句柄。
+
+真实NSIS构建 **publish never**，安装包 / blockmap / latest.yml校验通过；0.8.1实际打包登录启动、原生SDK、版本/数据身份和新识字模块检查通过，pageerror0，截图已查看。安装包 **D:/deepseek-agent/AcceptCat-Windows/0.8.1/AcceptCat_0.8.1.exe**，**86410555字节**，SHA256 **59d4d965ca6f538a8807dc049d782a8a9948cfe66b960cd92250009201f0e7ea**。尚未公开Release或安装到用户当前软件。
+
+2026-10-09已读取GitHub，公开Release仍v0.6.0；本批没有后台/契约/worker/数据库变更，云端源码与schema沿用下方最后部署记录，未重新核验线上健康接口。证据Git外 `.runtime/image-paste-20261009` 保留合成图、OCR真实文字、九项流程、截图、打包检查与构建日志。首次缺失跨目录常量的打包、测试宿主路径/TLS失败已修复并留记录；不计通过。测试宿主资源跨来源缺失不代表正式客户端；实际打包登录资源正常。临时测试进程与宿主在交付前清理。
+
+## 上一本地候选：AcceptCat 0.8.0，OpenMuse风格Windows界面
 
 固定桌面源码 **74a076c389513b36dfbd5393b473e841b3ef59e8**（feature/openmuse-desktop-ui，基于514df6c / feature/research-task-planning）；后续交接文档不改变安装包代码。Windows继续使用Electron22 / React18和现有OpenIM原生SDK；appId、package.name、数据身份和GitHub更新源不变，无API / worker / 契约 / 数据库修改。
 
