@@ -50,7 +50,7 @@ export const QueryChat = () => {
     );
 
   return (
-    <Layout id="chat-container" className="relative overflow-hidden">
+    <Layout id="chat-container" className={`relative overflow-hidden ${window.electronAPI ? "native-chat" : ""}`}>
       {researchMode && !entry.ready && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
           <Spin tip="正在同步当前会话…" spinning>
@@ -78,7 +78,10 @@ export const QueryChat = () => {
           />
         )}
         {researchMode && mapping?.kind === "group" && <ResearchConversationPanel />}
-        <PanelGroup direction="vertical">
+        {window.electronAPI ? <div className="desktop-chat-stage">
+          <div className="desktop-chat-history"><ChatContent /></div>
+          <ChatFooter />
+        </div> : <PanelGroup direction="vertical">
           <Panel id="chat-main" order={0}>
             <ChatContent />
           </Panel>
@@ -92,7 +95,7 @@ export const QueryChat = () => {
           >
             <ChatFooter />
           </Panel>
-        </PanelGroup>
+        </PanelGroup>}
       </div>
     </Layout>
   );

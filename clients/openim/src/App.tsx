@@ -9,6 +9,7 @@ import { RouterProvider } from "react-router-dom";
 import AntdGlobalComp from "./AntdGlobalComp";
 import router from "./routes";
 import { useUserStore } from "./store";
+import { desktopTheme } from "./layout/desktop-ui";
 
 function App() {
   const locale = useUserStore((state) => state.appSettings.locale);
@@ -28,7 +29,7 @@ function App() {
       autoInsertSpaceInButton={false}
       locale={locale === "zh-CN" ? zhCN : enUS}
       theme={{
-        token: { colorPrimary: window.electronAPI ? "#07b56a" : "#0089FF" },
+        token: window.electronAPI ? desktopTheme : { colorPrimary: "#0089FF" },
       }}
     >
       <QueryClientProvider client={queryClient}>

@@ -498,3 +498,13 @@ ImageGen概念已生成并展示；最终1600×1000 / 1024×726实际组件与�
 真实NSIS构建publish never、exe / blockmap / latest.yml和GitHub更新源校验通过。实际0.7.0 app.asar含新模块，新包隔离启动到登录、版本 / 数据身份 / SDK与Skill桥接及pageerror0通过。两个asar分隔符测试脚本失败保留，软件没有为此重建；成功报告写出后测试驱动未自动退出，关闭精确自有进程树。临时宿主文件移出客户端，API / Vite及自有Electron测试已关闭，证据保存Git外 `.runtime/task-planning-20261009`。
 
 安装候选 **D:/deepseek-agent/AcceptCat-Windows/0.7.0/AcceptCat_0.7.0.exe**，86405556字节，SHA256 **dc5e06358ecb0e7192b9b670fdf05ae3f3b20e877c043126195f427178006055**。公开Release与API / worker仍为0.6.0 / 11cd20a，未发布、部署、迁移、用户覆盖安装或自动重启。本批AI规划沿用实验室B3模型配置，尚未接个人默认模型；任意私人Agent / 跨空间好友的分步安排、完整科研执行和真实小组验收仍待后续，不能由本地合成验收推断完成。
+
+## 2026-10-09 OpenMuse风格桌面改造，AcceptCat0.8.0本地安装候选
+
+用户要求改善老旧UI，确认开始并继续Windows桌面。feature/openmuse-desktop-ui基于514df6c，固定源码 **74a076c389513b36dfbd5393b473e841b3ef59e8**。研究OpenMuse固定提交1ac68f3909f2478ab6280883f1ab5ea65eb5719d的RN/Expo主题与聊天方式，将浅色导航、可收起聊天列表、居中头像/标题/正文、蓝灰圆角消息、浮动输入框适配到当前React DOM。统一工作台/计划/通讯录/广场/抽屉/设置；保留持续输入、原消息重试、引用及实际文件/Skill权限入口。包名、appId、数据目录、OpenIM SDK、更新源和API保持，未安装第二套后台或CopilotKit Intelligence / AG-UI / A2A。MIT来源说明随dist打包，原OpenIM许可独立保留。
+
+renderer / Electron类型、发送恢复和桌面代理10项 / 规划4项 / 更新6项，共20项通过。文档门禁160文件 / 10技能。ImageGen聊天与工作台概念先于代码生成，统一token后实现；view_image对照实际1600×1000、最小1024×726与概念，修正旧CSS模块覆盖导致的气泡圆角/姓名问题，实际正文15px / radius23px、平台中文字体Microsoft YaHei。真实API/SQLite计划保存、隔离Electron当前生产组件八组路径通过，pageerror0；聊天回执为明确SDK夹具，没有生产IM、真实用户账号、Key、研究文件或模型调用。通讯录读取真实本地数据，广场仅检查导航与服务检查界面。详细文案差异、图标、容器、尺寸和有意适配见[设计交接](development/openmuse-desktop-ui.md)。
+
+实际NSIS构建publish never、exe / blockmap / latest.yml与公开GitHub更新源校验通过。实际0.8.0 app.asar含新UI模块和OpenMuse MIT说明；打包Electron22用全新隔离目录启动到登录，版本 / 数据身份 / 原生SDK / Skill桥接与pageerror0通过，截图查看。脚本对Windows asar许可路径使用正斜线导致一次检查失败，改为取原始路径后通过，没有因此重建产品。初始原生SDK、夹具字段、选择器等失败保留在Git外；自有API/Vite/测试Electron结束，临时宿主移出客户端，用户原有窗口未操作。
+
+本地候选 **D:/deepseek-agent/AcceptCat-Windows/0.8.0/AcceptCat_0.8.0.exe**，**86408559字节**，SHA256 **621c50174734a4ea32f3ff7f80139f992a14651242bee0db4683ddb4f0a85237**。证据 `.runtime/openmuse-desktop-20261009` 保留截图、字体与样式、UI报告、构建、更新资产及打包启动。公开Release / API / worker仍0.6.0 / 11cd20a，contract0.22 / chat1.11 / schema21；本批无发布、部署、迁移或用户安装/重启。真实旧安装覆盖升级、个人默认模型规划迁移、跨空间分步安排和完整科研工具执行仍待后续。

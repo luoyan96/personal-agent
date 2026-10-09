@@ -85,3 +85,9 @@
 本机已查看的来源包括：根目录《科研智能体平台产品规划-v0.1.md》、dsh-research-desktop、dsh-research-skills、research-agent-portal，以及designs/research-agent-platform-v1.1。早期规划中的课题组先用、持续背景、成员独立接手与当前科研方向衔接；既有研究核心和技能迁移来源仍按本文固定提交记录。旧桌面和门户只作为对应需求的实现参考，没有整包合并，也未发现并认定某一旧目录是完整AcceptCat成品。
 
 0.6.1本地桌面品牌候选统一AcceptCat显示名、Windows安装文件和快捷方式。保留appId `com.acceptcat.researchwechat`、package.name `research-wechat-openim`、默认用户数据身份及GitHub `luoyan96/personal-agent`更新源。更新资格同时识别旧ResearchWeChat和新AcceptCat卸载程序；历史版本名、来源声明和许可不改写。范围与验证见[品牌调整](development/acceptcat-branding.md)。
+
+## 2026-10-09：OpenMuse风格的Windows界面
+
+0.8.0基于0.7.0科研规划，研究OpenMuse固定提交 `1ac68f3909f2478ab6280883f1ab5ea65eb5719d` 的React Native/Expo界面，将主题和布局模式适配到当前React DOM/Electron。原生OpenIM SDK、科研API、账号关系、计划/任务存储、更新源和Windows数据身份保持；没有引入第二套账号/IM/数据库，也没有安装CopilotKit Intelligence、AG-UI或A2A运行时。上游MIT保留在客户端public静态资源，已有客户端许可仍独立适用。
+
+聊天变为浅色导航、可收起列表、居中正文与浮动输入区；工作台和其他桌面页采用同一token。差异、概念到实际截图的检查和验证边界见[桌面UI交接](development/openmuse-desktop-ui.md)。本地安装候选与公开发布/云端分别记录，不因生成安装包而部署服务器。

@@ -3,7 +3,7 @@ import { Button } from "antd";
 import { t } from "i18next";
 import { memo, useEffect, useRef, useState } from "react";
 import { MessageType } from "@openim/wasm-client-sdk";
-import { CloseOutlined } from "@ant-design/icons";
+import { ArrowUpOutlined, CloseOutlined } from "@ant-design/icons";
 import { useChatReply, replyKey, clearChatReply } from "@/research/chat-reply";
 import { useResearchComposer } from "@/research/ResearchComposer";
 import { useResearchStore } from "@/research/store";
@@ -351,7 +351,7 @@ const ChatFooter = () => {
 
   return (
     <footer
-      className={`desktop-chat-footer relative h-full bg-white py-px ${
+      className={`desktop-chat-footer relative bg-white py-px ${
         window.electronAPI ? "is-native-desktop" : ""
       }`}
       onDragOver={(event) => {
@@ -365,7 +365,7 @@ const ChatFooter = () => {
         }
       }}
     >
-      <div className="flex h-full flex-col border-t border-t-[var(--gap-text)]">
+      <div className="desktop-composer-surface flex h-full flex-col border-t border-t-[var(--gap-text)]">
         <SendActionBar
           sendMessage={sendMessage}
           sendFile={sendFile}
@@ -513,10 +513,12 @@ const ChatFooter = () => {
             <Button
               className="w-fit px-6 py-1"
               type="primary"
+              aria-label="发送消息"
+              title="发送消息"
               disabled={!getCleanText(html) || composer.invalid}
               onClick={() => void enterToSend()}
             >
-              {t("placeholder.send")}
+              {window.electronAPI ? <ArrowUpOutlined /> : t("placeholder.send")}
             </Button>
           </div>
         </div>

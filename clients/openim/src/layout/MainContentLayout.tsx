@@ -12,6 +12,7 @@ import { useGlobalEvent } from "./useGlobalEvents";
 import { researchMode } from "@/research/api";
 import { MobileNavigation } from "@/research/MobileNavigation";
 import "./desktop-layout.scss";
+import "./desktop-workspace.scss";
 
 export const MainContentLayout = () => {
   useGlobalEvent();

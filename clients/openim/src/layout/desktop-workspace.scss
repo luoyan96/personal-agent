@@ -1,0 +1,91 @@
+// Shared desktop surfaces use the same OpenMuse-derived tokens as chat.
+.personal-agent-desktop .social-workspace {
+  --workspace-green: var(--ac-blue-dark);
+  background: var(--ac-canvas);
+  color: var(--ac-text);
+  .ant-btn { border-radius: 22px; }
+  .ant-btn-primary { background: var(--ac-blue); color: var(--ac-text); }
+  .ant-btn-primary:hover:enabled { background: #aedbfb; color: var(--ac-text); }
+  .ant-btn-primary:disabled { background: var(--ac-soft); color: #9ea5aa; }
+  .ant-input, .ant-select-selector { border-radius: 14px; }
+  .ant-avatar { border-radius: 50% !important; }
+  .workspace-heading { background: transparent; border: 0; padding: 26px 32px 16px; }
+  .workspace-heading h1 { font-size: 26px; font-weight: 600; letter-spacing: -.7px; }
+  .workspace-heading p { font-size: 13px; color: var(--ac-muted); margin-top: 8px; }
+  .workspace-heading > .ant-btn { height: 40px; padding: 0 20px; }
+  .workspace-toolbar { background: transparent; border: 0; padding: 8px 32px 18px; gap: 20px; }
+  .workspace-toolbar > .ant-segmented { background: transparent; padding: 0; }
+  .workspace-toolbar .ant-segmented-item { padding: 3px 8px; color: var(--ac-muted); border-radius: 18px; }
+  .workspace-toolbar .ant-segmented-item-selected { background: #edf7fd; color: var(--ac-text); box-shadow: none; }
+  .workspace-list-pane { background: transparent; border-color: var(--ac-line); width: 290px; }
+  .workspace-person-row { border-radius: 20px; padding: 16px 13px; }
+  .workspace-person-row:hover { background: var(--ac-soft); }
+  .workspace-person-row[aria-pressed="true"] { background: #e7f3fc; }
+  .workspace-kind, .workspace-status, .workspace-tags span { border-radius: 12px; padding: 3px 8px; background: #edf7fd; color: #467a9d; }
+  .workspace-contact-shortcuts button { border-radius: 16px; padding: 6px 10px; background: var(--ac-soft); }
+  .workspace-namecard { padding-top: 42px; }
+  .workspace-task-list { width: 300px; border-color: var(--ac-line); background: transparent; padding: 16px; }
+  .workspace-task-row { border-color: var(--ac-line); border-radius: 23px; padding: 20px; }
+  .workspace-task-row[aria-pressed="true"] { border-color: #c8e7ff; background: #edf7fd; }
+  .workspace-task-progress, .workspace-result { border-radius: 20px; background: var(--ac-soft); border-color: transparent; }
+  .workspace-member-list p { border-radius: 16px; }
+  .workspace-capability-card { border-radius: 23px; padding: 24px; border-color: var(--ac-line); }
+  .workspace-capability-card:hover, .workspace-capability-card[aria-pressed="true"] { border-color: #b9d9f0; }
+  .workspace-capability-grid { gap: 20px; }
+  .workspace-square-detail { border-color: var(--ac-line); }
+
+  .task-planning { gap: 14px; padding: 0 20px 20px; font-size: 14px; }
+  .planner-sidebar { width: 248px; padding: 20px 16px; border: 1px solid var(--ac-line); border-radius: 23px; background: #fff; }
+  .planner-sidebar > .ant-btn { height: 36px; }
+  .planner-sidebar-title { font-size: 16px; font-weight: 600; margin: 0 0 3px; }
+  .planner-plan-row { border: 0; border-radius: 18px; margin-bottom: 8px; padding: 16px 14px; }
+  .planner-plan-row:hover { background: var(--ac-soft); }
+  .planner-plan-row[aria-pressed="true"] { background: #e7f3fc; box-shadow: none; }
+  .planner-canvas { border: 1px solid var(--ac-line); border-radius: 23px; background: #fff; padding: 26px 28px; max-width: 1040px; }
+  .planner-section-heading { align-items: flex-start; gap: 16px; margin-bottom: 24px; }
+  .planner-section-heading h2 { font-size: 22px; line-height: 1.5; font-weight: 600; }
+  .planner-actions .ant-btn { height: 36px; padding: 0 15px; }
+  .planner-label { font-size: 11px; margin-bottom: 6px; color: var(--ac-muted); }
+  .planner-goal { font-size: 14px; font-weight: 500; margin-bottom: 24px; }
+  .planner-goal .ant-input { padding: 12px 15px; line-height: 1.7; }
+  .planner-timeline > li { gap: 14px; padding-bottom: 12px; }
+  .planner-timeline > li:not(:last-child)::before { background: var(--ac-line); left: 17px; }
+  .planner-number { width: 35px; height: 35px; flex-basis: 35px; background: var(--ac-soft); color: var(--ac-text); }
+  .planner-number.active, .planner-number.done { background: var(--ac-blue); color: var(--ac-text); }
+  .planner-step-editor, .planner-step-summary { border: 1px solid var(--ac-line); border-radius: 20px; padding: 18px 20px; }
+  .planner-step-editor.expanded { border-color: #d7e8f4; background: #fff; }
+  .planner-step-heading { gap: 10px; }
+  .planner-step-heading .planner-inline-title { width: auto; max-width: none; flex: 1; min-width: 0; border-radius: 10px; }
+  .planner-step-heading .ant-select { width: 145px; min-width: 120px; }
+  .planner-collapse { color: var(--ac-muted); border-radius: 18px; padding: 6px 10px; background: var(--ac-soft); }
+  .planner-step-toggle { flex: 1; }
+  .planner-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+  .planner-fields > label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 20px; color: var(--ac-muted); }
+  .planner-fields > label:first-child { grid-column: 1 / -1; }
+  .planner-fields .ant-input, .planner-fields .ant-select { width: 100%; }
+  .planner-fields .ant-input { padding: 6px 10px; }
+  .planner-step-tools, .planner-permission-note { grid-column: 1 / -1; }
+  .planner-permission-note { margin-left: 0; font-size: 11px; }
+  .planner-date-field { gap: 6px; }
+  input[type="date"] { border-radius: 14px; font-family: inherit; padding: 5px 10px; }
+  .planner-step-preview { border-radius: 12px; background: var(--ac-soft); margin-top: 10px; }
+  .planner-add-step { width: auto; margin-top: 8px; padding: 0 16px; border: 0; background: var(--ac-soft); color: var(--ac-text); }
+  .planner-questions { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--ac-line); padding-top: 18px; margin-top: 20px; line-height: 24px; }
+  .planner-questions .ant-input { width: 100%; }
+  .planner-next, .planner-request { border: 0; border-radius: 20px; background: #edf7fd; padding: 20px; }
+  .planner-intro-icon { background: #edf7fd; color: var(--ac-blue-dark); border: 0; border-radius: 50%; }
+  .planner-request-history > button[aria-pressed="true"] { color: var(--ac-blue-dark); }
+}
+@media (max-width: 1180px) {
+  .personal-agent-desktop .social-workspace {
+    .workspace-heading { padding: 22px 24px 14px; }
+    .workspace-toolbar { padding: 6px 24px 16px; gap: 10px; }
+    .task-planning { padding: 0 14px 14px; gap: 12px; }
+    .planner-sidebar { width: 210px; padding: 16px 12px; }
+    .planner-canvas { padding: 20px; }
+    .planner-fields { grid-template-columns: 1fr; }
+    .planner-step-heading { flex-wrap: wrap; }
+    .planner-step-heading .planner-inline-title { flex-basis: calc(100% - 60px); }
+    .planner-step-editor { padding: 14px; }
+  }
+}
