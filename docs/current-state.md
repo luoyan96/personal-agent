@@ -2,7 +2,17 @@
 
 更新日期：2026-10-09（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新本地候选：AcceptCat 0.8.1，图片粘贴与本机识字
+## 最新本地候选：AcceptCat 0.8.2，发图后的Agent回复
+
+固定桌面源码 **3f0c666c12baec996bfe1b6201dd690d0ae5574c**（fix/agent-image-replies，基于3c1880a / feature/desktop-image-paste-ocr）。旧发送链路只发IM图片；现改为SDK成功送达后，对完整原图本机OCR，将完整文字送入既有文件阅读接口并请求回复。图片下方“识别并回复 / 从本机选择识别”恢复已发消息，幂等键和文字附件名由原SDK编号固定，不重复发送图片；失败明确提示/重试，成功清除临时状态。真人、群聊、外部Agent不自动转发；切换联系人取消未完成识字。长图预览最高280px。[使用和边界](development/agent-image-replies.md)。
+
+客户端类型、4项图片与10项消息恢复/代理检查通过；实际0.8.2 Electron22/preload/Windows OCR + 生产React组件 + 真实本地HTTPS/API/SQLite/ChatWorker通过11条流程，含长图底部、规范模型回复显示/完成提示清除、重试去重、503恢复、空图/SDK失败、真人不转发、识字中切换和最小窗口。模型与IM传输均合成；隐藏窗口模拟前台可见性验证轮询。没有用户账号/Key/研究资料/系统剪贴板、生产IM或供应商调用。图片文字识别不等同于图表/物体视觉理解；真实用户原图、不同语言包和覆盖安装未实测。
+
+NSIS **publish never**，最终安装包和更新资产校验通过，app.asar版本/自动识字/恢复/原生OCR模块检查通过；实际打包登录启动pageerror0。安装包 **D:/deepseek-agent/AcceptCat-Windows/0.8.2/AcceptCat_0.8.2.exe**，**86415069字节**，SHA256 **e78438ef4b1d54fdfe7e7d99c5a4ff055a8aaffae5766003a1061b08cf29aa9a**，同目录有安装说明与更新资产。未公开Release、部署云端或安装/重启用户窗口；旧软件的更新源不会自动获取本地候选。后台/contract/schema沿用下方最后部署记录11cd20a / 0.22 / chat1.11 / 021，本批未重新核验云端。
+
+证据Git外 `.runtime/agent-image-replies-20261009`，构建日志 `.runtime/agent-image-replies-build.log`。夹具布局/等待判据和隐藏窗口截图失败未计通过，修正测试方法后最终11项通过。后续文档提交不改变安装包源码；自有测试API/worker/TLS/Vite/Electron交付前关闭。
+
+## 上一本地候选：AcceptCat 0.8.1，图片粘贴与本机识字
 
 固定桌面源码 **6c6f9a48f419857f7482661556f74236313d0fa7**（feature/desktop-image-paste-ocr，基于2027291 / feature/openmuse-desktop-ui）。输入区支持Ctrl+V图片、工具栏粘贴、图片多选和拖入，共用可移除的本机预览；Windows10/11本机逐图OCR、长图完整分段与重叠去重，结果可编辑/复制/TXT保存/插入草稿。图片无原始文件路径时按字节写入SDK缓存，普通文字粘贴和原发送队列保留。[使用方法及微信格式边界](development/desktop-image-paste-ocr.md)。
 
