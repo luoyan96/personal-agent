@@ -1,6 +1,6 @@
 {
   "name": "research-wechat-openim",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "main": "dist-electron/main/bootstrap.js",
   "description": "AcceptCat · 科研个人助理与课题组协作",
   "author": "blooming",

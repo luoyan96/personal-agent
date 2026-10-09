@@ -9,6 +9,10 @@
 
 当前包均为 private，不随提交自动发布 npm 包。若后续对外发布软件包，需要明确本项目整体许可并核对依赖要求。公开可见的 GitHub 仓库与明确的软件再分发许可是不同事项。
 
+## 2026-10-09：沿用用户原 Catnap 桌面猫咪图标
+
+用户指定原 `Catnap Desktop` 快捷方式中蜷睡橘猫作为当前应用图标。读取该快捷方式确定来源为本机 `D:/0cat/Catnap Desktop/Catnap Desktop.exe` 的图标组1；仅提取已有图标像素（16–256px共七档），没有复制旧应用源码或运行时。完整ICO及最大尺寸透明PNG用于AcceptCat 0.8.3的安装图标、原生窗口和标题栏/关于页。原素材生成过程及独立原图未追溯，本次不补写未核实的第三方许可或作者。来源校验和、迁移范围见[图标交接](docs/development/acceptcat-cat-icon.md)。
+
 B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `dsh-llm-deepseek-api-key` 0.2.0-rc.1 和 Cordis 4.0.4（MIT）；经公开接口使用，不复制上游实现。具体依赖与校验值见 pnpm-lock.yaml。
 
 ## 2026-10-04 OpenIM 客户端源码采用
