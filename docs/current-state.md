@@ -2,7 +2,19 @@
 
 更新日期：2026-10-09（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新本地候选：AcceptCat 0.7.0，科研任务规划
+## 最新本地候选：AcceptCat 0.8.0，OpenMuse风格Windows界面
+
+固定桌面源码 **74a076c389513b36dfbd5393b473e841b3ef59e8**（feature/openmuse-desktop-ui，基于514df6c / feature/research-task-planning）；后续交接文档不改变安装包代码。Windows继续使用Electron22 / React18和现有OpenIM原生SDK；appId、package.name、数据身份和GitHub更新源不变，无API / worker / 契约 / 数据库修改。
+
+浅色导航、可收起聊天列表、居中联系人标题、840px正文、柔和蓝灰消息与浮动输入框；桌面图标工具栏、圆形发送、连续输入、引用和原消息失败重试保留。工作台、计划表单、通讯录、广场、详情和设置统一主题。参考OpenMuse固定提交1ac68f3的React Native设计模式，在当前DOM组件内适配，MIT来源说明进入安装包；没有新增CopilotKit Intelligence / AG-UI / A2A运行时。[设计、实际截图与边界](development/openmuse-desktop-ui.md)。
+
+renderer / Electron类型、发送恢复和代理10项 / 规划4项 / 更新6项共20项、内容门禁160文档 / 10技能通过。实际隔离Electron22组件八组流程通过：折叠搜索、两条延迟回执持续发送、引用、失败保留与原消息重试、设置更新入口、本地实际HTTP / SQLite计划保存、最小工作台和通讯录/广场导航；聊天SDK回执为夹具，不是生产IM。1600×1000 / 1024×726概念对照已查看，pageerror0，无水平溢出；通讯录实际服务数据已读取，广场仅导航与服务检查状态。新打包0.8.0 Electron隔离启动到实际登录页，版本 / 数据身份 / 原生SDK和Skill桥接 / 打包MIT说明通过，截图已查看；不是用户登录或实际安装升级。
+
+真实NSIS构建 **publish never**，exe / blockmap / latest.yml及公开GitHub更新源校验通过。本地候选 **D:/deepseek-agent/AcceptCat-Windows/0.8.0/AcceptCat_0.8.0.exe**，**86408559字节**，SHA256 **621c50174734a4ea32f3ff7f80139f992a14651242bee0db4683ddb4f0a85237**。同目录保留blockmap / latest.yml；未发布Release、操作用户安装版、部署服务器、迁移数据库或使用真实模型。公开更新/后端仍0.6.0 / 11cd20a，contract0.22 / chat1.11 / schema21。
+
+证据在Git外 `.runtime/openmuse-desktop-20261009`：两个概念、最终聊天/工作台/联系人/设置截图、computed-styles.json、platform-fonts.json、ui-qa.json、build-windows.log、update-assets.json、packaged-ui.json及packaged-login.png。临时组件宿主已移出客户端，自有UI/API测试进程关闭；原生SDK夹具、选择器、夹具权限字段和Windows asar路径失败保留，不计通过。上一批科研规划的实验室B3模型、私人Agent/跨空间安排和完整工具执行限制仍保持；旧安装版实际覆盖升级/自动更新重启未验收。
+
+## 上一本地候选：AcceptCat 0.7.0，科研任务规划
 
 固定桌面源码 **d3e8b19f1a722eafcbbc2a4d7f997442244bfbe5**（feature/research-task-planning，基于f611d3f / feature/acceptcat-branding）；后续本批文档提交不改变安装包代码。用户要求参考Today并直接完善任务规划，本批仅修改桌面客户端及交接文档，复用既有计划与任务API，无共享核心、契约、Skill或数据库变更。
 

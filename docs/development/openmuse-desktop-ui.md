@@ -47,3 +47,5 @@ renderer / Electron类型通过；既有发送恢复/桌面代理10项、规划4
 修正前的CSS覆盖、未登录原生SDK夹具、选择器重名、测试联系人遗漏allowedActions等失败留存在Git外，不作为通过结果。最终计算样式与平台字体证据见 `computed-styles.json` / `platform-fonts.json`，流程见 `ui-qa.json`。临时宿主文件移出客户端，自有UI/API测试进程关闭，未操作用户常用客户端。
 
 Windows安装包、固定源码、NSIS / 更新资产校验和新打包启动结果以[当前状态](../current-state.md)与[项目日志](../project-log.md)为准。0.8.0为本地候选；公开Release/后端仍0.6.0。现有AG-UI兼容事件或CopilotKit全套运行时、任意科研工具执行、个人默认模型规划迁移、真实旧安装升级并不由本批完成。
+
+安装包固定源码 `74a076c389513b36dfbd5393b473e841b3ef59e8`。真实NSIS构建及更新资产校验通过，新打包Electron22隔离登录启动、版本/数据身份/SDK与Skill桥接、asar新UI和MIT说明通过。首轮许可文件路径检查因Windows分隔符失败，检查脚本修正后通过；失败另存 `packaged-path-failure.json`，没有改软件或重复构建。
