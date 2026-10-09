@@ -105,7 +105,12 @@ const saveFileToDisk = async ({
 
 const Api: IElectronAPI = {
   saveImageBytesToDisk: async (filename, bytes) => {
-    if (!(bytes instanceof Uint8Array) || !bytes.length || bytes.length > imagePasteLimits.bytes) throw new Error("图片数据无效或超过 10 MB。");
+    if (
+      !(bytes instanceof Uint8Array) ||
+      !bytes.length ||
+      bytes.length > imagePasteLimits.bytes
+    )
+      throw new Error("图片数据无效或超过 10 MB。");
     const saveDir = getDataPath("sdkResources");
     await fs.promises.mkdir(saveDir, { recursive: true });
     const name = path.basename(filename || "粘贴图片.png");
@@ -115,19 +120,29 @@ const Api: IElectronAPI = {
     return savePath;
   },
   readChatClipboardImages: () => ipcRenderer.invoke("read-chat-clipboard-images"),
-  recognizeChatImage: (id, bytes) => ipcRenderer.invoke("recognize-chat-image", { id, bytes }),
+  recognizeChatImage: (id, bytes) =>
+    ipcRenderer.invoke("recognize-chat-image", { id, bytes }),
   cancelChatImageOcr: (id) => ipcRenderer.invoke("cancel-chat-image-ocr", id),
+  saveChatImageText: (text, original) =>
+    ipcRenderer.invoke("save-chat-image-text", text, original),
   inspectSkillGithub: (address) => ipcRenderer.invoke("inspect-skill-github", address),
-  importPrivateSkill: (kind, selection) => ipcRenderer.invoke("import-private-skill", kind, selection),
+  importPrivateSkill: (kind, selection) =>
+    ipcRenderer.invoke("import-private-skill", kind, selection),
   getDesktopUpdateState: () => ipcRenderer.invoke("desktop-update-state"),
-  onDesktopUpdateState: (callback) => subscribe("desktop-update-state-changed", callback),
-  desktopUpdateAction: (action, version) => ipcRenderer.invoke("desktop-update-action", action, version),
-  createDesktopReport: (scope, title, markdown, sources) => ipcRenderer.invoke("create-desktop-report", scope, title, markdown, sources),
+  onDesktopUpdateState: (callback) =>
+    subscribe("desktop-update-state-changed", callback),
+  desktopUpdateAction: (action, version) =>
+    ipcRenderer.invoke("desktop-update-action", action, version),
+  createDesktopReport: (scope, title, markdown, sources) =>
+    ipcRenderer.invoke("create-desktop-report", scope, title, markdown, sources),
   listDesktopReports: (scope) => ipcRenderer.invoke("list-desktop-reports", scope),
-  openDesktopReport: (scope, id) => ipcRenderer.invoke("open-desktop-report", scope, id),
-  revealDesktopReport: (scope, id) => ipcRenderer.invoke("reveal-desktop-report", scope, id),
+  openDesktopReport: (scope, id) =>
+    ipcRenderer.invoke("open-desktop-report", scope, id),
+  revealDesktopReport: (scope, id) =>
+    ipcRenderer.invoke("reveal-desktop-report", scope, id),
   pickLocalFolder: () => ipcRenderer.invoke("pick-local-folder"),
-  readLocalFolderSelection: (request) => ipcRenderer.invoke("read-local-folder-selection", request),
+  readLocalFolderSelection: (request) =>
+    ipcRenderer.invoke("read-local-folder-selection", request),
   releaseLocalFolder: (grantId) => ipcRenderer.invoke("release-local-folder", grantId),
   getResearchServiceStatus: () => ipcRenderer.invoke("research-service-status"),
   configureResearchService: (address) =>
