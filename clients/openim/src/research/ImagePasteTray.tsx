@@ -46,7 +46,9 @@ const ImagePasteTray = forwardRef<
     [busy, setBusy] = useState(false),
     [mode, setMode] = useState<OcrTextMode>("continuous"),
     [agentProofreading, setAgentProofreading] = useState(true),
-    [copied, setCopied] = useState(false);
+    [copied, setCopied] = useState(false),
+    [saving, setSaving] = useState(false),
+    [resultNotice, setResultNotice] = useState("");
   const agentConversationId = directImageAgent();
   const drafts = useRef<ImageDraft[]>([]),
     urls = useRef(new Set<string>()),
@@ -457,16 +459,41 @@ const ImagePasteTray = forwardRef<
               {copied ? "已复制" : "复制正文"}
             </Button>
             <Button
-              disabled={busy || !combined}
-              onClick={() => {
-                const url = URL.createObjectURL(
-                  new Blob([combined], { type: "text/plain;charset=utf-8" }),
-                );
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = mode === "raw" ? "图片原始识别.txt" : "图片整理正文.txt";
-                a.click();
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
+              loading={saving}
+              disabled={busy || saving || !combined}
+              onClick={async () => {
+                const operation = capture();
+                setResultNotice("");
+                setSaving(true);
+                try {
+                  if (window.electronAPI?.saveChatImageText) {
+                    const saved = await window.electronAPI.saveChatImageText(
+                      combined,
+                      mode === "raw",
+                    );
+                    if (alive.current && operation.isCurrent() && saved)
+                      setResultNotice("文字已保存到你选择的位置。");
+                    return;
+                  }
+                  const url = URL.createObjectURL(
+                    new Blob([combined], { type: "text/plain;charset=utf-8" }),
+                  );
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = mode === "raw" ? "图片原始识别.txt" : "图片整理正文.txt";
+                  a.click();
+                  setTimeout(() => URL.revokeObjectURL(url), 1000);
+                } catch (error) {
+                  if (alive.current && operation.isCurrent())
+                    setResultNotice(
+                      error instanceof Error
+                        ? error.message
+                        : "保存未完成，正文仍已保留。",
+                    );
+                } finally {
+                  if (alive.current) setSaving(false);
+                  operation.dispose();
+                }
               }}
             >
               保存正文
@@ -505,6 +532,7 @@ const ImagePasteTray = forwardRef<
               ? "保留本机识别的行，便于与正文对照。"
               : "已合并截图换行和中文多余空格。可编辑，编辑内容会随当前格式保留。"}
           </p>
+          {resultNotice && <p role="status">{resultNotice}</p>}
           {agentConversationId && (
             <Checkbox
               checked={agentProofreading}

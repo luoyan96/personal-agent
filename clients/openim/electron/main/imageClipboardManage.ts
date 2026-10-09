@@ -1,4 +1,4 @@
-import { clipboard, ipcMain, nativeImage } from "electron";
+import { BrowserWindow, clipboard, dialog, ipcMain, nativeImage } from "electron";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { authority } from "./localFolderManage";
@@ -31,6 +31,32 @@ export function imageTiles(image: Electron.NativeImage) {
   return tiles;
 }
 export function registerImageClipboardBridge() {
+  ipcMain.handle(
+    "save-chat-image-text",
+    async (event, text: string, original: boolean) => {
+      const auth = authority(event);
+      if (
+        typeof text !== "string" ||
+        !text.trim() ||
+        text.length > 2000000 ||
+        typeof original !== "boolean"
+      )
+        throw new Error("保存文字请求无效或文字过多。");
+      const parent = BrowserWindow.fromWebContents(auth.contents);
+      if (!parent) throw new Error("当前窗口已关闭。");
+      const selection = await dialog.showSaveDialog(parent, {
+        title: "保存图片文字",
+        defaultPath: original ? "图片原始识别.txt" : "图片整理正文.txt",
+        filters: [{ name: "文字文件", extensions: ["txt"] }],
+        properties: ["showOverwriteConfirmation"],
+      });
+      if (selection.canceled || !selection.filePath) return false;
+      if (authority(event).owner !== auth.owner)
+        throw new Error("当前窗口已变化，请重新保存。");
+      await fs.writeFile(selection.filePath, text, "utf8");
+      return true;
+    },
+  );
   let running: { id: string; owner: string; controller: AbortController } | undefined;
   ipcMain.handle("read-chat-clipboard-images", async (event) => {
     const auth = authority(event),

@@ -14,6 +14,7 @@ export interface IElectronAPI {
   readChatClipboardImages: () => Promise<import("./imageClipboard").ClipboardImages>;
   recognizeChatImage: (id: string, bytes: Uint8Array) => Promise<import("./imageClipboard").ImageOcrResult>;
   cancelChatImageOcr: (id: string) => Promise<void>;
+  saveChatImageText: (text: string, original: boolean) => Promise<boolean>;
   inspectSkillGithub: (address:string) => Promise<{id:string;label:string;revision:string}[]>;
   importPrivateSkill: (kind:"folder"|"zip"|"github", selection?:string) => Promise<import("@research-agent-platform/contracts").RequestFor<"installSkill">["body"]|null>;
   getDesktopUpdateState: () => Promise<DesktopUpdateSnapshot>;
