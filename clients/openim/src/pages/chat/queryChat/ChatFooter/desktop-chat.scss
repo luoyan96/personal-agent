@@ -68,6 +68,11 @@
 .image-paste-notice { display: flex; justify-content: space-between; gap: 8px; padding: 8px 16px; font-size: 12px; color: #526274; flex-shrink: 0; }
 .image-paste-notice button { flex-shrink: 0; }
 .image-ocr-results { max-height: 50vh; overflow-y: auto; }
+.image-ocr-format { margin-bottom: 16px; }
+.image-ocr-format p { margin: 8px 0 0; font-size: 12px; color: #64748b; }
+.image-ocr-consent { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-top: 6px; font-size: 12px; color: #64748b; }
+.image-ocr-complete { font-size: 12px; color: #527b67; margin: 4px 0 8px; }
+.image-ocr-results textarea { line-height: 1.8; font-size: 14px; }
 .image-ocr-results section { margin: 0 0 18px; }
 .image-ocr-results h3 { font-size: 13px; color: #526274; overflow-wrap: anywhere; margin: 0 0 6px; }
 .image-ocr-error { color: #b91c1c; font-size: 13px; }

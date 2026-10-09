@@ -35,6 +35,14 @@ const { imageTileOffsets, validateImageSize, mergeOcrLines } = require(path.join
   output,
   "imageOcrLayout.cjs",
 ));
+const textSource = await fs.readFile(path.join(client, "src/utils/ocrText.ts"), "utf8");
+await fs.writeFile(
+  path.join(output, "ocrText.cjs"),
+  ts.transpileModule(textSource, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+  }).outputText,
+);
+const { formatOcrText } = require(path.join(output, "ocrText.cjs"));
 test(
   "Windows native DROPFILES preserves multiple Unicode image paths without touching system clipboard",
   { skip: process.platform !== "win32" },
@@ -93,5 +101,65 @@ test("Overlap deduplication preserves repeated lines at different page positions
       [0, 2000],
     ),
     "中文识别\nboundary text\n中文识别",
+  );
+});
+
+test("Cropped tile fragments cannot duplicate or replace an intact neighbouring line", () => {
+  const line = (text, y, height = 48) => ({ text, y, height });
+  assert.equal(
+    mergeOcrLines(
+      [
+        {
+          lines: [
+            line("完整句子。", 1994),
+            line("这一行接着写", 2096),
+            line("厶匕/卜", 2159, 30),
+          ],
+        },
+        {
+          lines: [
+            line("小苜乥土", 0, 40),
+            line("这一行接着写", 96),
+            line("完整的结尾。", 159),
+          ],
+        },
+      ],
+      [0, 2000],
+    ),
+    "完整句子。\n这一行接着写\n完整的结尾。",
+  );
+});
+
+test("Physical paragraph gaps survive while continuous mode removes screenshot hard wraps", () => {
+  const source = mergeOcrLines(
+    [
+      {
+        lines: [
+          { text: "科研 资料 内", y: 10, height: 30 },
+          { text: "容 与 结果。", y: 50, height: 30 },
+          { text: "下一 段 说明。", y: 125, height: 30 },
+        ],
+      },
+    ],
+    [0],
+    true,
+  );
+  assert.equal(
+    formatOcrText(source, "paragraphs"),
+    "科研资料内容与结果。\n\n下一段说明。",
+  );
+  assert.equal(formatOcrText(source, "continuous"), "科研资料内容与结果。下一段说明。");
+});
+
+test("Chinese number/unit and Latin spacing repairs preserve numerical and uncertain content", () => {
+  const raw = "1992 年，A I tools\nare useful。\n\n保留 96.01 % 与 ［辨识不清］。";
+  assert.equal(formatOcrText(raw, "raw"), raw);
+  assert.equal(
+    formatOcrText(raw, "continuous"),
+    "1992年，A I tools are useful。保留96.01%与［辨识不清］。",
+  );
+  assert.equal(
+    formatOcrText("研究 thermo-\ndynamics。", "continuous"),
+    "研究thermo-dynamics。",
   );
 });

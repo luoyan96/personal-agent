@@ -1,17 +1,27 @@
 import { CloseOutlined, CopyOutlined, LoadingOutlined } from "@ant-design/icons";
-import { Button, Input, Modal } from "antd";
+import { Button, Checkbox, Input, Modal, Segmented } from "antd";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { ClipboardEvent } from "react";
 import { imagePasteLimits } from "@/types/imageClipboard";
 import { useAgentChatOperation } from "./useAgentChatOperation";
 import type { AgentChatOperation } from "./useAgentChatOperation";
 import { directImageAgent } from "./useAgentImageReading";
+import { formatOcrText } from "@/utils/ocrText";
+import type { OcrTextMode } from "@/utils/ocrText";
+import { proofreadOcr } from "./ocrProofreading";
+import type { OcrProofreadingJob } from "./ocrProofreading";
 
 type ImageDraft = {
   id: string;
   file: File;
   url: string;
   text?: string;
+  paragraphText?: string;
+  refinedText?: string;
+  edits?: Partial<Record<OcrTextMode, string>>;
+  refinementJob?: OcrProofreadingJob;
+  refinementError?: string;
+  refining?: boolean;
   error?: string;
   reading?: boolean;
   sending?: boolean;
@@ -33,7 +43,11 @@ const ImagePasteTray = forwardRef<
   const [images, setImages] = useState<ImageDraft[]>([]),
     [notice, setNotice] = useState(""),
     [resultsOpen, setResultsOpen] = useState(false),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [mode, setMode] = useState<OcrTextMode>("continuous"),
+    [agentProofreading, setAgentProofreading] = useState(true),
+    [copied, setCopied] = useState(false);
+  const agentConversationId = directImageAgent();
   const drafts = useRef<ImageDraft[]>([]),
     urls = useRef(new Set<string>()),
     alive = useRef(false),
@@ -54,6 +68,18 @@ const ImagePasteTray = forwardRef<
       active.operation.dispose();
       void window.electronAPI?.cancelChatImageOcr(active.id).catch(() => {});
     }
+  };
+  const stop = () => {
+    cancel();
+    setBusy(false);
+    update(
+      drafts.current.map((item) => ({
+        ...item,
+        reading: false,
+        refining: false,
+        sending: false,
+      })),
+    );
   };
   useEffect(() => {
     alive.current = true;
@@ -195,33 +221,71 @@ const ImagePasteTray = forwardRef<
     const operation = capture(),
       id = crypto.randomUUID(),
       active = { id, operation };
+    const correctionTarget = agentProofreading ? agentConversationId : undefined;
     job.current = active;
     setBusy(true);
     setNotice("");
     setResultsOpen(true);
     try {
       for (const item of drafts.current.slice()) {
-        if (item.text !== undefined && !item.error) continue;
         if (!operation.isCurrent() || !alive.current || job.current !== active) break;
-        patch(item.id, { reading: true, error: undefined });
         try {
-          const bytes = new Uint8Array(await item.file.arrayBuffer());
-          if (!operation.isCurrent() || job.current !== active) break;
-          const result = await window.electronAPI.recognizeChatImage(id, bytes);
-          if (!operation.isCurrent() || !alive.current || job.current !== active) break;
-          patch(item.id, {
-            text: result.text,
-            language: result.language,
-            reading: false,
-            error: result.text.trim()
-              ? undefined
-              : "这张图片没有识别到文字，可换清晰原图后重试。",
-          });
+          if (item.text === undefined || item.error) {
+            patch(item.id, { reading: true, error: undefined });
+            const bytes = new Uint8Array(await item.file.arrayBuffer());
+            if (!operation.isCurrent() || job.current !== active) break;
+            const result = await window.electronAPI.recognizeChatImage(id, bytes);
+            if (!operation.isCurrent() || !alive.current || job.current !== active)
+              break;
+            patch(item.id, {
+              text: result.text,
+              paragraphText: result.paragraphText,
+              language: result.language,
+              reading: false,
+              error: result.text.trim()
+                ? undefined
+                : "这张图片没有识别到文字，可换清晰原图后重试。",
+            });
+          }
         } catch (error) {
           if (!alive.current || !operation.isCurrent() || job.current !== active) break;
           patch(item.id, {
             reading: false,
             error: error instanceof Error ? error.message : "图片识别失败，请重试。",
+          });
+        }
+        const recognized = drafts.current.find((draft) => draft.id === item.id);
+        if (
+          !correctionTarget ||
+          !recognized?.text?.trim() ||
+          recognized.error ||
+          recognized.refinedText
+        )
+          continue;
+        if (!operation.isCurrent() || job.current !== active) break;
+        const refinementJob = (recognized.refinementJob?.terminal
+          ? undefined
+          : recognized.refinementJob) || {
+          key: `ocr-proofread-${crypto.randomUUID()}`,
+          conversationId: correctionTarget,
+          text: formatOcrText(
+            recognized.paragraphText || recognized.text,
+            "paragraphs",
+          ),
+        };
+        patch(item.id, { refining: true, refinementError: undefined, refinementJob });
+        try {
+          const refinedText = await proofreadOcr(refinementJob, operation.signal);
+          if (!operation.isCurrent() || !alive.current || job.current !== active) break;
+          patch(item.id, { refinedText, refining: false });
+        } catch (error) {
+          if (!operation.isCurrent() || !alive.current || job.current !== active) break;
+          patch(item.id, {
+            refining: false,
+            refinementError:
+              error instanceof Error
+                ? error.message
+                : "模型校对未完成，本机文字已保留。",
           });
         }
       }
@@ -230,7 +294,9 @@ const ImagePasteTray = forwardRef<
       if (alive.current && job.current === active) {
         job.current = undefined;
         setBusy(false);
-        update(drafts.current.map((item) => ({ ...item, reading: false })));
+        update(
+          drafts.current.map((item) => ({ ...item, reading: false, refining: false })),
+        );
       }
     }
   };
@@ -263,12 +329,18 @@ const ImagePasteTray = forwardRef<
       }
     }
   };
+  const displayedText = (item: ImageDraft) =>
+    item.edits?.[mode] ??
+    formatOcrText(
+      mode === "raw"
+        ? item.text || ""
+        : item.refinedText ?? item.paragraphText ?? item.text ?? "",
+      mode,
+    );
   const combined = images
-    .map((item, index) =>
-      item.text?.trim() ? `【图片 ${index + 1}：${item.file.name}】\n${item.text}` : "",
-    )
+    .map(displayedText)
     .filter(Boolean)
-    .join("\n\n");
+    .join(mode === "continuous" ? " " : "\n\n");
   const unresolved = images.some(
     (item) => item.reading || item.error || item.text === undefined,
   );
@@ -299,25 +371,28 @@ const ImagePasteTray = forwardRef<
                 </Button>
               )}
               {busy && (
-                <Button
-                  size="small"
-                  onClick={() => {
-                    cancel();
-                    setBusy(false);
-                    update(
-                      drafts.current.map((item) => ({
-                        ...item,
-                        reading: false,
-                        sending: false,
-                      })),
-                    );
-                  }}
-                >
+                <Button size="small" onClick={stop}>
                   取消
                 </Button>
               )}
             </div>
           </div>
+          {agentConversationId && (
+            <div className="image-ocr-consent">
+              <Checkbox
+                checked={agentProofreading}
+                disabled={busy}
+                onChange={(event) => setAgentProofreading(event.target.checked)}
+              >
+                Agent 校对错字
+              </Checkbox>
+              <span>
+                {agentProofreading
+                  ? "点击识别后，文字会发送给当前 Agent 校对。"
+                  : "仅本机识别并整理换行。"}
+              </span>
+            </div>
+          )}
           {!!directImageAgent() && (
             <p className="text-xs text-slate-500">
               发送给此 Agent 后，会自动在本机识别文字并请求回复。
@@ -328,7 +403,7 @@ const ImagePasteTray = forwardRef<
               <div className="image-paste-preview" key={item.id}>
                 <img src={item.url} alt={`图片 ${index + 1}：${item.file.name}`} />
                 <span>{index + 1}</span>
-                {item.reading || item.sending ? (
+                {item.reading || item.refining || item.sending ? (
                   <LoadingOutlined className="image-paste-remove" />
                 ) : (
                   <button
@@ -348,39 +423,48 @@ const ImagePasteTray = forwardRef<
       )}
       <Modal
         open={resultsOpen}
-        title="图片识字"
-        width={720}
+        title="图片文字"
+        width={800}
         onCancel={() => setResultsOpen(false)}
         footer={
           <div className="image-ocr-actions">
+            {busy && <Button onClick={stop}>停止整理</Button>}
             <span>
-              {busy ? "正在逐张识别…" : "识别在本机进行，请核对数字和专有名词。"}
+              {busy
+                ? "正在识别与整理，完成后可复制正文…"
+                : mode === "raw"
+                ? "当前展示原始识别，整理后的正文仍保留。"
+                : "复制、保存和插入均使用当前正文格式。"}
             </span>
             <Button
-              disabled={!combined}
+              disabled={busy || !combined}
               icon={<CopyOutlined />}
               onClick={() =>
                 void navigator.clipboard
                   .writeText(combined)
+                  .then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  })
                   .catch(() => setNotice("复制失败，请在文字框中选择文字后复制。"))
               }
             >
-              复制文字
+              {copied ? "已复制" : "复制正文"}
             </Button>
             <Button
-              disabled={!combined}
+              disabled={busy || !combined}
               onClick={() => {
                 const url = URL.createObjectURL(
                   new Blob([combined], { type: "text/plain;charset=utf-8" }),
                 );
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = "图片识别文字.txt";
+                a.download = mode === "raw" ? "图片原始识别.txt" : "图片整理正文.txt";
                 a.click();
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
               }}
             >
-              保存文字
+              保存正文
             </Button>
             <Button
               type="primary"
@@ -397,6 +481,35 @@ const ImagePasteTray = forwardRef<
           </div>
         }
       >
+        <div className="image-ocr-format">
+          <Segmented
+            aria-label="文字格式"
+            value={mode}
+            options={[
+              { label: "一整段 · 无回车", value: "continuous" },
+              { label: "保留段落", value: "paragraphs" },
+              { label: "原始识别", value: "raw" },
+            ]}
+            onChange={(value) => {
+              setMode(value as OcrTextMode);
+              setCopied(false);
+            }}
+          />
+          <p>
+            {mode === "raw"
+              ? "保留本机识别的行，便于与正文对照。"
+              : "已合并截图换行和中文多余空格。可编辑，编辑内容会随当前格式保留。"}
+          </p>
+          {agentConversationId && (
+            <Checkbox
+              checked={agentProofreading}
+              disabled={busy}
+              onChange={(event) => setAgentProofreading(event.target.checked)}
+            >
+              Agent 校对错字 · 文字会发送给当前 Agent
+            </Checkbox>
+          )}
+        </div>
         <div className="image-ocr-results">
           {images.map((item, index) => (
             <section key={item.id}>
@@ -414,6 +527,19 @@ const ImagePasteTray = forwardRef<
                   <LoadingOutlined /> 正在识别…
                 </p>
               )}
+              {item.refining && (
+                <p role="status">
+                  <LoadingOutlined /> 正在由当前 Agent 校对错字，本机正文已保留…
+                </p>
+              )}
+              {item.refinedText && mode !== "raw" && (
+                <p className="image-ocr-complete">Agent 校对稿 · 可切换原始识别对照</p>
+              )}
+              {item.refinementError && (
+                <p role="alert" className="image-ocr-error">
+                  校对未完成：{item.refinementError}
+                </p>
+              )}
               {item.error && (
                 <p role="alert" className="image-ocr-error">
                   {item.error}
@@ -421,12 +547,14 @@ const ImagePasteTray = forwardRef<
               )}
               <Input.TextArea
                 aria-label={`图片 ${index + 1} 识别文字`}
-                value={item.text ?? ""}
+                value={displayedText(item)}
                 placeholder="识别结果会显示在这里，也可以直接编辑。"
                 autoSize={{ minRows: 3, maxRows: 10 }}
                 disabled={busy}
                 onChange={(event) =>
-                  patch(item.id, { text: event.target.value, error: undefined })
+                  patch(item.id, {
+                    edits: { ...item.edits, [mode]: event.target.value },
+                  })
                 }
               />
             </section>
@@ -437,6 +565,15 @@ const ImagePasteTray = forwardRef<
             重试失败图片
           </Button>
         )}
+        {agentConversationId &&
+          !busy &&
+          images.some((item) => item.text && !item.error && !item.refinedText) && (
+            <Button disabled={!agentProofreading} onClick={() => void recognize()}>
+              {images.some((item) => item.refinementError)
+                ? "重试校对"
+                : "让 Agent 校对错字"}
+            </Button>
+          )}
       </Modal>
     </>
   );

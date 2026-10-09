@@ -38,7 +38,8 @@ try {
           $words = @($_.Words)
           $minY = ($words | ForEach-Object { $_.BoundingRect.Y } | Measure-Object -Minimum).Minimum
           $maxY = ($words | ForEach-Object { $_.BoundingRect.Y + $_.BoundingRect.Height } | Measure-Object -Maximum).Maximum
-          @{ text=$_.Text; y=$minY; height=($maxY-$minY) }
+          $minX = ($words | ForEach-Object { $_.BoundingRect.X } | Measure-Object -Minimum).Minimum
+          @{ text=$_.Text; x=$minX; y=$minY; height=($maxY-$minY) }
         })
         $results += ,@{ lines=$lines }
       } finally { $bitmap.Dispose() }

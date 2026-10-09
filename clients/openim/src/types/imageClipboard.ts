@@ -6,4 +6,9 @@ export const imagePasteLimits = {
 };
 export type ClipboardImage = { name: string; bytes: Uint8Array };
 export type ClipboardImages = { images: ClipboardImage[]; notice?: string };
-export type ImageOcrResult = { text: string; language: string; tiles: number };
+export type ImageOcrResult = {
+  text: string;
+  paragraphText?: string;
+  language: string;
+  tiles: number;
+};

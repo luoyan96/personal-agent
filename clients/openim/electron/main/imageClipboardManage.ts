@@ -132,7 +132,16 @@ export function registerImageClipboardBridge() {
           tiles.map((tile) => tile.top),
         );
         if (text.length > 100000) throw new Error("识别文字过多，请分批处理。");
-        return { text, language: result.language, tiles: tiles.length };
+        return {
+          text,
+          paragraphText: mergeOcrLines(
+            result.results,
+            tiles.map((tile) => tile.top),
+            true,
+          ),
+          language: result.language,
+          tiles: tiles.length,
+        };
       } finally {
         controller.abort();
         auth.contents.removeListener("did-start-navigation", navigate);
