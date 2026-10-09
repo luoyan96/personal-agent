@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getBusinessUserInfo } from "@/api/login";
 import add_friend from "@/assets/images/topSearchBar/add_friend.png";
+import app_icon from "@/assets/images/profile/logo.png";
 import add_group from "@/assets/images/topSearchBar/add_group.png";
 import create_group from "@/assets/images/topSearchBar/create_group.png";
 import WindowControlBar from "@/components/WindowControlBar";
@@ -184,7 +185,7 @@ const TopSearchBar = () => {
     >
       {window.electronAPI && (
         <span className="desktop-app-name">
-          <RobotOutlined />
+          <img src={app_icon} width={24} height={24} alt="" />
           {APP_NAME}
         </span>
       )}

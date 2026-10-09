@@ -88,6 +88,8 @@
 
 ## 2026-10-09：OpenMuse风格的Windows界面
 
+另行的0.8.3桌面图标调整仅沿用用户明确指定的Catnap蜷睡橘猫：从本机旧安装程序图标组1提取完整ICO，保留透明像素和七档尺寸。没有合并或启动旧Catnap工程。AcceptCat的appId、数据目录、更新源、账号和服务沿用，具体来源和验证见[图标交接](development/acceptcat-cat-icon.md)。
+
 0.8.0基于0.7.0科研规划，研究OpenMuse固定提交 `1ac68f3909f2478ab6280883f1ab5ea65eb5719d` 的React Native/Expo界面，将主题和布局模式适配到当前React DOM/Electron。原生OpenIM SDK、科研API、账号关系、计划/任务存储、更新源和Windows数据身份保持；没有引入第二套账号/IM/数据库，也没有安装CopilotKit Intelligence、AG-UI或A2A运行时。上游MIT保留在客户端public静态资源，已有客户端许可仍独立适用。
 
 聊天变为浅色导航、可收起列表、居中正文与浮动输入区；工作台和其他桌面页采用同一token。差异、概念到实际截图的检查和验证边界见[桌面UI交接](development/openmuse-desktop-ui.md)。本地安装候选与公开发布/云端分别记录，不因生成安装包而部署服务器。
