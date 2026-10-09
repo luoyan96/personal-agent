@@ -5,6 +5,7 @@ import type { ClipboardEvent } from "react";
 import { imagePasteLimits } from "@/types/imageClipboard";
 import { useAgentChatOperation } from "./useAgentChatOperation";
 import type { AgentChatOperation } from "./useAgentChatOperation";
+import { directImageAgent } from "./useAgentImageReading";
 
 type ImageDraft = {
   id: string;
@@ -317,6 +318,11 @@ const ImagePasteTray = forwardRef<
               )}
             </div>
           </div>
+          {!!directImageAgent() && (
+            <p className="text-xs text-slate-500">
+              发送给此 Agent 后，会自动在本机识别文字并请求回复。
+            </p>
+          )}
           <div className="image-paste-previews">
             {images.map((item, index) => (
               <div className="image-paste-preview" key={item.id}>
