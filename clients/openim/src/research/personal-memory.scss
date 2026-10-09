@@ -37,6 +37,12 @@
   .ant-tabs-nav::before {
     border-color: var(--memory-line);
   }
+  .ant-tabs-content-holder {
+    max-height: calc(100dvh - 160px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 6px;
+  }
   .ant-tabs-tab {
     padding: 0 10px 14px;
     font-size: 15px;

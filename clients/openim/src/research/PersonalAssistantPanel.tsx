@@ -42,7 +42,6 @@ export function PersonalAssistantPanel({
       footer={null}
       destroyOnClose
       style={{ maxWidth: "calc(100vw - 24px)" }}
-      styles={{ body: { maxHeight: "calc(100dvh - 80px)", overflowY: "auto" } }}
     >
       <Tabs
         activeKey={tab}
