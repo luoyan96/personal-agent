@@ -78,6 +78,10 @@ const ImagePasteTray = forwardRef<
         reading: false,
         refining: false,
         sending: false,
+        refinementJob:
+          item.refining && item.refinementJob?.receipt
+            ? { ...item.refinementJob, terminal: true }
+            : item.refinementJob,
       })),
     );
   };
@@ -437,6 +441,7 @@ const ImagePasteTray = forwardRef<
                 : "复制、保存和插入均使用当前正文格式。"}
             </span>
             <Button
+              aria-label={copied ? "已复制" : "复制正文"}
               disabled={busy || !combined}
               icon={<CopyOutlined />}
               onClick={() =>
