@@ -2,7 +2,9 @@
 
 AcceptCat采用微信式聊天，真人和Agent共用通讯录。近期聚焦中国科研工作者，先服务本人及学生的真实课题：交代目标、明确分工、使用资料、提交成果、反馈验收并持续积累背景。接下来约半年以自己课题组持续使用为主，再判断推广。Windows桌面优先，科研功能的实际范围见[产品规划v0.8](docs/product-plan.md)与[开发路线](docs/roadmap.md)。
 
-2026-10-09：本地AcceptCat **0.8.0** 采用[OpenMuse风格Windows界面](docs/development/openmuse-desktop-ui.md)：浅色导航、可收起聊天列表、居中正文、柔和消息与浮动输入区，工作台及设置统一主题。继续使用OpenIM原生SDK、现有账号和任务后台，保留连续发送、失败重试、本地文件和更新入口。包含0.7.0的[科研任务规划](docs/development/research-task-planning.md)：可编辑步骤、负责人 / 依赖 / 验收条件、草案恢复、确认生成真实任务与下一步。安装身份、数据目录和GitHub更新源不变；公开Release与云端仍是下方0.6.0，准确安装包与受测范围见[当前状态](docs/current-state.md)。本项目继续沿用现有代码和[早期迁移成果](docs/migration.md)，历史版本及验证记录保留。
+2026-10-09：最新本地AcceptCat **0.8.1** 新增[图片粘贴与批量识字](docs/development/desktop-image-paste-ocr.md)：Ctrl+V、多选与拖入图片，先在本机预览，再识别、校对、保存或发送文字。微信私有消息复制格式提供保存图片后批量拖入的备用流程。安装包和准确验证范围见[当前状态](docs/current-state.md)。
+
+2026-10-09：上一本地AcceptCat **0.8.0** 采用[OpenMuse风格Windows界面](docs/development/openmuse-desktop-ui.md)：浅色导航、可收起聊天列表、居中正文、柔和消息与浮动输入区，工作台及设置统一主题。继续使用OpenIM原生SDK、现有账号和任务后台，保留连续发送、失败重试、本地文件和更新入口。包含0.7.0的[科研任务规划](docs/development/research-task-planning.md)：可编辑步骤、负责人 / 依赖 / 验收条件、草案恢复、确认生成真实任务与下一步。安装身份、数据目录和GitHub更新源不变；公开Release与云端仍是下方0.6.0，准确安装包与受测范围见[当前状态](docs/current-state.md)。本项目继续沿用现有代码和[早期迁移成果](docs/migration.md)，历史版本及验证记录保留。
 
 Windows0.6.0私人技能和配套API / worker已发布（contract0.22 / schema21）；安装、授权、聊天文字流程与边界见 [当前状态](docs/current-state.md)。
 

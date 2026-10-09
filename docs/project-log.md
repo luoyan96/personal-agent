@@ -508,3 +508,15 @@ renderer / Electron类型、发送恢复和桌面代理10项 / 规划4项 / 更�
 实际NSIS构建publish never、exe / blockmap / latest.yml与公开GitHub更新源校验通过。实际0.8.0 app.asar含新UI模块和OpenMuse MIT说明；打包Electron22用全新隔离目录启动到登录，版本 / 数据身份 / 原生SDK / Skill桥接与pageerror0通过，截图查看。脚本对Windows asar许可路径使用正斜线导致一次检查失败，改为取原始路径后通过，没有因此重建产品。初始原生SDK、夹具字段、选择器等失败保留在Git外；自有API/Vite/测试Electron结束，临时宿主移出客户端，用户原有窗口未操作。
 
 本地候选 **D:/deepseek-agent/AcceptCat-Windows/0.8.0/AcceptCat_0.8.0.exe**，**86408559字节**，SHA256 **621c50174734a4ea32f3ff7f80139f992a14651242bee0db4683ddb4f0a85237**。证据 `.runtime/openmuse-desktop-20261009` 保留截图、字体与样式、UI报告、构建、更新资产及打包启动。公开Release / API / worker仍0.6.0 / 11cd20a，contract0.22 / chat1.11 / schema21；本批无发布、部署、迁移或用户安装/重启。真实旧安装覆盖升级、个人默认模型规划迁移、跨空间分步安排和完整科研工具执行仍待后续。
+
+## 2026-10-09 AcceptCat0.8.1图片粘贴与本机批量识字
+
+用户反馈微信多选图片复制到桌面客户端无法识字。定位为CKEditor只接文字、IM图片消息没有OCR链路。本批建立可移除的图片草稿，Ctrl+V / 原生剪贴板按钮 / 选图 / 拖入统一预览，明确发送前仅在本机；WinRT本机OCR结果可校对、复制、保存TXT或插入聊天。原生CF_HDROP读取多个Unicode图片路径；微信内部消息记录无法保证获得原图，提供保存后多选复制/拖入的实际备用方式，没有宣称完成微信私有格式兼容。
+
+feature/desktop-image-paste-ocr基于2027291，固定桌面源码 **6c6f9a48f419857f7482661556f74236313d0fa7**。Windows10/11优先中文语言包；长图重叠分段、文字去重和完整底部覆盖；IPC仅活动主窗口/服务来源，输入字节、数量/尺寸/时限约束、隐藏固定程序子进程和取消。无路径图片通过字节保存SDK缓存；保持普通文字粘贴/原消息队列和失败保留。没有后台、数据库、共享核心或Skill改动，不新增模型Key。
+
+renderer / Electron类型、4项图片与6项发送恢复检查通过。新0.8.1原生preload/IPC/Windows OCR、生产React聊天组件及隔离HTTPS/API，九条实际流程通过：多图预览、真实中英文数字、5500px长图底部与边界去重、编辑插入、原消息队列、无路径图片SDK适配、损坏图错误、1024×726交互、切换联系人清理。回执为合成SDK夹具；用户微信/系统剪贴板/真实账号资料/模型未读取或调用。Windows DROPFILES测试使用独立内存句柄。真实中文“识别”与“边界位置”误识记录保留，结果需人工校对；不可宣称完整OCR准确率。
+
+真实NSIS构建publish never和exe / blockmap / latest.yml校验通过。新包登录启动、原生SDK/版本/身份/Skill桥、新识字UI和原生模块检查通过，pageerror0；登录与功能截图查看。初次跨目录常量没有进入Electron包导致启动失败，已改为主进程本地常量；测试路径、TLS信任与宿主watch锁定失败保留。测试宿主跨来源图片资源缺失与隐藏窗口截图刷新延迟已记录，正式打包登录图标正常。临时宿主与自有API/TLS/Vite关闭，不操作用户窗口。
+
+安装包 **D:/deepseek-agent/AcceptCat-Windows/0.8.1/AcceptCat_0.8.1.exe**，**86410555字节**，SHA256 **59d4d965ca6f538a8807dc049d782a8a9948cfe66b960cd92250009201f0e7ea**。同目录更新资产和安装说明；证据Git外 `.runtime/image-paste-20261009`。GitHub公开Release读取仍v0.6.0，本地候选未发布、未安装或升级用户软件；云端依照既有部署记录，本批不进行线上部署或健康验收。真实微信私有多选格式、不同语言包、覆盖安装和生产IM图片传输仍待实际用户试用。实现和边界见[图片识字说明](development/desktop-image-paste-ocr.md)。
