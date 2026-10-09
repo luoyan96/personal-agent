@@ -1,73 +1,33 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="zh-CN">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AcceptCat</title>
     <style>
-      body {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        margin: 0;
-        padding: 0;
-        font-family: Arial, sans-serif;
-        cursor: default;
-      }
-
-      .logo {
-        font-size: 32px;
-        font-weight: bold;
-      }
-
-      .letter {
-        opacity: 0;
-        color: lightgreen;
-      }
-
-      .fade-in-animation {
-        animation: fade-in 4s infinite;
-      }
-
-      @keyframes fade-in {
-        0% {
-          opacity: 0;
-          color: lightgreen;
-        }
-        50% {
-          opacity: 1;
-          color: lightblue;
-        }
-        100% {
-          opacity: 0;
-        }
-      }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 10px; background: transparent; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; cursor: default; }
+      .splash { overflow: hidden; border: 1px solid #e5e9e1; border-radius: 20px; background: #fff; box-shadow: 0 3px 10px #24342a14; }
+      .scene { display: block; width: 100%; height: 202px; object-fit: cover; object-position: 50% 58%; }
+      .caption { display: flex; align-items: center; gap: 13px; padding: 22px 24px; }
+      .icon { width: 40px; height: 40px; object-fit: contain; }
+      h1 { margin: 0 0 7px; color: #25352d; font-size: 20px; font-weight: 600; }
+      p { display: flex; align-items: center; gap: 7px; margin: 0; color: #747e77; font-size: 12px; }
+      .dot { width: 6px; height: 6px; border-radius: 50%; background: #426a57; animation: breathe 1.5s ease-in-out infinite; }
+      @keyframes breathe { 50% { opacity: .35; } }
+      @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
     </style>
   </head>
   <body>
-    <div class="logo">
-      <span class="letter">A</span>
-      <span class="letter">c</span>
-      <span class="letter">c</span>
-      <span class="letter">e</span>
-      <span class="letter">p</span>
-      <span class="letter">t</span>
-      <span class="letter">C</span>
-      <span class="letter">a</span>
-      <span class="letter">t</span>
-    </div>
-
-    <script>
-      const letters = document.querySelectorAll(".letter");
-
-      function animateLetters() {
-        letters.forEach((letter, index) => {
-          setTimeout(() => {
-            letter.classList.add("fade-in-animation");
-          }, index * 300);
-        });
-      }
-
-      animateLetters();
-    </script>
+    <main class="splash">
+      <img class="scene" src="./assets/acceptcat/cat-room.webp" alt="白猫在明亮的科研书房里陪伴你" />
+      <div class="caption">
+        <img class="icon" src="./icons/icon.png" alt="" />
+        <div>
+          <h1>AcceptCat</h1>
+          <p role="status"><span class="dot" aria-hidden="true"></span>正在打开你的科研工作区…</p>
+        </div>
+      </div>
+    </main>
   </body>
 </html>

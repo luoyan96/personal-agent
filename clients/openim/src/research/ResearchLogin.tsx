@@ -183,7 +183,7 @@ export default function ResearchLogin() {
           <Button
             type="primary"
             block
-            className="mt-4"
+            className="research-auth-submit mt-4"
             loading={pending}
             disabled={!serviceAddress.trim()}
             onClick={async () => {
@@ -265,11 +265,11 @@ export default function ResearchLogin() {
             </div>
           ) : (
             <>
-              <h1>{registering ? "创建账号" : `登录 ${APP_NAME}`}</h1>
+              <h1>{registering ? "创建账号" : "欢迎回来"}</h1>
               <p className="research-auth-subtitle">
                 {registering
-                  ? "注册后即可添加好友，与 Agent 聊天。"
-                  : "与朋友和你的 Agent 继续聊天。"}
+                  ? "创建账号，开始你的科研与协作。"
+                  : `登录 ${APP_NAME}，继续你的科研与协作。`}
               </p>
               {registered && (
                 <Alert className="mb-3" type="success" message="账号已创建，请登录" />
@@ -332,7 +332,7 @@ export default function ResearchLogin() {
                   block
                   loading={pending}
                 >
-                  {registering ? "创建账号" : "登录并连接"}
+                  {registering ? "创建账号" : "登录"}
                 </Button>
                 <div className="research-auth-switch">
                   {registering ? "已有账号？" : "还没有账号？"}
@@ -342,6 +342,7 @@ export default function ResearchLogin() {
                     onClick={() => {
                       setRegistering(!registering);
                       setError("");
+                      setRegistered(false);
                     }}
                   >
                     {registering ? "登录" : "创建账号"}

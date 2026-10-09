@@ -11,6 +11,8 @@
 
 ## 2026-10-09：沿用用户原 Catnap 桌面猫咪图标
 
+同日 0.8.4 入口界面复用用户明确指定的 `E:/acceptcat/frontend/public` 旧项目中两张猫咪科研场景，原图字节保留，实际路径、用途和校验和见 [素材来源](clients/openim/public/assets/acceptcat/ORIGIN.md)。没有迁入旧项目的演示认证、后端或视频；素材原始生成记录及独立许可未追溯，不新增未核实的许可声明。
+
 用户指定原 `Catnap Desktop` 快捷方式中蜷睡橘猫作为当前应用图标。读取该快捷方式确定来源为本机 `D:/0cat/Catnap Desktop/Catnap Desktop.exe` 的图标组1；仅提取已有图标像素（16–256px共七档），没有复制旧应用源码或运行时。完整ICO及最大尺寸透明PNG用于AcceptCat 0.8.3的安装图标、原生窗口和标题栏/关于页。原素材生成过程及独立原图未追溯，本次不补写未核实的第三方许可或作者。来源校验和、迁移范围见[图标交接](docs/development/acceptcat-cat-icon.md)。
 
 B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `dsh-llm-deepseek-api-key` 0.2.0-rc.1 和 Cordis 4.0.4（MIT）；经公开接口使用，不复制上游实现。具体依赖与校验值见 pnpm-lock.yaml。
