@@ -30,3 +30,7 @@ B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `
 ## 2026-10-08 桌面界面与协作
 
 本次在已有OpenIM派生客户端内改造，保留原客户端及依赖许可。用户提供微信截图仅用于布局/交互参考，不复制其头像、照片、品牌图或源码。OpenMuse与Anet仅作为流式交互、持久任务、能力发现的设计参考，本次未引入其源码或新增CopilotKit/AG-UI/A2A依赖；实际传输仍是既有服务协议和OpenIM。
+
+## 2026-10-09 OpenMuse风格桌面界面
+
+参考并改编 [CopilotKit/openmuse](https://github.com/CopilotKit/openmuse) 固定提交 `1ac68f3909f2478ab6280883f1ab5ea65eb5719d` 的React Native UI主题及聊天布局模式，在当前React DOM/Electron客户端实现。上游为MIT，Copyright (c) 2026 OpenMuse contributors；完整说明保留在 `clients/openim/public/third-party/openmuse/LICENSE.txt` 并进入构建静态资源。不复制其品牌图、用户照片或测试数据，不引入其Intelligence后端。此记录不改变已有OpenIM派生部分的许可。实际范围见[界面交接](docs/development/openmuse-desktop-ui.md)。

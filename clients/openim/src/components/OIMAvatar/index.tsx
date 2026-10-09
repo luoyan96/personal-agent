@@ -70,7 +70,7 @@ const OIMAvatar = React.forwardRef<HTMLSpanElement, IOIMAvatarProps>((props, ref
         color: nativeFallback && !props.color ? "#475b73" : color,
         fontSize: nativeFallback ? Math.max(14, Math.round(size * .35)) : undefined,
         fontWeight: nativeFallback ? 600 : undefined,
-        borderRadius: window.electronAPI ? "5px" : undefined,
+        borderRadius: window.electronAPI ? "50%" : undefined,
       }}
       shape="square"
       {...avatarProps}

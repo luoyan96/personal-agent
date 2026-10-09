@@ -537,6 +537,7 @@ export function TaskPlanning({
   return (
     <div className="task-planning">
       <aside className="planner-sidebar">
+        <h2 className="planner-sidebar-title">我的计划</h2>
         <Segmented
           aria-label="计划分类"
           value={status}
@@ -830,7 +831,7 @@ export function TaskPlanning({
                 />
               )}
               <label className="planner-goal">
-                目标
+                计划目标
                 <Input.TextArea
                   aria-label="计划目标"
                   rows={2}

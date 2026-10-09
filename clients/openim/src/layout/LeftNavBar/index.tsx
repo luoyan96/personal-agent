@@ -286,7 +286,7 @@ const LeftNavBar = memo(() => {
   return (
     <Sider
       className="desktop-navigation no-mobile border-r border-gray-200 !bg-[#F4F4F4] dark:border-gray-800 dark:!bg-[#141414]"
-      width={window.electronAPI ? 72 : 60}
+      width={window.electronAPI ? 76 : 60}
       theme="light"
     >
       <div className="desktop-navigation-content mt-6 flex flex-col items-center">

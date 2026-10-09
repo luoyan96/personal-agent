@@ -17,7 +17,8 @@ import SingleSetting from "../SingleSetting";
 import { researchMode } from "@/research/api";
 import { useResearchStore } from "@/research/store";
 import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
-import { MoreOutlined, TeamOutlined, UserOutlined } from "@ant-design/icons";
+import { MenuOutlined, MoreOutlined, TeamOutlined, UserOutlined } from "@ant-design/icons";
+import { useDesktopUI } from "@/layout/desktop-ui";
 import ChatDetailsDrawer from "./ChatDetailsDrawer";
 import HistorySearch from "./HistorySearch";
 
@@ -46,6 +47,8 @@ i18n.on("languageChanged", () => {
 });
 
 const ChatHeader = () => {
+  const collapsed = useDesktopUI((s) => s.chatsCollapsed);
+  const collapse = useDesktopUI((s) => s.setChatsCollapsed);
   const [aboutMe, setAboutMe] = useState(false);
   const [details, setDetails] = useState(false);
   const [history, setHistory] = useState(false);
@@ -121,8 +124,9 @@ const ChatHeader = () => {
   return (
     <Layout.Header className="desktop-chat-header relative border-b border-b-[var(--gap-text)] !bg-white !px-3">
       <div className="flex h-full items-center leading-none">
+        {window.electronAPI && collapsed && <button type="button" className="desktop-chat-list-toggle" aria-label="展开聊天列表" onClick={() => collapse(false)}><MenuOutlined /></button>}
         <div className="flex flex-1 items-center overflow-hidden">
-          {!window.electronAPI && (
+          {(
             <OIMAvatar
               src={currentConversation?.faceURL}
               text={currentConversation?.showName}
@@ -138,7 +142,7 @@ const ChatHeader = () => {
             <div className="truncate text-base font-semibold">
               {contact?.displayName || currentConversation?.showName}
             </div>
-            {!window.electronAPI && !isGroupSession && contact && (
+            {!isGroupSession && contact && (
               <div className="truncate text-xs text-slate-500">
                 {contact.identity.kind === "human"
                   ? contact.username
@@ -149,7 +153,7 @@ const ChatHeader = () => {
                   : contact.profile.introduction || "AI 联系人 · 可以直接聊天"}
               </div>
             )}
-            {!window.electronAPI && isGroupSession && currentUserIsInGroup && (
+            {isGroupSession && currentUserIsInGroup && (
               <div className="flex items-center text-xs text-[var(--sub-text)]">
                 <img width={20} src={group_member} alt="member" />
                 <span>{currentGroupInfo?.memberCount}</span>
@@ -184,7 +188,7 @@ const ChatHeader = () => {
                   <button
                     type="button"
                     className="desktop-chat-header-action"
-                    aria-label={menu.title}
+                    aria-label={menu.idx === 2 ? "聊天详情" : menu.title}
                     onClick={() => menuClick(menu.idx)}
                   >
                     {menu.idx === 2 ? <MoreOutlined /> : <TeamOutlined />}
