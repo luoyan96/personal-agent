@@ -529,3 +529,11 @@ renderer / Electron类型、4项图片与6项发送恢复检查通过。新0.8.1
 最终NSIS publish never构建与exe/blockmap/latest.yml、版本、打包模块校验通过。安装包 **D:/deepseek-agent/AcceptCat-Windows/0.8.2/AcceptCat_0.8.2.exe**，**86415069字节**，SHA256 **e78438ef4b1d54fdfe7e7d99c5a4ff055a8aaffae5766003a1061b08cf29aa9a**，同目录安装说明。正式包正常登录启动，功能宿主使用同版生产React源码及实际包内原生模块；没有安装/重启用户客户端。证据 `.runtime/agent-image-replies-20261009`与`.runtime/agent-image-replies-build.log`保留合成图、完整OCR/模型请求、11项报告和截图；自有宿主交付前关闭。
 
 未公开Release/部署/迁移，云端沿用最后部署记录11cd20a / contract0.22 / chat1.11 / schema021，本批未重新核验线上。仅图片文字处理，不宣称图表/物体理解或完整OCR准确率；生产IM/真实供应商模型、用户原图和覆盖安装仍待实际试用。[实现与边界](development/agent-image-replies.md)。
+
+## 2026-10-09：AcceptCat 0.8.3沿用Catnap蜷睡橘猫图标
+
+用户说明原Catnap Desktop快捷方式中蜷睡橘猫是桌面应用图标。读取原快捷方式目标与IconLocation，提取旧EXE图标组1的完整七档ICO与256px透明PNG，视觉匹配用户截图。源码分支chore/acceptcat-cat-icon，基于9f5f78c，固定桌面源码 **064c9f276c0bc74a07750724c0f6600f525aaa4c**。替换安装/程序/托盘与原生窗口图标、标题栏和关于页图；0.8.2图片识字回复仍在。不启动或修改旧Catnap，不合并旧工程，appId/账号/数据/更新源沿用，无API/worker/契约/schema变化。
+
+客户端类型、真实NSIS publish never构建、更新资产及实际app.asar图标/版本/数据身份核对通过。安装包与程序内资源重建的ICO均匹配原ICO SHA256；Windows实际DrawIconEx绘制256px猫图与原程序一致且已查看。隔离打包启动通过，日志保留既有electron-log重复初始化提示。未重复0.8.2聊天/OCR验收或共享核心CI；覆盖安装、Windows快捷方式图标缓存刷新未实测。初版资源长度断言和.NET透明图转换失败保留在Git外，不计验收；改用真实资源长度重建及DrawIconEx方法后检查通过。
+
+安装包 **D:/deepseek-agent/AcceptCat-Windows/0.8.3/AcceptCat_0.8.3.exe**，**86862188字节**，SHA256 **68b4aa443f7d51233e9b6ce625c1fa457fa5df77cadc86c4915a802f405e6af4**，同目录更新资产/说明。证据 `.runtime/cat-icon-20261009`保留原图、资源、实际Windows绘制与打包/启动/更新核对记录。未公开Release、云端部署或代替用户安装/重启；公开更新不会自动发现此候选。云端沿用最后部署记录11cd20a / contract0.22 / chat1.11 / schema021，本批未重新核验线上。[交接](development/acceptcat-cat-icon.md)。

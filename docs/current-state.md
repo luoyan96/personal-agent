@@ -2,7 +2,17 @@
 
 更新日期：2026-10-09（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新本地候选：AcceptCat 0.8.2，发图后的Agent回复
+## 最新本地候选：AcceptCat 0.8.3，沿用Catnap桌面橘猫图标
+
+固定桌面源码 **064c9f276c0bc74a07750724c0f6600f525aaa4c**（chore/acceptcat-cat-icon，基于9f5f78c / 0.8.2）。按用户截图，从原Catnap Desktop快捷方式指向的旧EXE提取蜷睡橘猫；原ICO七档16–256px完整保留，透明PNG用于标题栏和关于页。Windows安装包/程序/托盘、原生窗口和标题栏图标统一；没有合并或启动旧Catnap。0.8.2图片识字回复仍包含在本版。[来源和范围](development/acceptcat-cat-icon.md)。
+
+客户端类型、真实NSIS publish never构建、exe/blockmap/latest.yml校验、实际app.asar图标/PNG/版本/数据身份核对通过。安装包和程序资源重建的ICO SHA256与旧Catnap完全一致；Windows实际DrawIconEx绘制256px图标，与旧程序绘制结果逐字节一致且已查看。隔离打包Electron启动通过；electron-log重复初始化提示保留在日志，不将其描述为零告警。没有重复0.8.2功能验收或共享核心CI，未实测覆盖安装/快捷方式缓存刷新。
+
+安装包 **D:/deepseek-agent/AcceptCat-Windows/0.8.3/AcceptCat_0.8.3.exe**，**86862188字节**，SHA256 **68b4aa443f7d51233e9b6ce625c1fa457fa5df77cadc86c4915a802f405e6af4**。同目录有更新资产和安装说明。未公开Release、云端部署或安装/重启用户窗口；公开更新源不会自动获取此本地候选。appId、package.name、用户数据身份和服务沿用；API/worker/contract/schema仍沿用最后部署记录11cd20a / 0.22 / chat1.11 / 021，本批未重新核验线上。
+
+Git外证据 `.runtime/cat-icon-20261009`。初版提取断言因打包程序图标目录记录长度与实际资源长度差异失败；改用实际资源长度后完整ICO校验一致，并由Windows真实绘制确认。`.NET Icon.ToBitmap`透明结果失真不计验收，保留诊断图。实际DrawIconEx图和安装资源检查通过。提取与检查仅操作图标文件/隔离测试窗口，旧Catnap及用户运行中的AcceptCat未修改。
+
+## 上一本地候选：AcceptCat 0.8.2，发图后的Agent回复
 
 固定桌面源码 **3f0c666c12baec996bfe1b6201dd690d0ae5574c**（fix/agent-image-replies，基于3c1880a / feature/desktop-image-paste-ocr）。旧发送链路只发IM图片；现改为SDK成功送达后，对完整原图本机OCR，将完整文字送入既有文件阅读接口并请求回复。图片下方“识别并回复 / 从本机选择识别”恢复已发消息，幂等键和文字附件名由原SDK编号固定，不重复发送图片；失败明确提示/重试，成功清除临时状态。真人、群聊、外部Agent不自动转发；切换联系人取消未完成识字。长图预览最高280px。[使用和边界](development/agent-image-replies.md)。
 
