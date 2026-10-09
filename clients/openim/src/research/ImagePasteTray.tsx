@@ -98,6 +98,8 @@ const ImagePasteTray = forwardRef<
   }, []);
   const stage = (files: File[]) => {
     if (!alive.current || !files.length) return;
+    setResultNotice("");
+    setCopied(false);
     if (drafts.current.length + files.length > imagePasteLimits.count) {
       setNotice("每次最多处理 20 张图片，请先发送或移除已有图片。");
       return;
@@ -214,6 +216,7 @@ const ImagePasteTray = forwardRef<
   const remove = (id: string) => {
     const item = drafts.current.find((item) => item.id === id);
     if (!item) return;
+    setResultNotice("");
     URL.revokeObjectURL(item.url);
     urls.current.delete(item.url);
     update(drafts.current.filter((item) => item.id !== id));
@@ -231,6 +234,7 @@ const ImagePasteTray = forwardRef<
     job.current = active;
     setBusy(true);
     setNotice("");
+    setResultNotice("");
     setResultsOpen(true);
     try {
       for (const item of drafts.current.slice()) {
@@ -525,6 +529,7 @@ const ImagePasteTray = forwardRef<
             onChange={(value) => {
               setMode(value as OcrTextMode);
               setCopied(false);
+              setResultNotice("");
             }}
           />
           <p>
@@ -584,11 +589,12 @@ const ImagePasteTray = forwardRef<
                 placeholder="识别结果会显示在这里，也可以直接编辑。"
                 autoSize={{ minRows: 3, maxRows: 10 }}
                 disabled={busy}
-                onChange={(event) =>
+                onChange={(event) => {
+                  setResultNotice("");
                   patch(item.id, {
                     edits: { ...item.edits, [mode]: event.target.value },
-                  })
-                }
+                  });
+                }}
               />
             </section>
           ))}
