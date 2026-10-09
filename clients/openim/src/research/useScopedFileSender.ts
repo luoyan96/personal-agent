@@ -27,11 +27,13 @@ export function useScopedFileSender({
   getFileMessage,
   sendMessage,
   onFileSent,
+  onImageSent,
 }: {
   getImageMessage: (file: File) => Promise<MessageItem>;
   getFileMessage: (file: File) => Promise<MessageItem>;
   sendMessage: (params: SendMessageParams) => Promise<void>;
   onFileSent: (context: SentFileContext) => Promise<void>;
+  onImageSent?: (context: SentFileContext) => Promise<void>;
 }) {
   const capture = useAgentChatOperation();
   return async (
@@ -48,29 +50,49 @@ export function useScopedFileSender({
     const mapping = research.mappings.find(
       (item) => item.imConversationID === conversation.conversationID,
     );
-    const peer = research.contacts.find((item) => item.userID === conversation.userID)?.contact;
+    const peer = research.contacts.find(
+      (item) => item.userID === conversation.userID,
+    )?.contact;
     const agentConversationId =
-      researchMode && mapping && mapping.kind !== "group" && peer &&
-      peer.identity.kind !== "human" && !peer.agentRuntime && peer.allowedActions.includes("chat")
+      researchMode &&
+      mapping &&
+      mapping.kind !== "group" &&
+      peer &&
+      peer.identity.kind !== "human" &&
+      !peer.agentRuntime &&
+      peer.allowedActions.includes("chat")
         ? mapping.researchConversationId
         : undefined;
-    const image = kind === "image" || (kind === "auto" && file.type.startsWith("image/"));
+    const image =
+      kind === "image" || (kind === "auto" && file.type.startsWith("image/"));
     try {
       const message = await (image ? getImageMessage(file) : getFileMessage(file));
       if (!isCurrent()) return false;
-      if (peer?.agentRuntime) feedbackToast({ msg: "文件已发送；本站外部接入只转发逐条授权的文字，不会读取或转发本站的图片、语音或附件。" });
+      if (peer?.agentRuntime)
+        feedbackToast({
+          msg: "文件已发送；本站外部接入只转发逐条授权的文字，不会读取或转发本站的图片、语音或附件。",
+        });
       await sendMessage({
         message,
         recvID: conversation.userID,
         groupID: conversation.groupID,
+        isCurrent,
       });
       if (!isCurrent()) return false;
-      if (!image)
-        await onFileSent({ file, conversation, operation, isCurrent, agentConversationId, sdkClientMsgID: message.clientMsgID, agentFileText });
+      const context = {
+        file,
+        conversation,
+        operation,
+        isCurrent,
+        agentConversationId,
+        sdkClientMsgID: message.clientMsgID,
+        agentFileText,
+      };
+      if (image) await onImageSent?.(context);
+      else await onFileSent(context);
       return true;
     } catch (error) {
-      if (isCurrent())
-        feedbackToast({ error, msg: "文件发送失败，请检查连接后重试" });
+      if (isCurrent()) feedbackToast({ error, msg: "文件发送失败，请检查连接后重试" });
       return false;
     } finally {
       operation.dispose();

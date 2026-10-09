@@ -20,6 +20,7 @@ import ImagePasteTray, { type ImagePasteTrayRef } from "@/research/ImagePasteTra
 import { useFileMessage } from "./SendActionBar/useFileMessage";
 import { useSendMessage } from "./useSendMessage";
 import { useAgentFileReading } from "@/research/useAgentFileReading";
+import { useAgentImageReading } from "@/research/useAgentImageReading";
 import { useScopedFileSender } from "@/research/useScopedFileSender";
 import { useAgentChatOperation } from "@/research/useAgentChatOperation";
 import type { AgentChatOperation } from "@/research/useAgentChatOperation";
@@ -114,11 +115,13 @@ const ChatFooter = () => {
   const { getImageMessage, getFileMessage, getSoundMessage } = useFileMessage();
   const { sendMessage } = useSendMessage();
   const fileReading = useAgentFileReading();
+  const imageReading = useAgentImageReading();
   const sendFile = useScopedFileSender({
     getImageMessage,
     getFileMessage,
     sendMessage,
     onFileSent: fileReading.onFileSent,
+    onImageSent: imageReading.onImageSent,
   });
   const captureFileDrop = useAgentChatOperation();
 
@@ -322,11 +325,11 @@ const ChatFooter = () => {
   };
 
   const droppedFiles = async (files: File[]) => {
-    const images = files.filter(file => file.type.startsWith("image/"));
+    const images = files.filter((file) => file.type.startsWith("image/"));
     if (images.length) imageTray.current?.stage(images);
     const operation = captureFileDrop();
     try {
-      for (const file of files.filter(file => !file.type.startsWith("image/"))) {
+      for (const file of files.filter((file) => !file.type.startsWith("image/"))) {
         if (!operation.isCurrent()) break;
         await sendFile(file, "auto", operation.isCurrent);
       }
@@ -379,7 +382,12 @@ const ChatFooter = () => {
           stageImages={(files) => imageTray.current?.stage(files)}
           pasteImages={() => imageTray.current?.readClipboard()}
         />
-        <ImagePasteTray key={scope} ref={imageTray} sendFile={sendFile} insertText={(text) => editor.current?.insertText(text)} />
+        <ImagePasteTray
+          key={scope}
+          ref={imageTray}
+          sendFile={sendFile}
+          insertText={(text) => editor.current?.insertText(text)}
+        />
         {reply && (
           <div className="desktop-composer-quote" data-chat-quote>
             <div>
@@ -475,6 +483,7 @@ const ChatFooter = () => {
           )}
           {composer.controls}
           {fileReading.controls}
+          {imageReading.controls}
           {composer.advanced && composer.isCoordinator && !html && (
             <div className="px-3 py-1 text-xs">
               <p className="mb-1 text-slate-600">目标 · 材料 · 交付 · 截止时间</p>

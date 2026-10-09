@@ -520,3 +520,12 @@ renderer / Electron类型、4项图片与6项发送恢复检查通过。新0.8.1
 真实NSIS构建publish never和exe / blockmap / latest.yml校验通过。新包登录启动、原生SDK/版本/身份/Skill桥、新识字UI和原生模块检查通过，pageerror0；登录与功能截图查看。初次跨目录常量没有进入Electron包导致启动失败，已改为主进程本地常量；测试路径、TLS信任与宿主watch锁定失败保留。测试宿主跨来源图片资源缺失与隐藏窗口截图刷新延迟已记录，正式打包登录图标正常。临时宿主与自有API/TLS/Vite关闭，不操作用户窗口。
 
 安装包 **D:/deepseek-agent/AcceptCat-Windows/0.8.1/AcceptCat_0.8.1.exe**，**86410555字节**，SHA256 **59d4d965ca6f538a8807dc049d782a8a9948cfe66b960cd92250009201f0e7ea**。同目录更新资产和安装说明；证据Git外 `.runtime/image-paste-20261009`。GitHub公开Release读取仍v0.6.0，本地候选未发布、未安装或升级用户软件；云端依照既有部署记录，本批不进行线上部署或健康验收。真实微信私有多选格式、不同语言包、覆盖安装和生产IM图片传输仍待实际用户试用。实现和边界见[图片识字说明](development/desktop-image-paste-ocr.md)。
+## 2026-10-09 AcceptCat0.8.2发图后的Agent回复修复
+
+用户发送长截图给“识别图片”Agent后没有回应。原因是0.8.1图片只走SDK发送，成功后跳过文件阅读和AI请求。本批fix/agent-image-replies基于3c1880a，固定客户端源码 **3f0c666c12baec996bfe1b6201dd690d0ae5574c**；送达后的完整原图本机OCR，完整识别文字进入既有agentFileMessage/文件预算/权限，不用缩略图或普通消息长度截断。旧图恢复、同SDK编号稳定幂等键与附件名、明确错误/重试、共享防并发、切换取消和280px长图预览实现。真人/群聊/外部Agent不自动转发。没有API/worker/契约/数据库/原生OCR变更。
+
+客户端类型、4项图片、10项恢复/代理检查通过。实际0.8.2 Electron22/preload/WinRT OCR、生产React编辑器和规范消息组件，以及真实本地HTTPS/API/SQLite/ChatWorker通过11项：长图底部进入请求、持久化模型输出进入规范聊天、完成状态清理、旧图恢复幂等、503同请求重试、空图无请求、SDK失败保留、真人无转发、OCR途中切换取消、最小窗口和启动。模型/IM合成；隐藏窗口模拟前台可见性验证轮询，未用用户账号/资料/Key/剪贴板。夹具布局、异步等待条件、隐藏窗口截图超时、命令配置/脚本名称与Windows asar路径检查失败均未计通过；修正方法后报告和实际包检查通过，失败记录保留于Git外。没有重跑共享全CI。
+
+最终NSIS publish never构建与exe/blockmap/latest.yml、版本、打包模块校验通过。安装包 **D:/deepseek-agent/AcceptCat-Windows/0.8.2/AcceptCat_0.8.2.exe**，**86415069字节**，SHA256 **e78438ef4b1d54fdfe7e7d99c5a4ff055a8aaffae5766003a1061b08cf29aa9a**，同目录安装说明。正式包正常登录启动，功能宿主使用同版生产React源码及实际包内原生模块；没有安装/重启用户客户端。证据 `.runtime/agent-image-replies-20261009`与`.runtime/agent-image-replies-build.log`保留合成图、完整OCR/模型请求、11项报告和截图；自有宿主交付前关闭。
+
+未公开Release/部署/迁移，云端沿用最后部署记录11cd20a / contract0.22 / chat1.11 / schema021，本批未重新核验线上。仅图片文字处理，不宣称图表/物体理解或完整OCR准确率；生产IM/真实供应商模型、用户原图和覆盖安装仍待实际试用。[实现与边界](development/agent-image-replies.md)。
