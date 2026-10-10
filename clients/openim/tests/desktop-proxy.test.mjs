@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { PassThrough } from "node:stream";
 import https from "node:https";
+import http from "node:http";
 import { createRequire } from "node:module";
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -133,4 +134,27 @@ test("caller cancellation destroys the pending upstream and foreign-origin write
   for (let attempt = 0; attempt < 100 && !requests[0].socket.destroyed; attempt++)
     await new Promise((resolve) => setTimeout(resolve, 5));
   assert.equal(requests[0].socket.destroyed, true);
+});
+
+test("loopback development uses real HTTP and preserves origin/cookie boundaries; remote HTTP is rejected", async (t) => {
+  const requests = [];
+  const upstream = http.createServer((req, res) => {
+    requests.push({ origin: req.headers.origin, cookie: req.headers.cookie });
+    res.writeHead(200, { "content-type": "application/json", "set-cookie": "rap_session=synthetic; Path=/; HttpOnly; SameSite=Lax" });
+    res.end(JSON.stringify({ data: { synthetic: true } }));
+  });
+  await new Promise(resolve => upstream.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise(resolve => upstream.close(resolve)));
+  const service = `http://127.0.0.1:${upstream.address().port}`;
+  const desktop = await startDesktopServer(run, service);
+  t.after(() => desktop.close());
+  const first = await fetch(desktop.origin + "/api/v1/auth/login", { method: "POST", headers: { Origin: desktop.origin }, body: "{}" });
+  const cookie = first.headers.getSetCookie()[0].split(";")[0];
+  assert.match(cookie, /^desktop_rap_/);
+  assert.equal((await first.json()).data.synthetic, true);
+  await fetch(desktop.origin + "/api/v1/auth/session", { headers: { Cookie: cookie + "; unrelated=never-forward" } });
+  assert.deepEqual(requests[1], { origin: service, cookie: "rap_session=synthetic" });
+  assert.equal((await fetch(desktop.origin + "/api/v1/auth/logout", { method: "POST", headers: { Origin: "http://foreign.invalid" } })).status, 403);
+  assert.equal(requests.length, 2);
+  await assert.rejects(startDesktopServer(run, "http://remote.example.invalid"));
 });

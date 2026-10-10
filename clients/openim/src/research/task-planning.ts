@@ -118,11 +118,6 @@ export function planProblems(draft: PlanDraft): string[] {
   const ids = new Set(draft.proposedItems.map((s) => s.id));
   if (ids.size !== draft.proposedItems.length)
     problems.push("步骤标识重复，请重新添加重复步骤。");
-  if (
-    new Set(draft.proposedItems.map((s) => s.title.trim())).size !==
-    draft.proposedItems.length
-  )
-    problems.push("请给每个步骤设置不同的名称，便于确认后对应进展。");
   const visited = new Set<string>(),
     stack = new Set<string>();
   const visit = (id: string): boolean => {

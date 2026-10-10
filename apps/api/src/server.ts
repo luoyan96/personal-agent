@@ -20,6 +20,7 @@ import { ApiError, fail } from './errors.js'
 import type { AuthValidationField } from './errors.js'
 import { register } from './registration.js'
 import { personalModelCommands, runPersonalModel } from './personal-models.js'
+import {planningModelRuntime} from './planning-model.js'
 import { isLabManager, managerInvites, createManagerInvite, revokeManagerInvite } from './invite-management.js'
 import { labAiRuntime, labAiSettings, updateLabAiSettings } from './lab-ai-settings.js'
 import { extractAgentFile } from './agent-files.js'
@@ -160,7 +161,7 @@ export function createServer(config: Config, options:{imClient?:OpenImClient;ext
         if(route.stage==='SKILL1'){const result=runSkills(new ChatService(collaboration,config),name as SkillCommand,parsed.data as RequestFor<SkillCommand>);reconcileChat(connection,config);return result}
         if(route.stage==='CHAT1'||route.stage==='IM1'){const result=new ChatService(collaboration,config).run(name as ChatCommand,parsed.data as RequestFor<ChatCommand>);reconcileChat(connection,config);return result}
         if((reuseCommands as readonly string[]).includes(name)){const result=new ReuseService(collaboration).run(name as ReuseCommand,parsed.data as RequestFor<ReuseCommand>);reconcile(connection,config);return result}
-        if((aiCommands as readonly string[]).includes(name))return new AiService(collaboration,labAi.enabled,labAi.model).run(name as AiCommand,parsed.data as RequestFor<AiCommand>)
+        if((aiCommands as readonly string[]).includes(name))return new AiService(collaboration,labAi.enabled,labAi.model,name==='planRequest'?planningModelRuntime(connection,actor,config):undefined).run(name as AiCommand,parsed.data as RequestFor<AiCommand>)
         if (!(collaborationCommands as readonly string[]).includes(name)) fail('NOT_IMPLEMENTED')
         const result=collaboration.run(name as CollaborationCommand, parsed.data as RequestFor<CollaborationCommand>)
         reconcile(connection,config)

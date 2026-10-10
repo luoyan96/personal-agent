@@ -9,6 +9,7 @@ import type { Actor } from './auth.js'
 import { Coordination, coordinationCommands } from './coordination.js'
 import type { CoordinationCommand } from './coordination.js'
 import { fail } from './errors.js'
+import {planTasks, researchWorkspace} from './research-team.js'
 
 export const authorizedPlanSources=`NOT EXISTS(SELECT 1 FROM reuse_denials rd WHERE rd.target_kind='plan' AND rd.target_id=plans.id AND rd.member_id=plans.owner_id) AND NOT EXISTS (SELECT 1 FROM execution_jobs j,json_each(j.request_json,'$.inputs') ref
  LEFT JOIN artifacts f ON f.id=json_extract(ref.value,'$.id') LEFT JOIN tasks source ON source.id=f.task_id
@@ -31,7 +32,7 @@ function canonical(value: unknown): string {
   if (value && typeof value === 'object') return `{${Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, v]) => `${JSON.stringify(key)}:${canonical(v)}`).join(',')}}`
   return JSON.stringify(value)
 }
-export const collaborationCommands = [...coordinationCommands, 'overview', 'plans', 'actionItems', 'availability', 'me', 'members', 'createPlan', 'getPlan', 'editPlan', 'confirmPlan', 'tasks', 'task', 'invite', 'invitationDecision', 'claim', 'start', 'submit', 'review'] as const satisfies readonly RouteName[]
+export const collaborationCommands = [...coordinationCommands, 'researchWorkspace', 'planTasks', 'overview', 'plans', 'actionItems', 'availability', 'me', 'members', 'createPlan', 'getPlan', 'editPlan', 'confirmPlan', 'tasks', 'task', 'invite', 'invitationDecision', 'claim', 'start', 'submit', 'review'] as const satisfies readonly RouteName[]
 export type CollaborationCommand = typeof collaborationCommands[number]
 type Handlers = { [K in Exclude<CollaborationCommand,CoordinationCommand>]: (request: RequestFor<K>) => unknown }
 
@@ -214,7 +215,7 @@ export class Collaboration {
   authorize(name: CollaborationCommand, resourceId: string, body: unknown) {
     if ((coordinationCommands as readonly string[]).includes(name)) {this.coordination.authorize(name as CoordinationCommand,resourceId,body);return}
     if (name === 'createPlan') { this.sameLab((body as RequestFor<'createPlan'>['body']).labId); return }
-    if (['editPlan', 'confirmPlan', 'getPlan'].includes(name)) { this.plan(resourceId); return }
+    if (['editPlan', 'confirmPlan', 'getPlan', 'planTasks'].includes(name)) { this.plan(resourceId); return }
     if (name === 'invitationDecision') {
       const { model } = this.assignment(resourceId)
       const state=this.db.prepare('SELECT status FROM tasks WHERE id=?').get(model.taskId)!
@@ -322,6 +323,8 @@ export class Collaboration {
     if (this.db.prepare("SELECT 1 FROM task_access WHERE task_id=? AND member_id=? AND access='revoked'").get(task.id, memberId)) fail('FORBIDDEN')
   }
   readonly handlers: Handlers = {
+    planTasks: request => planTasks(this,request),
+    researchWorkspace: request => researchWorkspace(this,request),
     availability: ({ body }) => {
       const member = this.member(this.actor.id)
       this.checkVersion(member.version, body.expectedVersion)

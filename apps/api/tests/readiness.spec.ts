@@ -159,6 +159,7 @@ describe('B5a R1–R3/R5 real production API, host maintenance and isolated rest
  it('disable fences owner execution and capability, keeps commitments, and blocks relogin without erasing history',async()=>{
   const id=(await createConfirmed([item('invitation')])).taskIds[0]!;await accept(id)
   const before=db.prepare('SELECT * FROM assignments WHERE task_id=?').all(id)
+  expect((await request('createPersonalModel',{client:clients.B,body:{name:'Synthetic B private planning',provider:'deepseek',model:'deepseek-flash',enabled:true,apiKey:'sk-synthetic-owned-planning-B'}})).status).toBe(201)
   const r=await request('planRequest',{client:clients.B,body:{labId:'lab_synthetic',intent:'draft',prompt:'Synthetic B draft',inputArtifactIds:[],budget}});expect(r.status).toBe(202)
   let finish!:(v:ModelResult)=>void,entered=false
   const tick=new ExecutionWorker(db,config(),async()=>{entered=true;return new Promise(resolve=>{finish=resolve})}).tick();while(!entered)await delay()

@@ -7,6 +7,7 @@ import { AccountUsername, AccountPassword, RegistrationCode } from './authentica
 import { personalModelRoutes } from './personal-models.js'
 import { personalAssistantRoutes } from './personal-assistant.js'
 import { workspaceRoutes } from './workspace.js'
+import { researchTeamRoutes } from './research-team.js'
 import { agentIntegrationRoutes } from './agent-connections.js'
 
 const empty = z.strictObject({})
@@ -31,6 +32,7 @@ export const routes = {
   ...skillRoutes,
   ...personalAssistantRoutes,
   ...workspaceRoutes,
+  ...researchTeamRoutes,
   ...agentIntegrationRoutes,
   ...personalModelRoutes,
   ...openImRoutes,
@@ -77,7 +79,7 @@ export const routes = {
   upload: route('POST', '/artifacts', 'B2b', empty, empty, z.strictObject({ taskId: m.Id, expectedVersion: m.Version, filename: m.Title, mediaType: z.enum(['text/plain', 'application/pdf', 'image/png']), contentBase64: z.string().min(4).max(13981016).regex(/^[A-Za-z0-9+/]+={0,2}$/).refine(value => value.length % 4 === 0, 'base64 length must be divisible by four') }), m.data(m.Artifact), 201, 'Task writer; decoded size 1..10MiB, sniff type; private blob file plus transactional metadata/dedup; rollback cleanup, crash orphans remain inaccessible until maintenance. Never trust filename as path.'),
   artifact: route('GET', '/artifacts/{id}', 'B2b', id, snapshotQuery, z.null(), m.data(m.Artifact).extend(snap), 200, 'Recheck current task ACL, including on retries; no storage key or signed URL.'),
   content: route('GET', '/artifacts/{id}/content', 'B2b', id, empty, z.null(), z.instanceof(Uint8Array), 200, 'Binary attachment; Content-Type stored mediaType; Content-Disposition attachment; nosniff; Cache-Control private,no-store. Recheck ACL; range unsupported.'),
-  planRequest: route('POST', '/planning-requests', 'B3', empty, empty, z.strictObject({ labId: m.Id, prompt: m.Text, conclusionRefs: z.array(m.ObjectRef).max(10).default([]), intent: z.enum(['auto','draft','progress','find_work']).default('auto'), plan: m.ObjectRef.nullable().default(null), taskIds: z.array(m.Id).max(20).default([]), inputArtifactIds: z.array(m.Id).max(10), budget: m.Budget }), m.data(m.PlanningRequest), 202, 'Lab member; model availability and authorized inputs checked; create dedicated execution intent; explicit facts need no model; model output validated, only draft, no confirm.'),
+  planRequest: route('POST', '/planning-requests', 'B3', empty, empty, z.strictObject({ labId: m.Id, prompt: m.Text, conclusionRefs: z.array(m.ObjectRef).max(10).default([]), intent: z.enum(['auto','draft','progress','find_work']).default('auto'), plan: m.ObjectRef.nullable().default(null), taskIds: z.array(m.Id).max(20).default([]), inputArtifactIds: z.array(m.Id).max(10), budget: m.Budget }), m.data(m.PlanningRequest), 202, 'Lab member; private planning binds requester personal default model and configuration fingerprint; only managers without personal settings retain legacy lab compatibility, ordinary members never inherit its key. Recheck dispatch, heartbeat and writeback; historical unbound jobs keep original lab path. Explicit facts need no model; authorized inputs checked; validated draft only, never confirmation.'),
   getPlanRequest: route('GET', '/planning-requests/{id}', 'B3', id, empty, z.null(), m.data(m.PlanningRequest), 200, 'Request owner only; failed partial output is not confirmed plan.'),
   run: route('POST', '/tasks/{id}/runs', 'B3', id, empty, version.extend({ capability: m.PublicCapabilityRef, budget: m.Budget, inputArtifactIds: z.array(m.Id).max(10), conclusionRefs: z.array(m.ObjectRef).max(10).default([]) }), m.data(m.RunRecord), 202, 'Lead; ready/in_progress/changes_requested; live public capability+ACL+dependencies+budget; unique active execution, dedicated execution intent and dedup in transaction.'),
   getRun: route('GET', '/runs/{id}', 'B3', id, empty, z.null(), m.data(m.RunRecord), 200, 'Task ACL; public run only; private runs separate owner store.'),

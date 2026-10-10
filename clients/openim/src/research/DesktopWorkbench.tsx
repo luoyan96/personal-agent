@@ -17,11 +17,15 @@ import {
 import { ResearchTaskPanel } from "./ResearchTaskPanel";
 import SafeMessageMarkdown from "./SafeMessageMarkdown";
 import "./workspace.scss";
-import { readWorkspaceAvailability } from "./workspace-availability";
+import {
+  readWorkspaceAvailability,
+  readResearchTeamAvailability,
+} from "./workspace-availability";
 import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 
 import { SkillLibrary } from "./SkillLibrary";
 import { TaskPlanning } from "./TaskPlanning";
+import { ResearchTeamWorkbench } from "./ResearchTeamWorkbench";
 type Category = "ongoing" | "awaiting_me" | "completed";
 function WorkbenchOverview({
   card,
@@ -134,8 +138,11 @@ export function DesktopWorkbench() {
       : params.get("view") === "reports"
       ? "reports"
       : params.get("view") === "planning" ||
-        (!params.get("view") && !params.get("task"))
+        params.get("plan") ||
+        params.get("planning")
       ? "planning"
+      : params.get("view") === "team" || (!params.get("view") && !params.get("task"))
+      ? "team"
       : "tasks";
   const [planningLaunch, setPlanningLaunch] = useState(0);
   const requestedTask = params.get("task");
@@ -149,6 +156,11 @@ export function DesktopWorkbench() {
     tab !== "reports" && tab !== "skills",
   );
   const supported = availability.data?.available === true;
+  const teamAvailability = useResearchRead(
+    readResearchTeamAvailability,
+    "research-team-availability",
+    tab === "team",
+  );
   const read = useResearchRead(
     () => workspaceApi.tasks(category, cursor),
     `workbench:${category}:${cursor || ""}`,
@@ -249,7 +261,7 @@ export function DesktopWorkbench() {
       <header className="workspace-heading">
         <div>
           <h1>工作台</h1>
-          <p>把目标变成可推进的计划</p>
+          <p>对齐目标、成员下一步和实际科研成果</p>
         </div>
         <Button
           type="primary"
@@ -274,6 +286,7 @@ export function DesktopWorkbench() {
           value={tab}
           onChange={(value) => setTab(String(value))}
           options={[
+            { label: "科研总览", value: "team" },
             { label: "任务规划", value: "planning" },
             { label: "我的任务", value: "tasks" },
             { label: "定时任务", value: "scheduled" },
@@ -310,6 +323,36 @@ export function DesktopWorkbench() {
           error={availability.error}
           onRetry={availability.refresh}
         />
+      ) : tab === "team" ? (
+        teamAvailability.data?.available ? (
+          <ResearchTeamWorkbench
+            onPlan={() => {
+              setTab("planning");
+              setPlanningLaunch((value) => value + 1);
+            }}
+          />
+        ) : (
+          <section className="workspace-empty workspace-unavailable" role="status">
+            <h2>
+              {!teamAvailability.data && !teamAvailability.error
+                ? "正在检查科研团队服务…"
+                : teamAvailability.error
+                ? "科研团队服务暂不可用"
+                : "科研团队服务待升级"}
+            </h2>
+            <p>
+              {teamAvailability.error ||
+                "科研团队总览需要服务器契约 0.23 或以上。已有任务、计划与聊天可以继续访问。"}
+            </p>
+            <div className="workspace-card-actions">
+              <Button onClick={teamAvailability.refresh}>重新检查</Button>
+              <Button type="primary" onClick={() => setTab("tasks")}>
+                查看已有任务
+              </Button>
+              <Button onClick={() => setTab("planning")}>打开任务规划</Button>
+            </div>
+          </section>
+        )
       ) : tab === "planning" ? (
         <TaskPlanning launch={planningLaunch} onTasks={() => setTab("tasks")} />
       ) : tab === "scheduled" ? (

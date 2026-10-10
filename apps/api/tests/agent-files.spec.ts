@@ -60,13 +60,39 @@ async function setup(){
   const turn=async(id:string,actor=0)=>(await call('chatTurn',null,{id},actor)).value.data
   const count=(table:string)=>Number(db.prepare(`SELECT count(*) n FROM ${table}`).get()!.n)
   const specialists=(actor=0)=>Number(db.prepare("SELECT count(*) n FROM chat_contacts WHERE kind='personal_agent' AND owner_id=? AND principal<>owner_id").get(clients[actor]!.id)!.n)
-  const tick=(callModel:ModelCall,ready=false)=>new ChatWorker(db,config,callModel,undefined,ready?()=>Date.now()+10000:Date.now).tick()
+  const tick=async(callModel:ModelCall,ready=false)=>{
+    let assertion:unknown
+    const worked=await new ChatWorker(db,config,async(...args)=>{try{return await callModel(...args)}catch(error){assertion=error;throw error}},undefined,ready?()=>Date.now()+10000:Date.now).tick()
+    if(assertion)throw assertion
+    return worked
+  }
   const legacyStored=()=>{for(const row of db.prepare('SELECT document FROM chat_turns').all())expect(LegacyTurn.safeParse(JSON.parse(String(row.document))).success).toBe(true)}
   return {db,config,call,own,send,turn,count,specialists,tick,clients,legacyStored,restart:async()=>{await app.close();app=createServer(config);url=await app.listen({host:'127.0.0.1',port:0})}}
 }
 
 
 describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{timeout:30000},()=>{
+ it('ends automatic attachment scope for a new task but preserves explicit file references after restart',async()=>{
+  const s=await setup(),own=await s.own(),sent=await s.call('agentFileMessage',uploadBody(Buffer.from('OLD_PAPER_SOURCE_42'),'previous-paper.txt','text/plain'),{id:own.conversation.id})
+  await s.tick(async()=>result('OLD_PAPER_RECEIPT_42：仅按旧附件要求输出 END_PAGE_42。'))
+  await s.restart()
+  const request='帮我整理下面的安排成任务清单：学生下周提交实验记录，导师周五审阅。',fresh=await s.send(own.conversation.id,request)
+  expect(fresh.turn.fileRead).toBeUndefined()
+  const stored=JSON.parse(String(s.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(fresh.turn.id)!.request_json))
+  expect(stored.fileSource).toBeUndefined();expect(stored.assistantMode).toBe('coordinate')
+  await s.tick(async(input)=>{const p=JSON.parse(input.prompt);expect(p.currentRequest).toBe(request);expect(input.prompt).not.toContain('OLD_PAPER_');expect(input.prompt).not.toContain('END_PAGE_42');expect(p.fileRead).toBeUndefined();expect(input.system).toContain('currentRequest only');return result(JSON.stringify({kind:'reply',answer:'先分别确认实验记录与审阅的负责人、交付标准和日期。'}))})
+  expect((await s.turn(fresh.turn.id)).status).toBe('succeeded')
+  await s.call('agentFileMessage',uploadBody(Buffer.from('OTHER_DOCUMENT_43'),'newer-document.txt','text/plain'),{id:own.conversation.id})
+  await s.tick(async()=>result('这是较新的另一份合成文件。'))
+  const follow=await s.send(own.conversation.id,'previous-paper.txt 写了什么？')
+  expect(follow.turn.fileRead.messageId).toBe(sent.value.data.message.id)
+  await s.tick(async(input)=>{const p=JSON.parse(input.prompt);expect(p.fileExcerpts[0].text).toBe('OLD_PAPER_SOURCE_42');expect(p.currentRequest.messageIds).toEqual([follow.message.id]);expect(input.system).toContain('never append old reading receipts');return result('这份附件包含一条合成文献标记。')})
+  const unrelated=await s.send(own.conversation.id,'今天准备开组会')
+  expect(unrelated.turn.fileRead).toBeUndefined()
+  await s.tick(async(input)=>{expect(input.prompt).not.toContain('OLD_PAPER_SOURCE_42');expect(input.prompt).not.toContain('OLD_PAPER_RECEIPT_42');expect(JSON.parse(input.prompt).fileRead).toBeUndefined();return result('可以先明确议题和需要学生准备的材料。')})
+  const ambiguous=await s.send(own.conversation.id,'继续')
+  expect(ambiguous.turn.fileRead).toBeUndefined()
+ })
  it('saves real adapter plain file replies, preserves ordinary defaults and rejects truncated output with actual usage',async()=>{
   const s=await setup(),own=await s.own(),seen:{thinking:unknown;maxTokens:number}[]=[],reply='依据提供的两页文字：第一页说明合成研究目的，第二页补充合成结果。',truncated='合成不完整正文'
   let limit=false
@@ -190,7 +216,7 @@ describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{ti
     expect(input.prompt).toContain('PROFILE_MUST_REMAIN');expect(input.prompt).toContain('AUTHORIZED_AGENT_MEMORY_MUST_REMAIN');expect(input.prompt).toContain('AUTHORIZED_PERSONAL_MEMORY_MUST_REMAIN');expect(credential.apiKey).toBe('synthetic-owner-0-only')
     for(const page of stored.fileDocument.pages){const excerpt=p.fileExcerpts.find((row:{pageNumber:number})=>row.pageNumber===page.pageNumber);expect(excerpt.text).toBe(page.text);expect(excerpt.pageTextCoverage).toBe('complete');expect(excerpt.end).toBe(page.text.length)}
     for(const section of ['ABSTRACT','METHOD','EXPERIMENT','CONCLUSION'])expect(input.prompt).toContain(`CORE_${section}`)
-    expect(input.prompt).toContain('END_PAGE_13_CORE_CONCLUSION');expect(input.maxTokens).toBe(4096);expect(chatInputTokenBound(input.system,input.prompt)+input.maxTokens).toBeLessThanOrEqual(data.turn.budget.maxTokens)
+    expect(input.prompt).toContain('END_PAGE_13_CORE_CONCLUSION');expect(input.maxTokens).toBeGreaterThanOrEqual(512);expect(input.maxTokens).toBeLessThanOrEqual(4096);expect(chatInputTokenBound(input.system,input.prompt)+input.maxTokens).toBeLessThanOrEqual(data.turn.budget.maxTokens)
     proof.push({stage:'all13',parsedCharacters:data.message.files[0].characterCount,jsonBytes:Buffer.byteLength(input.prompt),admissionBound:chatInputTokenBound(input.system,input.prompt),outputCap:input.maxTokens,budget:data.turn.budget,fileRead:p.fileRead,allPageTextExact:true,coreLastPagePresent:true});return {...result('合成回复：已依据本次提供的13页提取文字进行分析。'),inputTokens:14000,outputTokens:300}
   });expect(await s.turn(data.turn.id)).toMatchObject({status:'succeeded',fileRead:{partial:false},usage:{inputTokens:14000,outputTokens:300}})
   expect((await s.call('agentFileMessage',body,{id:own.conversation.id},0,'',key)).value.data.turn.id).toBe(data.turn.id);expect(await s.tick(async()=>{throw Error('REPLAY_MUST_NOT_CALL')})).toBe(false)
@@ -238,7 +264,7 @@ describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{ti
  })
  it('keeps current question whole and fails honestly when authorized context cannot fit its saved file budget',async()=>{
   const s=await setup(),own=await s.own(),sent=await s.call('agentFileMessage',uploadBody(),{id:own.conversation.id});await s.tick(async()=>result())
-  const question='问题'.repeat(3000),next=await s.send(own.conversation.id,question);expect(await s.tick(async()=>{throw Error('MUST_NOT_CALL')})).toBe(false);expect(await s.turn(next.turn.id)).toMatchObject({status:'failed',failure:'BUDGET_EXCEEDED',usage:null});expect((await s.call('chatMessages',null,{id:own.conversation.id})).value.data.at(-1).text).toBe(question)
+  const question='这份附件'+('问题'.repeat(3000)),next=await s.send(own.conversation.id,question);expect(await s.tick(async()=>{throw Error('MUST_NOT_CALL')})).toBe(false);expect(await s.turn(next.turn.id)).toMatchObject({status:'failed',failure:'BUDGET_EXCEEDED',usage:null});expect((await s.call('chatMessages',null,{id:own.conversation.id})).value.data.at(-1).text).toBe(question)
   expect((await s.turn(sent.value.data.turn.id)).fileRead.ranges.length).toBeGreaterThan(0)
  })
 })

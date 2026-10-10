@@ -1,4 +1,4 @@
-import { createServer, type IncomingMessage, type Server } from "node:http";
+import { createServer, request as requestHttp, type IncomingMessage, type Server } from "node:http";
 import { request as requestHttps } from "node:https";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -44,8 +44,9 @@ export async function startDesktopServer(
   const root = path.resolve(dist),
     remote = new URL(service);
   const cookieName = desktopSessionCookie(service);
-  if (remote.protocol !== "https:" || remote.username || remote.password)
-    throw new Error("桌面服务需要有效的 HTTPS 地址");
+  const local = ["127.0.0.1", "localhost", "[::1]"].includes(remote.hostname);
+  if ((remote.protocol !== "https:" && !(remote.protocol === "http:" && local)) || remote.username || remote.password)
+    throw new Error("桌面服务需要 HTTPS 地址；本机开发允许 localhost 或 127.0.0.1");
   let origin = "";
   const server: Server = createServer(async (req, res) => {
     const reject = (status: number) => {
@@ -126,7 +127,7 @@ export async function startDesktopServer(
             );
           }
         };
-        const upstream = requestHttps(
+        const upstream = (remote.protocol === "https:" ? requestHttps : requestHttp)(
           new URL(url.pathname + url.search, remote.origin),
           {
             method: req.method,

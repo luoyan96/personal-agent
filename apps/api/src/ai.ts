@@ -7,6 +7,7 @@ import type { RequestFor, RouteName } from '@research-agent-platform/contracts'
 import type { Collaboration } from './collaboration.js'
 import { hash } from './auth.js'
 import { fail } from './errors.js'
+import type {PlanningModelRuntime,PlanningModelBinding} from './planning-model.js'
 
 export const aiCommands = ['planRequest','getPlanRequest','cancelPlanning','publicCapabilities','run','getRun','cancelRun','retryRun','submitCandidate'] as const satisfies readonly RouteName[]
 export type AiCommand = typeof aiCommands[number]
@@ -23,7 +24,7 @@ export function canonical(value:unknown):string {
   return JSON.stringify(value)
 }
 export class AiService {
-  constructor(readonly c:Collaboration,readonly enabled:boolean,readonly model:string){}
+  constructor(readonly c:Collaboration,readonly enabled:boolean,readonly model:string,readonly planningModel?:PlanningModelRuntime){}
   get db(){return this.c.db}
   permission(taskId:string){return Number(this.db.prepare('SELECT version FROM task_permissions WHERE task_id=?').get(taskId)!.version)}
   capability(){
@@ -133,9 +134,10 @@ export class AiService {
       if(b.plan){const p=this.c.plan(b.plan.id);this.c.checkVersion(p.version,b.plan.version);if(p.status!=='draft')fail('INVALID_STATE')}
       const reuse=new ReuseService(this.c);reuse.selected(b.conclusionRefs??[],b.plan?{kind:'plan',id:b.plan.id}:undefined);
       for(const taskId of b.taskIds??[])reuse.explicit('task',taskId,b.conclusionRefs??[]);
-      const intent=b.intent??'auto';if(['auto','draft'].includes(intent)&&!this.enabled)fail('MODEL_UNAVAILABLE')
+      const intent=b.intent??'auto';if(['auto','draft'].includes(intent)&&!(this.planningModel?.enabled??this.enabled))fail('MODEL_UNAVAILABLE')
       const p:Planning={id:randomUUID(),status:['progress','find_work'].includes(intent)?'ready':'queued',planId:b.plan?.id??null,failure:null,version:1,reply:intent==='progress'||intent==='find_work'?this.facts(intent,b.taskIds??[]):null,usage:null,createdAt:instant(),updatedAt:instant()}
       const input:PlanningInput={...b,intent,plan:b.plan??null,taskIds:b.taskIds??[],inputs:this.inputRefs(b.inputArtifactIds)}
+      if(this.planningModel){const {source,provider,model,fingerprint}=this.planningModel;input.modelBinding={source,provider,model,fingerprint}}
       this.insert('planning',p,input);reuse.bind('job',p.id,b.conclusionRefs??[]);return {data:p}
     }
     if(name==='cancelPlanning'){
@@ -178,4 +180,4 @@ export class AiService {
   fence(id:string){this.db.prepare('UPDATE execution_jobs SET fence=fence+1,lease_owner=NULL,lease_until=NULL WHERE id=?').run(id)}
 }
 type RunAction=z.infer<typeof import('@research-agent-platform/contracts').Action>
-export type PlanningInput=RequestFor<'planRequest'>['body'] & {intent:'auto'|'draft'|'progress'|'find_work';plan:{id:string;version:number}|null;taskIds:string[];inputs:Run['inputs'];contextTasks?:{id:string;version:number;access:'full'|'summary'}[]}
+export type PlanningInput=RequestFor<'planRequest'>['body'] & {intent:'auto'|'draft'|'progress'|'find_work';plan:{id:string;version:number}|null;taskIds:string[];inputs:Run['inputs'];contextTasks?:{id:string;version:number;access:'full'|'summary'}[];modelBinding?:PlanningModelBinding}
