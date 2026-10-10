@@ -8,7 +8,7 @@
 
 优先修复基础聊天、材料处理、上下文和错误恢复，再完成团队任务流程，逐步沉淀可调整的科研模板和总览。微信 / 企微连接器、消费级增长、泛行业能力市场及手机端扩展暂缓；企微现场试验的已批准测试回复未发送，回发验证不再是当前下一步。产品范围与完成依据见[产品规划v0.9](product-plan.md)和[路线](roadmap.md)。用户已批准前后端并行使用 6.1 high 实施，当前批次进度见下方本地候选记录。
 
-## 当前改造：AcceptCat 0.9.0 科研团队工作台（本地候选，验收与打包中）
+## 当前交付：AcceptCat 0.9.0 科研团队工作台（安装包完成，配套后台已部署）
 
 分支 `feature/research-team-workbench`，基于原 `feature/memory-experience`。桌面默认科研总览，汇总当前账号获准事项、待审成果、真实受阻情况和已确认截止；可切换我的事项，搜索和筛选当前分页。任务卡显示实际提交版本和导师意见，成员侧栏显示本页承接事项及下一步。邀请待学生本人接受；开始、受阻 / 恢复、交付、要求修改及验收沿用真实状态与确认入口。旧服务通过 contract0.23 门槛明确不可用，不伪装空数据。
 
@@ -20,9 +20,17 @@
 
 完整共享 CI 已通过49文件 / 603项、生产CLI / HTTP两项、B0进程与生产夹具隔离；客户端类型和18项团队 / 计划 / 代理 / 文件检查通过。实际HTTP / SQLite、生产React组件与隔离Electron22完成9组师生交付流程，个人模型由注入的合成供应商验证，不使用真实账号或Key。最终桌面主题、Segoe UI / 微软雅黑字体、任务交付窗口和1024×726无水平溢出截图已查看；renderer pageerror0，既有React / Ant Design警告和故意503保留。原生宿主为0.8.6，不将组件验收称为0.9.0安装包或线上OpenIM验收。
 
-首次共享CI6项失败、两次定向上下文回归失败均保留；精简系统规则并只给当前私人消息保留定位ID，修复旧低预算准入，未提高用户旧预算。最终CI日志 `ci-final.log`，9组流程 `qa.json`，主题核验 `render-final.json`。0.9.0安装资产正在生成；阿里云维护登录曾过期，用户重新登录后按既有授权继续备份 / 升级准备，尚未计部署成功。Git外证据 `.runtime/research-team-20261010`，详见[实现与验收](development/research-team-workbench.md)。
+固定受测、打包及部署源码 **f9729a223e0b9ccd0089949e83c10f35c6e4e53d**，已推送 GitHub，[草稿PR33](https://github.com/luoyan96/personal-agent/pull/33) 基于 feature/memory-experience。GitHub [38034613297](https://github.com/luoyan96/personal-agent/actions/runs/38034613297) 的 Ubuntu22.19 / Ubuntu24 / Windows24 全部成功。真实 NSIS publish never、更新资产及包内版本 / 科研模块 / contract / loopback 代理 / 原有猫咪和记忆 OCR 资产通过；实际0.9.0打包 Electron22 用隔离 profile 启动通过，保留既有 electron-log 重复初始化提示。没有替用户安装或重启。
 
-最后云端部署记录仍为11cd20a / contract0.22 / chat1.11 / schema021，本轮未实时核验或部署；公开 Windows 最后记录0.6.0。新工作台需 API / worker 成对升级后在云端使用；课题组成员需负责人邀请码注册相同课题组，通讯录好友不会自动成为课题组成员。个人空间可独立规划。邀请管理复用现有网页入口；原生团队创建 / 多课题组切换、教师真实材料试用、完整科研自动化和学校部署仍需后续推进。
+安装包 **D:/deepseek-agent/AcceptCat-Windows/0.9.0/AcceptCat_0.9.0.exe**，**87350666字节**，SHA256 **72fbea04952f506d2aba3bc870ece7a11665f68f1e6228d56a16deee5e143419**。同目录提供 blockmap / latest.yml、摘要、安装说明及合成师生流程截图。未公开 GitHub Release；公开更新源最后仍为0.6.0，旧版不会自动发现本地0.9.0，需手工运行该安装包。
+
+2026-10-10 **15:48北京时间**完成部署后核验：API 与 worker 同为 `research-openim-api:team-f9729a22`，镜像 **sha256:c3e47a756279050379eb775884b2a7120b52ecb7b86f35c9c97b2465da5f1254**，revision 标签为固定源码。公网 ready 为 ok / contract0.23，数据库、存储、认证为 ok；Harness 为 not_verified，不计真实模型质量验收。两条新增路由匿名访问均401，未伪装404。API healthy、worker running，原六项 OpenIM / 基础服务仍使用原镜像并运行；本轮不部署网页静态界面。
+
+备份 **/srv/research-openim-backups/team-f9729a22-20261010T074607Z/research.tar.gz**，SHA256 **55f405c898d6ee6469ce7b428f7011e41308169018af6647b6f0cfa9783bcae0**。停止科研服务后保存 schema21 / 86张表摘要，备份解压副本与原库的完整性、外键、表定义和所有旧行摘要一致，再启动新版；无数据库迁移。这是科研数据库与资产备份，不能当作整套 OpenIM 的一致恢复备份。[部署与回退边界](deployment/acceptcat-research-team.md)。
+
+首次共享CI6项失败、两次定向上下文回归失败均保留；精简系统规则并只给当前私人消息保留定位ID，修复旧低预算准入，未提高用户旧预算。首轮 Docker FROM 使用 image ID 被当成远程地址而超时，科研服务尚未停止；改用已核对摘要的本地 tag 后构建成功。一次多行维护终端传输被取消，改为单行 gzip/base64 传输并校验脚本 SHA256 / bash 语法。最终CI日志 `ci-final.log`，9组流程 `qa.json`，主题核验 `render-final.json`，包核验 `package-proof.json`，公网核验 `public-ready.json` / `public-route-proof.json`，部署日志保留在服务器 ops。Git外证据 `.runtime/research-team-20261010`，详见[实现与验收](development/research-team-workbench.md)。
+
+云端 API / worker 现为 f9729a2 / contract0.23 / chat1.11 / schema021；公开 Windows 最后记录0.6.0。安装0.9.0后使用新工作台；课题组成员需负责人邀请码注册相同课题组，通讯录好友不会自动成为课题组成员。个人空间可独立规划。邀请管理复用现有网页入口；原生团队创建 / 多课题组切换、教师真实材料试用、完整科研自动化和学校部署仍需后续推进。线上本批仅验证部署健康 / 新路由鉴权，没有冒称线上真实 OpenIM 师生协作或供应商调用通过。
 
 ## 最近现场试验：企微好友消息进入 AcceptCat
 
