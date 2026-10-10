@@ -233,8 +233,11 @@ describe('B3 durable service with explicit deterministic model doubles (not G3 l
   })
   it('A10 explicitly selected planning context is tracked and withdrawn history cannot reveal full task contents',async()=>{
     const q=await queue(clients.B,'invitation')
+    // Private planning no longer inherits the administrator's laboratory key.
+    expect((await request('createPersonalModel',{client:clients.B,body:{name:'Synthetic B planning model',provider:'deepseek',model:'deepseek-flash',enabled:true,apiKey:'sk-synthetic-owned-planning-B'}})).status).toBe(201)
     const requestBody={labId:'lab_synthetic',intent:'draft',prompt:'Use authorized current context',taskIds:[q.id],inputArtifactIds:[],budget}
     const queued=await request('planRequest',{client:clients.B,body:requestBody})
+    expect(queued.status).toBe(202)
     const model=worker(async input=>{const context=JSON.parse(input.prompt);expect(context.tasks.some((t:{id:string})=>t.id===q.id)).toBe(true);return result({intent:'draft',plan:planInput([item('self')])})})
     // The capability run is not part of this planning scenario.
     await request('cancelRun',{client:clients.B,params:{id:q.run.id},body:{expectedVersion:q.run.version,reason:'Planning-only scenario'}})

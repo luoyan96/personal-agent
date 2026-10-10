@@ -319,10 +319,23 @@ export class ChatService {
   fileDocument(messageId:string,conversationId:string):FileDocument{
     const document=this.fileDocumentForMessage(messageId,conversationId);if(!document)fail('NOT_FOUND');return document
   }
-  dailyFileSource(conversationId:string,selection?:AgentFileSelection):AgentFileSelection|undefined{
+  dailyFileSource(conversationId:string,text:string,selection?:AgentFileSelection):AgentFileSelection|undefined{
     if(selection){this.fileDocument(selection.messageId,conversationId);return selection}
     const rows=this.db.prepare('SELECT request_json FROM chat_turns WHERE conversation_id=? AND owner_id=? ORDER BY rowid DESC LIMIT 100').all(conversationId,this.c.actor.id)
-    for(const row of rows){const input=decode(row.request_json) as TurnInput;if(input.fileDocument){this.fileDocument(input.fileDocument.metadata.messageId,conversationId);return {messageId:input.fileDocument.metadata.messageId}}}
+    const latest=rows[0]?decode(rows[0].request_json) as TurnInput:undefined
+    // An upload is not a permanent selection. Only a current reference or an
+    // immediate, explicit continuation can re-use it; a new task stays new.
+    const documentReference=pageNumbersFromQuestion(text).length>0||/(?:这|该|刚才|上次|之前|最近|那)(?:个|份|篇|张)?\s*(?:附件|文件|文档|论文|文章|图片)|(?:附件|文档|论文|文章)(?:里|中|的)|\b(?:this|that|the attached)\s+(?:file|document|paper|attachment)\b/i.test(text)
+    const continuation=!!latest?.fileSource&&/^(?:继续|接着|再说|再解释|还有|第二个问题|下一个问题|那[么，,]|为什么|具体呢|展开|continue\b|tell me more\b)/i.test(text.trim())
+    for(const row of rows){
+      const input=decode(row.request_json) as TurnInput
+      if(!input.fileDocument)continue
+      const document=input.fileDocument,name=document.metadata.filename
+      const named=text.toLocaleLowerCase().includes(name.toLocaleLowerCase())
+      if(!documentReference&&!named&&!continuation)continue
+      const messageId=continuation&&!documentReference&&!named?latest!.fileSource!.messageId:document.metadata.messageId
+      this.fileDocument(messageId,conversationId);return {messageId}
+    }
     return undefined
   }
   action(id: string) {
@@ -592,7 +605,7 @@ export class ChatService {
       const management=name==='agentChatMessage'&&!skill&&!purpose&&!(b as {fileSelection?:unknown}).fileSelection&&agent&&ownLocalMemoryScope(this,agent,group)?{memory:memoryCommand(this,input.text,message),followup:followupCommand(this,input.text,message)}:null
       const limitation=name==='agentChatMessage'&&!skill&&!purpose&&!(b as {fileSelection?:unknown}).fileSelection&&group.kind==='personal'&&agent?.profile.role==='coordinator'?unsupportedCollaboration(this,input.text):null
       if(management?.memory||management?.followup||limitation){if(pending)supersedeTurn(this,String(pending.id));const turn=this.newTurn(group,message,input.agentContactId!,{budget:input.budget!,context:[],conversationVersion:group.version,inputSequence:message.sequence,dailyChat:true,personalAssistant:true});const result=management?.memory??management?.followup;if(management?.memory)turn.memoryReceipt=management.memory.receipt;else if(management?.followup)turn.followupReceipt=management.followup.receipt;const response=this.message(group.id,{senderContactId:input.agentContactId!,origin:'service',text:result?.text??limitation!,mentions:[],resources:[],actionIds:[],turnId:turn.id});turn.status='succeeded';turn.failure=null;turn.outputMessageId=response.id;turn.version++;turn.updatedAt=instant();this.saveTurn(turn);message.turnId=turn.id;this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(legacyChatMessage(message)),message.id);return {data:{message:this.projectedMessage(message.id),turn:this.turn(turn.id)}}}
-      let fileSource=name==='agentFileMessage'?{messageId:message.id}:name==='agentChatMessage'&&!purpose&&!external?this.dailyFileSource(group.id,(b as {fileSelection?:AgentFileSelection}).fileSelection):undefined
+      let fileSource=name==='agentFileMessage'?{messageId:message.id}:name==='agentChatMessage'&&!purpose&&!external?this.dailyFileSource(group.id,input.text,(b as {fileSelection?:AgentFileSelection}).fileSelection):undefined
       const fileDocument=name==='agentFileMessage'&&parsedFile?{...parsedFile,metadata:{...parsedFile.metadata,messageId:message.id}}:undefined
       if(name==='agentFileMessage'&&!fileDocument)fail('INVALID_STATE')
       if(fileSource){const document=fileDocument??this.fileDocument(fileSource.messageId,group.id);const questionPages=pageNumbersFromQuestion(input.text),requested=fileSource.pageNumbers??(questionPages.length?questionPages:undefined),numbers=requested?[...new Set(requested)]:undefined;if(numbers?.some(n=>!document.pages.some(page=>page.pageNumber===n)))fail('FILE_PAGE_UNAVAILABLE');fileSource={...fileSource,...(numbers?{pageNumbers:numbers}:{} )}}

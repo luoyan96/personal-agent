@@ -1,8 +1,10 @@
-# AcceptCat · 科研个人助理与课题组协作
+# AcceptCat · 老师与实验室团队的科研工作平台
 
-AcceptCat采用微信式聊天，真人和Agent共用通讯录。近期聚焦中国科研工作者，先服务本人及学生的真实课题：交代目标、明确分工、使用资料、提交成果、反馈验收并持续积累背景。接下来约半年以自己课题组持续使用为主，再判断推广。Windows桌面优先，科研功能的实际范围见[产品规划v0.8](docs/product-plan.md)与[开发路线](docs/roadmap.md)。
+AcceptCat 面向学校老师和实验室团队，目标是提升科研效率、沉淀标准流程，并方便负责人管理和对齐。采用微信式聊天，真人和 Agent 共用通讯录；个人助理帮助成员工作，项目、任务、交付和审阅串联课题组协作。接下来约半年以本人和学生的真实课题持续使用为主，优先完善 Windows 桌面基础体验、团队任务流程、可复用科研模板和真实进展总览。微信 / 企微连接器及面向广泛消费者的扩展暂缓。产品目标和工程已实现范围分别记录，见[产品规划v0.9](docs/product-plan.md)、[开发路线](docs/roadmap.md)与[当前状态](docs/current-state.md)。
 
-2026-10-09：最新本地AcceptCat **0.8.6** 重做[桌面记忆体验](docs/development/memory-experience.md)：先查看已确认内容的摘要和分类，再管理具体条目；新增、修改和设置独立打开，候选确认后才生效，错误保留编辑内容并提供重试。柔和淡蓝摘要、鼠尾草绿操作与更清楚的文字层级；小窗口只滚动内容，顶部导航与关闭入口保持可见。复用现有真实记忆API，准确安装包与验证范围见[当前状态](docs/current-state.md)。本地候选未公开Release。
+2026-10-10：AcceptCat **0.9.0** 的[科研团队工作台](docs/development/research-team-workbench.md)和Windows安装包已完成，配套API / worker已成对部署（contract0.23 / schema021无迁移）。目标规划、学生本人承接、阻碍跟进、成果提交、导师反馈和修订验收使用真实状态；私人AI规划使用发起人默认模型，普通新消息不误带旧论文。603项共享检查、9组合成师生流程、实际NSIS及原生启动通过；[部署与恢复记录](docs/deployment/acceptcat-research-team.md)、准确安装包与验证边界见[当前状态](docs/current-state.md)。此包未公开Release，需手工安装。
+
+2026-10-09：上一本地AcceptCat **0.8.6** 重做[桌面记忆体验](docs/development/memory-experience.md)：先查看已确认内容的摘要和分类，再管理具体条目；新增、修改和设置独立打开，候选确认后才生效，错误保留编辑内容并提供重试。柔和淡蓝摘要、鼠尾草绿操作与更清楚的文字层级；小窗口只滚动内容，顶部导航与关闭入口保持可见。复用现有真实记忆API，准确安装包与验证范围见[当前状态](docs/current-state.md)。本地候选未公开Release。
 
 上一本地AcceptCat **0.8.5** 新增[图片正文整理与Agent校对](docs/development/ocr-readable-text.md)：识字默认合并为无回车的一整段，可保留段落或查看原始识别；当前Agent模型可校对错字，失败保留本机正文。复制、原生保存与插入均使用当前文字，长图裁切残行去除；沿用0.8.4猫咪科研入口与橘猫图标。本批为本地安装候选，未公开Release，准确安装包与验证范围见[当前状态](docs/current-state.md)。
 
@@ -10,7 +12,7 @@ AcceptCat采用微信式聊天，真人和Agent共用通讯录。近期聚焦中
 
 2026-10-09：上一本地AcceptCat **0.8.0** 采用[OpenMuse风格Windows界面](docs/development/openmuse-desktop-ui.md)：浅色导航、可收起聊天列表、居中正文、柔和消息与浮动输入区，工作台及设置统一主题。继续使用OpenIM原生SDK、现有账号和任务后台，保留连续发送、失败重试、本地文件和更新入口。包含0.7.0的[科研任务规划](docs/development/research-task-planning.md)：可编辑步骤、负责人 / 依赖 / 验收条件、草案恢复、确认生成真实任务与下一步。安装身份、数据目录和GitHub更新源不变；公开Release与云端仍是下方0.6.0，准确安装包与受测范围见[当前状态](docs/current-state.md)。本项目继续沿用现有代码和[早期迁移成果](docs/migration.md)，历史版本及验证记录保留。
 
-Windows0.6.0私人技能和配套API / worker已发布（contract0.22 / schema21）；安装、授权、聊天文字流程与边界见 [当前状态](docs/current-state.md)。
+上次正式公开的Windows0.6.0私人技能和当时配套API / worker已发布（contract0.22 / schema21）；安装、授权、聊天文字流程与边界见 [当前状态](docs/current-state.md)。
 
 ## 历史版本与实现记录
 

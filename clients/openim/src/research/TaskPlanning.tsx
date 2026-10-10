@@ -15,9 +15,11 @@ import {
   requestStateLabels,
   taskStateLabels,
 } from "./task-planning";
-import type { ResponseFor } from "@research-agent-platform/contracts";
+import { isFullTask, teamTaskStatus } from "./research-team";
 import type { PlanDraft, PlanStep, SavedPlan } from "./task-planning";
 import "./task-planning.scss";
+import { ResearchTeamAccountHint } from "./ResearchTeamAccountHint";
+import { readResearchTeamAvailability } from "./workspace-availability";
 
 const time = (value: string) =>
   new Date(value).toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
@@ -39,35 +41,37 @@ const requestFailure = (value: string | null) =>
 function ConfirmedPlan({
   plan,
   people,
+  onTasks,
 }: {
   plan: SavedPlan;
   people: Record<string, string>;
+  onTasks: () => void;
 }) {
   const [taskId, setTaskId] = useState<string>();
-  const facts = useResearchRead(async (signal) => {
-    // Confirm assigns new task IDs. Read authorized persisted tasks, never use draft item IDs as task IDs.
-    const matches: ResponseFor<"tasks">["data"] = [];
-    let cursor: string | undefined, snapshot: string | undefined;
-    for (let page = 0; page < 20; page++) {
-      const result = await researchApi("tasks", {
-        query: { labId: plan.labId, scope: "mine", limit: 100, cursor, snapshot },
+  const availability = useResearchRead(
+    readResearchTeamAvailability,
+    "plan-task-links-availability",
+  );
+  const facts = useResearchRead(
+    async (signal) => {
+      const result = await researchApi("planTasks", {
+        params: { id: plan.id },
         signal,
       });
-      matches.push(...result.data.filter((t) => "planId" in t && t.planId === plan.id));
-      cursor = result.nextCursor || undefined;
-      snapshot = result.snapshot?.token;
-      if (!cursor || matches.length === plan.proposedItems.length) break;
-    }
-    const full = matches.filter(
-      (t): t is Extract<typeof t, { planId: string }> => "planId" in t,
-    );
-    const rows = plan.proposedItems.map((step) => {
-      // Titles are immutable in task revisions; goals and acceptance criteria may legitimately change.
-      const candidates = full.filter((t) => t.title === step.title);
-      return { step, task: candidates.length === 1 ? candidates[0] : undefined };
-    });
-    return { rows, incomplete: rows.some((row) => !row.task) };
-  }, `confirmed-plan:${plan.id}:${plan.version}`);
+      const links = new Map(result.data.steps.map((link) => [link.itemId, link]));
+      const rows = plan.proposedItems.map((step) => {
+        const linked = links.get(step.id)?.task;
+        return {
+          step,
+          task: linked && isFullTask(linked) ? linked : undefined,
+          linked,
+        };
+      });
+      return { rows, incomplete: rows.some((row) => !row.task) };
+    },
+    `confirmed-plan:${plan.id}:${plan.version}`,
+    availability.data?.available === true,
+  );
   const tasks = facts.data?.rows.map((r) => r.task) ?? [];
   const next = tasks.find(
     (t) =>
@@ -78,6 +82,23 @@ function ConfirmedPlan({
         tasks.some((p) => p?.id === dep.taskId && p.status === "completed"),
       ),
   );
+  if (!availability.data?.available)
+    return (
+      <div className="planner-confirmed">
+        <h2>{plan.goal}</h2>
+        <Alert
+          type={availability.error ? "error" : "info"}
+          message={
+            availability.error ||
+            (availability.data
+              ? "稳定步骤进展需要科研团队服务升级至契约 0.23。已有任务仍可查看和操作。"
+              : "正在检查步骤进展服务…")
+          }
+          action={<Button onClick={availability.refresh}>重新检查</Button>}
+        />
+        <Button onClick={onTasks}>查看已有任务</Button>
+      </div>
+    );
   return (
     <div className="planner-confirmed">
       <div className="planner-section-heading">
@@ -89,7 +110,7 @@ function ConfirmedPlan({
           {facts.data
             ? `${tasks.filter((t) => t?.status === "completed").length} / ${
                 plan.proposedItems.length
-              } 步已验收`
+              } 步已结束`
             : "正在读取进展…"}
         </span>
       </div>
@@ -104,7 +125,7 @@ function ConfirmedPlan({
       {facts.data?.incomplete && (
         <Alert
           type="warning"
-          message="部分步骤暂未读取，进展仅统计已读取的任务。可在全部任务中继续查找。"
+          message="部分步骤尚无可读的完整任务，可能需要承接或权限已变化；进展只统计已读取任务。"
         />
       )}
       {next && (
@@ -140,7 +161,13 @@ function ConfirmedPlan({
               <div className="planner-step-summary">
                 <div>
                   <h3>{step.title}</h3>
-                  <span>{task ? taskStateLabels[task.status] : "尚未读取"}</span>
+                  <span>
+                    {facts.data?.rows[i]?.linked
+                      ? teamTaskStatus(facts.data.rows[i].linked!) === "completed"
+                        ? "已结束 · 查看审阅记录"
+                        : taskStateLabels[teamTaskStatus(facts.data.rows[i].linked!)]
+                      : "任务不可用或尚未读取"}
+                  </span>
                 </div>
                 <p>交付物：{step.deliverable}</p>
                 <p>验收标准：{task?.acceptanceCriteria || step.acceptanceCriteria}</p>
@@ -165,7 +192,10 @@ function ConfirmedPlan({
                       .join("、")}
                   </p>
                 )}
-                <Button disabled={!task} onClick={() => setTaskId(task!.id)}>
+                <Button
+                  disabled={!facts.data?.rows[i]?.linked}
+                  onClick={() => setTaskId(facts.data!.rows[i].linked!.id)}
+                >
                   查看任务与交付
                 </Button>
               </div>
@@ -184,7 +214,9 @@ function ConfirmedPlan({
         width={760}
         destroyOnClose
       >
-        {taskId && <ResearchTaskPanel key={taskId} taskId={taskId} />}
+        {taskId && (
+          <ResearchTaskPanel key={taskId} taskId={taskId} onChanged={facts.refresh} />
+        )}
       </Modal>
     </div>
   );
@@ -226,6 +258,23 @@ export function TaskPlanning({
   const operation = usePersonalOperation(
     true,
     `research-task-planning:${selected || "new"}:${requestId || "none"}`,
+  );
+  const dialogs = useRef<ReturnType<typeof Modal.confirm>[]>([]);
+  const confirm = (options: Parameters<typeof Modal.confirm>[0]) => {
+    const { isCurrent } = operation.capture();
+    dialogs.current.push(
+      Modal.confirm({
+        ...options,
+        onOk: (...args) => (isCurrent() ? options.onOk?.(...args) : undefined),
+      }),
+    );
+  };
+  useLayoutEffect(
+    () => () => {
+      dialogs.current.forEach((dialog) => dialog.destroy());
+      dialogs.current = [];
+    },
+    [operation.scope],
   );
   useLayoutEffect(() => {
     inFlight.current = false;
@@ -296,7 +345,7 @@ export function TaskPlanning({
       setParams(next);
     };
     if (dirty.current)
-      Modal.confirm({
+      confirm({
         title: "离开尚未保存的草案？",
         content: "当前修改尚未保存。保存草案后可以在其他窗口继续规划。",
         okText: "离开",
@@ -492,7 +541,7 @@ export function TaskPlanning({
       setParams(next);
     };
     if (dirty.current)
-      Modal.confirm({
+      confirm({
         title: "用新计划替换未保存的编辑？",
         okText: "开始新计划",
         cancelText: "保留编辑",
@@ -501,7 +550,7 @@ export function TaskPlanning({
     else go();
   };
   const reload = () =>
-    Modal.confirm({
+    confirm({
       title: "采用服务端最新草案？",
       content: "这会替换尚未保存的编辑。请先复制需要保留的内容。",
       okText: "读取最新草案",
@@ -741,6 +790,7 @@ export function TaskPlanning({
         ) : base?.status === "confirmed" ? (
           <>
             <ConfirmedPlan
+              onTasks={onTasks}
               key={base.id}
               plan={base}
               people={Object.fromEntries(
@@ -809,7 +859,7 @@ export function TaskPlanning({
                     type="primary"
                     disabled={busy}
                     onClick={() =>
-                      Modal.confirm({
+                      confirm({
                         title: `确认并创建 ${draft.proposedItems.length} 个步骤任务？`,
                         content:
                           "会保存这份草案并创建真实任务。受邀成员需要自行接受；选用公共 Agent 的步骤会建立执行请求，没有材料时等待输入。每个结果仍需要验收。",
@@ -841,6 +891,7 @@ export function TaskPlanning({
                   onChange={(e) => edit({ ...draft, goal: e.target.value })}
                 />
               </label>
+              <ResearchTeamAccountHint />
               <ol className="planner-timeline">
                 {draft.proposedItems.map((step, i) => (
                   <li key={step.id}>
@@ -1049,7 +1100,7 @@ export function TaskPlanning({
                               danger
                               disabled={busy || draft.proposedItems.length < 2}
                               onClick={() =>
-                                Modal.confirm({
+                                confirm({
                                   title: "删除这个步骤？",
                                   content: "其他步骤对它的依赖也会一并移除。",
                                   okText: "删除步骤",
@@ -1156,6 +1207,10 @@ export function TaskPlanning({
         className="planner-composer"
       >
         <p>先交代目标。交付形式和截止时间可以稍后补齐。</p>
+        <p className="workspace-muted">
+          AI
+          规划使用你的个人默认模型；实验室管理员可沿用尚未迁移的实验室配置。可在设置的模型管理中调整。
+        </p>
         <label>
           你想完成什么
           <Input.TextArea

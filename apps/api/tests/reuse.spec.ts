@@ -100,6 +100,7 @@ beforeAll(async () => {
   address = (await startServer()).url; secondAddress = (await startServer()).url
   clients = { A: await loginAs('A'), B: await loginAs('B'), C: await loginAs('C') }
   expect((await request('updateLabAiSettings',{client:clients.A,params:{id:'lab_synthetic'},body:{expectedVersion:0,enabled:true,model:'deepseek-flash',apiKey:'sk-synthetic-test-credential'}})).status).toBe(200)
+  expect((await request('createPersonalModel',{client:clients.B,body:{name:'Synthetic B private planning',provider:'deepseek',model:'deepseek-flash',enabled:true,apiKey:'sk-synthetic-owned-planning-B'}})).status).toBe(201)
 }, 30000)
 afterAll(async () => { await stopServers(); db?.close(); if (directory) rmSync(directory, { recursive: true, force: true }) })
 

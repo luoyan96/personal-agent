@@ -13,6 +13,8 @@ import type { Config } from './config.js'
 import { transaction } from './database.js'
 import { randomUUID } from 'node:crypto'
 import { labAiRuntime, labApiKey } from './lab-ai-settings.js'
+import {planningModelRuntime} from './planning-model.js'
+import {personalModelKey} from './personal-models.js'
 
 export interface ModelInput {provider?:'deepseek'|'qwen'|'doubao';system:string;prompt:string;model:string;maxTokens:number;timeoutMs:number;reasoningEffort?:'off'}
 export interface ModelResult {text:string;failure:string|null;inputTokens:number|null;outputTokens:number|null;elapsedMs:number;finishReason?:string}
@@ -24,6 +26,19 @@ export function serviceFor(db:DatabaseSync,ownerId:string,config:Config){
   const labAi=labAiRuntime(db,String(actor.lab_id),config)
   return new AiService(new Collaboration(db,{id:ownerId,labId:String(actor.lab_id),csrfHash:'',expiresAt:'9999-12-31T00:00:00Z'},config.blobRoot,labAi),labAi.enabled,labAi.model)
 }
+function currentPlanningModel(service:AiService,request:PlanningInput,config:Config){
+  if(!request.modelBinding){
+    // Jobs accepted before model binding retain their original lab execution
+    // path. A newly selected personal default never silently reassigns them.
+    if(!service.enabled)throw new Error('MODEL_UNAVAILABLE')
+    return {source:'legacy_lab' as const,provider:'deepseek' as const,model:service.model}
+  }
+  const runtime=planningModelRuntime(service.db,service.c.actor,config)
+  if(!runtime.enabled)throw new Error('MODEL_UNAVAILABLE')
+  const bound=request.modelBinding
+  if(runtime.fingerprint!==bound.fingerprint||runtime.source!==bound.source||runtime.provider!==bound.provider||runtime.model!==bound.model)throw new Error('MODEL_CONFIGURATION_CHANGED')
+  return runtime
+}
 export function reconcile(db:DatabaseSync,config:Config){
   for(const cap of db.prepare("SELECT c.lab_id,c.version,s.active_version FROM public_capabilities c JOIN public_method_state s ON s.lab_id=c.lab_id JOIN public_methods m ON m.lab_id=s.lab_id AND m.version=s.active_version WHERE c.enabled=1 AND EXISTS(SELECT 1 FROM json_each(m.document,'$.sampleIds') ref JOIN invalid_samples i ON i.id=ref.value)").all()){db.prepare('UPDATE public_capabilities SET enabled=0,version=version+1 WHERE lab_id=?').run(cap.lab_id!);db.prepare("INSERT INTO method_events(lab_id,method_version,generation,action,at) VALUES(?,?,?,'sample_revoked',?)").run(cap.lab_id!,cap.active_version!,Number(cap.version)+1,instant())}
   for(const row of db.prepare("SELECT * FROM execution_jobs WHERE status IN ('queued','running','waiting_input')").all()){
@@ -31,8 +46,8 @@ export function reconcile(db:DatabaseSync,config:Config){
     let failure:string|null=null
     try{
       const service=serviceFor(db,String(row.owner_id),config)
-      if(!service.enabled)failure='MODEL_UNAVAILABLE'
-      else if(row.kind==='capability'){
+      if(row.kind==='capability'){
+        if(!service.enabled)throw new Error('MODEL_UNAVAILABLE')
         const r=RunRecord.parse(doc),task=service.c.task(r.taskId)
         if(task.status==='cancelled')failure='TASK_CANCELLED'
         else if(task.leadId!==r.requestedBy||service.permission(task.id)!==r.permissionVersion)failure='AUTHORITY_CHANGED'
@@ -40,10 +55,11 @@ export function reconcile(db:DatabaseSync,config:Config){
         else {service.available(r.capability);service.checkInputs(r.inputs);const reuse=new ReuseService(service.c);reuse.allowed('job',r.id);reuse.methodForRun(r);reuse.selected(r.conclusionRefs??[],{kind:'task',id:r.taskId})}
       }else{
         const request=service.planningAccess(row)
+        currentPlanningModel(service,request,config)
         new ReuseService(service.c).selected(request.conclusionRefs??[],request.plan?{kind:'plan',id:request.plan.id}:undefined)
         if(request.plan){const p=service.c.plan(request.plan.id);if(p.status!=='draft'||p.version!==request.plan.version)failure='PLAN_CHANGED'}
       }
-    }catch{failure='AUTHORITY_OR_CAPABILITY_CHANGED'}
+    }catch(error){failure=error instanceof Error&&['MODEL_UNAVAILABLE','MODEL_CONFIGURATION_CHANGED'].includes(error.message)?error.message:'AUTHORITY_OR_CAPABILITY_CHANGED'}
     if(!failure && row.status==='running' && Number(row.lease_until)<Date.now())failure='LEASE_EXPIRED_USAGE_UNCERTAIN'
     if(failure){doc.status=failure==='LEASE_EXPIRED_USAGE_UNCERTAIN'?'interrupted':'cancelled';doc.failure=failure;doc.version++;doc.updatedAt=instant();if('endedAt' in doc)doc.endedAt=instant()
       db.prepare('UPDATE execution_jobs SET status=?,version=?,fence=fence+1,lease_owner=NULL,lease_until=NULL,document=? WHERE id=?').run(doc.status,doc.version,encode(doc),row.id!)
@@ -88,10 +104,11 @@ export class ExecutionWorker {
       let doc=JSON.parse(String(row.document)) as Run|Planning
       let input:ModelInput,credential:{apiKey:string},attempt=Number(this.db.prepare('SELECT count(*) n FROM execution_attempts WHERE job_id=?').get(row.id!)!.n)+1
       try{
-        if(!service.enabled)throw new Error('MODEL_UNAVAILABLE')
-        const apiKey=labApiKey(this.db,service.c.actor.labId,this.config)
+        let apiKey:string,planningModel:ReturnType<typeof currentPlanningModel>|undefined
         let budget:{maxTokens:number;maxSeconds:number},prompt:unknown,system:string
         if(row.kind==='capability'){
+          if(!service.enabled)throw new Error('MODEL_UNAVAILABLE')
+          apiKey=labApiKey(this.db,service.c.actor.labId,this.config)
           const r=RunRecord.parse(doc),task=service.dispatchValid(r)
           if(!r.inputs.length&&!(r.conclusionRefs??[]).length&&!r.methodTrial){r.status='waiting_input';r.failure='Authorized text required.';service.save(r.id,r);return null}
           const reuse=new ReuseService(service.c),method=reuse.methodForRun(r)
@@ -103,6 +120,8 @@ export class ExecutionWorker {
           doc=r
         }else{
           const request=service.planningAccess(row)
+          planningModel=currentPlanningModel(service,request,this.config)
+          apiKey=planningModel.source==='personal'?personalModelKey(this.db,service.c.actor,this.config):labApiKey(this.db,service.c.actor.labId,this.config)
           budget=request.budget
           const facts=request.taskIds.length?service.facts('progress',request.taskIds):{tasks:[]}
           const reuse=new ReuseService(service.c);reuse.selected(request.conclusionRefs??[],request.plan?{kind:'plan',id:request.plan.id}:undefined)
@@ -122,7 +141,7 @@ export class ExecutionWorker {
         if(attempt>3)throw new Error('ATTEMPT_LIMIT')
         const elapsed=spent.reduce((n,r)=>n+(r?.elapsedMs??0),0),remainingMs=budget.maxSeconds*1000-elapsed
         if(remainingMs<=0)throw new Error('TIME_BUDGET_EXCEEDED')
-        input={system,prompt:text,model:row.kind==='capability'?(doc as Run).model:service.model,maxTokens:Math.min(4096,remaining),timeoutMs:Math.min(120000,remainingMs)}
+        input={system,prompt:text,model:row.kind==='capability'?(doc as Run).model:planningModel!.model,...(planningModel?{provider:planningModel.provider}:{}),maxTokens:Math.min(4096,remaining),timeoutMs:Math.min(120000,remainingMs)}
         // Keep the decrypted key in this coordinator only; request_json and execution_attempts never contain it.
         credential={apiKey}
       }catch(error){doc.status='failed';doc.failure=error instanceof Error && /^[A-Z_]+$/.test(error.message)?error.message:'PRECONDITION_FAILED';service.save(String(row.id),doc);return null}

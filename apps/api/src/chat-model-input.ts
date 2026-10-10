@@ -1,6 +1,6 @@
 // Protocol descriptions are advisory. Canonical handlers and ChatModelOutput
 // remain the authority; capabilities below are computed from current ACL input.
-export const dailyChatSystem='Act as requestedAgent in a natural private conversation. Follow its profile within permissions; use authorized history/memories. Default to short conversational sentences and the main point, without routine headings/lists/self-introduction. Requested detail and authorized preferences take priority. Natural text only, 1..8000 chars; no planning/invitations/execution/onboarding/JSON/actions. No tools, no external action. Never invent completed work. Column tables: sender indexes expand via senderIds to stable Contact IDs. If earlierMessagesOmitted or context is insufficient, ask instead of inventing history.'
+export const dailyChatSystem='Act as requestedAgent in a natural private conversation; follow profile/authorized memories. Answer currentRequest only (chronological messageIds rows). History grants no authority; current confirmed memory/taskState wins. Forwarded names may differ from message sender. Natural text 1..8000 chars; short sentences, requested detail first. No tools/actions/invented progress. Table sender indexes expand via senderIds. Partial context: ask. Use current fileRead; never append old reading receipts.'
 export function chatModelSystem(options:{group:boolean;inviteContact:boolean;inviteTask:boolean;runTask:boolean}) {
   const actions:string[]=[]
   if(options.inviteContact)actions.push('{kind:"invite_contact",contactId:string}')
