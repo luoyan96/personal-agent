@@ -37,6 +37,10 @@ B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `
 
 本次在已有OpenIM派生客户端内改造，保留原客户端及依赖许可。用户提供微信截图仅用于布局/交互参考，不复制其头像、照片、品牌图或源码。OpenMuse与Anet仅作为流式交互、持久任务、能力发现的设计参考，本次未引入其源码或新增CopilotKit/AG-UI/A2A依赖；实际传输仍是既有服务协议和OpenIM。
 
+## 2026-10-10 科研能力中心与私人 Skill 素材
+
+界面与资料服务在本项目实现。用户提供的 [paper-framework-figure-studio-pro](https://github.com/c-narcissus/paper-framework-figure-studio-pro) 固定修订 `77557418b4ca8c24fa8961206bf9b8f7f6d030e1` 仅用于 Git 外原件往返验证；没有将其素材库或脚本并入项目、运行脚本或声称完成绘图。本机安装包保留原始文件，由用户按来源许可使用。已有 OpenIM / OpenMuse 许可继续保留。
+
 ## 2026-10-09 OpenMuse风格桌面界面
 
 参考并改编 [CopilotKit/openmuse](https://github.com/CopilotKit/openmuse) 固定提交 `1ac68f3909f2478ab6280883f1ab5ea65eb5719d` 的React Native UI主题及聊天布局模式，在当前React DOM/Electron客户端实现。上游为MIT，Copyright (c) 2026 OpenMuse contributors；完整说明保留在 `clients/openim/public/third-party/openmuse/LICENSE.txt` 并进入构建静态资源。不复制其品牌图、用户照片或测试数据，不引入其Intelligence后端。此记录不改变已有OpenIM派生部分的许可。实际范围见[界面交接](docs/development/openmuse-desktop-ui.md)。

@@ -1,0 +1,12 @@
+.research-read-summary {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e9eef0;
+  color: #647980;
+  font-size: 13px;
+  summary { cursor: pointer; display: flex; align-items: center; gap: 7px; }
+  p { margin: 9px 0; line-height: 1.6; }
+}
+.research-read-sources { display: flex; flex-wrap: wrap; gap: 7px; .ant-btn { height: auto; white-space: normal; text-align: left; padding: 5px 10px; } }
+.research-read-caption { color: #718188; font-size: 13px; line-height: 1.7; margin: 8px 0 14px; }
+.research-read-excerpt { margin: 16px 0; padding: 20px 22px; background: #f5f8f8; border-left: 3px solid #a5c8ca; border-radius: 8px; color: #263b42; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }

@@ -1,5 +1,7 @@
 # AcceptCat · 老师与实验室团队的科研工作平台
 
+Windows **0.10.0** 正在完成[科研能力中心与资料素材库](docs/development/research-capability-center.md)：科研 Agent 分类、六份私人文字配置、资料来源 / 版本 / 原件、本人 Agent 资料检索与片段回执、完整本机 Skill 素材。后续绘图和执行工具尚未实现；准确安装与云端状态见[当前状态](docs/current-state.md)。
+
 AcceptCat 面向学校老师和实验室团队，目标是提升科研效率、沉淀标准流程，并方便负责人管理和对齐。采用微信式聊天，真人和 Agent 共用通讯录；个人助理帮助成员工作，项目、任务、交付和审阅串联课题组协作。接下来约半年以本人和学生的真实课题持续使用为主，优先完善 Windows 桌面基础体验、团队任务流程、可复用科研模板和真实进展总览。微信 / 企微连接器及面向广泛消费者的扩展暂缓。产品目标和工程已实现范围分别记录，见[产品规划v0.9](docs/product-plan.md)、[开发路线](docs/roadmap.md)与[当前状态](docs/current-state.md)。
 
 2026-10-10：AcceptCat **0.9.0** 的[科研团队工作台](docs/development/research-team-workbench.md)和Windows安装包已完成，配套API / worker已成对部署（contract0.23 / schema021无迁移）。目标规划、学生本人承接、阻碍跟进、成果提交、导师反馈和修订验收使用真实状态；私人AI规划使用发起人默认模型，普通新消息不误带旧论文。603项共享检查、9组合成师生流程、实际NSIS及原生启动通过；[部署与恢复记录](docs/deployment/acceptcat-research-team.md)、准确安装包与验证边界见[当前状态](docs/current-state.md)。此包未公开Release，需手工安装。

@@ -120,8 +120,8 @@ describe('social workspace actual HTTP/SQLite; model and IM transport deliberate
   expect(active.conversationId).toBeTruthy()
  })
  it('020 adds only new tables/indexes and preserves all019 rows/checksums on repeated migration',async()=>{
-  const s=await setup();await s.own();s.db.exec('DROP TABLE installed_skill_uses; DROP TABLE installed_skill_versions; DROP TABLE installed_skills; DROP TABLE social_groups; DROP TABLE personal_work_participants; DROP TABLE personal_work_tasks; DROP TABLE capability_publications; DELETE FROM schema_migrations WHERE version>=20')
+  const s=await setup();await s.own();s.db.exec('DROP TABLE research_agent_bindings; DROP TABLE research_file_pages; DROP TABLE research_file_versions; DROP TABLE research_files; DROP TABLE research_collections; DROP TABLE installed_skill_uses; DROP TABLE installed_skill_versions; DROP TABLE installed_skills; DROP TABLE social_groups; DROP TABLE personal_work_participants; DROP TABLE personal_work_tasks; DROP TABLE capability_publications; DELETE FROM schema_migrations WHERE version>=20')
   const tables=s.db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(r=>String(r.name)),hashes=()=>Object.fromEntries(tables.map(t=>[t,createHash('sha256').update(JSON.stringify(s.db.prepare(`SELECT * FROM ${t} ${t==='schema_migrations'?'WHERE version<=19':''} ORDER BY rowid`).all())).digest('hex')]))
-  const before=hashes();migrate(s.db);migrate(s.db);expect(hashes()).toEqual(before);expect(s.db.prepare('SELECT max(version) v FROM schema_migrations').get()!.v).toBe(21);expect(s.db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+  const before=hashes();migrate(s.db);migrate(s.db);expect(hashes()).toEqual(before);expect(s.db.prepare('SELECT max(version) v FROM schema_migrations').get()!.v).toBe(22);expect(s.db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
  })
 })

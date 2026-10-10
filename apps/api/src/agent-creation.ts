@@ -19,7 +19,7 @@ export function isAgentCreationCommand(text: string) {
   return true
 }
 
-export const agentCreationBoundary='当前仅依据用户提供的文字进行讨论；不联网、不自动读取 PDF 或 SDK 文件、不运行工具，不配置独立模型或 API Key。'
+export const agentCreationBoundary='可讨论你发送的文字、已解析文件和明确绑定的获准资料；不会自动联网或运行脚本，独立模型和工具需另行配置。'
 export const GeneratedProfile=z.strictObject({displayName:z.string().trim().min(1).max(60),introduction:z.string().trim().min(1).max(80),capabilityDescription:z.string().trim().min(1).max(200),personality:z.string().trim().min(1).max(80)})
 export const AgentCreationOutput=z.discriminatedUnion('kind',[
   z.strictObject({kind:z.literal('create_agent'),profile:GeneratedProfile}),
@@ -42,6 +42,6 @@ export function applyAgentCreation(s:ChatService,turnId:string,generated:z.infer
 // Existing 0.14 workers/clients have strict schemas. New metadata belongs in
 // request_json; even a new limit code has a legacy-compatible persisted failure.
 export function legacyTurnDocument(turn:AgentTurn) {
-  const {purpose:_purpose,createdAgent:_createdAgent,fileRead:_fileRead,assistantReceipt:_assistantReceipt,memoryReceipt:_memoryReceipt,followupReceipt:_followupReceipt,...document}=turn
+  const {purpose:_purpose,createdAgent:_createdAgent,fileRead:_fileRead,libraryRead:_libraryRead,assistantReceipt:_assistantReceipt,memoryReceipt:_memoryReceipt,followupReceipt:_followupReceipt,...document}=turn
   return {...document,failure:document.failure==='AGENT_LIMIT_REACHED'?'INVALID_MODEL_OUTPUT':document.failure}
 }

@@ -111,6 +111,7 @@ export const ResearchUserCard = forwardRef<
       footer={null}
       destroyOnClose
       width={500}
+      bodyStyle={{ maxHeight: "calc(100vh - 160px)", overflowY: "auto" }}
     >
       {(error || failure) && <Alert type="error" showIcon message={error || failure} />}
       {!entry && !props.contactId && (

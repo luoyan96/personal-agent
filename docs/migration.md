@@ -95,3 +95,9 @@
 0.8.0基于0.7.0科研规划，研究OpenMuse固定提交 `1ac68f3909f2478ab6280883f1ab5ea65eb5719d` 的React Native/Expo界面，将主题和布局模式适配到当前React DOM/Electron。原生OpenIM SDK、科研API、账号关系、计划/任务存储、更新源和Windows数据身份保持；没有引入第二套账号/IM/数据库，也没有安装CopilotKit Intelligence、AG-UI或A2A运行时。上游MIT保留在客户端public静态资源，已有客户端许可仍独立适用。
 
 聊天变为浅色导航、可收起列表、居中正文与浮动输入区；工作台和其他桌面页采用同一token。差异、概念到实际截图的检查和验证边界见[桌面UI交接](development/openmuse-desktop-ui.md)。本地安装候选与公开发布/云端分别记录，不因生成安装包而部署服务器。
+
+## 2026-10-10 科研能力中心第一阶段
+
+沿用现有 OpenIM / 科研账号 / API / worker，在 Windows 0.10.0 加入科研场景能力分类、六份私人文字 Agent 配置、资料集合、不可变来源版本与原件、当前权限检索、Agent 资料绑定和聊天来源片段回执。migration 022 仅新增资料库对象；旧 migration checksum 保留。本机 Skill 导入扩展为完整原件与素材保存，文字授权仍沿用旧合同，原件不会自动上传或共享。
+
+paper-framework-figure-studio-pro 固定修订仅在 Git 外测试完整包往返，没有复制整库到项目或执行其脚本。后续专业知识包、视觉检索、真实科研工具执行与评估尚未实现。受测范围与精确部署见 development/research-capability-center.md 和 current-state.md。

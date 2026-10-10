@@ -64,11 +64,12 @@ function sample(s: JsonShape, key = ''): unknown {
   if (key === 'digest') return 'a'.repeat(64)
   if (key === 'sha256') return 'a'.repeat(64)
   if (key === 'contentBase64') return 'eA=='
+  if (key === 'mediaType') return 'application/octet-stream'
   if (key === 'Idempotency-Key') return 'synthetic_command_0001'
   return 'synthetic'.padEnd(s.minLength ?? 1, 'x')
 }
 export const endpointExamples = Object.fromEntries(Object.entries(routes).map(([name, route]) => {
   const request = sample(z.toJSONSchema(route.request, { unrepresentable: 'any' }) as JsonShape)
-  const response = name === 'content' ? new Uint8Array([120]) : sample(z.toJSONSchema(route.response, { unrepresentable: 'any' }) as JsonShape)
+  const response = name === 'content' || name === 'researchFileContent' ? new Uint8Array([120]) : sample(z.toJSONSchema(route.response, { unrepresentable: 'any' }) as JsonShape)
   return [name, { contractVersion: m.contractVersion, synthetic: true, method: route.method, path: route.path, stage: route.stage, status: route.status, request: route.request.parse(request), response: route.response.parse(response) }]
 }))

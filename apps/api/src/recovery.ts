@@ -13,7 +13,9 @@ function flush(path:string){const fd=openSync(path,'r+');try{fsyncSync(fd)}final
 function regular(path:string){if(!lstatSync(path).isFile()||lstatSync(path).isSymbolicLink())throw new Error('REGULAR_FILE_REQUIRED')}
 function separate(parent:string,child:string){const r=relative(parent,child);if(!r||(!r.startsWith('..')&&!isAbsolute(r)))throw new Error('PATHS_MUST_BE_SEPARATE')}
 function validateBlobs(db:ReturnType<typeof openDatabase>,root:string){
- return db.prepare('SELECT blob_key,document FROM artifacts ORDER BY blob_key').all().map(row=>{
+ const libraryExists=!!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='research_file_versions'").get()
+ const rows=db.prepare(`SELECT blob_key,document FROM artifacts ${libraryExists?"UNION ALL SELECT blob_key,json_object('sha256',json_extract(document,'$.sha256'),'size',json_extract(document,'$.byteLength')) document FROM research_file_versions":''} ORDER BY blob_key`).all()
+ return rows.map(row=>{
   const key=String(row.blob_key);if(!/^[a-f0-9-]+\.blob$/.test(key))throw new Error('INVALID_BLOB_KEY')
   const doc=JSON.parse(String(row.document)) as {sha256:string;size:number},path=join(root,key);regular(path)
   if(sha(path)!==doc.sha256||lstatSync(path).size!==doc.size)throw new Error('ARTIFACT_INTEGRITY_FAILED')
