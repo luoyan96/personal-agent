@@ -26,6 +26,7 @@ import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 import { SkillLibrary } from "./SkillLibrary";
 import { TaskPlanning } from "./TaskPlanning";
 import { ResearchTeamWorkbench } from "./ResearchTeamWorkbench";
+import { ResearchLibrary } from "./ResearchLibrary";
 type Category = "ongoing" | "awaiting_me" | "completed";
 function WorkbenchOverview({
   card,
@@ -131,7 +132,9 @@ function WorkbenchOverview({
 export function DesktopWorkbench() {
   const [params, setParams] = useSearchParams();
   const tab =
-    params.get("view") === "skills"
+    params.get("view") === "library"
+      ? "library"
+      : params.get("view") === "skills"
       ? "skills"
       : params.get("view") === "scheduled" || params.get("tab") === "scheduled"
       ? "scheduled"
@@ -153,7 +156,7 @@ export function DesktopWorkbench() {
   const availability = useResearchRead(
     readWorkspaceAvailability,
     "workspace-availability",
-    tab !== "reports" && tab !== "skills",
+    tab !== "reports" && tab !== "skills" && tab !== "library",
   );
   const supported = availability.data?.available === true;
   const teamAvailability = useResearchRead(
@@ -263,7 +266,7 @@ export function DesktopWorkbench() {
           <h1>工作台</h1>
           <p>对齐目标、成员下一步和实际科研成果</p>
         </div>
-        <Button
+        {tab !== "library" && <Button
           type="primary"
           disabled={!supported}
           onClick={() => {
@@ -278,7 +281,7 @@ export function DesktopWorkbench() {
           }}
         >
           {tab === "tasks" ? "新建单项任务" : "规划新任务"}
-        </Button>
+        </Button>}
       </header>
       <div className="workspace-toolbar">
         <Segmented
@@ -292,6 +295,7 @@ export function DesktopWorkbench() {
             { label: "定时任务", value: "scheduled" },
             { label: "本机报告", value: "reports" },
             { label: "我的技能", value: "skills" },
+            { label: "资料与素材库", value: "library" },
           ]}
         />
         {tab === "tasks" && (
@@ -312,7 +316,9 @@ export function DesktopWorkbench() {
           />
         )}
       </div>
-      {tab === "skills" ? (
+      {tab === "library" ? (
+        <div className="workspace-full-panel research-library-panel"><ResearchLibrary /></div>
+      ) : tab === "skills" ? (
         <div className="workspace-full-panel">
           <SkillLibrary />
         </div>

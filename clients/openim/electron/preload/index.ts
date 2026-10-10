@@ -128,6 +128,11 @@ const Api: IElectronAPI = {
   inspectSkillGithub: (address) => ipcRenderer.invoke("inspect-skill-github", address),
   importPrivateSkill: (kind, selection) =>
     ipcRenderer.invoke("import-private-skill", kind, selection),
+  commitSkillBundle: (token, locator) => ipcRenderer.invoke("commit-skill-bundle", token, locator),
+  discardSkillBundle: (token) => ipcRenderer.invoke("discard-skill-bundle", token),
+  skillBundleManifest: (locator) => ipcRenderer.invoke("skill-bundle-manifest", locator),
+  readSkillBundleAsset: (locator, path) => ipcRenderer.invoke("read-skill-bundle-asset", locator, path),
+  saveSkillBundleAsset: (locator, path) => ipcRenderer.invoke("save-skill-bundle-asset", locator, path),
   getDesktopUpdateState: () => ipcRenderer.invoke("desktop-update-state"),
   onDesktopUpdateState: (callback) =>
     subscribe("desktop-update-state-changed", callback),

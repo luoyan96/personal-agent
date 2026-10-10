@@ -20,6 +20,7 @@ import { AgentFileReadSummary, agentFileReadCoverage } from "./AgentFileReadSumm
 import { PersonalReceiptCard } from "./PersonalReceiptCard";
 import { ContinueAgentFileReadingButton } from "./ContinueAgentFileReadingButton";
 import SafeMessageMarkdown from "./SafeMessageMarkdown";
+import { ResearchReadSummary } from "./ResearchReadSummary";
 
 export default function ResearchMessageRender({
   message,
@@ -168,6 +169,7 @@ export default function ResearchMessageRender({
       {read.data && (
         <>
           {read.data.fact.text && <SafeMessageMarkdown text={read.data.fact.text} />}
+          {currentTurn?.libraryRead && currentTurn.outputMessageId === read.data.fact.id && <ResearchReadSummary read={currentTurn.libraryRead} />}
           {read.data.fact.files?.map((file) => (
             <AgentFileReadSummary
               key={file.messageId}

@@ -1,6 +1,6 @@
 import { Alert, App, Button, Input, Modal, Segmented, Select } from "antd";
 import { useLayoutEffect, useRef, useState } from "react";
-import type { CapabilityPublication } from "@research-agent-platform/contracts";
+import type { CapabilityPublication, Contact } from "@research-agent-platform/contracts";
 import OIMAvatar from "@/components/OIMAvatar";
 import { researchApi } from "./api";
 import { useResearchRead } from "./useResearchRead";
@@ -13,6 +13,11 @@ import { workspaceApi } from "./workspace-api";
 import "./workspace.scss";
 import { readWorkspaceAvailability } from "./workspace-availability";
 import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
+import { CapabilityTemplates } from "./CapabilityTemplates";
+import { AgentResearchCollections } from "./KnowledgeLibrary";
+import { capabilityCategory, capabilityInput, capabilityStatus, researchCategories, type ResearchCategory } from "./capability-center";
+import "./capability-center.scss";
+import "./research-library.scss";
 
 function PublicationDetail({
   id,
@@ -80,8 +85,8 @@ function PublicationDetail({
 }
 
 export function CapabilitySquare() {
-  const [view, setView] = useState<"public" | "mine">("public"),
-    [kind, setKind] = useState<"all" | "human" | "agent">("all");
+  const [view, setView] = useState<"public" | "lab" | "mine">("public");
+  const [category, setCategory] = useState<ResearchCategory>("全部");
   const [search, setSearch] = useState(""),
     [query, setQuery] = useState(""),
     [pages, setPages] = useState<(string | undefined)[]>([undefined]);
@@ -92,14 +97,17 @@ export function CapabilitySquare() {
   );
   const supported = availability.data?.available === true;
   const read = useResearchRead(
-    () => workspaceApi.square(view, kind, query, cursor),
-    `square:${view}:${kind}:${query}:${cursor || ""}`,
-    supported,
+    () => workspaceApi.square("public", "all", query, cursor),
+    `square:public:${query}:${cursor || ""}`,
+    supported && view === "public",
   );
+  const local = useResearchRead((signal) => researchApi("chatContacts", { query: { view: view === "mine" ? "mine" : "directory", scope: "local", search: query, cursor, limit: 30 }, signal }), `square-contacts:${view}:${query}:${cursor || ""}`, supported && view !== "public");
   const actorId = useResearchStore((s) => s.actor?.member.id),
     generation = useResearchStore((s) => s.generation);
   const [selected, setSelected] = useState<string>(),
     [managedContact, setManagedContact] = useState<string>();
+  const [selectedContact, setSelectedContact] = useState<string>();
+  const selectedContactRead = useResearchRead((signal) => researchApi("chatContact", { params: { id: selectedContact! }, signal }), `square-selected-contact:${selectedContact}`, !!selectedContact && supported);
   const profile = useRef<OverlayVisibleHandle>(null);
   const [publishing, setPublishing] = useState(false),
     [contactId, setContactId] = useState(""),
@@ -133,12 +141,14 @@ export function CapabilitySquare() {
   useLayoutEffect(() => {
     if (!supported) {
       setSelected(undefined);
+      setSelectedContact(undefined);
       setPublishing(false);
       setInvite(undefined);
     }
   }, [supported]);
   useLayoutEffect(() => {
     setSelected(undefined);
+    setSelectedContact(undefined);
     setPublishing(false);
     setInvite(undefined);
     setManagedContact(undefined);
@@ -161,6 +171,12 @@ export function CapabilitySquare() {
         ? c.identity.memberId === actorId
         : c.identity.kind === "personal_agent" && c.identity.ownerMemberId === actorId,
     ) || [];
+  const sourceContacts = (local.data?.data || []).filter(c => view !== "mine" || (c.identity.kind === "personal_agent" && c.identity.ownerMemberId === actorId));
+  const publicResults = (read.data?.data || []).filter(p => category === "全部" || capabilityCategory(p.contact, p.tags) === category);
+  const localResults = sourceContacts.filter(c => category === "全部" || capabilityCategory(c) === category);
+  const librarySupported = !!availability.data?.version && Number(availability.data.version.split(".")[1]) >= 24;
+  const refreshLists = async () => { await Promise.all([read.refresh(), local.refresh()]); };
+  const ownerLabel = (c: Contact) => c.identity.kind === "human" ? c.displayName : c.identity.ownerMemberId === actorId ? "由你维护" : "由所属账号维护";
   const command = async (
     call: () => Promise<unknown>,
     success: string,
@@ -283,8 +299,8 @@ export function CapabilitySquare() {
     <div className="social-workspace workspace-square">
       <header className="workspace-heading">
         <div>
-          <h1>能力广场</h1>
-          <p>发现真人和 Agent 的能力，先认识，再决定是否合作。</p>
+          <h1>科研能力中心</h1>
+          <p>为科研任务找到合适的助手，使用你获准的资料。</p>
         </div>
         <Button
           type="primary"
@@ -298,6 +314,7 @@ export function CapabilitySquare() {
         >
           公开我的能力
         </Button>
+        <img className="capability-center-desk" src="/assets/acceptcat/research-desk.jpg" alt="猫咪科研书桌" />
       </header>
       <div className="workspace-toolbar">
         <Segmented
@@ -306,24 +323,23 @@ export function CapabilitySquare() {
             setView(v as typeof view);
             setPages([undefined]);
             setSelected(undefined);
+            setSelectedContact(undefined);
           }}
           options={[
             { label: "发现能力", value: "public" },
-            { label: "我的公开资料", value: "mine" },
+            { label: "课题组能力", value: "lab" },
+            { label: "我的 Agent", value: "mine" },
           ]}
         />
         <Segmented
-          value={kind}
+          aria-label="科研能力分类"
+          value={category}
           onChange={(v) => {
-            setKind(v as typeof kind);
-            setPages([undefined]);
+            setCategory(v as ResearchCategory);
             setSelected(undefined);
+            setSelectedContact(undefined);
           }}
-          options={[
-            { label: "全部", value: "all" },
-            { label: "个人", value: "human" },
-            { label: "Agent", value: "agent" },
-          ]}
+          options={[...researchCategories]}
         />
         <Input.Search
           aria-label="搜索公开能力"
@@ -334,14 +350,16 @@ export function CapabilitySquare() {
             setQuery(v.trim());
             setPages([undefined]);
             setSelected(undefined);
+            setSelectedContact(undefined);
           }}
         />
       </div>
-      {(read.error || failure || notice) && (
+      {(read.error || local.error || failure || notice) && (
         <Alert
           className="mx-5 mt-3"
-          type={read.error || failure ? "warning" : "info"}
-          message={read.error || failure || notice}
+          type={read.error || local.error || failure ? "warning" : "info"}
+          message={read.error || local.error || failure || notice}
+          action={(read.error || local.error) ? <Button onClick={refreshLists}>重试读取</Button> : undefined}
         />
       )}
       {!supported ? (
@@ -352,20 +370,20 @@ export function CapabilitySquare() {
           onRetry={availability.refresh}
         />
       ) : (
-        <div className={`workspace-square-body ${selected ? "has-selection" : ""}`}>
+        <div className={`workspace-square-body ${selected || selectedContact ? "has-selection" : ""}`}>
           <section className="workspace-square-results" aria-label="公开能力列表">
-            {!read.data && !read.error && (
+            {!(view === "public" ? read.data : local.data) && !(read.error || local.error) && (
               <p role="status" className="p-5">
-                正在读取公开能力…
+                正在读取科研能力…
               </p>
             )}
             <div className="workspace-capability-grid">
-              {read.data?.data.map((p) => (
+              {view === "public" && publicResults.map((p) => (
                 <button
                   className="workspace-capability-card"
                   key={p.id}
                   aria-pressed={selected === p.id}
-                  onClick={() => setSelected(p.id)}
+                  onClick={() => { setSelected(p.id); setSelectedContact(undefined); }}
                 >
                   <header>
                     <OIMAvatar text={p.contact.displayName} size={44} />
@@ -385,6 +403,7 @@ export function CapabilitySquare() {
                       p.contact.profile.introduction ||
                       "本人尚未填写能力介绍"}
                   </p>
+                  <dl className="capability-card-fields"><div><dt>适用输入</dt><dd>{capabilityInput(p.contact)}</dd></div><div><dt>维护者</dt><dd>{ownerLabel(p.contact)}</dd></div></dl>
                   <div className="workspace-tags">
                     {p.tags.map((t) => (
                       <span key={t}>{t}</span>
@@ -392,17 +411,13 @@ export function CapabilitySquare() {
                   </div>
                   <footer>
                     <span>
-                      {p.contact.agentRuntime
-                        ? "外部文字服务"
-                        : p.contact.identity.kind === "human"
-                        ? "本人能力名片"
-                        : "站内 Agent"}
+                      {capabilityStatus(p.contact)}
                     </span>
                     <span>
                       {p.status === "withdrawn"
                         ? "已撤回"
-                        : p.contact.allowedActions.includes("chat")
-                        ? "可聊天"
+                        : p.contact.allowedActions.includes("chat") && p.contact.availability.status === "available"
+                        ? "查看与聊天"
                         : p.contact.relationship.status === "pending_outbound"
                         ? "申请中"
                         : "查看名片"}
@@ -410,18 +425,19 @@ export function CapabilitySquare() {
                   </footer>
                 </button>
               ))}
+              {view !== "public" && localResults.map(c => <button className="workspace-capability-card" key={c.id} aria-pressed={selectedContact === c.id} onClick={() => { setSelectedContact(c.id); setSelected(undefined); }}><header><OIMAvatar text={c.displayName} size={44} /><div><h2>{c.displayName}</h2><span className="workspace-kind">{c.identity.kind === "human" ? "个人" : "Agent"}</span></div></header><p className="workspace-capability-description">{c.profile.introduction || c.profile.capabilityDescription || "尚未填写能力用途"}</p><dl className="capability-card-fields"><div><dt>适用输入</dt><dd>{capabilityInput(c)}</dd></div><div><dt>维护者</dt><dd>{ownerLabel(c)}</dd></div></dl><footer><span>{capabilityStatus(c)}</span><span>{c.allowedActions.includes("edit_profile") ? "打开配置" : "查看详情"}</span></footer></button>)}
             </div>
-            {read.data && !read.data.data.length && (
+            {(view === "public" ? read.data && !publicResults.length : local.data && !localResults.length) && (
               <div className="workspace-empty">
-                <h2>{view === "mine" ? "能力资料默认不公开" : "没有匹配的公开能力"}</h2>
+                <h2>{view === "mine" ? "暂无匹配的私人 Agent" : view === "lab" ? "暂无匹配的课题组能力" : "暂无匹配的公开能力"}</h2>
                 <p>
                   {view === "mine"
-                    ? "可以选择自己或自己的 Agent，明确公开一张能力名片。"
-                    : "换个搜索词，或主动公开你的能力，让朋友发现你。"}
+                    ? "从配置模板添加一个助手，之后打开配置并选择获准资料。"
+                    : "调整筛选条件，或从下方配置模板创建自己的 Agent。"}
                 </p>
               </div>
             )}
-            {(pages.length > 1 || read.data?.nextCursor) && (
+            {(pages.length > 1 || (view === "public" ? read.data?.nextCursor : local.data?.nextCursor)) && (
               <div className="workspace-pages">
                 <Button
                   size="small"
@@ -432,9 +448,9 @@ export function CapabilitySquare() {
                 </Button>
                 <Button
                   size="small"
-                  disabled={!read.data?.nextCursor}
+                  disabled={!(view === "public" ? read.data?.nextCursor : local.data?.nextCursor)}
                   onClick={() => {
-                    const nextCursor = read.data?.nextCursor;
+                    const nextCursor = view === "public" ? read.data?.nextCursor : local.data?.nextCursor;
                     if (nextCursor) setPages((v) => [...v, nextCursor]);
                   }}
                 >
@@ -442,7 +458,10 @@ export function CapabilitySquare() {
                 </Button>
               </div>
             )}
+            <CapabilityTemplates key={generation} category={category} search={query} onChanged={refreshLists} onConfigure={id => { setView("mine"); setSelected(undefined); setSelectedContact(id); setPages([undefined]); }} />
+            <p className="capability-center-boundary">脚本执行与视觉工具尚未接通。分类依据当前能力介绍；真实用途和输入以维护者配置为准。</p>
           </section>
+          {selectedContact && <aside className="workspace-square-detail"><Button type="text" className="workspace-close-detail" onClick={() => setSelectedContact(undefined)}>收起详情</Button><WorkspaceContactCard key={selectedContact} contactId={selectedContact} onManage={id => { setManagedContact(id); profile.current?.openOverlay(); }} onChanged={refreshLists}>{selectedContactRead.data?.data.identity.kind !== "human" && selectedContactRead.data?.data.allowedActions.includes("edit_profile") && librarySupported && <AgentResearchCollections key={selectedContact} agentId={selectedContact} />}</WorkspaceContactCard></aside>}
           {selected && (
             <aside className="workspace-square-detail">
               <Button

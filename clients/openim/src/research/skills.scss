@@ -167,3 +167,46 @@
     grid-template-columns: 260px 1fr;
   }
 }
+.skill-materials {
+  margin: 20px 0;
+}
+.skill-material-paths {
+  margin: 12px 0;
+  max-height: 280px;
+  overflow: auto;
+  display: grid;
+  gap: 4px;
+}
+.skill-material-paths button {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #e3e8e4;
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+.skill-material-paths button[aria-pressed="true"] {
+  border-color: #698b76;
+  background: #f3f8f4;
+}
+.skill-material-paths small {
+  color: #6b726d;
+}
+.skill-material-preview {
+  overflow-wrap: anywhere;
+}
+.skill-material-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  margin-top: 12px;
+}
+.skill-material-preview pre {
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

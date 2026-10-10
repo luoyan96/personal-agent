@@ -1,4 +1,5 @@
 import { Platform } from "@openim/wasm-client-sdk";
+import type { SkillBundleFile, SkillBundleManifest, SkillBundleLocator } from "@research-agent-platform/research-skills/import";
 import type { DesktopUpdateSnapshot, DesktopUpdateAction } from "./desktopUpdates";
 import type { DesktopReportArtifact, DesktopReportScope } from "./desktopWork";
 import type {
@@ -16,7 +17,12 @@ export interface IElectronAPI {
   cancelChatImageOcr: (id: string) => Promise<void>;
   saveChatImageText: (text: string, original: boolean) => Promise<boolean>;
   inspectSkillGithub: (address:string) => Promise<{id:string;label:string;revision:string}[]>;
-  importPrivateSkill: (kind:"folder"|"zip"|"github", selection?:string) => Promise<import("@research-agent-platform/contracts").RequestFor<"installSkill">["body"]|null>;
+  importPrivateSkill: (kind:"folder"|"zip"|"github", selection?:string) => Promise<(import("@research-agent-platform/contracts").RequestFor<"installSkill">["body"] & {localBundle:{token:string;manifest:SkillBundleManifest}})|null>;
+  commitSkillBundle: (token:string, locator:SkillBundleLocator) => Promise<SkillBundleManifest>;
+  discardSkillBundle: (token:string) => Promise<void>;
+  skillBundleManifest: (locator:SkillBundleLocator) => Promise<SkillBundleManifest|null>;
+  readSkillBundleAsset: (locator:SkillBundleLocator, path:string) => Promise<(SkillBundleFile|{path:string;mediaType:string;size:number;sha256:string}) & {base64:string}>;
+  saveSkillBundleAsset: (locator:SkillBundleLocator, path:string) => Promise<{saved:boolean}>;
   getDesktopUpdateState: () => Promise<DesktopUpdateSnapshot>;
   onDesktopUpdateState: (callback: (state: DesktopUpdateSnapshot) => void) => () => void;
   desktopUpdateAction: (action: DesktopUpdateAction, version?: string) => Promise<DesktopUpdateSnapshot>;

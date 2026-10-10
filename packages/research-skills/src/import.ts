@@ -1,6 +1,27 @@
 import { parse } from "yaml";
 
 export type SkillFile = { path: string; text: string };
+export type SkillBundleFile = {
+  path: string;
+  category: "instruction" | "reference" | "script" | "asset" | "other";
+  mediaType: string;
+  size: number;
+  sha256: string;
+};
+export type SkillBundleManifest = {
+  format: 1;
+  bundleDigest: string;
+  packageDigest: string;
+  files: SkillBundleFile[];
+  totalBytes: number;
+  originalZip?: { size: number; sha256: string };
+};
+export type SkillBundleLocator = {
+  accountKey: string;
+  skillId: string;
+  revision: number;
+  digest: string;
+};
 export type ImportedSkill = {
   name: string;
   description: string;
@@ -17,7 +38,17 @@ export function safeSkillPath(value: string) {
     value.length > 400 ||
     /[\\\x00-\x1f:]/.test(value) ||
     value.startsWith("/") ||
-    value.split("/").some((p) => !p || p === "." || p === "..")
+    value
+      .split("/")
+      .some(
+        (p) =>
+          !p ||
+          p === "." ||
+          p === ".." ||
+          /[. ]$/.test(p) ||
+          /[<>"|?*]/.test(p) ||
+          /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(p)
+      )
   )
     throw new Error("技能包包含不安全的路径。");
   return value;
@@ -30,7 +61,8 @@ export function parseImportedSkill(
 ): ImportedSkill {
   if (
     files.length > 300 ||
-    new Set(files.map((f) => f.path.toLowerCase())).size !== files.length
+    new Set(files.map((f) => f.path.normalize("NFC").toLowerCase())).size !==
+      files.length
   )
     throw new Error("技能文字文件过多或路径重复。");
   const decoder = new TextEncoder();

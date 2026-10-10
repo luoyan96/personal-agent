@@ -590,3 +590,18 @@ renderer / Electron类型、4项图片与6项发送恢复检查通过。新0.8.1
 当前开发优先级为基础聊天 / 材料 / 上下文 / 错误恢复，随后串联真实团队任务，再增加可调整的科研模板与负责人总览。总览依据授权项目、承接、交付和审阅事实；标准化模板不自动公开私人 Skill 和方法。微信 / 企微连接器、消费级增长、泛行业能力市场和手机端扩展暂缓；上节企微首次回发授权保留、消息未发，但回发试验不再是当前下一步。
 
 本批只修改规划及交接文字，沿用 feature/memory-experience 源码与既有本地候选；无产品代码、安装包、发布、部署、迁移、模型调用或用户窗口操作。文字差异 `git diff --check` 通过，保留既有 CRLF 转 LF 提示；没有为规划文字重复代码 CI。规划不作为新功能实现、完整团队流程或采购 / 付费已验证的证据。后续以真实课题中老师和非开发学生的承接、可检查交付、反馈延续和协调投入变化验收，已有工程测试不能代替持续科研使用。
+
+## 2026-10-10 科研能力中心第一阶段实施与本地验收
+
+按用户授权由前端、科研资料后台和桌面素材三组协作，分支 feature/research-capability-center，Windows 0.10.0 / contract 0.24.0 / chat 1.12.0 / 新 migration 022。已实现场景分类和六份私人文字配置、资料集合的明确授权范围、不可变原件版本与元数据、当前授权关键词检索、本人私人 Agent 绑定与来源片段回执、完整本机 Skill 原件管理。第二阶段视觉 / 向量检索和科研脚本沙箱、第三阶段能力评估尚未实现。
+
+focused资料库10项、聊天来源6项和连续聊天 / 上下文合计23项通过；相关旧DB升级11文件163项、contracts / web / creation修复3文件221项通过。前端类型和6focused通过，11组真实组件 + API / SQLite合成UI验收通过（含1024和503重试）。真实上游Skill固定SHA 77557418b4ca8c24fa8961206bf9b8f7f6d030e1，4,160原件往返通过；本机源码与材料在Git外。
+
+失败记录保留：首轮CI30项暴露022迁移夹具/版本清单及旧4000预算边界；修复旧DB夹具并压缩普通聊天冗余命名空间，保留Skill调用者身份后15项聊天/Skill回归通过。其间旧Skill测试因回调身份断言未进入ready而超时，不冒称CPU超时。后续634/634 Vitest通过，但production gate仍期待021且开放SQLite句柄导致清理EPERM掩盖原断言；改期望022并finally关闭，生产两项通过，最终完整CI通过51文件634项、生产CLI/HTTP两项、B0与生产夹具隔离。
+
+实际0.10.0原生验收发现素材UI调用只供连接页使用的status桥导致提交失败，已改为main从真实服务来源补本机成员命名空间、生产renderer只提供成员ID，配置页权限未扩大。重新NSIS publish never打包，7组真实隐藏Electron preload/IPC/store/SHA/PNG/ZIP验收通过；仅dialog路径选择用合成替身，没有供应商调用或真实账号登录。源码状态、失败和最终证据见Git外 .runtime/capability-center-20261010、.runtime/skill-bundle-20261010。完整打包资产核对与独立启动smoke通过（既有electron-log重复初始化提示保留）。
+
+最终生产源码aee02447f985070a0c4b01c392192e7ae4960953已推送，草稿PR34。Windows0.10.0包87376116字节，SHA256 4afa9f8d6792917accdee244669db6b5c1b69877ab117e92c71fabef3bdd05fc，输出D:/deepseek-agent/AcceptCat-Windows/0.10.0，publish never，未公开Release/安装或重启用户客户端。2026-10-10 18:02北京时间配套API / worker已部署research-openim-api:library-aee02447，镜像sha256:1390545b7d576d4984b1263243010e07123d148c1358895e3e92772d3691f3cc；公网ready ok/contract24，新增资料路由匿名401，API healthy / worker running，OpenIM六项实例镜像状态一致。完整备份library-aee02447-20261010T100009Z/research.tar.gz，SHA256 967db69de1cda008f2f0e464088416f3815c2a4187ef92bc71d4d9fc2fcee9a6；先在还原副本验证21→22，正式迁移旧86表SQL/行、6份原件和历史迁移记录均保持，新五表重启前为空。真实用户认证业务和供应商质量未验收；回退边界见docs/deployment/acceptcat-research-library.md。
+首次GitHub run38043062776 Windows24成功，两Linux节点各6个research-chat测试失败，其他50文件628项通过。原因是合成master key文件默认0644被既有Linux安全检查拒绝；仅测试夹具补mode0600，定向6项通过。未修改生产权限、源码或迁移，因此不重打包或部署。失败日志保留Git外；远端最终结果见PR34检查。
+
+修正夹具后的GitHub run38043725537 Ubuntu22.19 / Ubuntu24已成功；Windows原始aee02447检查成功，当前同生产源码的新检查继续由GitHub运行。这里只补证据文档，不为文档重复本地全CI。

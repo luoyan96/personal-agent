@@ -1,0 +1,30 @@
+.workspace-square {
+  background: #fff; font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+  > .workspace-heading { background: #fff; padding: 24px 28px; h1 { font-size: 26px; letter-spacing: -.4px; } p { font-size: 13px; color: #6c7b90; margin-top: 9px; } }
+  > .workspace-toolbar { background: #fff; padding: 16px 24px; gap: 14px; .ant-segmented { background: #f3f6fa; } .ant-input-search { max-width: 280px; margin-left: auto; } }
+  .workspace-square-results { padding: 22px 24px; }
+  .workspace-capability-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 17px; }
+  .workspace-capability-card { border-radius: 14px; border-color: #e1e7ef; padding: 20px; background: #fff; header h2 { font-size: 16px; font-weight: 600; } footer { font-size: 11px; color: #718096; line-height: 1.7; } }
+  .workspace-capability-description { height: auto; min-height: 46px; color: #63738a; font-size: 13px; line-height: 1.75; margin: 18px 0 12px; }
+  .workspace-empty { height: auto; min-height: 150px; margin: 0 0 20px; border: 1px solid #e2e8f0; background: #fbfcfe; border-radius: 14px; padding: 40px 24px; h2 { font-size: 17px; } p { font-size: 13px; } }
+  .workspace-square-detail { border-color: #e5eaf1; width: 400px; }
+}
+.capability-card-fields { font-size: 12px; color: #65758a; margin: 0 0 16px; > div { display: flex; gap: 9px; margin: 9px 0; } dt { width: 55px; flex-shrink: 0; } dd { margin: 0; line-height: 1.65; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; } }
+.capability-template-heading { display: flex; align-items: baseline; gap: 15px; flex-wrap: wrap; margin: 24px 0 16px; h2 { font-size: 19px; font-weight: 650; margin: 0; } p { font-size: 13px; color: #738298; margin: 0; } }
+.capability-templates .workspace-capability-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.capability-template-card { border: 1px solid #e1e7ef; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; background: #fff; min-width: 0; header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } h3 { font-size: 15px; font-weight: 650; margin: 0; } > p { margin: 18px 0 14px; font-size: 13px; line-height: 1.8; color: #68778c; } dl { margin: 0 0 20px; font-size: 12px; color: #68778c; flex: 1; > div { margin-bottom: 11px; } dt { margin-bottom: 5px; } dd { margin: 0; line-height: 1.75; } } > .ant-btn { width: 100%; height: 38px; background: #568d70; border-color: #568d70; border-radius: 9px; } }
+.capability-template-icon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; font-size: 22px; background: #e9f2ff; color: #3c85d5; &.template-paper-revision { background: #efebff; color: #9176d9; } &.template-research-planning { background: #eaf3eb; color: #568d70; } }
+.capability-template-label { margin-left: auto; font-size: 10px; color: #7187a0; background: #f0f4f9; border-radius: 5px; padding: 4px 7px; }
+.capability-center-boundary { color: #7d899a; font-size: 11px; line-height: 1.8; border-top: 1px solid #e5eaf0; margin: 22px 0 0; padding-top: 15px; }
+.capability-center-desk { width: 210px; height: 100px; border-radius: 12px; object-fit: cover; object-position: center 52%; }
+.research-library-panel { padding: 0 !important; min-height: 0; overflow: hidden !important; }
+.personal-agent-desktop .workspace-square {
+  > .workspace-toolbar > .ant-segmented:first-child { flex-basis: 100%; }
+  .workspace-capability-card { border-radius: 14px; padding: 20px; }
+  .ant-btn-primary { background: #568d70; border-color: #568d70; color: #fff; border-radius: 10px; }
+  .ant-btn-primary:hover:enabled { background: #467a5f; color: #fff; }
+}
+.personal-agent-desktop .research-library { .ant-btn { border-radius: 10px; } .ant-btn-primary { background: #568d70; color: #fff; border-color: #568d70; } .ant-btn-primary:hover:enabled { background: #467a5f; color: #fff; } }
+@media (max-width: 1180px) { .capability-center-desk { display: none; } .workspace-square > .workspace-toolbar .ant-segmented { max-width: 100%; overflow: auto; } .workspace-square .workspace-square-detail { width: 340px; } .workspace-square .workspace-capability-grid { grid-template-columns: repeat(auto-fill, minmax(235px, 1fr)); } }
+@media (max-width: 820px) { .workspace-square .workspace-square-body.has-selection { flex-direction: column; overflow: auto; .workspace-square-results { overflow: visible; flex: none; } .workspace-square-detail { width: 100%; border-left: 0; border-top: 1px solid #e5eaf1; overflow: visible; } } }
+@media (max-width: 620px) { .capability-templates .workspace-capability-grid { grid-template-columns: 1fr; } }

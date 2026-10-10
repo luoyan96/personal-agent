@@ -2,10 +2,13 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { request } from "node:https";
 import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
 import {
   parseImportedSkill,
   safeSkillPath,
   type SkillFile,
+  type SkillBundleManifest,
+  type SkillBundleFile,
 } from "@research-agent-platform/research-skills/import";
 
 const AdmZip = createRequire(__filename)("adm-zip");
@@ -13,14 +16,50 @@ const decoder = new TextDecoder("utf-8", { fatal: true });
 const MAX_FILES = 8000,
   MAX_BYTES = 100 * 1024 * 1024;
 type Entry = { path: string; size: number; read: () => Promise<Buffer> };
-async function parsed(entries: Entry[]) {
+export type SkillBundleData = {
+  package: ReturnType<typeof parseImportedSkill>;
+  manifest: SkillBundleManifest;
+  contents: Map<string, Buffer>;
+  originalZip?: Buffer;
+};
+const sha = (data: Buffer | string) => createHash("sha256").update(data).digest("hex");
+export function skillMediaType(name: string) {
+  return (
+    (
+      {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp",
+        ".gif": "image/gif",
+        ".svg": "image/svg+xml",
+        ".pdf": "application/pdf",
+        ".json": "application/json",
+        ".md": "text/markdown",
+        ".txt": "text/plain",
+        ".csv": "text/csv",
+        ".py": "text/x-python",
+        ".js": "text/javascript",
+        ".ts": "text/plain",
+        ".yaml": "text/plain",
+        ".yml": "text/plain",
+      } as Record<string, string>
+    )[path.extname(name).toLowerCase()] || "application/octet-stream"
+  );
+}
+async function parsed(
+  entries: Entry[],
+  originalZip?: Buffer,
+): Promise<SkillBundleData> {
   if (entries.length > MAX_FILES || entries.reduce((n, f) => n + f.size, 0) > MAX_BYTES)
     throw Error("技能包超过 8,000 个文件或 100 MB。");
   const seen = new Set<string>();
   let root: string | undefined;
   for (const e of entries) {
     safeSkillPath(e.path);
-    const lower = e.path.toLowerCase();
+    if (!Number.isSafeInteger(e.size) || e.size < 0 || e.size > MAX_BYTES)
+      throw Error("技能文件长度无效。");
+    const lower = e.path.normalize("NFC").toLowerCase();
     if (seen.has(lower)) throw Error("技能包含重复路径。");
     seen.add(lower);
     if (e.path === "SKILL.md") root = "";
@@ -40,34 +79,87 @@ async function parsed(entries: Entry[]) {
   );
   if (textual.reduce((n, e) => n + e.size, 0) > 900000)
     throw Error("技能说明和参考文字超过 900 KB，未导入，请先拆分技能。");
-  const files: SkillFile[] = [];
-  for (const e of textual) {
-    if (e.size > 400000) throw Error("单个说明文件超过 400 KB。");
+  const files: SkillFile[] = [],
+    contents = new Map<string, Buffer>(),
+    manifestFiles: SkillBundleFile[] = [];
+  let actualBytes = 0;
+  const textPaths = new Set(textual.map((e) => e.path));
+  for (const e of scoped) {
+    if (textPaths.has(e.path) && e.size > 400000)
+      throw Error("单个说明文件超过 400 KB。");
     const data = await e.read();
     if (data.length !== e.size) throw Error("技能文件已变化或 ZIP 长度损坏。");
-    files.push({ path: e.path, text: decoder.decode(data) });
+    actualBytes += data.length;
+    if (actualBytes > MAX_BYTES) throw Error("技能包实际解压超过 100 MB。");
+    if (textPaths.has(e.path)) files.push({ path: e.path, text: decoder.decode(data) });
+    contents.set(e.path, data);
+    manifestFiles.push({
+      path: e.path,
+      category:
+        e.path === "SKILL.md"
+          ? "instruction"
+          : e.path.startsWith("references/")
+          ? "reference"
+          : e.path.startsWith("scripts/")
+          ? "script"
+          : e.path.startsWith("assets/")
+          ? "asset"
+          : "other",
+      mediaType: skillMediaType(e.path),
+      size: data.length,
+      sha256: sha(data),
+    });
   }
-  return parseImportedSkill(
+  const pkg = parseImportedSkill(
     files,
     scoped.filter((e) => /^scripts\//.test(e.path)).length,
     scoped.filter((e) => /^assets\//.test(e.path)).length,
   );
+  manifestFiles.sort((a, b) => a.path.localeCompare(b.path, "en"));
+  return {
+    package: pkg,
+    contents,
+    originalZip,
+    manifest: {
+      format: 1,
+      packageDigest: sha(JSON.stringify(pkg)),
+      bundleDigest: sha(JSON.stringify(manifestFiles)),
+      files: manifestFiles,
+      totalBytes: actualBytes,
+      ...(originalZip
+        ? { originalZip: { size: originalZip.length, sha256: sha(originalZip) } }
+        : {}),
+    },
+  };
 }
 export async function importSkillZip(bytes: Buffer) {
+  return (await importSkillZipBundle(bytes)).package;
+}
+export async function importSkillZipBundle(bytes: Buffer) {
   if (bytes.length > 32 * 1024 * 1024) throw Error("技能 ZIP 超过 32 MB。");
   const zip = new AdmZip(bytes),
     entries: Entry[] = [];
+  const names = new Set<string>();
   for (const e of zip.getEntries()) {
     const name = e.entryName;
     safeSkillPath(name.endsWith("/") ? name.slice(0, -1) : name);
+    const normalized = name.replace(/\/$/, "").normalize("NFC").toLowerCase();
+    if (names.has(normalized)) throw Error("技能 ZIP 包含重复或歧义路径。");
+    names.add(normalized);
     if (((e.header.fileAttr >>> 16) & 0xf000) === 0xa000)
       throw Error("技能包不允许符号链接。");
     if (e.isDirectory) continue;
     entries.push({ path: name, size: e.header.size, read: async () => e.getData() });
   }
-  return parsed(entries);
+  return parsed(entries, bytes);
 }
 export async function importSkillFolder(folder: string) {
+  return (await importSkillFolderBundle(folder)).package;
+}
+export async function importSkillFolderBundle(folder: string) {
+  const selectedRoot = await fs.lstat(folder);
+  if (selectedRoot.isSymbolicLink() || !selectedRoot.isDirectory())
+    throw Error("请选择原始技能目录，不能使用链接。");
   const root = await fs.realpath(folder),
     entries: Entry[] = [];
   let visited = 0;
@@ -77,7 +169,8 @@ export async function importSkillFolder(folder: string) {
       if ([".git", "node_modules", "__pycache__"].includes(child.name)) continue;
       const full = path.join(dir, child.name),
         stat = await fs.lstat(full);
-      if (stat.isSymbolicLink()) throw Error("技能目录不允许链接。");
+      if (stat.isSymbolicLink() || (stat.isFile() && stat.nlink > 1))
+        throw Error("技能目录不允许链接。");
       if (child.isDirectory()) await walk(full, depth + 1);
       else if (stat.isFile()) {
         if (entries.length >= MAX_FILES) throw Error("技能目录文件过多。");

@@ -7,13 +7,18 @@ import { useResearchStore } from "./store";
 import { usePersonalOperation } from "./usePersonalOperation";
 import { useResearchContactChat } from "./useResearchContactChat";
 import SafeMessageMarkdown from "./SafeMessageMarkdown";
+import { SkillMaterials, localSkillLocator } from "./SkillMaterials";
+import type { SkillBundleManifest } from "@research-agent-platform/research-skills/import";
 import "./skills.scss";
 
-type Draft = RequestFor<"installSkill">["body"];
+type Draft = RequestFor<"installSkill">["body"] & {
+  localBundle?: { token: string; manifest: SkillBundleManifest };
+};
 export function SkillLibrary() {
   const [scope, setScope] = useState<"mine" | "available" | "public">("mine"),
     [selected, setSelected] = useState<string>(),
     [draft, setDraft] = useState<Draft>(),
+    [receipt, setReceipt] = useState<InstalledSkill>(),
     [updating, setUpdating] = useState<InstalledSkill>(),
     [installing, setInstalling] = useState(false),
     [failure, setFailure] = useState(""),
@@ -56,7 +61,17 @@ export function SkillLibrary() {
     setBusy(false);
     setSelected(undefined);
     flight.current = false;
+    setReceipt(undefined);
   }, [state.generation]);
+  useLayoutEffect(
+    () => () => {
+      if (draft?.localBundle)
+        void window.electronAPI
+          ?.discardSkillBundle(draft.localBundle.token)
+          .catch(() => {});
+    },
+    [draft?.localBundle?.token],
+  );
   const agents = state.contacts
     .map((e) => e.contact)
     .filter(
@@ -114,19 +129,48 @@ export function SkillLibrary() {
     await act(async () => {
       const { isCurrent } = operation.capture();
       const value = await window.electronAPI!.importPrivateSkill(kind, id);
-      if (isCurrent() && value) setDraft(value);
+      if (isCurrent() && value) {
+        setDraft(value);
+        setReceipt(undefined);
+      } else if (value?.localBundle)
+        await window.electronAPI!.discardSkillBundle(value.localBundle.token);
     });
   }
   const install = () =>
     act(
       async () => {
         if (!draft) return;
-        const result = updating
+        const { isCurrent } = operation.capture();
+        const body = { package: draft.package, source: draft.source };
+        const result = receipt
+          ? { data: receipt }
+          : updating
           ? await researchApi("reviseSkill", {
               params: { id: updating.id },
-              body: { ...draft, expectedVersion: updating.version },
+              body: { ...body, expectedVersion: updating.version },
             })
-          : await researchApi("installSkill", { body: draft });
+          : await researchApi("installSkill", { body });
+        if (!isCurrent()) return;
+        setReceipt(result.data);
+        if (draft.localBundle) {
+          const locator = await localSkillLocator(result.data, state.actor!.member.id);
+          if (!isCurrent()) return;
+          try {
+            await window.electronAPI!.commitSkillBundle(
+              draft.localBundle.token,
+              locator,
+            );
+          } catch (error) {
+            throw Error(
+              `说明已保存为修订 ${
+                result.data.revision
+              }，本机原件尚未关联。再次确认只重试原件保存：${
+                error instanceof Error ? error.message : "保存失败"
+              }`,
+            );
+          }
+        }
+        if (!isCurrent()) return;
         setSelected(result.data.id);
       },
       () => {
@@ -134,6 +178,7 @@ export function SkillLibrary() {
         setInstalling(false);
         setUpdating(undefined);
         setScope("mine");
+        setReceipt(undefined);
       },
     );
   return (
@@ -249,8 +294,9 @@ export function SkillLibrary() {
               <p className="skill-muted">
                 {skill.references.length} 个参考文字文件 · {skill.scriptCount}{" "}
                 个脚本文件 · {skill.assetCount}{" "}
-                个素材文件。当前保存说明与参考文字；脚本和二进制素材不会执行或上传。
+                个素材文件。账号保存说明与参考文字；完整原件保存在导入设备，不自动执行或上传。
               </p>
+              <SkillMaterials key={`${skill.id}:${skill.revision}`} skill={skill} />
               {skill.settings && (
                 <section className="skill-settings">
                   <h3>使用与共享</h3>
@@ -444,12 +490,18 @@ export function SkillLibrary() {
             setInstalling(false);
             setDraft(undefined);
             setUpdating(undefined);
+            setReceipt(undefined);
+            void read.refresh();
           }
         }}
         footer={
           draft ? (
             <Button type="primary" loading={busy} onClick={() => void install()}>
-              {updating ? "保存为新版本" : "确认安装为私人技能"}
+              {receipt
+                ? "重试保存本机原件"
+                : updating
+                ? "保存为新版本"
+                : "确认安装为私人技能"}
             </Button>
           ) : null
         }
@@ -501,6 +553,14 @@ export function SkillLibrary() {
               个参考文字 · {draft.package.instructions.length} 字符说明
             </p>
             <p>来源：{draft.source.label}</p>
+            {draft.localBundle && (
+              <p>
+                将保留 {draft.localBundle.manifest.files.length} 个本机原件，
+                {(draft.localBundle.manifest.totalBytes / 1024 / 1024).toFixed(1)}{" "}
+                MiB。ZIP 同时保留完整原包；文件夹排除 .git / node_modules /
+                __pycache__。取消安装不保存本机原件。
+              </p>
+            )}
             <Alert
               type={draft.package.requirements.length ? "warning" : "info"}
               message={
@@ -508,7 +568,7 @@ export function SkillLibrary() {
                   ? `检测到执行依赖：${draft.package.requirements.join("、")}`
                   : "文字技能可以接入当前聊天执行器"
               }
-              description="确认后会把技能说明和参考文字保存到你的私人账号空间，调用时发送给你的模型服务商。包内脚本和素材不会执行或上传。"
+              description="确认后把说明和参考文字保存到你的私人账号空间，调用时发送给你的模型服务商；同时把完整原件保存于本机资料目录。脚本不会执行，图片不会自动上传或生成。"
             />
             <details>
               <summary>检查 SKILL.md</summary>

@@ -5,6 +5,7 @@ import type { AiCommand } from './ai.js'
 import { reconcile } from './execution-worker.js'
 import Fastify from 'fastify'
 import {runSkills,type SkillCommand} from './skills.js'
+import { ResearchLibraryService, parseResearchImport, type ResearchLibraryCommand, type LibraryRequest } from './research-library.js'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { contractVersion, data, Health, ErrorResponse, errorStatus, routes } from '@research-agent-platform/contracts'
@@ -79,7 +80,7 @@ export function createServer(config: Config, options:{imClient?:OpenImClient;ext
   })
   for (const [name, route] of Object.entries(routes)) {
     if (route.stage === 'B0') continue
-    app.route({ method: route.method, url: route.path.replace(/\{(\w+)\}/g, ':$1'), ...((name==='upload'||name==='agentFileMessage')?{bodyLimit:14000000}:name==='register'?{bodyLimit:8192}:{}), handler: async (request, reply) => {
+    app.route({ method: route.method, url: route.path.replace(/\{(\w+)\}/g, ':$1'), ...((name==='upload'||name==='agentFileMessage'||name==='importResearchFile')?{bodyLimit:14000000}:name==='register'?{bodyLimit:8192}:{}), handler: async (request, reply) => {
       if (!route.implemented && name !== 'planRequest') fail('NOT_IMPLEMENTED')
       if (route.method !== 'GET' && request.headers.origin !== config.origin) fail('FORBIDDEN')
       const connection = database()
@@ -88,6 +89,8 @@ export function createServer(config: Config, options:{imClient?:OpenImClient;ext
       const query = { ...request.query as Record<string, unknown> }
       if ('limit' in query && typeof query.limit === 'string' && /^\d+$/.test(query.limit)) query.limit = Number(query.limit)
       if ('afterSequence' in query && typeof query.afterSequence === 'string' && /^\d+$/.test(query.afterSequence)) query.afterSequence = Number(query.afterSequence)
+      if (name==='researchFileContent' && typeof query.version==='string' && /^\d+$/.test(query.version)) query.version=Number(query.version)
+      if(name==='researchFileExcerpt')for(const field of ['version','pageNumber','start','end'])if(typeof query[field]==='string'&&/^\d+$/.test(query[field] as string))query[field]=Number(query[field])
       if((name==='upload'||name==='agentFileMessage') && typeof (request.body as {contentBase64?:unknown})?.contentBase64==='string' && (request.body as {contentBase64:string}).contentBase64.length>13981016) fail(name==='agentFileMessage'?'FILE_TOO_LARGE':'PAYLOAD_TOO_LARGE')
       if(name==='agentFileMessage'&&typeof (request.body as {mediaType?:unknown})?.mediaType==='string'&&!['application/pdf','text/plain','text/markdown','text/csv'].includes((request.body as {mediaType:string}).mediaType))fail('FILE_UNSUPPORTED')
       const parsed = route.request.safeParse({ params: request.params, query, headers: route.idempotent ? { 'Idempotency-Key': request.headers['idempotency-key'] } : {}, body: route.method === 'GET' ? null : request.body })
@@ -97,6 +100,24 @@ export function createServer(config: Config, options:{imClient?:OpenImClient;ext
       }
       reply.code(route.status)
       if (name === 'register') return routes.register.response.parse(await register(connection,parsed.data as RequestFor<'register'>,request.ip))
+      if(route.stage==='LIBRARY1'){
+        const input=parsed.data as unknown as LibraryRequest
+        const authorized=()=>{const actor=authenticate(connection,token);if(route.method!=='GET')requireCsrf(actor,request.headers['x-csrf-token']);return new ResearchLibraryService(connection,actor,config.blobRoot)}
+        let extraction:Awaited<ReturnType<typeof parseResearchImport>>|undefined
+        if(name==='importResearchFile'){
+          const initial=transaction(connection,()=>{const library=authorized();const cached=connection.prepare('SELECT request_hash FROM idempotency_results WHERE actor_id=? AND command=? AND resource_id=? AND key=?').get(library.actor.id,name,input.params.id!,input.headers['Idempotency-Key']!);if(cached)return library.run(name,input);library.authorizeImport(input.params.id!,(parsed.data as RequestFor<'importResearchFile'>).body);return null})
+          if(initial)return route.response.parse(initial)
+          const controller=new AbortController();request.raw.once('aborted',()=>controller.abort());reply.raw.once('close',()=>{if(!reply.raw.writableEnded)controller.abort()})
+          extraction=await parseResearchImport((parsed.data as RequestFor<'importResearchFile'>).body,controller.signal)
+          if(controller.signal.aborted)fail('INVALID_STATE')
+        }
+        let library:ResearchLibraryService|undefined
+        try{return transaction(connection,()=>{
+          library=authorized()
+          if(name==='researchFileContent'){const {bytes,file}=library.content(input.params.id!,query.version as number|undefined);reply.header('Content-Type',file.mediaType);reply.header('Content-Disposition',`attachment; filename="download"; filename*=UTF-8''${encodeURIComponent(file.filename)}`);return bytes}
+          reply.code(route.status);return route.response.parse(library.run(name as ResearchLibraryCommand,input,extraction))
+        })}catch(error){if(library)cleanBlobs(library.createdBlobs);throw error}
+      }
       const cookie = (value: string, maxAge: number) => `rap_session=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${config.mode === 'production' ? '; Secure' : ''}`
       if (name === 'login') {
         const input = parsed.data as RequestFor<'login'>

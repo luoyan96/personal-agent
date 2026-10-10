@@ -44,7 +44,7 @@ test('production preparation refuses existing/synthetic data and preserves indep
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('real production CLI and HTTP: explicit 021 migration, private bootstrap, one-use manager, Origin/CSRF, restart and IM unavailable', async () => {
+test('real production CLI and HTTP: explicit 022 migration, private bootstrap, one-use manager, Origin/CSRF, restart and IM unavailable', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'rap-im-production-cli-'));
   let child;
   try {
@@ -64,9 +64,11 @@ test('real production CLI and HTTP: explicit 021 migration, private bootstrap, o
     assert.equal(run('api', { NODE_ENV: 'test' }).status, 1);
     assert.equal(run('migrate').status, 0); assert.equal(run('migrate').status, 0);
     let db = new DatabaseSync(databasePath);
-    assert.equal(db.prepare('SELECT max(version) v FROM schema_migrations').get().v, 21);
-    assert.equal(db.prepare('SELECT count(*) n FROM members').get().n, 0);
-    assert.equal(db.prepare('SELECT count(*) n FROM labs').get().n, 0); db.close();
+    try {
+      assert.equal(db.prepare('SELECT max(version) v FROM schema_migrations').get().v, 22);
+      assert.equal(db.prepare('SELECT count(*) n FROM members').get().n, 0);
+      assert.equal(db.prepare('SELECT count(*) n FROM labs').get().n, 0);
+    } finally { db.close(); }
     const first = run('bootstrap'); assert.equal(first.status, 0, first.stderr);
     const inviteFile = join(dir, 'research/bootstrap/lab_ifrc.json');
     const record = JSON.parse(readFileSync(inviteFile, 'utf8'));

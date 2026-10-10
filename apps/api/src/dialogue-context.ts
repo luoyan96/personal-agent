@@ -2,6 +2,7 @@ import type {ChatMessage,Conversation} from '@research-agent-platform/contracts'
 import type {ChatService} from './chat.js'
 import {hash} from './auth.js'
 import {personalWork} from './workspace.js'
+import {libraryHistoryCurrent} from './research-chat-context.js'
 
 // Derived only from durable, currently readable messages. There is no second
 // permanent copy of private dialogue and no extra model/embedding API call.
@@ -34,6 +35,7 @@ function message(s:ChatService,id:string,fileMessageId?:string):DialogueMessage|
    // to an unrelated new task. Required current input bypasses this filter.
    if(input.fileSource&&input.fileSource.messageId!==fileMessageId)return null
    if(input.memoryReceipt)return null
+   if(input.librarySnapshot&&!libraryHistoryCurrent(s,input))return null
    if(m.origin==='model'){
     for(const source of (input.memoryContextSources??[]) as NonNullable<DialogueSelection['memoryContextSources']>){
      const r=source.kind==='personal'?s.db.prepare('SELECT status,version FROM personal_memories WHERE id=? AND member_id=?').get(source.id,s.c.actor.id):s.db.prepare('SELECT status,version FROM chat_memories WHERE id=?').get(source.id)
@@ -95,7 +97,9 @@ export function dialogueSources(s:ChatService,ids:string[]):DialogueSource[]{
 }
 function sourceFingerprint(s:ChatService,id:string){
  const m=s.projectedMessage(id)
- return hash(JSON.stringify({id:m.id,conversationId:m.conversationId,sequence:m.sequence,origin:m.origin,senderContactId:m.senderContactId,text:m.text,mentions:m.mentions,resources:m.resources}))
+ const receipt=m.turnId?s.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(m.turnId):null
+ const libraryCurrent=receipt?libraryHistoryCurrent(s,JSON.parse(String(receipt.request_json))):true
+ return hash(JSON.stringify({id:m.id,conversationId:m.conversationId,sequence:m.sequence,origin:m.origin,senderContactId:m.senderContactId,text:m.text,mentions:m.mentions,resources:m.resources,...(!libraryCurrent?{libraryCurrent:false}:{})}))
 }
 export function dialogueSourcesCurrent(s:ChatService,sources:DialogueSource[]){return sources.every(source=>sourceFingerprint(s,source.id)===source.fingerprint)}
 
