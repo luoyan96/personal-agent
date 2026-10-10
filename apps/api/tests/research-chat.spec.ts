@@ -16,7 +16,7 @@ afterEach(async()=>{for(const fn of cleanup.splice(0).reverse())await fn()})
 const result=(text:string):ModelResult=>({text,failure:null,inputTokens:81,outputTokens:23,elapsedMs:10})
 async function setup(){
   const dir=mkdtempSync(join(tmpdir(),'acceptcat-library-chat-'));cleanup.push(()=>rmSync(dir,{recursive:true,force:true}))
-  const key=join(dir,'synthetic.key');writeFileSync(key,randomBytes(32).toString('hex'))
+  const key=join(dir,'synthetic.key');writeFileSync(key,randomBytes(32).toString('hex'),{mode:0o600})
   const config=readConfig({NODE_ENV:'test',DATABASE_PATH:join(dir,'db.sqlite'),BLOB_ROOT:join(dir,'blobs'),APP_ORIGIN:'http://127.0.0.1:4496',B3_AI_ENABLED:'1',LAB_CREDENTIAL_KEY_FILE:key})
   mkdirSync(config.blobRoot);const db=openDatabase(config.databasePath,true);migrate(db);cleanup.push(()=>db.close())
   const app=createServer(config),url=await app.listen({host:'127.0.0.1',port:0});cleanup.push(()=>app.close())

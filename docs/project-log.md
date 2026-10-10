@@ -597,8 +597,9 @@ renderer / Electron类型、4项图片与6项发送恢复检查通过。新0.8.1
 
 focused资料库10项、聊天来源6项和连续聊天 / 上下文合计23项通过；相关旧DB升级11文件163项、contracts / web / creation修复3文件221项通过。前端类型和6focused通过，11组真实组件 + API / SQLite合成UI验收通过（含1024和503重试）。真实上游Skill固定SHA 77557418b4ca8c24fa8961206bf9b8f7f6d030e1，4,160原件往返通过；本机源码与材料在Git外。
 
-失败记录保留：首轮CI30项暴露022迁移夹具/版本清单及旧4000预算边界；修复旧DB夹具并压缩普通聊天冗余命名空间，保留Skill调用者身份后15项聊天/Skill回归通过。其间旧Skill测试因回调身份断言未进入ready而超时，不冒称CPU超时。后续634/634 Vitest通过，但production gate仍期待021且开放SQLite句柄导致清理EPERM掩盖原断言；改期望022并finally关闭，生产两项通过，正在最后完整CI。
+失败记录保留：首轮CI30项暴露022迁移夹具/版本清单及旧4000预算边界；修复旧DB夹具并压缩普通聊天冗余命名空间，保留Skill调用者身份后15项聊天/Skill回归通过。其间旧Skill测试因回调身份断言未进入ready而超时，不冒称CPU超时。后续634/634 Vitest通过，但production gate仍期待021且开放SQLite句柄导致清理EPERM掩盖原断言；改期望022并finally关闭，生产两项通过，最终完整CI通过51文件634项、生产CLI/HTTP两项、B0与生产夹具隔离。
 
 实际0.10.0原生验收发现素材UI调用只供连接页使用的status桥导致提交失败，已改为main从真实服务来源补本机成员命名空间、生产renderer只提供成员ID，配置页权限未扩大。重新NSIS publish never打包，7组真实隐藏Electron preload/IPC/store/SHA/PNG/ZIP验收通过；仅dialog路径选择用合成替身，没有供应商调用或真实账号登录。源码状态、失败和最终证据见Git外 .runtime/capability-center-20261010、.runtime/skill-bundle-20261010。完整打包资产核对与独立启动smoke通过（既有electron-log重复初始化提示保留）。
 
-当前仅本地候选，配套云端升级、备份/022迁移和最终source/安装包SHA稍后追加；不把计划或组件测试当线上真实科研结果。
+最终生产源码aee02447f985070a0c4b01c392192e7ae4960953已推送，草稿PR34。Windows0.10.0包87376116字节，SHA256 4afa9f8d6792917accdee244669db6b5c1b69877ab117e92c71fabef3bdd05fc，输出D:/deepseek-agent/AcceptCat-Windows/0.10.0，publish never，未公开Release/安装或重启用户客户端。2026-10-10 18:02北京时间配套API / worker已部署research-openim-api:library-aee02447，镜像sha256:1390545b7d576d4984b1263243010e07123d148c1358895e3e92772d3691f3cc；公网ready ok/contract24，新增资料路由匿名401，API healthy / worker running，OpenIM六项实例镜像状态一致。完整备份library-aee02447-20261010T100009Z/research.tar.gz，SHA256 967db69de1cda008f2f0e464088416f3815c2a4187ef92bc71d4d9fc2fcee9a6；先在还原副本验证21→22，正式迁移旧86表SQL/行、6份原件和历史迁移记录均保持，新五表重启前为空。真实用户认证业务和供应商质量未验收；回退边界见docs/deployment/acceptcat-research-library.md。
+首次GitHub run38043062776 Windows24成功，两Linux节点各6个research-chat测试失败，其他50文件628项通过。原因是合成master key文件默认0644被既有Linux安全检查拒绝；仅测试夹具补mode0600，定向6项通过。未修改生产权限、源码或迁移，因此不重打包或部署。失败日志保留Git外；远端最终结果见PR34检查。

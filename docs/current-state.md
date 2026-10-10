@@ -2,9 +2,21 @@
 
 更新日期：2026-10-10（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 进行中：科研能力中心第一阶段 / Windows 0.10.0
+## 当前交付：科研能力中心第一阶段 / Windows 0.10.0
 
-本批在 `feature/research-capability-center` 完成科研能力分类、六份私人文字 Agent 配置、范围明确的资料集合 / 来源版本 / 原件下载、Agent 资料绑定、聊天来源片段回执，以及完整本机 Skill 素材管理。细节和后续绘图 / 执行 / 向量检索见[实现说明](development/research-capability-center.md)。正在完成最终 CI、原生安装包和 schema 022 配套部署；此段不能当作已上线证明。
+本批在 `feature/research-capability-center` 完成科研能力分类、六份可编辑私人文字 Agent 配置、范围明确的资料集合 / 来源版本 / 原件下载、Agent 资料绑定、聊天来源片段回执，以及完整本机 Skill 素材管理。入口为广场的科研能力中心、工作台的资料与素材库、本人私人 Agent 的资料设置和私人 Skill 素材管理。发现列表与课题组列表只展示真实公开 / 获准能力；模板不伪装成已验证绘图或代码执行能力。详见[实现说明](development/research-capability-center.md)。
+
+受测、打包和部署生产源码 **aee02447f985070a0c4b01c392192e7ae4960953**，已推送，[草稿PR34](https://github.com/luoyan96/personal-agent/pull/34) 基于 feature/research-team-workbench。Windows包 **D:/deepseek-agent/AcceptCat-Windows/0.10.0/AcceptCat_0.10.0.exe**，**87376116字节**，SHA256 **4afa9f8d6792917accdee244669db6b5c1b69877ab117e92c71fabef3bdd05fc**。同目录有安装说明、blockmap / latest.yml、摘要及合成组件截图；没有替用户安装或重启。未公开 GitHub Release，公开更新源最后仍为0.6.0，旧版不会发现本地0.10.0，需手工安装。
+
+最终本地完整 CI 通过51文件 / **634项**、生产 CLI / HTTP两项、B0进程与生产夹具隔离；前端类型 / 6 focused、11组实际React组件 + API / SQLite合成UI流程通过，最小1024窗口可达。真实0.10.0独立启动和7组原生preload / IPC / 管理库 / PNG与ZIP原件检查通过；文件选择与保存对话框仅路径选择使用合成替身。上游指定Skill固定SHA的4,160原件往返通过；脚本未运行。没有真实供应商质量调用或认证后线上科研业务验收，工程测试不代替师生持续使用。
+
+首次 GitHub [38043062776](https://github.com/luoyan96/personal-agent/actions/runs/38043062776) Windows24通过，Ubuntu24 / 22.19各6项失败；根因是新合成密钥夹具默认0644，被原有Linux密钥权限检查正确拒绝。仅测试文件补0600，定向6项通过，生产源码 / 迁移 / 安装包不变；后续GitHub结果见PR。此前CI迁移夹具、旧预算和Skill调用身份、production SQLite清理失败及原生status桥误用均保留失败证据；最终修正没有扩大配置页权限或提高旧预算。
+
+2026-10-10 **18:02北京时间**完成线上核验：API / worker同为 `research-openim-api:library-aee02447`，镜像 **sha256:1390545b7d576d4984b1263243010e07123d148c1358895e3e92772d3691f3cc**，revision与上述生产源码一致；API healthy、worker running。公网ready为ok / contract0.24 / database、storage、authentication=ok，harness=not_verified。资料集合、检索和工作台匿名探针均401。schema022新增五表、两个索引与四个不可变触发器，旧86表定义 / 行与6份原件保持；旧六项OpenIM / 基础服务实例、镜像和运行状态一致。仅部署API / worker，网页静态界面未更新。
+
+完整科研库与原件备份 **/srv/research-openim-backups/library-aee02447-20261010T100009Z/research.tar.gz**，SHA256 **967db69de1cda008f2f0e464088416f3815c2a4187ef92bc71d4d9fc2fcee9a6**。解压副本核对schema21后，先在副本执行真实生产迁移并核对旧行 / 原件，再迁移正式库；新增五表在重启前为空。不是完整OpenIM一致备份。新服务已运行，不能直接启动不认识022的旧二进制或覆盖已产生写入的数据库。[部署与恢复边界](deployment/acceptcat-research-library.md)。Git外证据 `.runtime/capability-center-20261010`、`.runtime/skill-bundle-20261010`。
+
+当前范围为关键词资料检索和文字助手；视觉 / 向量检索、绘图 / 脚本执行沙箱、专业知识包质量评估尚未实现。私人来源不随Agent公开，来源回执只表示提供给模型的片段，不能视为全文已读或所有结论已核验。
 
 
 ## 当前开发定位：老师与实验室团队的科研提效、标准化和管理对齐
@@ -13,7 +25,7 @@
 
 优先修复基础聊天、材料处理、上下文和错误恢复，再完成团队任务流程，逐步沉淀可调整的科研模板和总览。微信 / 企微连接器、消费级增长、泛行业能力市场及手机端扩展暂缓；企微现场试验的已批准测试回复未发送，回发验证不再是当前下一步。产品范围与完成依据见[产品规划v0.9](product-plan.md)和[路线](roadmap.md)。用户已批准前后端并行使用 6.1 high 实施，当前批次进度见下方本地候选记录。
 
-## 当前交付：AcceptCat 0.9.0 科研团队工作台（安装包完成，配套后台已部署）
+## 历史交付：AcceptCat 0.9.0 科研团队工作台
 
 分支 `feature/research-team-workbench`，基于原 `feature/memory-experience`。桌面默认科研总览，汇总当前账号获准事项、待审成果、真实受阻情况和已确认截止；可切换我的事项，搜索和筛选当前分页。任务卡显示实际提交版本和导师意见，成员侧栏显示本页承接事项及下一步。邀请待学生本人接受；开始、受阻 / 恢复、交付、要求修改及验收沿用真实状态与确认入口。旧服务通过 contract0.23 门槛明确不可用，不伪装空数据。
 
@@ -35,7 +47,7 @@
 
 首次共享CI6项失败、两次定向上下文回归失败均保留；精简系统规则并只给当前私人消息保留定位ID，修复旧低预算准入，未提高用户旧预算。首轮 Docker FROM 使用 image ID 被当成远程地址而超时，科研服务尚未停止；改用已核对摘要的本地 tag 后构建成功。一次多行维护终端传输被取消，改为单行 gzip/base64 传输并校验脚本 SHA256 / bash 语法。最终CI日志 `ci-final.log`，9组流程 `qa.json`，主题核验 `render-final.json`，包核验 `package-proof.json`，公网核验 `public-ready.json` / `public-route-proof.json`，部署日志保留在服务器 ops。Git外证据 `.runtime/research-team-20261010`，详见[实现与验收](development/research-team-workbench.md)。
 
-云端 API / worker 现为 f9729a2 / contract0.23 / chat1.11 / schema021；公开 Windows 最后记录0.6.0。安装0.9.0后使用新工作台；课题组成员需负责人邀请码注册相同课题组，通讯录好友不会自动成为课题组成员。个人空间可独立规划。邀请管理复用现有网页入口；原生团队创建 / 多课题组切换、教师真实材料试用、完整科研自动化和学校部署仍需后续推进。线上本批仅验证部署健康 / 新路由鉴权，没有冒称线上真实 OpenIM 师生协作或供应商调用通过。
+该历史批次云端 API / worker 为 f9729a2 / contract0.23 / chat1.11 / schema021，现已由上方0.10.0后台替代。课题组成员仍需负责人邀请码注册相同课题组，通讯录好友不会自动成为课题组成员。个人空间可独立规划。邀请管理复用现有网页入口；原生团队创建 / 多课题组切换、教师真实材料试用、完整科研自动化和学校部署仍需后续推进。线上该批仅验证部署健康 / 新路由鉴权，没有冒称线上真实 OpenIM 师生协作或供应商调用通过。
 
 ## 最近现场试验：企微好友消息进入 AcceptCat
 
