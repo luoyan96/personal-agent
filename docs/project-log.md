@@ -603,3 +603,5 @@ focused资料库10项、聊天来源6项和连续聊天 / 上下文合计23项�
 
 最终生产源码aee02447f985070a0c4b01c392192e7ae4960953已推送，草稿PR34。Windows0.10.0包87376116字节，SHA256 4afa9f8d6792917accdee244669db6b5c1b69877ab117e92c71fabef3bdd05fc，输出D:/deepseek-agent/AcceptCat-Windows/0.10.0，publish never，未公开Release/安装或重启用户客户端。2026-10-10 18:02北京时间配套API / worker已部署research-openim-api:library-aee02447，镜像sha256:1390545b7d576d4984b1263243010e07123d148c1358895e3e92772d3691f3cc；公网ready ok/contract24，新增资料路由匿名401，API healthy / worker running，OpenIM六项实例镜像状态一致。完整备份library-aee02447-20261010T100009Z/research.tar.gz，SHA256 967db69de1cda008f2f0e464088416f3815c2a4187ef92bc71d4d9fc2fcee9a6；先在还原副本验证21→22，正式迁移旧86表SQL/行、6份原件和历史迁移记录均保持，新五表重启前为空。真实用户认证业务和供应商质量未验收；回退边界见docs/deployment/acceptcat-research-library.md。
 首次GitHub run38043062776 Windows24成功，两Linux节点各6个research-chat测试失败，其他50文件628项通过。原因是合成master key文件默认0644被既有Linux安全检查拒绝；仅测试夹具补mode0600，定向6项通过。未修改生产权限、源码或迁移，因此不重打包或部署。失败日志保留Git外；远端最终结果见PR34检查。
+
+修正夹具后的GitHub run38043725537 Ubuntu22.19 / Ubuntu24已成功；Windows原始aee02447检查成功，当前同生产源码的新检查继续由GitHub运行。这里只补证据文档，不为文档重复本地全CI。

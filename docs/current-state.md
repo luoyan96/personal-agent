@@ -10,7 +10,7 @@
 
 最终本地完整 CI 通过51文件 / **634项**、生产 CLI / HTTP两项、B0进程与生产夹具隔离；前端类型 / 6 focused、11组实际React组件 + API / SQLite合成UI流程通过，最小1024窗口可达。真实0.10.0独立启动和7组原生preload / IPC / 管理库 / PNG与ZIP原件检查通过；文件选择与保存对话框仅路径选择使用合成替身。上游指定Skill固定SHA的4,160原件往返通过；脚本未运行。没有真实供应商质量调用或认证后线上科研业务验收，工程测试不代替师生持续使用。
 
-首次 GitHub [38043062776](https://github.com/luoyan96/personal-agent/actions/runs/38043062776) Windows24通过，Ubuntu24 / 22.19各6项失败；根因是新合成密钥夹具默认0644，被原有Linux密钥权限检查正确拒绝。仅测试文件补0600，定向6项通过，生产源码 / 迁移 / 安装包不变；后续GitHub结果见PR。此前CI迁移夹具、旧预算和Skill调用身份、production SQLite清理失败及原生status桥误用均保留失败证据；最终修正没有扩大配置页权限或提高旧预算。
+首次 GitHub [38043062776](https://github.com/luoyan96/personal-agent/actions/runs/38043062776) Windows24通过，Ubuntu24 / 22.19各6项失败；根因是新合成密钥夹具默认0644，被原有Linux密钥权限检查正确拒绝。仅测试文件补0600，定向6项通过。修正后的[38043725537](https://github.com/luoyan96/personal-agent/actions/runs/38043725537) Ubuntu22.19与24均成功；Windows原始生产源码检查已成功，最新检查结果见PR。生产源码 / 迁移 / 安装包不变。此前CI迁移夹具、旧预算和Skill调用身份、production SQLite清理失败及原生status桥误用均保留失败证据；最终修正没有扩大配置页权限或提高旧预算。
 
 2026-10-10 **18:02北京时间**完成线上核验：API / worker同为 `research-openim-api:library-aee02447`，镜像 **sha256:1390545b7d576d4984b1263243010e07123d148c1358895e3e92772d3691f3cc**，revision与上述生产源码一致；API healthy、worker running。公网ready为ok / contract0.24 / database、storage、authentication=ok，harness=not_verified。资料集合、检索和工作台匿名探针均401。schema022新增五表、两个索引与四个不可变触发器，旧86表定义 / 行与6份原件保持；旧六项OpenIM / 基础服务实例、镜像和运行状态一致。仅部署API / worker，网页静态界面未更新。
 
