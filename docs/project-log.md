@@ -605,3 +605,13 @@ focused资料库10项、聊天来源6项和连续聊天 / 上下文合计23项�
 首次GitHub run38043062776 Windows24成功，两Linux节点各6个research-chat测试失败，其他50文件628项通过。原因是合成master key文件默认0644被既有Linux安全检查拒绝；仅测试夹具补mode0600，定向6项通过。未修改生产权限、源码或迁移，因此不重打包或部署。失败日志保留Git外；远端最终结果见PR34检查。
 
 修正夹具后的GitHub run38043725537 Ubuntu22.19 / Ubuntu24已成功；Windows原始aee02447检查成功，当前同生产源码的新检查继续由GitHub运行。这里只补证据文档，不为文档重复本地全CI。
+
+## 2026-10-12 夜间技能库维护：发现仅获源码授权的技能
+
+按 acceptcat-2 定时任务先读取 AGENTS、current-state、project-log、README、roadmap，检查 Git 和已有协作状态。起点 feature/research-capability-center / ffb406e，工作区干净，已有子任务均完成。创建小分支 fix/skill-source-grant-discovery，未改 agents/skills 的单一内容源，也未覆盖其他任务文件。
+
+检查安装、源码 / 调用授权和库 / 聊天选择调用链，发现 installedSkills 的 available 范围 SQL 与最终权限筛选均只查 callMemberIds。老师仅授予学生 sourceMemberIds 时，源码接口本身允许读取，但已有客户端“获准使用”列表缺少条目，无法到达复制入口。增加真实 HTTP / SQLite 回归后先在旧实现复现（期望一项、实际零项），保留 regression-before.log；修复无 Agent 筛选的库查询，同时查两种授权并复用当前好友授权核验。带 Agent 筛选的聊天查询不纳入源码授权，避免仅可复制的条目挤占可调用候选。列表仅元数据，完整说明和参考文字仍由独立获准源码接口读取。
+
+六项技能接口检查通过：源码授权发现、未获授权账号 / 私人公开列表隔离、聊天排除原技能且直接调用403、授权复制创建默认私人未绑定副本、撤原授权 / 撤好友后原技能不可读、本人副本绑定到自己的 Agent 后实际 worker 文字调用成功。注入的合成模型断言调用者身份、完整技能说明和只选中的参考文字；不是供应商输出质量评估，没有使用真实用户材料 / 账号 / Key。完整 pnpm run ci 一次通过：51文件635项、生产 CLI / HTTP 两项、B0真实进程、生产夹具隔离、工作区构建 / 类型、契约0.24导出核验；git diff --check通过。Git外证据 D:/deepseek-agent/.runtime/skill-source-grant-20261012，包含失败复现、focused-after.log 与 ci.log。
+
+受测代码提交595a2c1c14f4453fd069bee7357be770687738d5。仅API与回归用例，无契约、schema022、迁移、技能内容、桌面版本或素材修改。现有客户端复制入口和 canCall 过滤沿用，未单独重验桌面 UI。尚未部署、打包或公开 Release，当前线上仍沿用最后记录aee02447 / contract0.24 / chat1.12 / schema022，本批未重新核验；Windows最新配套交付0.10.0。后续按既定流程备份 / 升级API与worker，再以两个获准账号验证实际复制入口。此次文字更新只跑内容与差异检查，不重复已经通过的代码全CI。
