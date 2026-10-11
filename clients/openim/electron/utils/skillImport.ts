@@ -135,7 +135,7 @@ async function parsed(
 export async function importSkillZip(bytes: Buffer) {
   return (await importSkillZipBundle(bytes)).package;
 }
-export async function importSkillZipBundle(bytes: Buffer) {
+export async function importSkillZipBundle(bytes: Buffer, selectedRoot?: string) {
   if (bytes.length > 32 * 1024 * 1024) throw Error("技能 ZIP 超过 32 MB。");
   const zip = new AdmZip(bytes),
     entries: Entry[] = [];
@@ -146,10 +146,52 @@ export async function importSkillZipBundle(bytes: Buffer) {
     const normalized = name.replace(/\/$/, "").normalize("NFC").toLowerCase();
     if (names.has(normalized)) throw Error("技能 ZIP 包含重复或歧义路径。");
     names.add(normalized);
-    if (((e.header.fileAttr >>> 16) & 0xf000) === 0xa000)
+    if (((e.header.attr >>> 16) & 0xf000) === 0xa000)
       throw Error("技能包不允许符号链接。");
     if (e.isDirectory) continue;
     entries.push({ path: name, size: e.header.size, read: async () => e.getData() });
+  }
+  // Selecting a folder must not bypass the limits on the complete archive.
+  if (
+    entries.length > MAX_FILES ||
+    entries.some((e) => !Number.isSafeInteger(e.size) || e.size < 0) ||
+    entries.reduce((total, e) => total + e.size, 0) > MAX_BYTES
+  )
+    throw Error("技能包超过 8,000 个文件或 100 MB。");
+  if (selectedRoot !== undefined) {
+    safeSkillPath(selectedRoot);
+    const roots = new Set(entries.map((e) => e.path.split("/")[0]));
+    if (roots.size !== 1) throw Error("GitHub 原包的根目录无法确认。");
+    const archiveRoot = [...roots][0]!;
+    const prefix = `${archiveRoot}/${selectedRoot}/`;
+    const selected = entries
+      .filter((e) => e.path.startsWith(prefix))
+      .map((e) => ({ ...e, path: e.path.slice(prefix.length) }));
+    if (!selected.some((e) => e.path === "SKILL.md"))
+      throw Error("所选 GitHub 目录未找到 SKILL.md。");
+    // Preserve applicable ancestor notices as original data, outside model references.
+    const ancestors = [
+      archiveRoot,
+      ...selectedRoot
+        .split("/")
+        .map((_, i, parts) => `${archiveRoot}/${parts.slice(0, i + 1).join("/")}`),
+    ];
+    for (let i = 0; i < ancestors.length - 1; i++) {
+      for (const file of entries.filter(
+        (e) =>
+          e.path.startsWith(`${ancestors[i]}/`) &&
+          !e.path.slice(ancestors[i]!.length + 1).includes("/") &&
+          /^(?:licen[cs]e|notice|copying)(?:\.[a-z0-9_-]+)?$/i.test(
+            e.path.split("/").at(-1)!,
+          ),
+      )) {
+        selected.push({
+          ...file,
+          path: `_upstream-notices/${i}/${file.path.split("/").at(-1)}`,
+        });
+      }
+    }
+    return parsed(selected, bytes);
   }
   return parsed(entries, bytes);
 }
@@ -274,7 +316,7 @@ export async function skillDownload(url: string, limit: number) {
 }
 export async function githubSkillOptions(address: string) {
   const match =
-    /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)(?:\.git)?\/?$/.exec(
+    /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)(?:\.git)?(?:\/tree\/([a-f0-9]{40})\/(.+?))?\/?$/.exec(
       address,
     );
   if (
@@ -284,17 +326,42 @@ export async function githubSkillOptions(address: string) {
     match[1] === ".." ||
     match[2] === ".."
   )
-    throw Error("请输入 GitHub 仓库地址，例如 https://github.com/作者/仓库。");
-  const repo = `${match[1]}/${match[2]}`,
-    commit = JSON.parse(
-      (
-        await skillDownload(
-          `https://api.github.com/repos/${repo}/commits/HEAD`,
-          2000000,
-        )
-      ).toString("utf8"),
-    );
+    throw Error("请输入 GitHub 仓库地址，或 tree/完整40位提交/技能目录地址。");
+  const repo = `${match[1]}/${match[2]}`;
+  const root = match[4] ? safeSkillPath(decodeURIComponent(match[4])) : undefined;
+  const commit = match[3]
+    ? { sha: match[3] }
+    : JSON.parse(
+        (
+          await skillDownload(
+            `https://api.github.com/repos/${repo}/commits/HEAD`,
+            2000000,
+          )
+        ).toString("utf8"),
+      );
   if (!/^[a-f0-9]{40}$/.test(commit.sha)) throw Error("GitHub 版本无法确认。");
+  if (root) {
+    // A caller-supplied immutable commit needs no API discovery. Use the public
+    // raw instruction to avoid an unrelated unauthenticated API quota failure.
+    await skillDownload(
+      `https://raw.githubusercontent.com/${repo}/${commit.sha}/${root
+        .split("/")
+        .map(encodeURIComponent)
+        .join("/")}/SKILL.md`,
+      400000,
+    );
+    return {
+      repo,
+      revision: commit.sha,
+      options: [
+        {
+          label: root,
+          url: `https://codeload.github.com/${repo}/zip/${commit.sha}`,
+          root,
+        },
+      ],
+    };
+  }
   const files = JSON.parse(
     (
       await skillDownload(
@@ -304,7 +371,7 @@ export async function githubSkillOptions(address: string) {
     ).toString("utf8"),
   );
   if (!Array.isArray(files)) throw Error("GitHub 目录无法读取。");
-  const options = files
+  const options: { label: string; url: string; root?: string }[] = files
     .filter(
       (f) => f.type === "file" && /\.zip$/i.test(f.name) && f.size <= 32 * 1024 * 1024,
     )

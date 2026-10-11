@@ -44,3 +44,7 @@ B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `
 ## 2026-10-09 OpenMuse风格桌面界面
 
 参考并改编 [CopilotKit/openmuse](https://github.com/CopilotKit/openmuse) 固定提交 `1ac68f3909f2478ab6280883f1ab5ea65eb5719d` 的React Native UI主题及聊天布局模式，在当前React DOM/Electron客户端实现。上游为MIT，Copyright (c) 2026 OpenMuse contributors；完整说明保留在 `clients/openim/public/third-party/openmuse/LICENSE.txt` 并进入构建静态资源。不复制其品牌图、用户照片或测试数据，不引入其Intelligence后端。此记录不改变已有OpenIM派生部分的许可。实际范围见[界面交接](docs/development/openmuse-desktop-ui.md)。
+
+## 2026-10-12 社区科研工具来源
+
+[K-Dense-AI/claude-scientific-writer](https://github.com/K-Dense-AI/claude-scientific-writer/tree/529b9f73ab4b48925027145800d7b49e96ccfd3c/skills/scientific-writing) 固定529b9f73的scientific-writing为MIT，作者K-Dense Inc.；[54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp/tree/0faf1b25c4b9bb95e2571bc8af60b62e9ce10e24) 固定0faf1b25的Python服务根许可MIT，Zotero Agent插件AGPL-3.0-or-later，整包声明MIT AND AGPL-3.0-or-later。这里只收录自写中文用途、依赖和验证元数据，不复制上游正文/素材/脚本为项目源码，不把整个Zotero项目改标MIT。原始资料只在Git外审阅；用户确认的私人安装保留原包及适用祖先许可。已有客户端许可不变。范围和实际验证见[来源交接](docs/development/community-research-catalog.md)。

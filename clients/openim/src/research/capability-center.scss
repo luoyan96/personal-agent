@@ -16,6 +16,8 @@
 .capability-template-icon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; font-size: 22px; background: #e9f2ff; color: #3c85d5; &.template-paper-revision { background: #efebff; color: #9176d9; } &.template-research-planning { background: #eaf3eb; color: #568d70; } }
 .capability-template-label { margin-left: auto; font-size: 10px; color: #7187a0; background: #f0f4f9; border-radius: 5px; padding: 4px 7px; }
 .capability-center-boundary { color: #7d899a; font-size: 11px; line-height: 1.8; border-top: 1px solid #e5eaf0; margin: 22px 0 0; padding-top: 15px; }
+.community-status { margin-top: 14px; font-size: 11px; color: #82693e; background: #faf5e9; border-radius: 6px; padding: 7px 9px; line-height: 1.6; }
+.community-research-detail { dl > div { margin: 18px 0; } dt { font-weight: 600; margin-bottom: 6px; } dd { margin: 0; color: #627187; line-height: 1.8; overflow-wrap: anywhere; } .community-links { display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0; } .community-install-link { display: inline-block; background: #568d70; color: #fff; padding: 11px 17px; border-radius: 9px; } }
 .capability-center-desk { width: 210px; height: 100px; border-radius: 12px; object-fit: cover; object-position: center 52%; }
 .research-library-panel { padding: 0 !important; min-height: 0; overflow: hidden !important; }
 .personal-agent-desktop .workspace-square {

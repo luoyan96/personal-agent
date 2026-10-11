@@ -605,3 +605,13 @@ focused资料库10项、聊天来源6项和连续聊天 / 上下文合计23项�
 首次GitHub run38043062776 Windows24成功，两Linux节点各6个research-chat测试失败，其他50文件628项通过。原因是合成master key文件默认0644被既有Linux安全检查拒绝；仅测试夹具补mode0600，定向6项通过。未修改生产权限、源码或迁移，因此不重打包或部署。失败日志保留Git外；远端最终结果见PR34检查。
 
 修正夹具后的GitHub run38043725537 Ubuntu22.19 / Ubuntu24已成功；Windows原始aee02447检查成功，当前同生产源码的新检查继续由GitHub运行。这里只补证据文档，不为文档重复本地全CI。
+
+## 2026-10-12 `acceptcat-3`：社区科研工具首批收录
+
+独立分支feature/community-research-catalog，基于ffb406e，生产源码6e14cabdc3ac88037da90cdc02c83ea6eed911bf已推送，草稿PR37。原仓库/固定README、许可、依赖、脚本及实际社区报告审阅后，仅收录K-Dense科研稿件/引用检查与54yyyu Zotero连接器。前者固定529b9f73、MIT，后者固定0faf1b25、服务MIT/插件AGPL；明确后者未连接/不可调用，前者自动脚本执行待接入。没有重复收录已有绘图Skill或批量导入其他仓库。
+
+广场中文来源详情/分类/搜索，准备私人安装进入真实SkillLibrary并预填固定提交/子目录。新增原生目录导入、祖先许可原件及完整ZIP保留、全包限制，修正AdmZip fileAttr错误使用为attr。页面打开不安装，预览需确认；默认私人未公开/未绑定/未授权，其他账号读不到来源。包内容没有并入Git或执行；agents/skills单一来源保持。
+
+最终6新客户端+3原编译导入检查、类型/完整构建/四SDK资源通过；32选中原件与官方raw哈希匹配，真实importer/store全部原件和9,893,431字节ZIP往返通过，ZIP SHA256 71ac931d618219cc1df8764483d3787925da9887f9f2edbdd6210d3661eb5859。8上游离线CLI合成检查通过，确认中文纯题名去重不足，不把DOI格式正常当作来源真实性。真实React/本地HTTP/SQLite七组界面流程通过，1536×1024/1024×726；Electron传输和窗口为夹具，实际handler/store执行，无真实模型/文献库。窗口内详情滚动另验，页面异常0，预期404/既有Antd弃用提示保留。首轮GitHub403、LibreOffice子进程失败、新ZIP夹具错误、radio选择器/合成userData缺失/过早截图和重复key修复记录保留，不称首次聚合报告全通过。
+
+本批仅客户端及文档，未重跑根共享CI；无新安装包、公开Release、线上静态/API/worker部署、迁移、用户客户端重启。线上与更新源保持aee02447/0.10.0/schema22和公开0.6.0。与PR35/PR36为兄弟分支，未并入其实现；共享SkillLibrary合并需协调。来源、费用、知识库要求和后续只读Zotero/执行适配见docs/development/community-research-catalog.md。证据位于Git外.runtime/community-research-catalog-20261012；隔离浏览器及4636/4637服务已关闭。

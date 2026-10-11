@@ -320,7 +320,7 @@ export function DesktopWorkbench() {
         <div className="workspace-full-panel research-library-panel"><ResearchLibrary /></div>
       ) : tab === "skills" ? (
         <div className="workspace-full-panel">
-          <SkillLibrary />
+          <SkillLibrary key={params.get("catalog") || ""} catalogId={params.get("catalog") || undefined} />
         </div>
       ) : tab !== "reports" && !supported ? (
         <WorkspaceUnavailable

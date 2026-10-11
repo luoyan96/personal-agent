@@ -101,3 +101,7 @@
 沿用现有 OpenIM / 科研账号 / API / worker，在 Windows 0.10.0 加入科研场景能力分类、六份私人文字 Agent 配置、资料集合、不可变来源版本与原件、当前权限检索、Agent 资料绑定和聊天来源片段回执。migration 022 仅新增资料库对象；旧 migration checksum 保留。本机 Skill 导入扩展为完整原件与素材保存，文字授权仍沿用旧合同，原件不会自动上传或共享。
 
 paper-framework-figure-studio-pro 固定修订仅在 Git 外测试完整包往返，没有复制整库到项目或执行其脚本。后续专业知识包、视觉检索、真实科研工具执行与评估尚未实现。受测范围与精确部署见 development/research-capability-center.md 和 current-state.md。
+
+## 2026-10-12 社区科研工具目录
+
+仅增加公开来源的中文审阅元数据，固定K-Dense-AI/claude-scientific-writer的529b9f73与54yyyu/zotero-mcp的0faf1b25；上游正文、依赖和素材没有迁入Git。用户确认后通过现有私人Skill安装，原目录/祖先许可及完整ZIP仅存本机，原账号/API/范围沿用。Zotero为待适配来源，未安装MCP/CLI或连接私有库。内置内容仍只在agents/skills。独立客户端改进，无共享契约/数据库迁移/部署/安装包变化；详见development/community-research-catalog.md。

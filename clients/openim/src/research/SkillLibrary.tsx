@@ -10,20 +10,23 @@ import SafeMessageMarkdown from "./SafeMessageMarkdown";
 import { SkillMaterials, localSkillLocator } from "./SkillMaterials";
 import type { SkillBundleManifest } from "@research-agent-platform/research-skills/import";
 import "./skills.scss";
+import { communityEntry, communitySourceUrl } from "./community-research-catalog";
 
 type Draft = RequestFor<"installSkill">["body"] & {
   localBundle?: { token: string; manifest: SkillBundleManifest };
 };
-export function SkillLibrary() {
+export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
+  const candidate = communityEntry(catalogId);
+  const catalog = candidate?.installable ? candidate : undefined;
   const [scope, setScope] = useState<"mine" | "available" | "public">("mine"),
     [selected, setSelected] = useState<string>(),
     [draft, setDraft] = useState<Draft>(),
     [receipt, setReceipt] = useState<InstalledSkill>(),
     [updating, setUpdating] = useState<InstalledSkill>(),
-    [installing, setInstalling] = useState(false),
+    [installing, setInstalling] = useState(!!catalog),
     [failure, setFailure] = useState(""),
     [busy, setBusy] = useState(false),
-    [github, setGithub] = useState(""),
+    [github, setGithub] = useState(catalog ? communitySourceUrl(catalog) : ""),
     [choices, setChoices] = useState<{ id: string; label: string; revision: string }[]>(
       [],
     );
@@ -55,7 +58,7 @@ export function SkillLibrary() {
   useLayoutEffect(() => {
     setDraft(undefined);
     setUpdating(undefined);
-    setInstalling(false);
+    setInstalling(!!catalog);
     setChoices([]);
     setFailure("");
     setBusy(false);
@@ -506,6 +509,19 @@ export function SkillLibrary() {
           ) : null
         }
       >
+        {catalog && !updating && (
+          <Alert
+            type="info"
+            message={catalog.name}
+            description={
+              <>
+                <p>{catalog.validation}</p>
+                <p>{catalog.prerequisites}</p>
+                <p>{catalog.limitations}</p>
+              </>
+            }
+          />
+        )}
         <div className="skill-actions">
           <Button disabled={busy || !native} onClick={() => void load("folder")}>
             选择文件夹
@@ -518,7 +534,7 @@ export function SkillLibrary() {
           aria-label="技能 GitHub 地址"
           value={github}
           onChange={(e) => setGithub(e.target.value)}
-          placeholder="https://github.com/作者/技能仓库"
+          placeholder="仓库地址，或 tree/完整40位提交/技能目录地址"
         />
         <Button
           disabled={busy || !native || !github.trim()}

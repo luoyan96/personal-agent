@@ -54,7 +54,14 @@ export function registerSkillBridge() {
   >();
   const selections = new Map<
     string,
-    { owner: string; url: string; label: string; revision: string; expires: number }
+    {
+      owner: string;
+      url: string;
+      label: string;
+      revision: string;
+      expires: number;
+      root?: string;
+    }
   >();
   let busy = false;
   ipcMain.handle("inspect-skill-github", async (e, address: unknown) => {
@@ -73,6 +80,7 @@ export function registerSkillBridge() {
           url: option.url,
           label: `https://github.com/${result.repo} · ${option.label}`,
           revision: result.revision,
+          root: option.root,
           expires: Date.now() + 300000,
         });
         return { id, label: option.label, revision: result.revision };
@@ -98,6 +106,7 @@ export function registerSkillBridge() {
             throw Error("请重新检查 GitHub 版本。");
           bundle = await importSkillZipBundle(
             await skillDownload(option.url, 32 * 1024 * 1024),
+            option.root,
           );
           source = { kind: "github", label: option.label, revision: option.revision };
         } else {

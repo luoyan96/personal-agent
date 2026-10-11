@@ -14,6 +14,7 @@ import "./workspace.scss";
 import { readWorkspaceAvailability } from "./workspace-availability";
 import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 import { CapabilityTemplates } from "./CapabilityTemplates";
+import { CommunityResearchCatalog } from "./CommunityResearchCatalog";
 import { AgentResearchCollections } from "./KnowledgeLibrary";
 import { capabilityCategory, capabilityInput, capabilityStatus, researchCategories, type ResearchCategory } from "./capability-center";
 import "./capability-center.scss";
@@ -459,6 +460,7 @@ export function CapabilitySquare() {
               </div>
             )}
             <CapabilityTemplates key={generation} category={category} search={query} onChanged={refreshLists} onConfigure={id => { setView("mine"); setSelected(undefined); setSelectedContact(id); setPages([undefined]); }} />
+            {view === "public" && <CommunityResearchCatalog key={`community:${generation}`} category={category} search={query} />}
             <p className="capability-center-boundary">脚本执行与视觉工具尚未接通。分类依据当前能力介绍；真实用途和输入以维护者配置为准。</p>
           </section>
           {selectedContact && <aside className="workspace-square-detail"><Button type="text" className="workspace-close-detail" onClick={() => setSelectedContact(undefined)}>收起详情</Button><WorkspaceContactCard key={selectedContact} contactId={selectedContact} onManage={id => { setManagedContact(id); profile.current?.openOverlay(); }} onChanged={refreshLists}>{selectedContactRead.data?.data.identity.kind !== "human" && selectedContactRead.data?.data.allowedActions.includes("edit_profile") && librarySupported && <AgentResearchCollections key={selectedContact} agentId={selectedContact} />}</WorkspaceContactCard></aside>}
