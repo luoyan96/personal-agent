@@ -10,7 +10,8 @@ import { useAgentChatOperation } from "./useAgentChatOperation";
 import { useResearchRead } from "./useResearchRead";
 import { ResearchTurnStatus } from "./ResearchTurnStatus";
 import type { SentFileContext } from "./useScopedFileSender";
-import { FileFetchError, firstPartyFile, maxAgentFileBytes } from "./firstPartyFile";
+import { firstPartyFile, maxAgentFileBytes } from "./firstPartyFile";
+import { retryableAgentFileError } from "./agent-file-errors";
 
 type ReadBody = RequestFor<"agentFileMessage">["body"];
 type ReadResult = ResponseFor<"agentFileMessage">["data"];
@@ -45,13 +46,6 @@ const fileFailures: Record<string, string> = {
 function failureMessage(error: unknown) {
   if (error instanceof ResearchApiError) return fileFailures[error.code] || error.message;
   return error instanceof Error ? error.message : "阅读未完成，请稍后重试。";
-}
-function isRetryable(error: unknown) {
-  if (error instanceof FileFetchError) return error.retryable;
-  return error instanceof ResearchApiError && (
-    ["NETWORK_ERROR", "SERVICE_UNAVAILABLE", "INTERNAL_ERROR", "FILE_PARSE_TIMEOUT"].includes(error.code) ||
-    error.status >= 500
-  );
 }
 async function fileKey(clientMsgID?: string) {
   if (!clientMsgID) return crypto.randomUUID();
@@ -105,7 +99,7 @@ export function useAgentFileReading() {
   const update = (entry: Reading, isCurrent: () => boolean) => {
     if (isCurrent()) setReadings((previous) => previous.map((item) => item.id === entry.id ? entry : item));
   };
-  const submit = async (entry: Reading, isCurrent: () => boolean) => {
+  const submit = async (entry: Reading, isCurrent: () => boolean, signal: AbortSignal) => {
     if (!entry.body || !isCurrent()) return;
     update({ ...entry, phase: "reading", error: undefined, canRetry: false }, isCurrent);
     try {
@@ -113,14 +107,15 @@ export function useAgentFileReading() {
         params: { id: entry.conversationId },
         body: entry.body,
         idempotencyKey: entry.idempotencyKey,
+        signal,
       });
       // The canonical outbox alone publishes the attachment request/reply.
       update({ ...entry, phase: "accepted", body: undefined, result: response.data, error: undefined, canRetry: false }, isCurrent);
     } catch (error) {
-      update({ ...entry, phase: "failed", error: failureMessage(error), canRetry: isRetryable(error), failureStage: "read" }, isCurrent);
+      update({ ...entry, phase: "failed", error: failureMessage(error), canRetry: retryableAgentFileError(error), failureStage: "read" }, isCurrent);
     }
   };
-  const readFile = async (file: File, entry: Reading, isCurrent: () => boolean) => {
+  const readFile = async (file: File, entry: Reading, isCurrent: () => boolean, signal: AbortSignal) => {
     const mediaType = mediaTypes[file.name.split(".").at(-1)?.toLowerCase() || ""];
     if (!mediaType || file.size > maxAgentFileBytes) {
       update({ ...entry, phase: "failed", error: fileFailures[mediaType ? "FILE_TOO_LARGE" : "FILE_UNSUPPORTED"], canRetry: false }, isCurrent);
@@ -130,31 +125,31 @@ export function useAgentFileReading() {
     try {
       const contentBase64 = await base64(file);
       if (!isCurrent()) return;
-      await submit({ ...entry, body: { filename: file.name, mediaType, contentBase64, ...(entry.agentFileText ? { text: entry.agentFileText } : {}) } }, isCurrent);
+      await submit({ ...entry, body: { filename: file.name, mediaType, contentBase64, ...(entry.agentFileText ? { text: entry.agentFileText } : {}) } }, isCurrent, signal);
     } catch (error) {
       update({ ...entry, phase: "failed", error: failureMessage(error), canRetry: false }, isCurrent);
     }
   };
-  const onFileSent = async ({ file, agentConversationId, isCurrent, sdkClientMsgID, agentFileText }: SentFileContext) => {
+  const onFileSent = async ({ file, agentConversationId, isCurrent, operation, sdkClientMsgID, agentFileText }: SentFileContext) => {
     if (!agentConversationId || !isCurrent()) return;
     const idempotencyKey = await fileKey(sdkClientMsgID);
     if (!isCurrent()) return;
     const entry: Reading = { id: crypto.randomUUID(), filename: file.name, conversationId: agentConversationId, idempotencyKey, phase: "reading", agentFileText };
     const ticket = begin(entry.idempotencyKey); if (!ticket) return;
     put(entry);
-    try { await readFile(file, entry, isCurrent); }
+    try { await readFile(file, entry, isCurrent, operation.signal); }
     finally { finish(entry.idempotencyKey, ticket); }
   };
-  const downloadAndRead = async (entry: Reading, isCurrent: () => boolean) => {
+  const downloadAndRead = async (entry: Reading, isCurrent: () => boolean, signal: AbortSignal) => {
     const source = entry.existingFile!;
     update({ ...entry, phase: "downloading", error: undefined, canRetry: false }, isCurrent);
     try {
       const file = await firstPartyFile({ sourceUrl: source.sourceUrl, filename: source.fileName,
         mediaType: mediaTypes[source.fileName.split(".").at(-1)?.toLowerCase() || ""], expectedBytes: source.fileSize, isCurrent });
       if (!isCurrent()) return;
-      await readFile(file, entry, isCurrent);
+      await readFile(file, entry, isCurrent, signal);
     } catch (error) {
-      update({ ...entry, phase: "failed", error: failureMessage(error), canRetry: isRetryable(error), failureStage: "fetch" }, isCurrent);
+      update({ ...entry, phase: "failed", error: failureMessage(error), canRetry: retryableAgentFileError(error), failureStage: "fetch" }, isCurrent);
     }
   };
   const readExisting = async (message: MessageItem, localFile?: File, selectionIsCurrent = () => true) => {
@@ -174,15 +169,15 @@ export function useAgentFileReading() {
       if (localFile) {
         if (localFile.name !== message.fileElem!.fileName || localFile.size !== message.fileElem!.fileSize)
           update({ ...entry, phase: "failed", error: "请选择与这条附件名称、大小相同的原文件；其他文件请从输入区发送。", canRetry: false }, isCurrent);
-        else await readFile(localFile, entry, isCurrent);
-      } else await downloadAndRead(entry, isCurrent);
+        else await readFile(localFile, entry, isCurrent, operation.signal);
+      } else await downloadAndRead(entry, isCurrent, operation.signal);
     } finally { operation.dispose(); finish(entry.idempotencyKey, ticket); }
   };
   const retry = async (entry: Reading) => {
     if (!entry.canRetry || entry.phase !== "failed" || (!entry.body && !entry.existingFile)) return;
     const ticket = begin(entry.idempotencyKey); if (!ticket) return;
     const operation = capture();
-    try { if (entry.body) await submit(entry, operation.isCurrent); else await downloadAndRead(entry, operation.isCurrent); }
+    try { if (entry.body) await submit(entry, operation.isCurrent, operation.signal); else await downloadAndRead(entry, operation.isCurrent, operation.signal); }
     finally { operation.dispose(); finish(entry.idempotencyKey, ticket); }
   };
   return {
@@ -201,7 +196,7 @@ function AgentFileReadingStatus({ entry, onRetry, onCompleted }: {
   const imID = useConversationStore((state) => state.currentConversation?.conversationID);
   const turnId = entry.result?.turn?.id;
   const turnRead = useResearchRead(
-    () => researchApi("chatTurn", { params: { id: turnId! } }),
+    (signal) => researchApi("chatTurn", { params: { id: turnId! }, signal }),
     `${imID}:file:${entry.id}:${turnId || ""}`,
     entry.phase === "accepted" && !!turnId,
   );
