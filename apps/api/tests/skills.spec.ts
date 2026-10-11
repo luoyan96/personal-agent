@@ -255,6 +255,100 @@ describe(
         ).status
       ).toBe(403);
     });
+    it("discovers source-only grants for copying without granting chat execution; revocation hides the original but preserves a private copy", async () => {
+      const s = await setup();
+      const requested = await s.call(
+        "requestContact",
+        {},
+        s.chats[1].conversation.members.find(
+          (m: any) => m.contactId !== s.chats[1].agent.id
+        ).contactId
+      );
+      expect(requested.status).toBe(200);
+      const request = requested.value.data.relationship;
+      const accepted = await s.call(
+        "decideContactRequest",
+        { expectedVersion: request.version, decision: "accept" },
+        request.requestId,
+        1
+      );
+      expect(accepted.status).toBe(200);
+      let original = await s.configure(await s.install(), {
+        sourceMemberIds: [s.actors[1]!.id],
+      });
+      const available = () =>
+        s.call("installedSkills", null, undefined, 1, undefined, "?scope=available");
+      const listing = await available();
+      expect(listing.status).toBe(200);
+      expect(listing.value.data).toHaveLength(1);
+      expect(listing.value.data[0]).toMatchObject({
+        id: original.id,
+        owned: false,
+        canCall: false,
+        canReadSource: true,
+        settings: null,
+      });
+      expect(JSON.stringify(listing.value)).not.toContain("PRIVATE_METHOD_ALPHA");
+      expect(JSON.stringify(listing.value)).not.toContain("UNSELECTED_SECRET_GAMMA");
+      expect(
+        (await s.call("installedSkills", null, undefined, 2, undefined, "?scope=available"))
+          .value.data
+      ).toEqual([]);
+      expect(
+        (await s.call("installedSkills", null, undefined, 1, undefined, "?scope=public"))
+          .value.data
+      ).toEqual([]);
+      // The same endpoint serves the chat picker. Copy permission alone must
+      // not appear there, or crowd out genuinely callable skills.
+      expect(
+        (await s.call("installedSkills", null, undefined, 1, undefined,
+          `?scope=available&agentId=${s.chats[1].agent.id}`)).value.data
+      ).toEqual([]);
+      expect((await s.send(original, "direct use is not granted", 1)).status).toBe(403);
+      const sourceResult = await s.call("skillSource", null, original.id, 1);
+      expect(sourceResult.status).toBe(200);
+      expect(sourceResult.value.data.package.instructions).toBe(pkg.instructions);
+      const installed = await s.call("installSkill", {
+        package: sourceResult.value.data.package,
+        source: { kind: "copy", label: "授权副本", revision: String(original.revision) },
+      }, undefined, 1);
+      expect(installed.status).toBe(201);
+      const copy = installed.value.data;
+      expect(copy.id).not.toBe(original.id);
+      expect(copy.ownerId).toBe(s.actors[1]!.id);
+      expect(copy.settings).toEqual({
+        enabled: true, listed: false, boundAgentIds: [],
+        callMemberIds: [], sourceMemberIds: [],
+      });
+      original = await s.configure(original, { sourceMemberIds: [] });
+      expect((await available()).value.data.map((v: any) => v.id)).toEqual([copy.id]);
+      expect((await s.call("skillSource", null, original.id, 1)).status).toBe(404);
+      expect((await s.call("skillSource", null, copy.id, 1)).status).toBe(200);
+      // A lingering source grant also loses access when friendship is revoked.
+      original = await s.configure(original, { sourceMemberIds: [s.actors[1]!.id] });
+      expect((await available()).value.data.some((v: any) => v.id === original.id)).toBe(true);
+      expect((await s.call("revokeContactRequest", {
+        expectedVersion: accepted.value.data.version,
+      }, request.requestId, 1)).status).toBe(200);
+      expect((await available()).value.data.map((v: any) => v.id)).toEqual([copy.id]);
+      expect((await s.call("skillSource", null, original.id, 1)).status).toBe(404);
+      const bound = await s.call("updateSkillSettings", {
+        ...copy.settings, expectedVersion: copy.version,
+        boundAgentIds: [s.chats[1].agent.id],
+      }, copy.id, 1);
+      expect(bound.status).toBe(200);
+      const sent = await s.send(bound.value.data, "按副本审阅合成文字", 1);
+      expect(sent.status).toBe(201);
+      await s.tick(async (input) => {
+        const prompt = JSON.parse(input.prompt);
+        expect(prompt.ownerId).toBe(s.actors[1]!.id);
+        expect(prompt.selectedSkill.instructions).toBe(pkg.instructions);
+        expect(prompt.selectedSkill.references).toEqual([pkg.references[0]]);
+        return result("副本的合成材料审阅完成。");
+      });
+      expect((await s.call("chatTurn", null, sent.value.data.turn.id, 1))
+        .value.data.status).toBe("succeeded");
+    });
     it("loads complete private instructions and only selected references, keeps method out of human messages, records actual reply", async () => {
       const s = await setup(),
         skill = await s.bind(await s.install()),
