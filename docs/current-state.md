@@ -1,6 +1,18 @@
 # 新 AI 接手：当前项目状态
 
-更新日期：2026-10-10（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+更新日期：2026-10-12（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+
+## 最新待发布修复：桌面附件阅读恢复
+
+定时前后端任务从 `feature/research-capability-center` / `ffb406e` 建立独立分支 `fix/attachment-reading-recovery`；固定产品源码 **6e8137ee9c1cd1355e60f631aa96d3444e22d338**，已推送[草稿 PR36](https://github.com/luoyan96/personal-agent/pull/36)。文件阅读请求超时或成功响应损坏时，保留原字节 / 原幂等键并显示“重试阅读（不重复发送文件）”；主动重试使用相同请求，不再次发送 SDK 文件。初次阅读、旧文件恢复、重试及 turn 状态读取传递已有作用域取消信号；切换会话取消尚未完成的客户端工作。格式不支持、无文字、加密、权限等永久错误不新增无效重试。
+
+14项客户端恢复 / 代理检查、完整客户端类型和构建通过，四份固定 SDK 资源核对通过。7组实际生产 React 控件 + 本地真实 HTTP / API / SQLite / ChatWorker 验收通过：旧 hook 复现缺失重试、超时后同请求恢复 / 无重复规范消息、损坏响应恢复、会话准备期间切换无迟到 POST、旧 SDK 附件从本机恢复及503重试、永久错误和1024×726可达。Browser插件缺席，使用现有 Playwright / 隔离 headless Edge，1440×900与1024×726；浏览器时钟推进真实请求期限，模型 / SDK为合成。页面身份、内容、无框架覆盖和截图 / 交互通过，pageerror0；既有 React Router / AntD警告及故意503保留。
+
+首轮界面夹具误用已关闭页面的按钮引用，在后续步骤失败；原日志 / 截图保留，修正夹具后同流程全部通过。证据在 Git 外 **D:/deepseek-agent/.runtime/attachment-reading-recovery-20261012**，包括 focused-final.log、client-build.log、qa.json、失败记录和三种状态截图；类型检查日志位于父目录 runtime。自有测试服务与浏览器已关闭，未操作用户程序或私有科研资料。
+
+本批仅客户端改动，不重复共享根 CI；无 API / worker / 契约 / schema / 迁移 / Skill内容 / 原生桥 / 版本号变更，没有真实供应商、生产 OpenIM 或原生 Electron 流程验收。**未制作新安装包、部署或公开 Release，已安装0.10.0尚不包含此修复**；线上仍沿用下节aee02447 / contract0.24 / chat1.12 / schema022最后部署记录，本批没有重新核验线上。行为详见[文件聊天维护记录](development/agent-file-chat.md)。
+
+同晚技能任务的 `fix/skill-source-grant-discovery` / 产品源码595a2c1 / 交接311c19b为独立[草稿 PR35](https://github.com/luoyan96/personal-agent/pull/35)，不在本分支中；其本地635项共享检查通过，[GitHub38154638802](https://github.com/luoyan96/personal-agent/actions/runs/38154638802)的Ubuntu22.19 / Ubuntu24 / Windows24均成功。该修复也未部署。后续分别审阅两份修复，按既定流程整合桌面候选和必要的服务更新，再验收真实师生使用；不能将两份独立分支混称为当前安装或线上版本。
 
 ## 当前交付：科研能力中心第一阶段 / Windows 0.10.0
 
