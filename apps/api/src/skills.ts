@@ -160,13 +160,18 @@ export function runSkills(
   let result: unknown;
   if (name === "installedSkills") {
     const q = req.query as RequestFor<"installedSkills">["query"],
-      scope = q.scope ?? "mine";
+      scope = q.scope ?? "mine",
+      includeSourceGrants = scope === "available" && !q.agentId;
     const predicate =
       scope === "mine"
         ? "owner_id=?"
         : scope === "public"
         ? "json_extract(settings,'$.listed')=1"
-        : "(owner_id=? OR EXISTS (SELECT 1 FROM json_each(settings,'$.callMemberIds') WHERE value=?))";
+        : "(owner_id=? OR EXISTS (SELECT 1 FROM json_each(settings,'$.callMemberIds') WHERE value=?)" +
+          (includeSourceGrants
+            ? " OR EXISTS (SELECT 1 FROM json_each(settings,'$.sourceMemberIds') WHERE value=?)"
+            : "") +
+          ")";
     const rows = s.db
       .prepare(
         `SELECT * FROM installed_skills WHERE ${predicate} ORDER BY updated_at DESC,id LIMIT 1000`
@@ -176,7 +181,7 @@ export function runSkills(
           ? []
           : scope === "mine"
           ? [s.c.actor.id]
-          : [s.c.actor.id, s.c.actor.id])
+          : [s.c.actor.id, s.c.actor.id, ...(includeSourceGrants ? [s.c.actor.id] : [])])
       );
     result = {
       data: rows
@@ -185,7 +190,8 @@ export function runSkills(
             ? r.owner_id === s.c.actor.id
             : scope === "public"
             ? policy(r).listed
-            : granted(s, r, "callMemberIds")
+            : granted(s, r, "callMemberIds") ||
+              (includeSourceGrants && granted(s, r, "sourceMemberIds"))
         )
         .filter(
           (r) =>
