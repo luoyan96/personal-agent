@@ -605,3 +605,15 @@ focused资料库10项、聊天来源6项和连续聊天 / 上下文合计23项�
 首次GitHub run38043062776 Windows24成功，两Linux节点各6个research-chat测试失败，其他50文件628项通过。原因是合成master key文件默认0644被既有Linux安全检查拒绝；仅测试夹具补mode0600，定向6项通过。未修改生产权限、源码或迁移，因此不重打包或部署。失败日志保留Git外；远端最终结果见PR34检查。
 
 修正夹具后的GitHub run38043725537 Ubuntu22.19 / Ubuntu24已成功；Windows原始aee02447检查成功，当前同生产源码的新检查继续由GitHub运行。这里只补证据文档，不为文档重复本地全CI。
+
+## 2026-10-12 定时前后端任务：桌面附件阅读恢复
+
+从科研能力中心 `ffb406e` 建立 `fix/attachment-reading-recovery`，固定产品源码 **6e8137ee9c1cd1355e60f631aa96d3444e22d338**，已推送[草稿PR36](https://github.com/luoyan96/personal-agent/pull/36)。本批找到文件阅读超时 / 成功响应损坏后原请求保留而重试入口消失，以及作用域取消信号未进入文件POST的问题。新增共用错误分类，原字节与幂等键保留，显式重试不再投递IM文件；初次、旧附件和重试传递操作signal，turn状态读取也可取消。永久文件 / 权限错误不增加无效重试；已受理的服务器工作仍以持久状态为准。
+
+客户端恢复 / 代理14项、类型和完整构建通过，四份固定SDK资源核对通过。使用实际生产React hooks / 状态控件及真实HTTP / API / SQLite / ChatWorker，模型与SDK合成，7组验收通过：旧版本复现、超时恢复同请求 / 一个规范请求回复 / SDK仅一次、损坏响应、准备会话时切换无迟到POST、旧文件本机恢复 / 503重试、永久错误、1024×726无水平溢出。Browser插件缺席，现有Playwright / 隔离headless Edge在1440×900和1024×726运行，浏览器时钟推进真实超时期限；页身份 / 内容 / 无框架覆盖 / 截图 / 交互通过，pageerror0，既有Router / AntD提示和故意503保留。
+
+首轮UI夹具后续步骤误用已关闭页面的按钮引用而失败，原记录 / 截图保留；改为当前页面定位后同流程全通过，无额外产品修复。证据Git外 **D:/deepseek-agent/.runtime/attachment-reading-recovery-20261012**，最终日志focused-final.log / client-build.log / qa.json，类型日志在父目录runtime。自有端口4626 / 4627服务和浏览器已关闭，未操作用户窗口、账号、Key、剪贴板或科研文件。
+
+本批仅客户端改动，无后端、契约、schema、迁移、Skill内容、原生桥、版本号变更，不重复共享根CI；未验证真实厂商 / 生产OpenIM / 原生Electron。未制作新安装包、部署或公开Release，0.10.0安装尚不含本修复；线上最后记录仍为aee02447 / contract0.24 / chat1.12 / schema022，本批未重新核验线上。按既定发布流程整合审阅通过的变更后再交付候选，并继续真实师生使用验收。
+
+同晚独立技能分支 `fix/skill-source-grant-discovery`（产品595a2c1 / 交接311c19b、草稿PR35）不在本分支中。其635项本地共享检查和GitHub38154638802的Ubuntu22.19 / Ubuntu24 / Windows24全部通过；也未上线。分别保留两分支和证据，避免下一任务重复修复或混淆部署状态。
