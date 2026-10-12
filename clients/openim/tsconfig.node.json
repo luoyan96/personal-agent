@@ -8,5 +8,11 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["vite.config.ts", "package.json", "electron", "src/types/localFolder.d.ts"]
+  "include": [
+    "vite.config.ts",
+    "package.json",
+    "electron",
+    "src/types/localFolder.d.ts",
+    "src/types/zotero.d.ts"
+  ]
 }

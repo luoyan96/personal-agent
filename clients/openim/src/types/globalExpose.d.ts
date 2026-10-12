@@ -11,6 +11,9 @@ import type {
 export type DataPath = "public" | "emojiData" | "sdkResources" | "logsPath";
 
 export interface IElectronAPI {
+  connectLocalZotero: () => Promise<import("./zotero").ZoteroGrant | null>;
+  readLocalZotero: (grantId: string, request: import("./zotero").ZoteroReadRequest) => Promise<import("./zotero").ZoteroPage<import("./zotero").ZoteroCollection | import("./zotero").ZoteroItem>>;
+  releaseLocalZotero: (grantId: string) => Promise<void>;
   saveImageBytesToDisk: (filename: string, bytes: Uint8Array) => Promise<string>;
   readChatClipboardImages: () => Promise<import("./imageClipboard").ClipboardImages>;
   recognizeChatImage: (id: string, bytes: Uint8Array) => Promise<import("./imageClipboard").ImageOcrResult>;

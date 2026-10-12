@@ -10,6 +10,7 @@ import { workspaceAvailability } from "./workspace-availability";
 import { withRequestDeadline } from "./request-deadline";
 import { fileAsBase64, readResearchFileBytes, researchFileMediaType, researchScopeLabels } from "./research-library-api";
 import "./research-library.scss";
+import { ZoteroImport } from "./ZoteroImport";
 type ResearchCollection = ResponseFor<"researchCollections">["data"][number];
 type ResearchFile = ResponseFor<"researchFiles">["data"][number];
 
@@ -142,6 +143,7 @@ function SourceDetail({ id, collection, onVersion, onChanged, onClose }: { id: s
 }
 
 function LibraryBody() {
+  const [zoteroId, setZoteroId] = useState<string>();
   const [scope, setScope] = useState<"mine" | "visible">("visible"), [collectionSearch, setCollectionSearch] = useState(""), [selectedId, setSelectedId] = useState<string>(), [sourceId, setSourceId] = useState<string>(), [search, setSearch] = useState(""), [query, setQuery] = useState("");
   const [editing, setEditing] = useState<ResearchCollection | "new">(), [importing, setImporting] = useState<{ collection: ResearchCollection; source?: ResearchFile }>();
   const collections = useResearchRead((signal) => researchApi("researchCollections", { query: { scope, q: collectionSearch, limit: 100 }, signal }), `library-collections:${scope}:${collectionSearch}`);
@@ -171,7 +173,7 @@ function LibraryBody() {
       <section className="research-file-list" aria-label="集合文件">
         {collection ? <>
           <div className="research-library-subheading"><div><h3>{collection.name}</h3><p>{collection.description || researchScopeLabels[collection.scope]}</p></div>{collection.owned && <Button onClick={() => setEditing(collection)}>集合设置</Button>}</div>
-          <div className="research-library-actions">{collection.owned && <Button type="primary" icon={<UploadOutlined />} onClick={() => setImporting({ collection })}>导入文件</Button>}<Input.Search aria-label="检索资料正文" placeholder="检索实际提取文字" value={search} allowClear onChange={e => setSearch(e.target.value)} onSearch={v => setQuery(v.trim())} /></div>
+          <div className="research-library-actions">{collection.owned && <Button type="primary" icon={<UploadOutlined />} onClick={() => setImporting({ collection })}>导入文件</Button>}{collection.owned && collection.scope === "owner_private" && <Button onClick={() => setZoteroId(collection.id)}>从 Zotero 选择</Button>}<Input.Search aria-label="检索资料正文" placeholder="检索实际提取文字" value={search} allowClear onChange={e => setSearch(e.target.value)} onSearch={v => setQuery(v.trim())} /></div>
           {(files.error || matches.error) && <Alert type="warning" message={files.error || matches.error} action={<Button onClick={() => { void files.refresh(); void matches.refresh(); }}>重试</Button>} />}
           {query ? <div className="research-search-results">{matches.loading && <p role="status">正在检索…</p>}{matches.data?.data.map((match, i) => <button key={`${match.citation.sourceId}:${match.citation.version}:${match.citation.pageNumber}:${i}`} onClick={() => setSourceId(match.citation.sourceId)}><strong>{match.filename}</strong><small>v{match.citation.version} · 第 {match.citation.pageNumber} 页 · 字符 {match.citation.start}–{match.citation.end}</small><p>{match.text}</p>{match.partial && <small>此处为实际提取页的局部片段</small>}</button>)}{matches.data && !matches.data.data.length && <div className="research-library-empty"><h3>未找到实际文字片段</h3><p>调整关键词；仅保存原件的素材不会产生文字检索结果。</p></div>}<Button onClick={() => { setQuery(""); setSearch(""); }}>返回文件列表</Button></div> : <>
             <div className="research-file-table" role="table" aria-label="来源列表"><div className="research-file-table-head" role="row"><span>来源</span><span>状态</span><span>版本</span></div>{files.data?.data.map(file => <button role="row" aria-label={file.filename} aria-pressed={file.id === sourceId} key={file.id} onClick={() => setSourceId(file.id)}><span><FileTextOutlined />{file.filename}</span><span>{file.extraction === "text_extracted" ? "已提取文字" : file.extraction === "original_only" ? "原件" : "提取失败"}</span><span>v{file.version}</span></button>)}</div>
@@ -182,6 +184,7 @@ function LibraryBody() {
       </section>
       {sourceId && collection && <SourceDetail key={sourceId} id={sourceId} collection={collection} onClose={() => setSourceId(undefined)} onChanged={refresh} onVersion={source => setImporting({ collection, source })} />}
     </div>
+    {zoteroId && collection?.id === zoteroId && collection.owned && collection.scope === "owner_private" && <ZoteroImport key={zoteroId} collection={collection} onClose={() => setZoteroId(undefined)} onSaved={refresh} />}
     {editing && <CollectionEditor key={editing === "new" ? "new" : editing.id} collection={editing === "new" ? undefined : editing} onClose={() => setEditing(undefined)} onSaved={refresh} />}
     {importing && <FileImport key={`${importing.collection.id}:${importing.source?.id || "new"}`} {...importing} onClose={() => setImporting(undefined)} onSaved={refresh} />}
   </div>;

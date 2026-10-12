@@ -21,6 +21,7 @@ export type CommunityResearchEntry = {
   revision: string;
   sourcePath: string;
   installable: boolean;
+  localMetadataAdapter?: boolean;
   discussions: readonly { label: string; url: string }[];
 };
 
@@ -68,20 +69,21 @@ export const communityResearchCatalog: readonly CommunityResearchEntry[] = [
     license: "服务 MIT；Zotero Agent 插件 AGPL-3.0-or-later",
     status: "needs_connector",
     installable: false,
+    localMetadataAdapter: true,
     summary: "从已有 Zotero 库检索条目与阅读材料，保留文献管理工具中的来源关系。",
     input: "本机 Zotero 文献库及检索问题；本地 API 或按需配置的 Web API。",
     deliverables:
       "文献条目、元数据和实际读取文本；原工具也支持编辑与批注，需另行授权。",
     prerequisites:
-      "Python 3.10+、Zotero 7+ 本地 API 与 MCP/CLI 连接。AcceptCat 还没有这一连接，不能仅靠安装 Skill 调用。",
+      "AcceptCat 原生本机元数据选入需打开 Zotero 并启用本地 API，无需 Python 或 MCP。上游高级检索、全文与编辑仍需 Python 3.10+ 和 MCP/CLI，尚未接通。",
     costs:
       "本地检索不要求模型 API Key；语义检索可用本地或收费的嵌入服务，聊天模型另计。",
     materials:
-      "使用用户明确选定的库、集合及论文原件；先接只读路径，团队共享需要独立授权。",
+      "本机选入仅访问个人库的集合、标题、作者与摘要。用户勾选、预览后确认导入本人私人集合；不读取 PDF、批注或团队库。",
     validation:
-      "已静态核对固定修订、文档、依赖和分模块许可；尚未在 AcceptCat 连接或验证真实文献库。",
+      "已静态核对固定修订、文档、依赖和分模块许可；本机元数据适配用隔离合成 API 验证。尚未连接用户真实 Zotero 库或验证上游 MCP。",
     limitations:
-      "上游社区报告 Windows 插件检测失败、CLI 把失败搜索显示为空结果；尚未在本机复验。接入前需核对这些情况和全文截断状态。",
+      "仅元数据与摘要，不是论文全文阅读、语义检索或自主工具调用。上游 Windows 插件和 CLI 问题尚未复验；AcceptCat 读取失败显示错误，不伪装空结果。关闭窗口结束本次许可，导入结果不确定时留在窗口重试原请求。",
     discussions: [
       {
         label: "Windows 插件兼容性报告 #700",

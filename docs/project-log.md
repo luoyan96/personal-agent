@@ -615,3 +615,17 @@ focused资料库10项、聊天来源6项和连续聊天 / 上下文合计23项�
 最终6新客户端+3原编译导入检查、类型/完整构建/四SDK资源通过；32选中原件与官方raw哈希匹配，真实importer/store全部原件和9,893,431字节ZIP往返通过，ZIP SHA256 71ac931d618219cc1df8764483d3787925da9887f9f2edbdd6210d3661eb5859。8上游离线CLI合成检查通过，确认中文纯题名去重不足，不把DOI格式正常当作来源真实性。真实React/本地HTTP/SQLite七组界面流程通过，1536×1024/1024×726；Electron传输和窗口为夹具，实际handler/store执行，无真实模型/文献库。窗口内详情滚动另验，页面异常0，预期404/既有Antd弃用提示保留。首轮GitHub403、LibreOffice子进程失败、新ZIP夹具错误、radio选择器/合成userData缺失/过早截图和重复key修复记录保留，不称首次聚合报告全通过。
 
 本批仅客户端及文档，未重跑根共享CI；无新安装包、公开Release、线上静态/API/worker部署、迁移、用户客户端重启。线上与更新源保持aee02447/0.10.0/schema22和公开0.6.0。与PR35/PR36为兄弟分支，未并入其实现；共享SkillLibrary合并需协调。来源、费用、知识库要求和后续只读Zotero/执行适配见docs/development/community-research-catalog.md。证据位于Git外.runtime/community-research-catalog-20261012；隔离浏览器及4636/4637服务已关闭。
+
+## 2026-10-13 acceptcat / acceptcat-3：Zotero个人库元数据选入
+
+分支feature/zotero-local-library基于0da9b08/PR37，生产源码5e85efe2e978c755c5d71edad44dc535f9ac4cfb已推送，草稿PR38。继续上轮待适配来源，未重复加新条目。再读Zotero官方Local API/读取规范、固定MCP README与维护元数据及社区#700/#701；服务MIT/插件AGPL保持，未复制/安装上游代码或调用真实文献库。
+
+广场进入现有资料库，本人私人集合内本机只读连接/集合选择/检索分页/选中预览再确认TXT导入。固定127.0.0.1:23119 GET、无Cookie/Key/代理/重定向、10秒和2MiB限制、15分钟主frame许可/实例核对、取消中止及账号世代丢弃晚结果。只保存选择条目的元数据与摘要，不读取PDF/正文/笔记/批注/群组库。提交重新核对私人范围/版本，响应不确定同正文与编号重试；成功刷新独立处理，不追加重复文件。
+
+13项客户端回归、标准客户端类型、原生非composite类型、完整客户端/原生构建/四SDK检查通过。7组生产React/HTTP/API/SQLite/实际handler流程通过，原生窗口/许可/IPC及Zotero响应为夹具，1536×1024/1024×726截图已查看、无水平溢出，pageerror0。实际API提交后合成503再重试只保留一个来源；取消零上传、读取错误不同空结果、范围变公开拒绝和第二账号隔离通过。首次Antd“完 成”选择器失败、prettier旧CLI路径错误、默认node composite原有imageClipboard文件清单问题和新DTO跨项目错误保留，DTO改.d.ts，门槛命令/最终报告分别记录。不称真实个人库、安装桌面或模型质量已验收。
+
+无共享/内置Skill修改，不重复根共享CI；没有新安装包、Release、部署、迁移或用户客户端重启。线上沿用2026-10-10aee02447/Windows0.10.0/schema022记录、公开更新0.6.0，本轮未重验线上。PR37远端38159262310三平台均成功；本轮CI独立跟踪。旧Zotero缺Server-ID不保证跨库身份，不确定导入只在原窗口保留重试；全文/MCP/工具调用及跨重启恢复仍待后续。PR35/36独立分支未包含。证据Git外.runtime/zotero-local-20261013；隔离4646/4647服务和浏览器已关闭。完整来源、命令、边界与交接见docs/development/zotero-local-library.md。
+
+PR38远端38299994061两Linux成功，Windows首轮632/634通过，discovery分页/seed与execution A12既有测试均超过5秒门槛；与父分支比较相关后端/测试没有改动。已只重跑失败Windows job。新增本机诊断：execution A12过滤通过；discovery单独过滤因缺前序测试任务而断言失败（非远端超时复现），改按原文件顺序执行全部9项通过。诊断日志及远端失败/重试记录保留Git外，不提高测试时限、模型预算或改动共享业务。远端重试最终状态单独追踪。
+
+GitHub38299994061矩阵重试最终Ubuntu22.19 / Ubuntu24 / Windows24全部成功，受测HEAD0135f0be8ca876b2c4ff4636db77f6a604fec750、生产源码仍5e85efe。失败节点重试请求和实际完整矩阵结果见ci-retry-passed.json，首次失败保留。无生产/共享测试/时限变化，后续仅文档更新不再重复本地检查或打包部署。

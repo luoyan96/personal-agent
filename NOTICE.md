@@ -48,3 +48,5 @@ B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `
 ## 2026-10-12 社区科研工具来源
 
 [K-Dense-AI/claude-scientific-writer](https://github.com/K-Dense-AI/claude-scientific-writer/tree/529b9f73ab4b48925027145800d7b49e96ccfd3c/skills/scientific-writing) 固定529b9f73的scientific-writing为MIT，作者K-Dense Inc.；[54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp/tree/0faf1b25c4b9bb95e2571bc8af60b62e9ce10e24) 固定0faf1b25的Python服务根许可MIT，Zotero Agent插件AGPL-3.0-or-later，整包声明MIT AND AGPL-3.0-or-later。这里只收录自写中文用途、依赖和验证元数据，不复制上游正文/素材/脚本为项目源码，不把整个Zotero项目改标MIT。原始资料只在Git外审阅；用户确认的私人安装保留原包及适用祖先许可。已有客户端许可不变。范围和实际验证见[来源交接](docs/development/community-research-catalog.md)。
+
+2026-10-13依据[Zotero官方Local API](https://www.zotero.org/support/dev/web_api/v3/local_api)编写有限本机元数据读取/选择适配。Zotero为Digital Scholar开发的软件；本轮不复制Zotero或上述MCP/插件源码，不安装、修改或重新分发它们。保留原目录分模块许可，AcceptCat已有客户端许可不变。[实际范围](docs/development/zotero-local-library.md)。

@@ -104,6 +104,9 @@ const saveFileToDisk = async ({
 };
 
 const Api: IElectronAPI = {
+  connectLocalZotero: () => ipcRenderer.invoke("connect-local-zotero"),
+  readLocalZotero: (id, request) => ipcRenderer.invoke("read-local-zotero", id, request),
+  releaseLocalZotero: (id) => ipcRenderer.invoke("release-local-zotero", id),
   saveImageBytesToDisk: async (filename, bytes) => {
     if (
       !(bytes instanceof Uint8Array) ||

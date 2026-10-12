@@ -43,7 +43,7 @@ export function CommunityResearchCatalog({
               <span className="community-status">
                 {entry.status === "offline_reviewed"
                   ? "离线样例已验证 · 自动执行待接入"
-                  : "待连接 · 尚不可调用"}
+                  : entry.localMetadataAdapter ? "本机元数据选入 · MCP 待接入" : "待连接 · 尚不可调用"}
               </span>
               <p>{entry.summary}</p>
               <dl>
@@ -128,9 +128,12 @@ export function CommunityResearchCatalog({
                 </Link>
               </>
             ) : (
-              <p className="workspace-muted">
-                此条目仅收录接入方案；连接与权限适配完成后再开放安装。
-              </p>
+              <>
+                <p className="workspace-muted">{selected.localMetadataAdapter
+                  ? "在工作台选择自己的私人资料集合，点击“从 Zotero 选择”。读取和上传各自确认；不会安装上游 MCP，也不会自动读取本机资料。"
+                  : "此条目仅收录接入方案；连接与权限适配完成后再开放安装。"}</p>
+                {selected.localMetadataAdapter && <Link className="community-install-link" to="/workbench?view=library">打开资料库，选择 Zotero 文献</Link>}
+              </>
             )}
           </div>
         )}

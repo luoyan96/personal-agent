@@ -15,6 +15,7 @@ import { IpcRenderToMain } from "../constants";
 import { getStore } from "./storeManage";
 import { changeLanguage } from "../i18n";
 import {registerSkillBridge} from "./skillManage";
+import { registerZoteroBridge } from "./zoteroManage";
 import { registerLocalFolderBridge } from "./localFolderManage";
 import { registerImageClipboardBridge } from "./imageClipboardManage";
 import { registerDesktopWorkBridge } from "./desktopWorkManage";
@@ -39,6 +40,7 @@ export const setIpcMainListener = () => {
   registerLocalFolderBridge();
   registerImageClipboardBridge();
   registerSkillBridge();
+  registerZoteroBridge();
   registerDesktopWorkBridge();
   registerDesktopUpdateBridge();
   ipcMain.handle("research-service-status", (event) => {
