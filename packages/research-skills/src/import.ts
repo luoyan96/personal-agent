@@ -1,4 +1,4 @@
-import { parse } from "yaml";
+import { isScalar, parseDocument } from "yaml";
 
 export type SkillFile = { path: string; text: string };
 export type SkillBundleFile = {
@@ -82,7 +82,9 @@ export function parseImportedSkill(
   );
   if (!match)
     throw new Error("SKILL.md 需要 name 和 description 的 YAML 开头。");
-  const meta = parse(match[1]!, { maxAliasCount: 0 }) as Record<
+  const document = parseDocument(match[1]!);
+  if (document.errors.length) throw new Error("技能 YAML 格式无效。");
+  const meta = document.toJS({ maxAliasCount: 0 }) as Record<
     string,
     unknown
   >;
@@ -101,14 +103,25 @@ export function parseImportedSkill(
   if (scriptCount) requirements.push("脚本执行");
   if (/image[_ -]?gen|IMAGE_GENERATE|image generation|生图/.test(instructions))
     requirements.push("图片生成与参考图输入");
-  const release =
-    typeof meta.version === "string"
-      ? meta.version
-      : instructions.match(/Version:\s*`?([\w.+-]+)/i)?.[1] ?? "未标注";
+  // Root version wins over nested metadata. Preserve numeric scalar spelling
+  // (e.g. 2.10), rather than using JS's lossy numeric string conversion.
+  let release: string | undefined;
+  for (const path of [["version"], ["metadata", "version"]]) {
+    const node = document.getIn(path, true);
+    if (node === undefined || (isScalar(node) && node.value === null)) continue;
+    if (!isScalar(node) || !["string", "number"].includes(typeof node.value) ||
+      (typeof node.value === "number" && !Number.isFinite(node.value)))
+      throw new Error("技能版本需要是文字或有限数字。");
+    release = typeof node.value === "number" ? node.source : node.value as string;
+    break;
+  }
+  release ??= instructions.match(/Version:\s*`?([\w.+-]+)/i)?.[1] ?? "未标注";
+  if (release.length > 100 || /[\x00-\x1f\x7f]/.test(release))
+    throw new Error("技能版本超过 100 字符或包含控制字符，未截断导入。");
   return {
     name: meta.name,
     description: meta.description.trim(),
-    release: release.slice(0, 100),
+    release,
     instructions,
     references: files.filter((f) => f.path !== "SKILL.md"),
     requirements,

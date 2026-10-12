@@ -107,3 +107,5 @@ paper-framework-figure-studio-pro 固定修订仅在 Git 外测试完整包往�
 仅增加公开来源的中文审阅元数据，固定K-Dense-AI/claude-scientific-writer的529b9f73与54yyyu/zotero-mcp的0faf1b25；上游正文、依赖和素材没有迁入Git。用户确认后通过现有私人Skill安装，原目录/祖先许可及完整ZIP仅存本机，原账号/API/范围沿用。Zotero为待适配来源，未安装MCP/CLI或连接私有库。内置内容仍只在agents/skills。独立客户端改进，无共享契约/数据库迁移/部署/安装包变化；详见development/community-research-catalog.md。
 
 2026-10-13续接Zotero条目，仅新建本机只读元数据适配，确认选中的TXT经现有importResearchFile保存到本人私人集合。沿用版本、原件、权限和幂等契约，schema022无需新迁移；不迁入上游MCP/插件、私人库或凭据，不修改agents/skills，不写Zotero。受测原生传输/响应为合成，无安装包/部署变化，详见development/zotero-local-library.md。
+
+同日Skill导入解析识别metadata.version并保留数字原写法。只作用于新的解析/更新，未迁移数据库或重算旧修订/原件/摘要；格式及API契约保持，未新增依赖或第三方源码。内置单一来源保持，完整CI649项通过，详见development/skill-release-metadata.md。

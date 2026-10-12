@@ -2,7 +2,15 @@
 
 更新日期：2026-10-13（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新本地候选：Zotero本机文献元数据选入
+## 最新本地候选：科研Skill版本元数据修复
+
+`acceptcat-2`分支 `fix/skill-release-metadata` 基于PR38 / 90dac3c，生产代码 **4cb23e515794983d1f0832a944648b37c3389b62** 已推送，[草稿PR39](https://github.com/luoyan96/personal-agent/pull/39)。共享安装解析器识别metadata.version，保留数字标签原写法如2.10，根版本优先、正文fallback兼容；异常/过长标签报错而不截断。安装预览、新导入/更新沿用此解析结果，原已安装DB修订、摘要、权限和本机原件保持，需用户明确更新才采用新标签。
+
+完整本地CI52文件/649项、生产CLI/HTTP两项、B0及生产隔离通过，20项定向解析/API流程和9项桌面导入回归通过。固定公开Writer ZIP新解析标签2.1，32原件/完整ZIP与旧审阅哈希一致，旧存储仍可读、新摘要下往返通过，其他正规化字段不变。首次新测试误期望revise201而实际契约200，修正测试后通过，失败保留。只验证合成模型/公开缓存，没有真实供应商质量或用户安装验收。[交接与命令](development/skill-release-metadata.md)，证据Git外 `.runtime/skill-release-20261013`。
+
+无安装包、Release、部署、迁移或用户客户端重启，沿用2026-10-10aee02447/Windows0.10.0/schema022记录，公开版本此前核对0.6.0，本轮未重验线上。内置agents/skills不变；自报标签不证明质量或授予权限。PR35/36未包含，后续合并协调共享解析器/文档；PR39远端CI另跟踪，当前本地全门槛已通过。
+
+## 前一本地候选：Zotero本机文献元数据选入
 
 `acceptcat` / `acceptcat-3`承接上轮待适配条目，独立分支 `feature/zotero-local-library` 基于PR37 / 0da9b08，生产源码 **5e85efe2e978c755c5d71edad44dc535f9ac4cfb** 已推送，[草稿PR38](https://github.com/luoyan96/personal-agent/pull/38)。广场详情进入资料库，本人私人集合可以连接本机Zotero个人库、分页检索、选择和预览后确认导入元数据与摘要为TXT来源。固定loopback GET、短期许可、无重定向、明确错误/空结果、世代取消和原请求幂等重试；复用真实资料服务，无API/worker/共享契约/schema/内置Skill修改。
 

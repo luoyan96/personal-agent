@@ -629,3 +629,11 @@ focused资料库10项、聊天来源6项和连续聊天 / 上下文合计23项�
 PR38远端38299994061两Linux成功，Windows首轮632/634通过，discovery分页/seed与execution A12既有测试均超过5秒门槛；与父分支比较相关后端/测试没有改动。已只重跑失败Windows job。新增本机诊断：execution A12过滤通过；discovery单独过滤因缺前序测试任务而断言失败（非远端超时复现），改按原文件顺序执行全部9项通过。诊断日志及远端失败/重试记录保留Git外，不提高测试时限、模型预算或改动共享业务。远端重试最终状态单独追踪。
 
 GitHub38299994061矩阵重试最终Ubuntu22.19 / Ubuntu24 / Windows24全部成功，受测HEAD0135f0be8ca876b2c4ff4636db77f6a604fec750、生产源码仍5e85efe。失败节点重试请求和实际完整矩阵结果见ci-retry-passed.json，首次失败保留。无生产/共享测试/时限变化，后续仅文档更新不再重复本地检查或打包部署。
+
+## 2026-10-13 acceptcat-2：科研Skill自报版本与历史修订
+
+分支fix/skill-release-metadata基于90dac3c/PR38，生产4cb23e515794983d1f0832a944648b37c3389b62已推送，草稿PR39。上轮科研稿件包metadata.version2.1被安装器显示未标注；共享解析器按根version→metadata.version→正文旧标记读取，数字如2.10保留YAML原拼法。malformed/过长版本报错，不截断；别名/无效YAML边界保持。使用已有yaml依赖，不改ImportedSkill/API/schema或内置agents/skills正文。
+
+20项定向（14解析、6实际HTTP/SQLite/合成ChatWorker）、9项桌面导入回归通过。完整pnpm run ci52文件649项、生产CLI/HTTP两项、B0及生产夹具隔离通过。新用例先误写revise201而契约200，失败保留，仅改测试期望。固定公开Writer529b9f73缓存ZIP SHA71ac931d618219cc1df8764483d3787925da9887f9f2edbdd6210d3661eb5859、9,893,431字节，解析版本现在2.1；正文/参考/计数/依赖与旧预览一致，32原件/ZIP哈希不变、旧存储仍可读，新正规化摘要下全部往返通过。新旧packageDigest不同且明确保留，未自动改写DB版本或locator；真实版本回退/幂等和旧调用守卫通过，私有默认/源码边界保持。
+
+只交付独立草稿和交接，无安装包/Release/部署/迁移/用户客户端重启，无脚本执行或真实模型质量调用。沿用2026-10-10aee02447/0.10.0/schema022记录，公开0.6.0此前已核对，本轮未重验线上。PR35/36独立修复未包含，后续协调公共解析器和文档。自报版本不证明作者/来源/科研能力，旧未标注包需用户按既有流程明确更新，历史修订仍显示原标签。证据Git外.runtime/skill-release-20261013，详见docs/development/skill-release-metadata.md；PR39远端CI独立跟踪。

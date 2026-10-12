@@ -8,6 +8,7 @@ import { readConfig } from "../src/config.js";
 import { openDatabase, migrate } from "../src/database.js";
 import { createServer } from "../src/server.js";
 import { ChatWorker } from "../src/chat-worker.js";
+import { parseImportedSkill } from "@research-agent-platform/research-skills/import";
 import type { ModelCall, ModelResult } from "../src/execution-worker.js";
 const cleanup: (() => unknown | Promise<unknown>)[] = [];
 afterEach(async () => {
@@ -183,6 +184,38 @@ describe(
   "private skill installation and real chat integration (synthetic model only)",
   { timeout: 30000 },
   () => {
+    it("preserves parsed nested numeric releases through revise/replay/rollback without rewriting legacy versions or permissions", async () => {
+      const s = await setup();
+      let skill = await s.bind(await s.install({ ...pkg, release: "未标注" }));
+      const legacy = s.db.prepare("SELECT * FROM installed_skill_versions WHERE skill_id=? AND revision=1").get(skill.id);
+      const parsed = parseImportedSkill([
+        { path: "SKILL.md", text: `---\nname: ${pkg.name}\ndescription: ${pkg.description}\nmetadata:\n  version: 2.10\n---\n${pkg.instructions}` },
+        ...pkg.references,
+      ]);
+      expect(parsed.release).toBe("2.10");
+      const request = { expectedVersion: skill.version, package: parsed, source }, key = randomUUID();
+      const revised = await s.call("reviseSkill", request, skill.id, 0, key);
+      expect(revised.status, JSON.stringify(revised.value)).toBe(200);
+      expect((await s.call("reviseSkill", request, skill.id, 0, key)).value.data.digest).toBe(revised.value.data.digest);
+      skill = revised.value.data;
+      expect(skill).toMatchObject({ release: "2.10", revision: 2, enabled: true });
+      expect(skill.settings.listed).toBe(false);
+      expect(skill.settings.callMemberIds).toEqual([]);
+      expect(skill.settings.sourceMemberIds).toEqual([]);
+      expect(s.db.prepare("SELECT * FROM installed_skill_versions WHERE skill_id=? AND revision=1").get(skill.id)).toEqual(legacy);
+      expect((await s.call("skillVersions", null, skill.id)).value.data.map((v: any) => [v.revision, v.release])).toEqual([[2, "2.10"], [1, "未标注"]]);
+      const queued = await s.send(skill);
+      expect(queued.status).toBe(201);
+      const restored = await s.call("rollbackSkill", { expectedVersion: skill.version, revision: 1 }, skill.id);
+      expect(restored.status).toBe(200);
+      expect(restored.value.data).toMatchObject({ release: "未标注", revision: 1, digest: legacy!.digest });
+      let called = false;
+      await s.tick(async () => { called = true; return result("must not run stale revision"); });
+      expect(called).toBe(false);
+      expect((await s.call("chatTurn", null, queued.value.data.turn.id)).value.data.status).not.toBe("succeeded");
+      expect((await s.call("skillSource", null, skill.id, 1)).status).toBe(404);
+      expect((await s.call("skillSource", null, skill.id)).value.data.package.release).toBe("未标注");
+    });
     it("defaults private; source/list/uses/version APIs do not expose other users, including public descriptions", async () => {
       const s = await setup();
       let skill = await s.install();
