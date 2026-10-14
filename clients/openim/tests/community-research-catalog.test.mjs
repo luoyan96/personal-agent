@@ -219,7 +219,13 @@ test("catalog keeps original pinned sources distinct from callable abilities and
     ),
     (name) => (name === "./capability-feed-copy" ? feedCopy : require(name)),
   );
-  const entries = catalog.communityResearchCatalog;
+  const entries = moduleFrom(
+    await fs.readFile(
+      path.join(client, "../../apps/api/src/community-catalog-seed.ts"),
+      "utf8",
+    ),
+    require,
+  ).communityCatalogSeed;
   assert.equal(new Set(entries.map((e) => e.id)).size, 4);
   for (const entry of entries) {
     assert.match(entry.revision, /^[a-f0-9]{40}$/);
@@ -236,20 +242,32 @@ test("catalog keeps original pinned sources distinct from callable abilities and
     );
     assert(!("instructions" in entry));
   }
-  assert.equal(catalog.communityEntry("zotero-mcp").installable, false);
-  assert.equal(catalog.communityEntry("peer-review").installable, true);
-  assert.equal(catalog.communityEntry("paperqa2").installable, false);
-  assert.equal(catalog.communityEntry("paperqa2").status, "needs_connector");
-  assert.equal(catalog.communityEntry("unknown"), undefined);
-  assert.equal(catalog.matchingCommunityEntries("全部", "  ZOTERO  ").length, 1);
-  assert.equal(catalog.matchingCommunityEntries("文献与阅读", "科研稿件").length, 0);
+  assert.equal(entries.find((e) => e.id === "zotero-mcp").installable, false);
+  assert.equal(entries.find((e) => e.id === "peer-review").installable, true);
+  assert.equal(entries.find((e) => e.id === "paperqa2").installable, false);
+  assert.equal(entries.find((e) => e.id === "paperqa2").status, "needs_connector");
   assert.equal(
-    catalog.matchingCommunityEntries("文献与阅读", "  PAPERQA2  ").length,
+    entries.find((e) => e.id === "unknown"),
+    undefined,
+  );
+  assert.equal(
+    catalog.matchingCommunityEntries(entries, "全部", "  ZOTERO  ").length,
     1,
   );
-  assert.equal(catalog.matchingCommunityEntries("写作与表达", "主张").length, 2);
   assert.equal(
-    catalog.matchingCommunityEntries("全部", "投稿")[0].id,
+    catalog.matchingCommunityEntries(entries, "文献与阅读", "科研稿件").length,
+    0,
+  );
+  assert.equal(
+    catalog.matchingCommunityEntries(entries, "文献与阅读", "  PAPERQA2  ").length,
+    1,
+  );
+  assert.equal(
+    catalog.matchingCommunityEntries(entries, "写作与表达", "主张").length,
+    2,
+  );
+  assert.equal(
+    catalog.matchingCommunityEntries(entries, "全部", "投稿")[0].id,
     "scientific-writing",
   );
 });

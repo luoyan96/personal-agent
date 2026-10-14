@@ -13,6 +13,7 @@ services:
       APP_ORIGIN: ${APP_ORIGIN:?Run prepare-production.mjs}
       OPENIM_PUBLIC_API_URL: ${OPENIM_PUBLIC_API_URL:?Run prepare-production.mjs}
       OPENIM_PUBLIC_WS_URL: ${OPENIM_PUBLIC_WS_URL:?Run prepare-production.mjs}
+      GITHUB_CATALOG_SYNC: ${GITHUB_CATALOG_SYNC:-0}
     mem_limit: 384m
   research-worker:
     image: research-openim-api:production

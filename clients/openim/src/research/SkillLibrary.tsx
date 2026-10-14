@@ -10,23 +10,32 @@ import SafeMessageMarkdown from "./SafeMessageMarkdown";
 import { SkillMaterials, localSkillLocator } from "./SkillMaterials";
 import type { SkillBundleManifest } from "@research-agent-platform/research-skills/import";
 import "./skills.scss";
-import { communityEntry, communitySourceUrl } from "./community-research-catalog";
+import {
+  communitySourceUrl,
+  type CommunityResearchEntry,
+} from "./community-research-catalog";
 
 type Draft = RequestFor<"installSkill">["body"] & {
   localBundle?: { token: string; manifest: SkillBundleManifest };
 };
 export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
-  const candidate = communityEntry(catalogId);
-  const catalog = candidate?.installable ? candidate : undefined;
+  const [catalog, setCatalog] = useState<CommunityResearchEntry>();
+  const catalogRead = useResearchRead(
+    (signal) =>
+      researchApi("communityCatalogEntry", { params: { id: catalogId! }, signal }),
+    `skill-library-catalog:${catalogId}`,
+    !!catalogId,
+  );
+  const candidate = catalogRead.data?.data;
   const [scope, setScope] = useState<"mine" | "available" | "public">("mine"),
     [selected, setSelected] = useState<string>(),
     [draft, setDraft] = useState<Draft>(),
     [receipt, setReceipt] = useState<InstalledSkill>(),
     [updating, setUpdating] = useState<InstalledSkill>(),
-    [installing, setInstalling] = useState(!!catalog),
+    [installing, setInstalling] = useState(false),
     [failure, setFailure] = useState(""),
     [busy, setBusy] = useState(false),
-    [github, setGithub] = useState(catalog ? communitySourceUrl(catalog) : ""),
+    [github, setGithub] = useState(""),
     [choices, setChoices] = useState<{ id: string; label: string; revision: string }[]>(
       [],
     );
@@ -58,7 +67,8 @@ export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
   useLayoutEffect(() => {
     setDraft(undefined);
     setUpdating(undefined);
-    setInstalling(!!catalog);
+    setInstalling(false);
+    setCatalog(undefined);
     setChoices([]);
     setFailure("");
     setBusy(false);
@@ -66,6 +76,13 @@ export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
     flight.current = false;
     setReceipt(undefined);
   }, [state.generation]);
+  useLayoutEffect(() => {
+    if (candidate?.installable && !catalog) {
+      setCatalog(candidate);
+      setGithub(communitySourceUrl(candidate));
+      setInstalling(true);
+    }
+  }, [candidate?.id, candidate?.revision, state.generation, catalog]);
   useLayoutEffect(
     () => () => {
       if (draft?.localBundle)
@@ -224,6 +241,19 @@ export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
       />
       {failure && (
         <Alert type="error" message={failure} closable onClose={() => setFailure("")} />
+      )}
+      {catalogId && catalogRead.error && (
+        <Alert
+          type="warning"
+          message={`社区来源读取失败：${catalogRead.error}`}
+          action={<Button onClick={catalogRead.refresh}>重试读取来源</Button>}
+        />
+      )}
+      {catalogId && !catalogRead.data && !catalogRead.error && (
+        <p role="status">正在读取已审阅的社区来源…</p>
+      )}
+      {candidate && !candidate.installable && (
+        <Alert type="info" message="该社区条目尚未开放安装，请查看广场中的接入说明。" />
       )}
       {read.error && (
         <Alert

@@ -1,5 +1,9 @@
 # 科研协作 API
 
+## 社区科研目录与后台每日同步
+
+共享契约0.25.0新增登录后的社区目录和单项读取；worker在`GITHUB_CATALOG_SYNC=1`时首次及北京时间每日00:00同步GitHub事实与待审阅发现，普通GET不访问上游。运营者维护公共审阅描述，安装版本与仓库最新提交分开，私人技能不变。无数据库迁移。配置、CLI审阅发布和限制见[社区目录同步](../../docs/development/community-catalog-sync.md)；准确上线状态见[当前状态](../../docs/current-state.md)。
+
 ## 当前本地版本：联系人与持续记忆
 
 2026-10-04，本地共享契约 **0.12.0**、聊天协议 **1.2.0**、迁移 **014**。统一公开档案、创建专属 Agent、真人/私人 Agent 添加与同意、独立私聊及版本化私有/会话记忆已实现。ChatWorker 按当前授权实际读取档案和记忆，版本改变或撤权后取消过期输出；任务、材料、群成员资格与承接保持各自权限。接线及验证见[联系人接口](../../docs/development/agent-contacts-contract.md)、[后端实施](../../docs/development/agent-contacts-backend.md)和[总控整合](../../docs/development/agent-contacts-brief.md)。

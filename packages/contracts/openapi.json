@@ -2,9 +2,1203 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.24.0"
+    "version": "0.25.0"
   },
   "paths": {
+    "/api/v1/community-catalog": {
+      "get": {
+        "operationId": "communityCatalog",
+        "description": "Authenticated read of operator-reviewed catalog, cached public GitHub facts and explicitly unreviewed discoveries. No upstream code, private data, model keys or implicit installation. Reads perform no GitHub I/O.",
+        "x-stage": "B5b",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "B5b contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "entries": {
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              },
+                              "category": {
+                                "type": "string",
+                                "enum": [
+                                  "全部",
+                                  "文献与阅读",
+                                  "写作与表达",
+                                  "研究设计",
+                                  "图表与可视化",
+                                  "数据与代码",
+                                  "课题协作"
+                                ]
+                              },
+                              "author": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              },
+                              "summary": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2000
+                              },
+                              "input": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 4000
+                              },
+                              "deliverables": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 4000
+                              },
+                              "prerequisites": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 4000
+                              },
+                              "costs": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 4000
+                              },
+                              "materials": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 4000
+                              },
+                              "limitations": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 8000
+                              },
+                              "validation": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 8000
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "offline_reviewed",
+                                  "needs_connector"
+                                ]
+                              },
+                              "version": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              },
+                              "reviewedAt": {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                              },
+                              "license": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 300
+                              },
+                              "repository": {
+                                "type": "string",
+                                "maxLength": 220,
+                                "pattern": "^https:\\/\\/github\\.com\\/[A-Za-z0-9_.-]+\\/[A-Za-z0-9_.-]+$"
+                              },
+                              "revision": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{40}$"
+                              },
+                              "sourcePath": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 300,
+                                "pattern": "^[A-Za-z0-9_.\\/-]+$"
+                              },
+                              "installable": {
+                                "type": "boolean"
+                              },
+                              "localMetadataAdapter": {
+                                "type": "boolean"
+                              },
+                              "discussions": {
+                                "maxItems": 20,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    },
+                                    "url": {
+                                      "type": "string",
+                                      "maxLength": 1000,
+                                      "format": "uri"
+                                    }
+                                  },
+                                  "required": [
+                                    "label",
+                                    "url"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "github": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "stars": {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "forks": {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "pushedAt": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "repositoryUpdatedAt": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "archived": {
+                                        "anyOf": [
+                                          {
+                                            "type": "boolean"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "defaultBranch": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 200
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "latestRevision": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "pattern": "^[a-f0-9]{40}$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "syncedAt": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "attemptedAt": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "error": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "enum": [
+                                              "network",
+                                              "rate_limited",
+                                              "not_found",
+                                              "redirect",
+                                              "invalid_response",
+                                              "credentials_unavailable"
+                                            ]
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "stars",
+                                      "forks",
+                                      "pushedAt",
+                                      "repositoryUpdatedAt",
+                                      "archived",
+                                      "defaultBranch",
+                                      "latestRevision",
+                                      "syncedAt",
+                                      "attemptedAt",
+                                      "error"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "category",
+                              "author",
+                              "summary",
+                              "input",
+                              "deliverables",
+                              "prerequisites",
+                              "costs",
+                              "materials",
+                              "limitations",
+                              "validation",
+                              "status",
+                              "version",
+                              "reviewedAt",
+                              "license",
+                              "repository",
+                              "revision",
+                              "sourcePath",
+                              "installable",
+                              "discussions",
+                              "github"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "candidates": {
+                          "maxItems": 30,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "repository": {
+                                "type": "string",
+                                "maxLength": 220,
+                                "pattern": "^https:\\/\\/github\\.com\\/[A-Za-z0-9_.-]+\\/[A-Za-z0-9_.-]+$"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              },
+                              "description": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 2000
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "stars": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "forks": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "pushedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "license": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 200
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "foundAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "checkedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "status": {
+                                "type": "string",
+                                "const": "needs_review"
+                              }
+                            },
+                            "required": [
+                              "repository",
+                              "name",
+                              "description",
+                              "stars",
+                              "forks",
+                              "pushedAt",
+                              "license",
+                              "foundAt",
+                              "checkedAt",
+                              "status"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "sync": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "never",
+                                "running",
+                                "ok",
+                                "partial",
+                                "failed",
+                                "disabled"
+                              ]
+                            },
+                            "lastStartedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "lastFinishedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "nextCheckAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "discoveryState": {
+                              "type": "string",
+                              "enum": [
+                                "never",
+                                "ok",
+                                "failed"
+                              ]
+                            },
+                            "discoveryCheckedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "enabled",
+                            "state",
+                            "lastStartedAt",
+                            "lastFinishedAt",
+                            "nextCheckAt",
+                            "discoveryState",
+                            "discoveryCheckedAt"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "version",
+                        "entries",
+                        "candidates",
+                        "sync"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "version": 1,
+                    "entries": [],
+                    "candidates": [],
+                    "sync": {
+                      "enabled": false,
+                      "state": "never",
+                      "lastStartedAt": null,
+                      "lastFinishedAt": null,
+                      "nextCheckAt": null,
+                      "discoveryState": "never",
+                      "discoveryCheckedAt": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/community-catalog/{id}": {
+      "get": {
+        "operationId": "communityCatalogEntry",
+        "description": "Current reviewed catalog entry only; a candidate is not installable. Return exact reviewed commit independent from latest upstream revision.",
+        "x-stage": "B5b",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "B5b contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "category": {
+                          "type": "string",
+                          "enum": [
+                            "全部",
+                            "文献与阅读",
+                            "写作与表达",
+                            "研究设计",
+                            "图表与可视化",
+                            "数据与代码",
+                            "课题协作"
+                          ]
+                        },
+                        "author": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "summary": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 2000
+                        },
+                        "input": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4000
+                        },
+                        "deliverables": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4000
+                        },
+                        "prerequisites": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4000
+                        },
+                        "costs": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4000
+                        },
+                        "materials": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 4000
+                        },
+                        "limitations": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 8000
+                        },
+                        "validation": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 8000
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "offline_reviewed",
+                            "needs_connector"
+                          ]
+                        },
+                        "version": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "reviewedAt": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        "license": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 300
+                        },
+                        "repository": {
+                          "type": "string",
+                          "maxLength": 220,
+                          "pattern": "^https:\\/\\/github\\.com\\/[A-Za-z0-9_.-]+\\/[A-Za-z0-9_.-]+$"
+                        },
+                        "revision": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{40}$"
+                        },
+                        "sourcePath": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 300,
+                          "pattern": "^[A-Za-z0-9_.\\/-]+$"
+                        },
+                        "installable": {
+                          "type": "boolean"
+                        },
+                        "localMetadataAdapter": {
+                          "type": "boolean"
+                        },
+                        "discussions": {
+                          "maxItems": 20,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "label": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              },
+                              "url": {
+                                "type": "string",
+                                "maxLength": 1000,
+                                "format": "uri"
+                              }
+                            },
+                            "required": [
+                              "label",
+                              "url"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "github": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "stars": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 9007199254740991
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "forks": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 9007199254740991
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "pushedAt": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "repositoryUpdatedAt": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "archived": {
+                                  "anyOf": [
+                                    {
+                                      "type": "boolean"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "defaultBranch": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "maxLength": 200
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "latestRevision": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^[a-f0-9]{40}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "syncedAt": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "attemptedAt": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "error": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "network",
+                                        "rate_limited",
+                                        "not_found",
+                                        "redirect",
+                                        "invalid_response",
+                                        "credentials_unavailable"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "stars",
+                                "forks",
+                                "pushedAt",
+                                "repositoryUpdatedAt",
+                                "archived",
+                                "defaultBranch",
+                                "latestRevision",
+                                "syncedAt",
+                                "attemptedAt",
+                                "error"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "category",
+                        "author",
+                        "summary",
+                        "input",
+                        "deliverables",
+                        "prerequisites",
+                        "costs",
+                        "materials",
+                        "limitations",
+                        "validation",
+                        "status",
+                        "version",
+                        "reviewedAt",
+                        "license",
+                        "repository",
+                        "revision",
+                        "sourcePath",
+                        "installable",
+                        "discussions",
+                        "github"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "id": "synthetic",
+                    "name": "synthetic",
+                    "category": "全部",
+                    "author": "synthetic",
+                    "summary": "synthetic",
+                    "input": "synthetic",
+                    "deliverables": "synthetic",
+                    "prerequisites": "synthetic",
+                    "costs": "synthetic",
+                    "materials": "synthetic",
+                    "limitations": "synthetic",
+                    "validation": "synthetic",
+                    "status": "offline_reviewed",
+                    "version": "synthetic",
+                    "reviewedAt": "2026-09-21",
+                    "license": "synthetic",
+                    "repository": "https://github.com/synthetic/fixture",
+                    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "sourcePath": "synthetic",
+                    "installable": false,
+                    "discussions": [],
+                    "github": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/research-library/collections": {
       "get": {
         "operationId": "researchCollections",
@@ -52998,7 +54192,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.24.0"
+                          "const": "0.25.0"
                         },
                         "checks": {
                           "type": "object",
@@ -53057,7 +54251,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.24.0",
+                    "contractVersion": "0.25.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -53231,7 +54425,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.24.0"
+                          "const": "0.25.0"
                         },
                         "checks": {
                           "type": "object",
@@ -53290,7 +54484,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.24.0",
+                    "contractVersion": "0.25.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -53442,7 +54636,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.24.0"
+                          "const": "0.25.0"
                         },
                         "checks": {
                           "type": "object",
@@ -53501,7 +54695,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.24.0",
+                    "contractVersion": "0.25.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",

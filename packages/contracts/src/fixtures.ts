@@ -54,6 +54,9 @@ function sample(s: JsonShape, key = ''): unknown {
   if (s.type === 'boolean') return false
   if (s.type === 'integer' || s.type === 'number') return s.minimum ?? ((s.exclusiveMinimum ?? 0) + 1)
   if (key === 'endpoint') return 'https://agent.synthetic.invalid/v1/chat/completions'
+  if (key === 'repository') return 'https://github.com/synthetic/fixture'
+  if (key === 'revision' && s.pattern?.includes('{40}')) return 'a'.repeat(40)
+  if (key === 'reviewedAt') return '2026-09-21'
   if (key === 'serviceOrigin') return 'https://agent.synthetic.invalid'
   if (key === 'model') return 'deepseek-flash'
   if (key === 'timezone') return 'Asia/Shanghai'

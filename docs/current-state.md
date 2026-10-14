@@ -2,7 +2,19 @@
 
 更新日期：2026-10-14（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新桌面交付：Windows 0.10.2 科研发现信息流
+## 最新交付：Windows 0.10.3 与社区目录每日同步已上线
+
+用户要求社区能力由软件/后台自动更新后，`feature/community-catalog-sync` 基于PR44完成后端持久目录、真实GitHub事实同步和待审阅发现。生产源码 **47c42acbccf64b1d329babb26a464733b81d51d3**（实现6c6b31f），[草稿PR45](https://github.com/luoyan96/personal-agent/pull/45)。客户端读取服务器目录，Star/Fork、代码更新时间、归档与上游提交独立展示；自动发现候选不提供安装/调用，运营者审阅后发布固定SHA的说明，私人技能和资料权限保持。
+
+Windows x64 NSIS **0.10.3** 在桌面 `AcceptCat_0.10.3.exe`，87,399,966字节，SHA2565799fe92a664ae9c2a96882e63ad4ac89fd22ba7e856375dda59e0ba0c23ba2c，副本一致。最终根53文件/669项、生产2项/B0/隔离通过；客户端类型/12项、界面六组目录流程及三组安装/账号/布局流程、最终提示位置实拍、真实打包exe启动及ASAR核对通过。界面/模型验证范围分开，未使用真实用户科研数据或进行供应商科研质量验收。此前失败与警告保留。生产源码47c42ac的远端[38543331737](https://github.com/luoyan96/personal-agent/actions/runs/38543331737)最终三平台全部通过；首轮Windows旧解析/迁移超时失败，仅重跑失败节点后成功。后续文档HEAD检查与生产源码结果分开。
+
+API/worker已成对上线47c42ac，镜像 **research-openim-api:community-47c42ac** / **sha256:b78613b5c6e1f77d07e7af392149744161e25460cb7e4f14b2ec0500e3fda2cc**，API healthy/worker running，公网ready0.25/ok。**contract0.25 / chat1.12 / schema022，无迁移**。停写备份与解压副本/新writer前原库91表/22迁移/6原件一致，六基础服务保持。服务器首次同步09:51:35.482Z—09:51:41.195Z成功：四项已收录、三个仓库、二十候选，所有来源metadata error=null，下一次2026-10-14T16:00Z（北京时间10月15日零点）。worker持续运行，桌面关闭不影响同步；无GitHub token。普通登录用户只有缓存GET，操作CLI不允许用户任意晋级。
+
+[安装、实际上线及恢复](deployment/acceptcat-0.10.3.md)，[配置与运营者目录发布](development/community-catalog-sync.md)，证据Git外 `.runtime/community-sync-20261014`。首次因历史镜像摘要笔误在停写前停止，保留并核对实际旧ID后修正守卫；错误旧实例仅只读查询，没有安装软件。历史旧镜像ID若有不同记法，以本次实际核对的 **a8224977144450b2634f88317b305d4e0c63d8dfda6e0fe6766ab130296bff6c** 为准。
+
+**需退出旧版手动覆盖安装；本批未公开GitHub Release或修改公开更新源，也未代用户安装。** 社区目录/元数据后续更新无需重新发桌面包，应用二进制与已安装Skill更新仍分别处理。未改静态网页、模型Key或材料权限，harness仍not_verified；候选科研质量、工具沙箱/向量/绘图/PaperQA执行仍需独立适配。兄弟PR35/36未包含，三项每日维护任务继续遵照新发布流程。
+
+## 上一个桌面版本：Windows 0.10.2 科研发现信息流
 
 用户反馈原广场没有可扫读信息后，`feature/research-discovery-feed` 基于0.10.1重做科研广场。生产源码 **31bd66c94ff34658ffc97d82133fe12da821ea93**：竖版用途/交付示例卡片、精简首屏、按任务检索、用途详情和真实添加/安装入口；六份内置私人文字配置及四项社区来源保持，未接通工具标记待接入。公开名片、资料和私人权限沿用原API。
 

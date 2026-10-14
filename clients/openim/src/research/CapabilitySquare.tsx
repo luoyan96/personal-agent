@@ -31,6 +31,7 @@ import {
 import "./capability-center.scss";
 import "./research-library.scss";
 import "./capability-feed.scss";
+import { CommunitySyncStatus } from "./CommunityRepositoryFacts";
 
 function ConfiguredCapabilityPreview({ contact }: { contact: Contact }) {
   const description =
@@ -222,6 +223,11 @@ export function CapabilitySquare() {
       view !== "mine" ||
       (c.identity.kind === "personal_agent" && c.identity.ownerMemberId === actorId),
   );
+  const community = useResearchRead(
+    (signal) => researchApi("communityCatalog", { signal }),
+    "square-community-catalog",
+    supported && view === "public",
+  );
   const publicResults = (read.data?.data || []).filter(
     (p) => category === "全部" || capabilityCategory(p.contact, p.tags) === category,
   );
@@ -234,7 +240,15 @@ export function CapabilitySquare() {
     Number(availability.data.version.split(".")[1]) >= 24;
   const hasDiscoveryResults =
     matchingStarterTemplates(category, query).length > 0 ||
-    (view === "public" && matchingCommunityEntries(category, query).length > 0);
+    (view === "public" &&
+      (matchingCommunityEntries(community.data?.data.entries || [], category, query)
+        .length > 0 ||
+        (category === "全部" &&
+          !!community.data?.data.candidates.some((c) =>
+            `${c.name} ${c.description || ""}`
+              .toLowerCase()
+              .includes(query.toLowerCase()),
+          ))));
   const resetFilters = () => {
     setCategory("全部");
     setSearch("");
@@ -584,6 +598,14 @@ export function CapabilitySquare() {
                 </Button>
               </div>
             )}
+            {view === "public" && (
+              <CommunitySyncStatus
+                catalog={community.data?.data}
+                loading={community.loading}
+                error={community.error}
+                onRefresh={community.refresh}
+              />
+            )}
             {hasDiscoveryResults && (
               <div className="capability-feed-section-heading">
                 <h2>
@@ -616,6 +638,7 @@ export function CapabilitySquare() {
                   key={`community:${generation}`}
                   category={category}
                   search={query}
+                  catalog={community.data?.data}
                 />
               )}
             </div>

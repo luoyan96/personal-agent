@@ -691,3 +691,25 @@ API healthy、worker running同一新image ID/restart=unless-stopped；六OpenIM
 最终真实React/HTTP/SQLite合成九组流程通过、pageerror0，覆盖空公开6+4、键盘详情/取消、搜索分类、待接入无调用、固定25原件预览/取消零安装、私人Agent实际创建/复用零重复、公开/撤回、另一账号隔离、窄屏动作。壳/SDK/IPC窗口和下载缓存为夹具；原生handler/API/SQLite实际运行，无用户材料或供应商学术质量验收。12项定向客户端、最终类型、Vite/Electron+NSIS、真实打包exe启动/原生桥接与ASAR检查通过。1536×1024原生概念、1024×726、390×844最终实拍等待动画结束，view_image对照六张。早期隐藏radio/壳aria-label/合成停用原因期望失败、同包基线比较和文档patch锚点错误保留，修正夹具而未更改权限；旧依赖/日志警告保留。未重复已通过的656项共享根门槛，远端CI另记录。
 
 安装器87,398,834字节、SHA25665bbe1888a305cc3054614789389640644398258221a9ec00f5c5992dbde5c72，桌面AcceptCat_0.10.2.exe副本一致。包内新广场/旧导入恢复/Zotero/当前shared parser与2.10标签/既有猫图和图标核对；身份独立与0.10.1比较保持，未代用户安装或重启。--publish never，本批无GitHub Release、更新源变更、后台部署或迁移；仍为已部署8717dac3/contract0.24/schema022，公开源此前0.6.0，本批未复验线上，harness仍not_verified。详见docs/development/research-discovery-feed.md，证据Git外.runtime/square-feed-20261014。保留产品76px侧栏/紧凑字号与真实文案等设计适配，下一步积累获准公开的真实师生交付，脚本/向量/绘图和PaperQA需另行适配；兄弟PR35/36未包含。
+
+## 2026-10-14 用户要求：社区目录后台更新与Windows0.10.3
+
+feature/community-catalog-sync基于PR44，生产实现6c6b31fa92766a5ab385b84ca605e7865af87719、最终产品源码47c42acbccf64b1d329babb26a464733b81d51d3已推送，草稿PR45已附任务。四项来源介绍移为API受控持久目录，首次种子不覆盖已运营内容；contract0.25新增session GET目录/单项，schema022、chat1.12保持，无迁移。agents/skills和私人包正文单一来源保持。operator CLI status/export-reviewed/replace-reviewed/sync维护公开描述，普通用户没有晋级写路由，待接入不能伪装可安装。
+
+worker后台独立执行首次及北京时间每日零点GitHub公共元数据/检索，两项共仓库去重；Star/Fork、pushed_at、updated_at、归档、默认分支HEAD与固定审阅SHA分别保存。ETag304、10分钟租约、短事务合并运营者改动、8秒/1MiB/公开身份/无跳转边界、限流全局退避和失败保留缓存检查通过；新来源在同步期间加入保留下轮触发。自动检索最多两组10结果，未审阅候选不提供安装/调用，不读研究材料或运行源代码。客户端从服务器读动态目录/单项，五秒可见页刷新，未知Star显示—、真实缓存错误/上游变化提示；检查入口固定审阅SHA快照，代际关闭旧详情。最终同步提示移到首屏标题上方，182份Markdown/10技能内容检查通过。
+
+最终本机完整根CI53文件/669项、生产2项/B0/生产隔离通过。首轮网页测试旧0.24固定期望失败，按0.25响应更新后通过，未弱化校验。客户端最终类型/12项通过，目录界面六组（读取/去重初次同步/无需重建元数据变更/待审阅无调用/动态增项/限流保留）及续跑三组（固定SHA原生25原件检查取消零安装/换账号旧详情清除/1024和1536布局）通过，pageerror0。生产React/真实HTTP/SQLite/原生Skill handler实际运行，SDK/窗口/下载为夹具；没有真实供应商或用户研究材料质量检查。公开GitHub实际请求成功，三仓库/二十候选；最后截图使用这份公开缓存，不能当真实账号云端UI验收。新依赖新增文件未物化类型错误、pnpm非TTY安装中止、Vite预构建旧缓存、冷启动超时与候选/输入选择器错误均保留，修复缓存/实际aria-label后检查通过；原有Sass和electron-log警告保留。
+
+Windows0.10.3 NSIS87,399,966字节/SHA2565799fe92a664ae9c2a96882e63ad4ac89fd22ba7e856375dda59e0ba0c23ba2c，桌面副本一致并有安装说明。第一次包早于提示位置修正，独立留存first-build-before-status-position.exe；最终以47c42ac完整重建，实际exe隔离账号目录启动/原生桥接通过，ASAR新目录路由/版本/原parser全文2.10/Zotero/原件恢复文案/原猫咪素材与入口身份核对通过，未把首次包当最终交付。publish never，未代用户安装/重启旧窗口、未上传公开Release或修改更新源。
+
+用户登录阿里云后，默认旧acceptcat实例只读inspect发现没有Docker，未安装或修改它；对照历史实际部署终端找到正式科研实例并沿用免密维护权限。实际旧镜像sha256:a8224977144450b2634f88317b305d4e0c63d8dfda6e0fe6766ab130296bff6c；历史交接错误摘要使首次脚本在ops创建/停写前停止，原脚本和空log保留，分段读取实际摘要后修正守卫，没有放宽预检。v2助手SHA256c89354fb756f4f4566831afda78444bb3f92799122aec5702f26310e0d36b263服务器相同并bash语法通过。固定GitHub归档33,763,500字节/SHAd79993448b885301231e4160659aaa31eee3420e1d628143cb94648195bacff3服务器符合；network none/pull=false继承原镜像、只复制编译contracts/API/research-skills，不重新装依赖。
+
+正式API/worker成对部署源码47c42ac，research-openim-api:community-47c42ac / sha256:b78613b5c6e1f77d07e7af392149744161e25460cb7e4f14b2ec0500e3fda2cc，API healthy/worker running同镜像、restart unless-stopped。ops /opt/research-openim/ops/community-47c42ac；停写备份/srv/research-openim-backups/community-47c42ac-20261014T095124Z/research.tar.gz校验/解压副本/新writer前原库91表、22迁移checksum、6原件字节模式一致，六基础服务实例/镜像/状态保持。schema022无迁移，静态网页/模型Key/私人资料权限保持。GITHUB_CATALOG_SYNC=1对pair明确启用并保存compose.env供后续升级沿用，原环境权限保持、不回显其他配置。
+
+服务器首次实际同步09:51:35.482Z—09:51:41.195Z完成，公共缓存version8/state ok/discovery ok，四已收录/三仓库/二十候选、metadata error均null，Writer/peer-review2466、PaperQA9366、Zotero5381 Star（时间点事实）；下一次2026-10-14T16:00Z，即北京时间10月15日零点，桌面关闭不影响worker。没有GitHub token。本机独立公网ready200/0.25/ok、数据库/存储/认证ok/harness not_verified，新目录和单项匿名401，登录读取/安装权限在本机合成真实HTTP检查，未读取真实用户账号科研内容。
+
+证据Git外.runtime/community-sync-20261014：根CI首败/最终、类型、客户端测试、6+3界面日志/最终可见性/实拍、真实GitHub响应、两轮包/ASAR/smoke/复制hash、部署脚本初检/v2/public-probes和实际终端图；敏感行摘要和备份只在服务器保护目录。GitHubconnector创建PR403后使用已有gh权限正常建立草稿45，未改connector权限。远端38543331737首轮Linux两项通过、Windows旧agent-file解析和015账户迁移超时失败，已仅重跑失败Windows节点，最后快照仍运行中；不计三平台全部通过。交接docs/development/community-catalog-sync.md与docs/deployment/acceptcat-0.10.3.md。
+
+后续每日社区任务核对候选依赖/许可/材料/模型成本/真实样例后，通过operator-only发布路径收录；GitHub热度和元数据更新不等于可运行科研能力。已安装Skill更新、应用二进制更新、执行沙箱/向量/绘图/PaperQA和真实师生交付质量继续独立处理。未包含兄弟PR35/36，当前公共更新源仍未获得本地0.10.3。
+
+后续确认：生产源码47c42ac的38543331737失败Windows节点重跑成功，Ubuntu22.19/24及Windows24最终三平台全部通过，实际github-ci-last.json保留；初次失败日志仍保留。文档HEAD检查独立于固定生产源码结果。

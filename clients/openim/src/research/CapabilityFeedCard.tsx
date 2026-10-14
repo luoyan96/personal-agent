@@ -15,6 +15,7 @@ export function CapabilityFeedCard({
   onOpen,
   selected = false,
   openLabel,
+  metadata,
 }: {
   title: string;
   outcomes: string;
@@ -25,6 +26,7 @@ export function CapabilityFeedCard({
   onOpen: () => void;
   selected?: boolean;
   openLabel?: string;
+  metadata?: ReactNode;
 }) {
   return (
     <article className="capability-feed-card">
@@ -49,6 +51,7 @@ export function CapabilityFeedCard({
           <span className="capability-feed-action">
             查看用法 <ArrowRightOutlined />
           </span>
+          {metadata}
         </div>
       </button>
     </article>

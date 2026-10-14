@@ -8,6 +8,7 @@ import { AccountUsername, AccountPassword, RegistrationCode } from './authentica
 import { personalModelRoutes } from './personal-models.js'
 import { personalAssistantRoutes } from './personal-assistant.js'
 import { workspaceRoutes } from './workspace.js'
+import { communityRoutes } from './community.js'
 import { researchTeamRoutes } from './research-team.js'
 import { agentIntegrationRoutes } from './agent-connections.js'
 
@@ -30,6 +31,7 @@ function route<P extends z.ZodType, Q extends z.ZodType, B extends z.ZodType, R 
     errors: m.ErrorResponse, errorStatuses: m.errorStatus, idempotent: keyed }
 }
 export const routes = {
+  ...communityRoutes,
   ...researchLibraryRoutes,
   ...skillRoutes,
   ...personalAssistantRoutes,

@@ -33,6 +33,7 @@ import { reconcileChat } from './chat-worker.js'
 import { OpenImBridge } from './openim-bridge.js'
 import { OpenImClient } from './openim-client.js'
 import { OpenImCallbacks } from './openim-callback.js'
+import { readCommunityCatalog, readCommunityEntry } from './community-catalog.js'
 
 export function createServer(config: Config, options:{imClient?:OpenImClient;externalCall?:ExternalAgentCall}={}) {
   if(options.imClient&&config.mode!=='test')throw new Error('Injected OpenIM clients are test-only')
@@ -100,6 +101,10 @@ export function createServer(config: Config, options:{imClient?:OpenImClient;ext
       }
       reply.code(route.status)
       if (name === 'register') return routes.register.response.parse(await register(connection,parsed.data as RequestFor<'register'>,request.ip))
+      if(name==='communityCatalog'||name==='communityCatalogEntry'){
+        authenticate(connection,token)
+        return route.response.parse(name==='communityCatalog'?readCommunityCatalog(connection,config):readCommunityEntry(connection,config,(parsed.data.params as {id:string}).id))
+      }
       if(route.stage==='LIBRARY1'){
         const input=parsed.data as unknown as LibraryRequest
         const authorized=()=>{const actor=authenticate(connection,token);if(route.method!=='GET')requireCsrf(actor,request.headers['x-csrf-token']);return new ResearchLibraryService(connection,actor,config.blobRoot)}

@@ -788,3 +788,69 @@
     transition: none;
   }
 }
+.community-repository-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  border-top: 1px solid #eef1f3;
+  margin-top: 12px;
+  padding-top: 10px;
+  font-size: 11px;
+  line-height: 1.8;
+  color: #77858c;
+  small {
+    flex-basis: 100%;
+    color: #92754a;
+    font-size: 10px;
+  }
+}
+.community-sync-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 auto 20px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e8edef;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #77858c;
+  small {
+    font-size: 11px;
+  }
+  .ant-btn {
+    flex-shrink: 0;
+  }
+}
+.community-candidate-heading {
+  grid-column: 1 / -1;
+  padding: 12px 0 0;
+  h2 {
+    margin: 0 0 4px;
+    font-size: 19px;
+    font-weight: 600;
+  }
+  p {
+    margin: 0;
+    font-size: 12px;
+    color: #77858c;
+  }
+}
+.community-candidate-preview {
+  h4 {
+    overflow-wrap: anywhere;
+  }
+  > p {
+    font-size: 13px;
+    line-height: 1.9;
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    background: #ffffffaa;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: auto;
+  }
+}
