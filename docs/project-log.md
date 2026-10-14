@@ -671,3 +671,15 @@ GitHub38299994061矩阵重试最终Ubuntu22.19 / Ubuntu24 / Windows24全部成�
 本批文档补录：check:content178份Markdown/10个内置Skill定义通过。PR42生产7d2a9c8的38505283235最新快照Ubuntu22.19/24成功、Windows24运行中，pr42-ci-production.json；不把未完成的远端节点记为通过。
 
 后续确认：PR42生产7d2a9c8的38505283235三平台全部成功，pr42-ci-production-passed.json根据实际gh返回记录（后续文档HEAD独立检查）。GitHub说明更新TLS超时和元数据读取EOF保留为网络故障，Git推送已成功；未把网络错误当代码失败。交接补丁曾引用不存在的文本而校验失败、零文件改动，读取准确锚点后补录。
+
+## 2026-10-14 用户要求：交付Windows0.10.1并升级配套后台
+
+分支release/acceptcat-0.10.1基于a123365/PR42，源码8717dac3918b937b89c146f166ce5ee115d542ba已推送，唯一产品元数据改动版本0.10.1。业务与PR42生产7d2a9c8/656项及三平台CI相同，不重复已通过根门槛；客户端当前类型、实际Vite/Electron+NSIS、隔离账号目录的真实AcceptCat.exe启动/桥接通过。ASAR当前共享parser完整字节/2.10标签、四目录项、导入回执恢复、Zotero原生/IPC和猫咪原图/图标/入口身份核对通过。首轮包夹具错误queryZoteroItems名字保留，按实际connect/read/release接口修正后通过；既有electron-log重复initialize警告保留。包87,391,016字节/SHA256698caa2f6f8d5cf49011df51112aff0038292d33760b5589684ab73a982fb831，副本和说明在C:/Users/luo/Desktop，哈希一致，未代用户安装或重启旧客户端。
+
+用户重新登录既有阿里云维护会话后沿用部署授权。固定GitHub归档33,726,549字节/SHAd42ab1298baf5b7b63ac76b6ce08fce0c04210085add4f2c9f7caf0874fb9c55与服务器相同；旧aee02447镜像ID匹配后network none/pull=false构建，只复制API和research-skills源码，不重新安装依赖。新镜像research-openim-api:release-8717dac3 / sha256:a8224977144450b26430bf488317b305d4e0c63d8dfda6e0fe6766ab130296bff6c，OCI revision8717dac3，源码源目录同固定SHA。正式ops release-8717dac3-v2。
+
+首轮审计只读bind mount导致SQLite WAL查询unable to open database file，发生在快照阶段、新writer前；旧API/worker自动恢复并实际inspect/public-ready确认，没有迁移或覆盖数据库。失败脚本/ops/log保留。第二版文件挂载允许WAL/共享内存侧文件，SQL仍readOnly/query_only；预检后停写，完整备份到/srv/research-openim-backups/release-8717dac3-v2-20261014T040344Z/research.tar.gz，校验/解压副本以及新writer前原库：91表SQL/全行摘要、22迁移checksum/时间、6原件字节/模式全部一致。审计器合成实际SQLite正常快照及篡改行/原件拒绝验证通过，私密摘要/材料/配置只留服务器保护目录，不入Git。
+
+API healthy、worker running同一新image ID/restart=unless-stopped；六OpenIM基础服务实例/镜像/状态前后相同。公网ready200/ok/contract0.24，schema022无迁移，database/storage/authentication ok，harness not_verified。容器chat.ts/import.ts源码SHA匹配本机固定源码LF字节。网页静态、模型Key和权限保持；没有真实供应商/用户材料质量验收。完整交接docs/deployment/acceptcat-0.10.1.md，本机Git外.runtime/acceptcat-0.10.1-20261014含包/启动/审计/public-ready/deployment-terminal-final证据；原脚本和失败校验保留。
+
+构建publish never，安装包未上传GitHub Release/未改公开更新源，此前公开0.6.0不能自动收到本地0.10.1；用户运行桌面包覆盖安装。包含PR37—42而非兄弟PR35/36，未计脚本/绘图/向量/PaperQA执行完成。成对代码恢复需先备份当前数据，使用旧aee02447同schema022二进制并保留数据库；新writer后不自动覆盖旧数据备份。后续优先真实师生课题持续试用，再协调独立分支与公开版本。

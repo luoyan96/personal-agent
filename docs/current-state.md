@@ -2,7 +2,15 @@
 
 更新日期：2026-10-14（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新本地候选：科研 Skill 连续输入保持所选流程
+## 最新交付：Windows 0.10.1 安装包与配套后台已更新
+
+用户要求可安装试用版本并重新登录原维护会话后，固定源码 **8717dac3918b937b89c146f166ce5ee115d542ba** 已制作Windows x64 NSIS包，副本在桌面 `AcceptCat_0.10.1.exe`（87,391,016字节，SHA256698caa2f6f8d5cf49011df51112aff0038292d33760b5589684ab73a982fb831）。包含PR37—42的社区目录、Zotero只读元数据选入、Skill版本识别和资料导入恢复。版本提交只有0.10.1元数据，业务源码沿用PR42已通过的656项/三平台CI。实际客户端类型/构建/原生启动及ASAR当前依赖/素材核对通过。安装器身份/数据目录沿用，未代用户安装或重启。
+
+科研API/worker已成对更新为8717dac3，镜像research-openim-api:release-8717dac3 / a8224977144450b26430bf488317b305d4e0c63d8dfda6e0fe6766ab130296bff6c，API healthy/worker running、公网ready0.24/ok。schema022无迁移，停写备份及解压验证91表/22迁移/6原件一致，新writer前原库一致；六基础服务保持。首次只读WAL挂载失败时旧pair已自动恢复，修正审计挂载后正式升级成功，失败保留。没有网页静态/模型Key/权限变更，harness仍not_verified，未做真实科研质量验收。
+
+[完整交付、验证与恢复](deployment/acceptcat-0.10.1.md)，Git外 `.runtime/acceptcat-0.10.1-20261014`。**本地安装包尚未上传GitHub Release，旧版不会因为Git推送自动更新；请运行桌面包覆盖安装。** 公开更新源此前0.6.0本轮未改变。未包含兄弟PR35/36，未接通脚本/绘图/向量或PaperQA执行；后续合并/发布协调现有分支，优先真实师生任务试用。
+
+## 前一本地候选：科研 Skill 连续输入保持所选流程
 
 `acceptcat-2`分支 `fix/skill-continuous-routing` 基于 PR41 / e95db40，生产代码 **7d2a9c872e8855a37038737cb24969d4d94d6370** 已推送，[草稿 PR42](https://github.com/luoyan96/personal-agent/pull/42)。实际复现所选Skill连续补充误转创建Agent、助理分派或拆批；补齐三处排除条件，所选说明/参考/当前输入留在普通文字流程。持久混合Skill与助理路由在模型执行前取消为INPUT_CHANGED，不能直接重试，需新消息；不改写历史输入或撤销已发生的旧动作。
 
