@@ -1,5 +1,7 @@
 # AcceptCat · 老师与实验室团队的科研工作平台
 
+2026-10-14：Windows **0.10.2** 已交付[科研广场信息流](docs/development/research-discovery-feed.md)：竖版用途卡片和交付形式预览，点开看材料与用法，真实添加私人助手或检查社区技能。空公开列表不再占据首屏。9组真实React/HTTP/SQLite流程、类型/构建/原生启动通过，安装包在本机桌面，需手动覆盖安装；未发布GitHub Release。本批只改桌面，后台仍为下述0.10.1配套版本。
+
 2026-10-14：Windows **0.10.1** [安装包及配套后台已交付](docs/deployment/acceptcat-0.10.1.md)。桌面包包含近期科研目录、Zotero元数据选入、Skill版本和资料导入恢复，实际构建/启动/包内检查通过；API与worker同步更新，Skill连续输入修复在线生效，schema022无迁移。安装包副本在本机桌面，需手动覆盖安装，尚未上传GitHub Release。准确版本、备份和限制见[当前状态](docs/current-state.md)。
 
 Windows **0.10.0** 已完成[科研能力中心与资料素材库第一阶段](docs/development/research-capability-center.md)：科研 Agent 分类、六份私人文字配置、资料来源 / 版本 / 原件、本人 Agent 资料检索与片段回执、完整本机 Skill 素材。安装包已制作，配套 API / worker 已部署 contract0.24 / schema022。尚未公开 Release，需手工安装本地包；绘图、向量检索和执行沙箱留待后续。准确安装与云端状态见[当前状态](docs/current-state.md)。

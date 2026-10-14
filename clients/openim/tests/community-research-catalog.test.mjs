@@ -205,12 +205,19 @@ test("subdirectory selection preserves full-archive size/path/link guards and re
 });
 
 test("catalog keeps original pinned sources distinct from callable abilities and private content", async () => {
+  const feedCopy = moduleFrom(
+    await fs.readFile(
+      path.join(client, "src/research/capability-feed-copy.ts"),
+      "utf8",
+    ),
+    require,
+  );
   const catalog = moduleFrom(
     await fs.readFile(
       path.join(client, "src/research/community-research-catalog.ts"),
       "utf8",
     ),
-    require,
+    (name) => (name === "./capability-feed-copy" ? feedCopy : require(name)),
   );
   const entries = catalog.communityResearchCatalog;
   assert.equal(new Set(entries.map((e) => e.id)).size, 4);
@@ -241,6 +248,10 @@ test("catalog keeps original pinned sources distinct from callable abilities and
     1,
   );
   assert.equal(catalog.matchingCommunityEntries("写作与表达", "主张").length, 2);
+  assert.equal(
+    catalog.matchingCommunityEntries("全部", "投稿")[0].id,
+    "scientific-writing",
+  );
 });
 
 test("main process retains selected root; renderer cannot forge a URL, selection or frame", async () => {

@@ -683,3 +683,11 @@ GitHub38299994061矩阵重试最终Ubuntu22.19 / Ubuntu24 / Windows24全部成�
 API healthy、worker running同一新image ID/restart=unless-stopped；六OpenIM基础服务实例/镜像/状态前后相同。公网ready200/ok/contract0.24，schema022无迁移，database/storage/authentication ok，harness not_verified。容器chat.ts/import.ts源码SHA匹配本机固定源码LF字节。网页静态、模型Key和权限保持；没有真实供应商/用户材料质量验收。完整交接docs/deployment/acceptcat-0.10.1.md，本机Git外.runtime/acceptcat-0.10.1-20261014含包/启动/审计/public-ready/deployment-terminal-final证据；原脚本和失败校验保留。
 
 构建publish never，安装包未上传GitHub Release/未改公开更新源，此前公开0.6.0不能自动收到本地0.10.1；用户运行桌面包覆盖安装。包含PR37—42而非兄弟PR35/36，未计脚本/绘图/向量/PaperQA执行完成。成对代码恢复需先备份当前数据，使用旧aee02447同schema022二进制并保留数据库；新writer后不自动覆盖旧数据备份。后续优先真实师生课题持续试用，再协调独立分支与公开版本。
+
+## 2026-10-14 用户反馈：科研广场用途信息流与Windows0.10.2
+
+分支feature/research-discovery-feed基于0.10.1/699648a，生产31bd66c94ff34658ffc97d82133fe12da821ea93已推送。原首屏大空面板与密集说明改为竖版科研用途/交付预览卡片；六份原内置私人文字配置和四项社区来源，标题说问题、副标题说交付，详情说明输入/使用/边界。代码原生示例明确标注，不冒充模型结果；社区文字Skill、Zotero元数据选入、PaperQA待接入区分，未接通无调用/安装按钮。公开名片、邀请、撤回、本人配置和资料绑定仍是现有真实权限。搜索新增“投稿”等标题词，100字上限和当前范围错误一致，代际变化清除旧详情。无API/worker/共享包/agents/skills/schema/模型或资料权限变更。
+
+最终真实React/HTTP/SQLite合成九组流程通过、pageerror0，覆盖空公开6+4、键盘详情/取消、搜索分类、待接入无调用、固定25原件预览/取消零安装、私人Agent实际创建/复用零重复、公开/撤回、另一账号隔离、窄屏动作。壳/SDK/IPC窗口和下载缓存为夹具；原生handler/API/SQLite实际运行，无用户材料或供应商学术质量验收。12项定向客户端、最终类型、Vite/Electron+NSIS、真实打包exe启动/原生桥接与ASAR检查通过。1536×1024原生概念、1024×726、390×844最终实拍等待动画结束，view_image对照六张。早期隐藏radio/壳aria-label/合成停用原因期望失败、同包基线比较和文档patch锚点错误保留，修正夹具而未更改权限；旧依赖/日志警告保留。未重复已通过的656项共享根门槛，远端CI另记录。
+
+安装器87,398,834字节、SHA25665bbe1888a305cc3054614789389640644398258221a9ec00f5c5992dbde5c72，桌面AcceptCat_0.10.2.exe副本一致。包内新广场/旧导入恢复/Zotero/当前shared parser与2.10标签/既有猫图和图标核对；身份独立与0.10.1比较保持，未代用户安装或重启。--publish never，本批无GitHub Release、更新源变更、后台部署或迁移；仍为已部署8717dac3/contract0.24/schema022，公开源此前0.6.0，本批未复验线上，harness仍not_verified。详见docs/development/research-discovery-feed.md，证据Git外.runtime/square-feed-20261014。保留产品76px侧栏/紧凑字号与真实文案等设计适配，下一步积累获准公开的真实师生交付，脚本/向量/绘图和PaperQA需另行适配；兄弟PR35/36未包含。

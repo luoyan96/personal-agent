@@ -1,4 +1,5 @@
 import type { ResearchCategory } from "./capability-center";
+import { communityFeedCopy } from "./capability-feed-copy";
 
 export type CommunityResearchEntry = {
   id: string;
@@ -181,7 +182,16 @@ export function matchingCommunityEntries(category: ResearchCategory, search: str
   return communityResearchCatalog.filter(
     (entry) =>
       (category === "全部" || category === entry.category) &&
-      [entry.name, entry.author, entry.summary, entry.input, entry.category, entry.id]
+      [
+        entry.name,
+        entry.author,
+        entry.summary,
+        entry.input,
+        entry.category,
+        entry.id,
+        communityFeedCopy[entry.id]?.title,
+        communityFeedCopy[entry.id]?.outcomes,
+      ]
         .join(" ")
         .toLocaleLowerCase()
         .includes(query),

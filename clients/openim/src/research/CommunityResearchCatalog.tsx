@@ -1,4 +1,4 @@
-import { Button, Modal } from "antd";
+import { Modal } from "antd";
 import { ReadOutlined, FileSearchOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -8,6 +8,8 @@ import {
   type CommunityResearchEntry,
 } from "./community-research-catalog";
 import type { ResearchCategory } from "./capability-center";
+import { CapabilityFeedCard, CapabilityOutcomePreview } from "./CapabilityFeedCard";
+import { communityFeedCopy } from "./capability-feed-copy";
 
 export function CommunityResearchCatalog({
   category,
@@ -24,57 +26,49 @@ export function CommunityResearchCatalog({
   if (!entries.length) return null;
   return (
     <section className="community-research-catalog" aria-label="社区科研工具">
-      <div className="capability-template-heading">
-        <h2>社区科研工具</h2>
-        <p>查看来源与接入条件，再决定是否安装。</p>
-      </div>
-      <div className="workspace-capability-grid">
-        {entries.map((entry) => {
-          const Icon =
-            entry.status === "offline_reviewed" ? FileSearchOutlined : ReadOutlined;
-          return (
-            <article className="capability-template-card" key={entry.id}>
-              <header>
-                <span className="capability-template-icon">
-                  <Icon />
-                </span>
-                <h3>{entry.name}</h3>
-              </header>
-              <span className="community-status">
-                {entry.status === "offline_reviewed"
-                  ? "离线样例已验证 · 自动执行待接入"
-                  : entry.localMetadataAdapter ? "本机元数据选入 · MCP 待接入" : "待连接 · 尚不可调用"}
-              </span>
-              <p>{entry.summary}</p>
-              <dl>
-                <div>
-                  <dt>维护者与许可</dt>
-                  <dd>
-                    {entry.author} · {entry.license}
-                  </dd>
-                </div>
-                <div>
-                  <dt>适用输入</dt>
-                  <dd>{entry.input}</dd>
-                </div>
-              </dl>
-              <Button onClick={() => setSelected(entry)}>查看详情与接入方式</Button>
-            </article>
-          );
-        })}
-      </div>
+      {entries.map((entry) => {
+        const Icon =
+          entry.status === "offline_reviewed" ? FileSearchOutlined : ReadOutlined;
+        return (
+          <CapabilityFeedCard
+            key={entry.id}
+            title={communityFeedCopy[entry.id]?.title || entry.name}
+            outcomes={communityFeedCopy[entry.id]?.outcomes || entry.summary}
+            name={entry.name}
+            status={
+              entry.installable
+                ? "社区 Skill · 可安装文字流程"
+                : entry.localMetadataAdapter
+                ? "本机元数据选入 · MCP 待接入"
+                : "社区工具 · 待接入"
+            }
+            icon={<Icon />}
+            preview={<CapabilityOutcomePreview id={entry.id} />}
+            onOpen={() => setSelected(entry)}
+          />
+        );
+      })}
       <Modal
         open={!!visibleSelection}
         title={visibleSelection?.name}
         footer={null}
         onCancel={() => setSelected(undefined)}
         destroyOnClose
+        className="capability-community-modal"
         width={760}
         centered
         styles={{ body: { maxHeight: "calc(100vh - 180px)", overflowY: "auto" } }}
       >
         {visibleSelection && selected && (
           <div className="community-research-detail">
+            <span className="capability-detail-kind">
+              {selected.installable
+                ? "社区 Skill · 文字流程可安装，脚本待接入"
+                : selected.localMetadataAdapter
+                ? "本机元数据选入可用 · 上游 MCP 待接入"
+                : "接入方案 · 尚不可调用"}
+            </span>
+            <h2>{communityFeedCopy[selected.id]?.title || selected.name}</h2>
             <p>{selected.summary}</p>
             <dl>
               {[
@@ -129,10 +123,16 @@ export function CommunityResearchCatalog({
               </>
             ) : (
               <>
-                <p className="workspace-muted">{selected.localMetadataAdapter
-                  ? "在工作台选择自己的私人资料集合，点击“从 Zotero 选择”。读取和上传各自确认；不会安装上游 MCP，也不会自动读取本机资料。"
-                  : "此条目仅收录接入方案；连接与权限适配完成后再开放安装。"}</p>
-                {selected.localMetadataAdapter && <Link className="community-install-link" to="/workbench?view=library">打开资料库，选择 Zotero 文献</Link>}
+                <p className="workspace-muted">
+                  {selected.localMetadataAdapter
+                    ? "在工作台选择自己的私人资料集合，点击“从 Zotero 选择”。读取和上传各自确认；不会安装上游 MCP，也不会自动读取本机资料。"
+                    : "此条目仅收录接入方案；连接与权限适配完成后再开放安装。"}
+                </p>
+                {selected.localMetadataAdapter && (
+                  <Link className="community-install-link" to="/workbench?view=library">
+                    打开资料库，选择 Zotero 文献
+                  </Link>
+                )}
               </>
             )}
           </div>
