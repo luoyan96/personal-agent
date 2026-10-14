@@ -113,3 +113,5 @@ paper-framework-figure-studio-pro 固定修订仅在 Git 外测试完整包往�
 2026-10-14沿用社区来源目录增收固定Writer peer-review与PaperQA2；仅客户端中文元数据/测试/交接。Peer-review走既有固定子目录私人安装，25原件及根MIT许可仅保存在本机；PaperQA为待适配，不安装/执行上游运行时或预建索引。API/worker/数据库/版本/权限保持，agents/skills不变，无部署或安装包。14离线样例、6客户端检查、7实际合成UI流程通过，限制和后续脚本/文献索引接入见development/research-review-catalog.md。
 
 同日普通资料导入提取独立ResearchFileImport组件，沿用现有importResearchFile幂等/权限/版本服务，共用客户端读取Hook新增可选失败传递；未知请求固定快照，范围改变不继续上传，实际保存后列表读取失败只重读。没有迁移数据、修改API/worker/契约/依赖或引入第三方代码/素材，既有许可与agents/skills单一来源保持；七组合成UI/HTTP/SQLite和649项完整检查通过，未打包/部署。见development/research-file-import-recovery.md。
+
+同日科研Skill连续调用仅补齐现有API分流与持久输入守卫，旧混合Skill/助理状态取消并需新消息，不改写历史记录或撤销历史动作。canonical SLR原件与引用直接来自现有单一来源，仅用于合成验证；没有引入上游代码、改变Skill正文、契约/数据库/依赖或工具权限，无部署/安装包。见development/skill-continuous-routing.md。

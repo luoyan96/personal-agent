@@ -14,6 +14,9 @@ Evaluate artifact behavior rather than prose similarity. Each case must assert t
 | novelty-red-team | differentiable claim | novelty-red-team-close-overlap | closest-work evidence, overlap risk, prohibited unsupported novelty language |
 | experiment-matrix | approved claim plan | experiment-matrix-metric-drift | claim-to-run traceability, locked primary metric, approval gate |
 | iclr-red-team | artifact-backed paper draft | iclr-red-team-unsupported-claim | three review passes, blocker repairs, no acceptance prediction |
+| Installed Skill chat routing | skill-continuous-routing | old mixed assistant/Skill route; withdrawn bound evidence | explicit Skill and selected references survive supplements; no implicit delegation/creation; actual reply and source receipt; zero model calls for inconsistent or revoked input |
+
+The installed-Skill routing fixture is an HTTP/SQLite/ChatWorker integration check in `apps/api/tests/skills.spec.ts`, using a synthetic model and canonical SLR text. It verifies invocation, evidence selection and saved output; it does not evaluate live-model research quality or execute the Skill's filesystem/search tools.
 
 ## Manual gate
 

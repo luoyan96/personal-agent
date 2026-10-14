@@ -1,20 +1,21 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, it, expect } from "vitest";
-import { routes, type RouteName } from "@research-agent-platform/contracts";
+import { routes, type RouteName, type RequestFor } from "@research-agent-platform/contracts";
 import { readConfig } from "../src/config.js";
 import { openDatabase, migrate } from "../src/database.js";
 import { createServer } from "../src/server.js";
 import { ChatWorker } from "../src/chat-worker.js";
 import { parseImportedSkill } from "@research-agent-platform/research-skills/import";
+import { loadResearchSkills } from "@research-agent-platform/research-skills";
 import type { ModelCall, ModelResult } from "../src/execution-worker.js";
 const cleanup: (() => unknown | Promise<unknown>)[] = [];
 afterEach(async () => {
   for (const fn of cleanup.splice(0).reverse()) await fn();
 });
-const pkg = {
+const pkg: RequestFor<"installSkill">["body"]["package"] = {
   name: "private-analysis",
   description: "分析用户提供的文字，结论按事实与推断分开",
   release: "1.0",
@@ -312,6 +313,134 @@ describe(
       const turn = await s.call("chatTurn", null, sent.value.data.turn.id);
       expect(turn.value.data.status).toBe("succeeded");
       expect((await s.call("skillUses", null, skill.id, 1)).status).toBe(404);
+    });
+    it.each([false, true])("runs canonical SLR text and bound evidence in one Skill batch (withdraw before execution: %s)", async withdraw => {
+      const s = await setup(), bundled = loadResearchSkills().find(skill => skill.name === "systematic-literature-review")!;
+      const path = "references/slr-checklist.md";
+      const procedure = parseImportedSkill([
+        { path: "SKILL.md", text: `---\nname: ${bundled.name}\ndescription: ${JSON.stringify(bundled.description)}\n---\n${bundled.content}` },
+        { path, text: readFileSync(join(bundled.directory, path), "utf8") },
+      ]);
+      const skill = await s.bind(await s.install(procedure));
+      const created = await s.call("createResearchCollection", { name: "合成综述资料", scope: "owner_private" });
+      expect(created.status).toBe(201);
+      const collection = created.value.data;
+      const uploaded = await s.call("importResearchFile", { expectedCollectionVersion: collection.version, filename: "synthetic-studies.txt", mediaType: "text/plain", contentBase64: Buffer.from("SYNTHETIC_SLR_STUDY S1：合成方法A，无对照数据。S2：仅有摘要，未取得全文；不能声称完成系统综述。").toString("base64") }, collection.id);
+      expect(uploaded.status, JSON.stringify(uploaded.value)).toBe(201);
+      const file = uploaded.value.data;
+      const binding = await s.call("bindAgentResearchCollections", { expectedVersion: 1, collectionIds: [collection.id] }, s.chats[0].agent.id);
+      expect(binding.status).toBe(200);
+      const first = await s.send(skill, "请帮我研究 SYNTHETIC_SLR_STUDY 的综述问题和筛选表", 0, { referencePaths: [path] });
+      const second = await s.send(skill, "补充：S2只有摘要，请标记未取得全文", 0, { referencePaths: [path] });
+      expect(first.status).toBe(201);
+      expect(second.status).toBe(201);
+      expect(second.value.data.turn.id).toBe(first.value.data.turn.id);
+      if (withdraw) {
+        const current = (await s.call("researchCollections")).value.data.find((c: any) => c.id === collection.id);
+        const removed = await s.call("withdrawResearchCollection", { expectedVersion: current.version }, collection.id);
+        expect(removed.status).toBe(200);
+      }
+      let calls = 0;
+      await s.tick(async input => {
+        calls++;
+        const prompt = JSON.parse(input.prompt);
+        expect(prompt.selectedSkill.instructions).toBe(bundled.content);
+        expect(prompt.selectedSkill.references).toEqual(procedure.references);
+        expect(prompt.researchLibrary.excerpts.some((e: any) => e.text.includes("SYNTHETIC_SLR_STUDY"))).toBe(true);
+        expect(prompt.researchLibrary.excerpts[0].citation).toMatchObject({ collectionId: collection.id, sourceId: file.id, version: 1, sha256: file.sha256 });
+        expect(input.system).toContain("No shell, Python");
+        return result("合成执行器输出：这是一份不完整的范围综述；S2全文未取得，不声称PRISMA完整，也未创建文件。");
+      });
+      const completed = (await s.call("chatTurn", null, first.value.data.turn.id)).value.data;
+      expect(calls).toBe(withdraw ? 0 : 1);
+      if (withdraw) {
+        expect(completed.status).not.toBe("succeeded");
+        expect(completed.outputMessageId).toBeNull();
+        expect(s.db.prepare("SELECT count(*) n FROM chat_attempts WHERE turn_id=?").get(completed.id)!.n).toBe(0);
+      } else {
+        expect(completed.status).toBe("succeeded");
+        expect(completed.libraryRead.sources[0].citation.sourceId).toBe(file.id);
+        expect(completed.createdAgent).toBeUndefined();
+        expect(completed.assistantReceipt).toBeUndefined();
+        const reply = JSON.parse(String(s.db.prepare("SELECT document FROM chat_messages WHERE id=?").get(completed.outputMessageId)!.document));
+        expect(reply.text).toContain("不完整的范围综述");
+      }
+      expect((await s.call("researchFile", null, file.id, 1)).status).toBe(404);
+      expect((await s.call("skillSource", null, skill.id, 1)).status).toBe(404);
+    });
+    it.each([
+      ["creation wording in the selected procedure", "创建一个文献整理 Agent，给出研究问题和纳入标准", "补充：先按技能整理输入条件"],
+      ["research imperative in the first message", "请帮我研究合成材料中的方法差异", "补充：缺失的证据单独列出"],
+      ["research imperative in a supplement", "背景：下面只使用提供的合成材料", "请帮我制定研究问题和筛选表"],
+    ])("keeps %s in one explicit Skill batch, without assistant delegation or contact creation", async (_label, firstText, supplement) => {
+      const s = await setup(), skill = await s.bind(await s.install());
+      const countContacts = () => Number(s.db.prepare("SELECT count(*) n FROM chat_contacts").get()!.n);
+      const contactsBefore = countContacts();
+      const first = await s.send(skill, firstText);
+      const second = await s.send(skill, supplement);
+      expect(first.status, JSON.stringify(first.value)).toBe(201);
+      expect(second.status, JSON.stringify(second.value)).toBe(201);
+      expect(second.value.data.turn.id).toBe(first.value.data.turn.id);
+      const id = first.value.data.turn.id;
+      const request = JSON.parse(String(s.db.prepare("SELECT request_json FROM chat_turns WHERE id=?").get(id)!.request_json));
+      expect(request.skill).toEqual({ id: skill.id, version: skill.version, referencePaths: ["references/check.md"], acceptLimitations: false });
+      expect(request.continuous.messageIds).toEqual([first.value.data.message.id, second.value.data.message.id]);
+      expect(request.purpose).toBeUndefined();
+      expect(request.assistantMode).toBeUndefined();
+      expect(request.personalAssistant).toBeUndefined();
+      let calls = 0;
+      await s.tick(async input => {
+        calls++;
+        const prompt = JSON.parse(input.prompt);
+        expect(prompt.selectedSkill.instructions).toBe(pkg.instructions);
+        expect(prompt.selectedSkill.references).toEqual([pkg.references[0]]);
+        expect(prompt.currentRequest.messageIds).toEqual(request.continuous.messageIds);
+        const textIndex = prompt.messageColumns.indexOf("text");
+        expect(prompt.messages.map((m: unknown[]) => m[textIndex])).toEqual([firstText, supplement]);
+        expect(prompt.localSpecialists).toBeUndefined();
+        expect(prompt.collaboratingHumans).toBeUndefined();
+        expect(input.system).toContain("selectedSkill is an explicitly chosen");
+        expect(input.prompt).not.toContain("UNSELECTED_SECRET_GAMMA");
+        return result("按所选技能整理：合成材料缺少方法证据，暂不能比较。");
+      });
+      expect(calls).toBe(1);
+      const completed = (await s.call("chatTurn", null, id)).value.data;
+      expect(completed.status).toBe("succeeded");
+      expect(completed.createdAgent).toBeUndefined();
+      expect(completed.assistantReceipt).toBeUndefined();
+      expect(countContacts()).toBe(contactsBefore);
+      const reply = JSON.parse(String(s.db.prepare("SELECT document FROM chat_messages WHERE id=?").get(completed.outputMessageId)!.document));
+      expect(reply.text).toBe("按所选技能整理：合成材料缺少方法证据，暂不能比较。");
+      expect((await s.call("skillUses", null, skill.id)).value.data).toHaveLength(1);
+      expect((await s.call("skillSource", null, skill.id, 1)).status).toBe(404);
+    });
+    it.each([
+      { purpose: "create_agent" },
+      { assistantMode: "coordinate", personalAssistant: true },
+    ])("fences legacy mixed Skill/assistant routing %j before model execution or retry", async route => {
+      const s = await setup(), skill = await s.bind(await s.install());
+      const sent = await s.send(skill, "创建一个文献整理 Agent，先给出研究问题");
+      expect(sent.status).toBe(201);
+      const id = sent.value.data.turn.id, row = s.db.prepare("SELECT request_json FROM chat_turns WHERE id=?").get(id)!;
+      s.db.prepare("UPDATE chat_turns SET request_json=? WHERE id=?").run(JSON.stringify({ ...JSON.parse(String(row.request_json)), ...route }), id);
+      let calls = 0;
+      await s.tick(async () => { calls++; return result("must not execute an inconsistent route"); });
+      expect(calls).toBe(0);
+      expect(s.db.prepare("SELECT count(*) n FROM chat_attempts WHERE turn_id=?").get(id)!.n).toBe(0);
+      const stopped = (await s.call("chatTurn", null, id)).value.data;
+      expect(stopped).toMatchObject({ status: "cancelled", failure: "INPUT_CHANGED", outputMessageId: null });
+      expect(stopped.allowedActions).not.toContain("retry");
+      expect((await s.call("retryChatTurn", { expectedVersion: stopped.version, budget: { maxTokens: 4000, maxSeconds: 90 } }, id)).status).toBe(409);
+      const fresh = await s.send(skill, "请帮我研究合成材料中的方法差异");
+      expect(fresh.status).toBe(201);
+      expect(fresh.value.data.turn.id).not.toBe(id);
+      await s.tick(async input => {
+        calls++;
+        expect(JSON.parse(input.prompt).selectedSkill.instructions).toBe(pkg.instructions);
+        return result("新的所选 Skill 调用可以正常回复。");
+      });
+      expect(calls).toBe(1);
+      expect((await s.call("chatTurn", null, fresh.value.data.turn.id)).value.data.status).toBe("succeeded");
     });
     it("updates append immutable versions; exact replay cannot create duplicates; rollback bumps generation and disables queued old calls", async () => {
       const s = await setup(),

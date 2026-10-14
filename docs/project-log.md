@@ -657,3 +657,17 @@ GitHub38299994061矩阵重试最终Ubuntu22.19 / Ubuntu24 / Windows24全部成�
 证据Git外.runtime/research-file-import-20261014，baseline-proof.json及最终qa-passed-1791945343473.json；最终QA environment沿用了早期回调故障措辞，在交接明确更正为真实HTTP列表503，脚本/最后检查/服务器记录一致。隔离4666/4667和浏览器已关闭。承接PR40生产48b55aa的38498858027三平台现已全成功；一度gh查询TLS超时为网络故障，重读成功后才记通过，本PR矩阵独立跟踪。完整实现与命令见docs/development/research-file-import-recovery.md。
 
 仅客户端/文档，无API/worker/契约/schema022/依赖/agents/skills改动，后台既有幂等与权限已实际复验。没有安装包、Release、部署、迁移或用户客户端重启，沿用aee02447/Windows0.10.0/schema022记录和此前公开0.6.0，本轮未重验线上。保留仅当前窗口恢复，关闭/重启不自动恢复；集合创建/设置未扩大修复。未含兄弟PR35/36，后续合并协调Library/读取Hook/SkillLibrary/状态文档，接续持久导入恢复和真实师生材料提交验收。
+
+## 2026-10-14 acceptcat-2：所选科研 Skill 的连续输入与资料调用
+
+分支fix/skill-continuous-routing基于PR41/e95db40，生产7d2a9c872e8855a37038737cb24969d4d94d6370已推送，草稿PR42。真实复现三处所选Skill分流缺条件：合并创建词句变create_agent、合并科研工作指令变coordinate、补充工作指令提前拆批；前两种worker不加载所选Skill/参考，还可能排除已绑定资料。现三处补齐!skill，完整当前批留在文字流程；持久混合Skill与purpose/assistantMode/personalAssistant被checkTurnInput拒绝，worker取消为INPUT_CHANGED、零尝试、不能原混合重试，需新有效消息。历史输入与已发生旧动作不改写，不宣称撤销。
+
+定向23项真实HTTP/SQLite/ChatWorker通过（Skill13/continuous10），新增7场景：创建/首条或补充工作指令、两种旧混合状态、canonical SLR与私人合成证据及执行前撤回。完整说明/选定引用/当前两条消息进入模型夹具，一次实际保存消息与使用/来源回执，无新Agent或分派；未选参考不进入prompt、其他账号不能读资料/Skill。SLR不完整范围综述回复是合成执行器固定输出，不是学术质量、PRISMA或工具产物验收。撤回零调用/尝试/成功输出，异常旧状态需新消息后可恢复。没有供应商调用、私人材料或现装桌面验收。
+
+最终完整pnpm run ci52文件656项（146.19秒）、生产CLI/HTTP两项、B0和生产夹具隔离全部通过；包含固定Harness构建/类型/缺凭据。首次baseline夹具null期望/创建词句缺分隔符、撤回旧集合版本409和never[]/漏类型导入失败保留，均修正夹具而未改变契约/规则；两次全检查在新增类型处失败，最终通过后不重复。后续文档内容检查另记录。证据Git外.runtime/skill-routing-20261014，baseline-confirmed.log、focused-final.log、foundation-ci-passed.log及失败原记录；临时服务/SQLite随测试清理。完整交接见docs/development/skill-continuous-routing.md。
+
+承接PR41生产db9ec3d的38502596075，Ubuntu22.19/24及Windows24全部成功，pr41-ci-passed.json；PR42生产38505283235另跟踪，完成本地检查时尚在运行。只改API聊天分流/守卫、回归及评估/交接；没有前端、内置Skill正文、共享契约/依赖/权限策略/数据库变更。没有安装包、Release、部署、迁移或用户客户端重启，沿用aee02447/Windows0.10.0/contract0.24/schema022记录，公开更新源此前0.6.0本轮未重验。需后续成对升级API/worker，不把本地修复称为现装已获得。包含PR37—41，不含PR35/36；合并协调chat.ts与状态/评估，接续明确输入输出的工具适配和真实科研质量评估。
+
+本批文档补录：check:content178份Markdown/10个内置Skill定义通过。PR42生产7d2a9c8的38505283235最新快照Ubuntu22.19/24成功、Windows24运行中，pr42-ci-production.json；不把未完成的远端节点记为通过。
+
+后续确认：PR42生产7d2a9c8的38505283235三平台全部成功，pr42-ci-production-passed.json根据实际gh返回记录（后续文档HEAD独立检查）。GitHub说明更新TLS超时和元数据读取EOF保留为网络故障，Git推送已成功；未把网络错误当代码失败。交接补丁曾引用不存在的文本而校验失败、零文件改动，读取准确锚点后补录。

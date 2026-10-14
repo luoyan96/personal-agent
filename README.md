@@ -2,6 +2,8 @@
 
 Windows **0.10.0** 已完成[科研能力中心与资料素材库第一阶段](docs/development/research-capability-center.md)：科研 Agent 分类、六份私人文字配置、资料来源 / 版本 / 原件、本人 Agent 资料检索与片段回执、完整本机 Skill 素材。安装包已制作，配套 API / worker 已部署 contract0.24 / schema022。尚未公开 Release，需手工安装本地包；绘图、向量检索和执行沙箱留待后续。准确安装与云端状态见[当前状态](docs/current-state.md)。
 
+2026-10-14技能库本地候选修复[所选科研 Skill 的连续调用](docs/development/skill-continuous-routing.md)：补充消息保持所选说明、参考文件和资料片段，避免误转创建/助理分派或拆批；旧混合请求在调用前停止，新消息可恢复。23项真实HTTP/SQLite/合成模型及656项完整检查通过，尚未部署或打包，工具执行与真实学术质量未计为完成。
+
 2026-10-14本地候选修复[科研资料导入恢复](docs/development/research-file-import-recovery.md)：未知回执后只重试原请求，新版本不重复增加；集合范围变化阻断上传，实际保存后的列表故障只刷新。七组真实React/HTTP/SQLite合成流程、客户端类型/构建和649项完整检查通过；尚未打包或上线，当前窗口关闭/重启后的恢复待补。
 
 AcceptCat 面向学校老师和实验室团队，目标是提升科研效率、沉淀标准流程，并方便负责人管理和对齐。采用微信式聊天，真人和 Agent 共用通讯录；个人助理帮助成员工作，项目、任务、交付和审阅串联课题组协作。接下来约半年以本人和学生的真实课题持续使用为主，优先完善 Windows 桌面基础体验、团队任务流程、可复用科研模板和真实进展总览。微信 / 企微连接器及面向广泛消费者的扩展暂缓。产品目标和工程已实现范围分别记录，见[产品规划v0.9](docs/product-plan.md)、[开发路线](docs/roadmap.md)与[当前状态](docs/current-state.md)。

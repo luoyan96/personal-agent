@@ -207,6 +207,9 @@ export class ChatService {
     const row = this.db.prepare('SELECT * FROM chat_turns WHERE id=?').get(turnId); if (!row) fail('NOT_FOUND')
     const input = decode(row.request_json) as TurnInput, turn = this.materializedTurn(row)
     const group = this.conversation(turn.conversationId, false); this.joinedAgent(group, turn.agentContactId)
+    // Explicit instruction Skills must never reuse an assistant/creation route,
+    // including inconsistent batches persisted by an older merge implementation.
+    if(input.skill&&(input.purpose||input.assistantMode||input.personalAssistant))fail('VERSION_CONFLICT')
     if(exact&&input.dialogueSources&&!dialogueSourcesCurrent(this,input.dialogueSources))fail('VERSION_CONFLICT')
     if(exact&&input.dialogueTaskSources&&!taskSourcesCurrent(this,input.dialogueTaskSources))fail('VERSION_CONFLICT')
     checkWorkTurn(this,input,exact)
@@ -611,7 +614,7 @@ export class ChatService {
       const purpose=name==='agentChatMessage'&&!skill&&!(b as {fileSelection?:AgentFileSelection}).fileSelection&&group.kind==='personal'&&group.ownerMemberId===this.c.actor.id&&agent?.identity.kind==='personal_agent'&&agent.identity.ownerMemberId===this.c.actor.id&&agent.profile.role==='coordinator'&&isAgentCreationCommand(input.text)?'create_agent' as const:undefined
       // A fresh explicit creation/work imperative after small talk is a new
       // request, not permission inferred from a quoted/older first sentence.
-      if(pending){const old=decode(pending.request_json) as TurnInput;if(purpose&&old.purpose!=='create_agent'||!purpose&&!old.assistantMode&&!old.fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(input.text)){supersedeTurn(this,String(pending.id));pending=undefined}}
+      if(pending){const old=decode(pending.request_json) as TurnInput;if(purpose&&old.purpose!=='create_agent'||!skill&&!purpose&&!old.assistantMode&&!old.fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(input.text)){supersedeTurn(this,String(pending.id));pending=undefined}}
       const management=name==='agentChatMessage'&&!skill&&!purpose&&!(b as {fileSelection?:unknown}).fileSelection&&agent&&ownLocalMemoryScope(this,agent,group)?{memory:memoryCommand(this,input.text,message),followup:followupCommand(this,input.text,message)}:null
       const limitation=name==='agentChatMessage'&&!skill&&!purpose&&!(b as {fileSelection?:unknown}).fileSelection&&group.kind==='personal'&&agent?.profile.role==='coordinator'?unsupportedCollaboration(this,input.text):null
       if(management?.memory||management?.followup||limitation){if(pending)supersedeTurn(this,String(pending.id));const turn=this.newTurn(group,message,input.agentContactId!,{budget:input.budget!,context:[],conversationVersion:group.version,inputSequence:message.sequence,dailyChat:true,personalAssistant:true});const result=management?.memory??management?.followup;if(management?.memory)turn.memoryReceipt=management.memory.receipt;else if(management?.followup)turn.followupReceipt=management.followup.receipt;const response=this.message(group.id,{senderContactId:input.agentContactId!,origin:'service',text:result?.text??limitation!,mentions:[],resources:[],actionIds:[],turnId:turn.id});turn.status='succeeded';turn.failure=null;turn.outputMessageId=response.id;turn.version++;turn.updatedAt=instant();this.saveTurn(turn);message.turnId=turn.id;this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(encode(legacyChatMessage(message)),message.id);return {data:{message:this.projectedMessage(message.id),turn:this.turn(turn.id)}}}
@@ -643,8 +646,8 @@ export class ChatService {
         if(retracted)nextInput.continuous.structuredSuppressed=true
         this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(encode(nextInput),merge.id!)
         const combined=currentTurnText(this,String(merge.id))
-        nextInput.purpose=!nextInput.continuous.structuredSuppressed&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&isAgentCreationCommand(combined)?'create_agent':undefined
-        nextInput.assistantMode=!nextInput.continuous.structuredSuppressed&&!nextInput.purpose&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(combined)?'coordinate':undefined
+        nextInput.purpose=!skill&&!nextInput.continuous.structuredSuppressed&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&isAgentCreationCommand(combined)?'create_agent':undefined
+        nextInput.assistantMode=!skill&&!nextInput.continuous.structuredSuppressed&&!nextInput.purpose&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(combined)?'coordinate':undefined
         nextInput.personalAssistant=nextInput.assistantMode==='coordinate'||undefined
         nextInput.personalMemoryFingerprint=personalMemoryContext(this,agent!,group,combined).fingerprint||undefined
         nextInput.agentContextFingerprint=this.directory.modelContext(input.agentContactId!,group.id).fingerprint

@@ -2,7 +2,17 @@
 
 更新日期：2026-10-14（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新本地候选：科研资料导入与保存回执恢复
+## 最新本地候选：科研 Skill 连续输入保持所选流程
+
+`acceptcat-2`分支 `fix/skill-continuous-routing` 基于 PR41 / e95db40，生产代码 **7d2a9c872e8855a37038737cb24969d4d94d6370** 已推送，[草稿 PR42](https://github.com/luoyan96/personal-agent/pull/42)。实际复现所选Skill连续补充误转创建Agent、助理分派或拆批；补齐三处排除条件，所选说明/参考/当前输入留在普通文字流程。持久混合Skill与助理路由在模型执行前取消为INPUT_CHANGED，不能直接重试，需新消息；不改写历史输入或撤销已发生的旧动作。
+
+23项真实HTTP/SQLite/ChatWorker定向检查通过，新增7场景；含canonical SLR完整说明/引用与私人资料片段/来源回执，撤回零调用，旧混合请求零尝试/新有效消息恢复、其他账号不可读。最终完整CI52文件/656测试、生产两项/B0/生产隔离全部通过；早期fixture期望、旧集合版本和类型失败保留。没有真实供应商质量、工具执行或已安装桌面验收。[交接与复现](development/skill-continuous-routing.md)，证据Git外 `.runtime/skill-routing-20261014`，临时HTTP/SQLite测试资源随测试清理。
+
+**没有安装包、Release、部署、迁移或用户客户端重启。** 沿用记录aee02447/Windows0.10.0/schema022/contract0.24，公开更新源此前0.6.0，本轮未重验线上。需后续成对升级API/worker；本批尚未到用户现装服务。界面、内置agents/skills、共享契约、权限策略和依赖不变；脚本/联网/绘图/artifact_save依然不可用。PR41生产db9ec3d的38502596075三平台已全成功；本PR生产38505283235的Ubuntu22.19/24已成功，Windows24仍运行，独立追踪。后续文档内容178/10通过。未含PR35/36，合并协调chat.ts和状态/评估文档；接续明确输入输出的工具适配与真实科研结果评估。
+
+后续确认：PR42生产7d2a9c8 / GitHub38505283235的Ubuntu22.19/24和Windows24已全部成功；后续文档HEAD的自动检查独立记录，不等于部署。GitHub的PR说明/元数据请求分别遇到TLS超时/EOF，Git推送和生产检查已成功。
+
+## 前一本地候选：科研资料导入与保存回执恢复
 
 `acceptcat` 分支 `fix/research-file-import-recovery` 基于 PR40 / a2c1061，生产代码 **db9ec3d129920e67eead607cba3261de08c0acae** 已推送，[草稿 PR41](https://github.com/luoyan96/personal-agent/pull/41)。实际复现普通文件导入未知回执后编辑标题/版本重试创建两份来源；底层API原本按相同正文去重，问题是UI改变了原请求。现保留首次文件/元数据/版本/UUID，未知结果锁定编辑并只重试原提交；明确拒绝才恢复编辑，集合范围/任务授权变化阻断上传。真实保存回执和列表刷新分离，已保存后的HTTP读取503仅重试读列表；共用Hook新增可选refreshChecked，旧轮询/刷新语义保持。新版本与账号晚回执边界保留。
 
