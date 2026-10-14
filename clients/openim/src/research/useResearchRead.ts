@@ -28,6 +28,7 @@ export function useResearchRead<T>(
     generation: number;
     controller: AbortController;
     promise: Promise<void>;
+    failure?: unknown;
   }>();
   const refresh = useCallback(async () => {
     if (!active.current) return;
@@ -48,7 +49,7 @@ export function useResearchRead<T>(
       request === ticket.current &&
       requestIdentity === key.current &&
       sessionGeneration === useResearchStore.getState().generation;
-    const flight = {
+    const flight: NonNullable<typeof inFlight.current> = {
       identity: requestIdentity,
       generation: current,
       controller: new AbortController(),
@@ -69,6 +70,7 @@ export function useResearchRead<T>(
           setError(undefined);
         }
       } catch (failure) {
+        flight.failure = failure;
         if (isCurrent()) {
           setResult(undefined);
           nextPollAt.current = Date.now() + 15000;
@@ -89,6 +91,22 @@ export function useResearchRead<T>(
     })();
     return flight.promise;
   }, []);
+  // Saving callers can distinguish an acknowledged write from a failed list
+  // refresh. Existing polling/manual refresh keeps its non-throwing contract.
+  const refreshChecked = useCallback(async () => {
+    if (!active.current) return;
+    const identity = key.current,
+      current = generation.current;
+    const promise = refresh();
+    const flight = inFlight.current;
+    await promise;
+    if (
+      flight?.identity === identity &&
+      flight.generation === current &&
+      flight.failure
+    )
+      throw flight.failure;
+  }, [refresh]);
   useEffect(() => {
     generation.current++;
     active.current = enabled;
@@ -117,5 +135,6 @@ export function useResearchRead<T>(
     error: enabled && error?.identity === scope ? error.message : "",
     loading: enabled && pending === scope,
     refresh,
+    refreshChecked,
   };
 }

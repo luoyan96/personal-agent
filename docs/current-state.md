@@ -2,13 +2,23 @@
 
 更新日期：2026-10-14（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新本地候选：科研证据审查与文献问答来源
+## 最新本地候选：科研资料导入与保存回执恢复
+
+`acceptcat` 分支 `fix/research-file-import-recovery` 基于 PR40 / a2c1061，生产代码 **db9ec3d129920e67eead607cba3261de08c0acae** 已推送，[草稿 PR41](https://github.com/luoyan96/personal-agent/pull/41)。实际复现普通文件导入未知回执后编辑标题/版本重试创建两份来源；底层API原本按相同正文去重，问题是UI改变了原请求。现保留首次文件/元数据/版本/UUID，未知结果锁定编辑并只重试原提交；明确拒绝才恢复编辑，集合范围/任务授权变化阻断上传。真实保存回执和列表刷新分离，已保存后的HTTP读取503仅重试读列表；共用Hook新增可选refreshChecked，旧轮询/刷新语义保持。新版本与账号晚回执边界保留。
+
+最终实际 React/HTTP/SQLite 七组流程通过，包含同请求仅一来源/仅v2、范围扩大零上传、空文件零请求、晚账号隔离以及真实HTTP列表503只刷新；1536×1024 / 1024×726截图查看，pageerror0。客户端最终类型/完整 Vite/Electron构建、完整根CI52文件/649测试、生产两项/B0/生产隔离通过。早期图标/确认弹窗选择器和pnpm工作目录失败保留；QA environment旧回调描述已在交接明确纠正，最终为真实HTTP读取故障。无用户账号、私人材料或已安装二进制/真实模型验收。[完整复现、命令、证据与限制](development/research-file-import-recovery.md)，Git外 `.runtime/research-file-import-20261014`，隔离4666/4667及浏览器已关闭。
+
+**没有新安装包、Release、部署、迁移或客户端重启。** 沿用记录aee02447/Windows0.10.0/schema022、公开更新源此前0.6.0，本轮未重验线上；本批修复不在现装客户端。保留仅当前窗口的重试，跨关闭/重启恢复尚未做；集合创建/设置不属本批。PR40生产48b55aa的38498858027三平台已全成功，PR41独立跟踪；本批不含PR35/36，合并协调库/读取Hook/技能页面与状态文档。API/worker/共享契约/内置Skill/数据库/依赖不变，后台既有幂等权限已复验。
+
+## 前一本地候选：科研证据审查与文献问答来源
 
 `acceptcat-3` 分支 `feature/research-review-catalog` 基于 PR39 / 2000607，生产代码 **48b55aa34e42e70c69b14248d33a97d3f211f671** 已推送，[草稿 PR40](https://github.com/luoyan96/personal-agent/pull/40)。社区目录共四项，新增 K-Dense peer-review 固定 Writer 子目录（MIT / Skill2.2，文字流程可确认私人安装、脚本待执行接入）及 PaperQA2 固定源码（Apache2，待适配，无安装/调用入口）。中文详情包括输入/交付、知识库/素材、依赖/费用、许可/SHA、验证与具体限制；没有复制上游正文/脚本进 Git，agents/skills 单一来源及账号/公共/团队/私人边界保持。
 
 客户端6项、类型与完整 Vite/Electron 构建通过；Peer-review 25 原件与独立下载/实际 importer/store 往返核对，14 个合成离线案例通过；实际 React/HTTP/SQLite/原生 handler 的7组流程和两个桌面尺寸通过，pageerror0。中文语气检查漏检反例和首次引用/GBK夹具失败保留；PaperQA 只静态审阅，固定索引源码仍含 pickle。初始详情截图处于动画初态，等待结束后重拍查看，最终内容/控制可达。没有已安装桌面或真实模型质量验收。[完整来源、验证、证据和接续](development/research-review-catalog.md)，证据 Git 外 `.runtime/research-catalog-20261014`。
 
 没有部署/迁移/安装包/Release，沿用记录的 aee02447 / Windows0.10.0 / schema022，公开更新源此前0.6.0，本轮未重验线上；本批目录尚未进入用户现装客户端。共享代码/内置Skill未改，不重复本地根CI。PR39远端38319126589首轮Windows5项既有超时，失败节点重跑后三平台均成功，未改时限；PR40检查另跟踪。PR35/36未包含，后续合并协调目录/SkillLibrary/状态文档；下一步为明确输入输出的脚本适配、中文评估及带来源/安全索引/权限/预算的文献问答。
+
+2026-10-14后续确认PR40生产48b55aa、GitHub38498858027的Ubuntu22.19/24和Windows24全部成功；这是受测生产HEAD，后续文档HEAD与安装/上线仍分别记录。
 
 ## 前一本地候选：科研Skill版本元数据修复
 

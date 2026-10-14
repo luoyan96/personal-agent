@@ -8,9 +8,10 @@ import { useResearchStore } from "./store";
 import { usePersonalOperation } from "./usePersonalOperation";
 import { workspaceAvailability } from "./workspace-availability";
 import { withRequestDeadline } from "./request-deadline";
-import { fileAsBase64, readResearchFileBytes, researchFileMediaType, researchScopeLabels } from "./research-library-api";
+import { readResearchFileBytes, researchScopeLabels } from "./research-library-api";
 import "./research-library.scss";
 import { ZoteroImport } from "./ZoteroImport";
+import { ResearchFileImport as FileImport } from "./ResearchFileImport";
 type ResearchCollection = ResponseFor<"researchCollections">["data"][number];
 type ResearchFile = ResponseFor<"researchFiles">["data"][number];
 
@@ -65,45 +66,6 @@ function CollectionEditor({ collection, onClose, onSaved }: { collection?: Resea
   </Modal>;
 }
 
-function FileImport({ collection, source, onClose, onSaved }: { collection: ResearchCollection; source?: ResearchFile; onClose: () => void; onSaved: () => Promise<void> }) {
-  const [file, setFile] = useState<File>(), [title, setTitle] = useState(source?.metadata.title || ""), [authors, setAuthors] = useState(source?.metadata.authors.join("，") || ""), [tags, setTags] = useState(source?.metadata.tags.join("，") || ""), [note, setNote] = useState(source?.metadata.note || "");
-  const [busy, setBusy] = useState(false), [error, setError] = useState("");
-  const operation = usePersonalOperation(true, `file-import:${collection.id}:${source?.id || "new"}`);
-  const collectionVersion = useRef(collection.version), sourceVersion = useRef(source?.version);
-  const split = (text: string) => text.split(/[,，\n]/).map(s => s.trim()).filter(Boolean);
-  const submit = async () => {
-    if (!file || busy) return;
-    const { isCurrent } = operation.capture(); setBusy(true); setError("");
-    try {
-      const contentBase64 = await fileAsBase64(file); if (!isCurrent()) return;
-      await researchApi("importResearchFile", { params: { id: collection.id }, body: { expectedCollectionVersion: collectionVersion.current, filename: file.name, mediaType: researchFileMediaType(file), contentBase64, metadata: { title, authors: split(authors), tags: split(tags), note, year: source?.metadata.year ?? null, doi: source?.metadata.doi ?? null }, ...(source ? { fileId: source.id, expectedVersion: sourceVersion.current } : {}) } });
-      if (!isCurrent()) return; await onSaved(); if (isCurrent()) onClose();
-    } catch (error) {
-      if (isCurrent()) {
-        setError(failureText(error));
-        // A successful re-read resolves a stale version without discarding file or metadata drafts.
-        if (error instanceof ResearchApiError && error.code === "VERSION_CONFLICT") try {
-          const values = await Promise.all([researchApi("researchCollections", { query: { scope: "mine", limit: 100 } }), source ? researchApi("researchFile", { params: { id: source.id } }) : Promise.resolve(undefined)]);
-          if (isCurrent()) { collectionVersion.current = values[0].data.find(c => c.id === collection.id)?.version ?? collectionVersion.current; sourceVersion.current = values[1]?.data.file.version ?? sourceVersion.current; }
-        } catch { /* Keep original request retryable after network errors. */ }
-      }
-    } finally { if (isCurrent()) setBusy(false); }
-  };
-  return <Modal title={source ? "导入新版本" : "导入资料与素材"} open footer={null} onCancel={() => !busy && onClose()} maskClosable={!busy} closable={!busy}>
-    <div className="research-library-form">
-      <p>保存到“{collection.name}” · {researchScopeLabels[collection.scope]}。每份文件不超过 10 MiB。</p>
-      <label>原始文件<input type="file" aria-label="导入原始文件" disabled={busy} onChange={e => setFile(e.target.files?.[0])} /></label>
-      <p className="research-library-muted">含文字 PDF、TXT、Markdown、CSV 可提取文字；图片、代码与其他素材保存原件，不执行脚本或声称理解图像。</p>
-      <label>标题<Input aria-label="资料标题" maxLength={500} value={title} disabled={busy} onChange={e => setTitle(e.target.value)} /></label>
-      <label>作者<Input aria-label="资料作者" value={authors} disabled={busy} onChange={e => setAuthors(e.target.value)} placeholder="用逗号分隔" /></label>
-      <label>标签<Input aria-label="资料标签" value={tags} disabled={busy} onChange={e => setTags(e.target.value)} placeholder="用逗号分隔" /></label>
-      <label>备注<Input.TextArea aria-label="资料备注" rows={3} maxLength={4000} value={note} disabled={busy} onChange={e => setNote(e.target.value)} /></label>
-      {error && <Alert type="error" message={error} />}
-      <Button type="primary" disabled={!file} loading={busy} onClick={() => void submit()}>{error ? "重试导入" : "确认导入"}</Button>
-    </div>
-  </Modal>;
-}
-
 function SourceDetail({ id, collection, onVersion, onChanged, onClose }: { id: string; collection: ResearchCollection; onVersion: (source: ResearchFile) => void; onChanged: () => Promise<void>; onClose: () => void }) {
   const read = useResearchRead((signal) => researchApi("researchFile", { params: { id }, signal }), `library-source:${id}`);
   const [version, setVersion] = useState<number>(), [busy, setBusy] = useState(false), [error, setError] = useState("");
@@ -153,6 +115,7 @@ function LibraryBody() {
   const [failure, setFailure] = useState("");
   const operation = usePersonalOperation(true, "library-body"); const { modal } = App.useApp();
   const refresh = async () => { await Promise.all([collections.refresh(), files.refresh(), matches.refresh()]); };
+  const refreshAfterImport = async () => { await Promise.all([collections.refreshChecked(), files.refreshChecked(), matches.refreshChecked()]); };
   const withdraw = async () => {
     if (!collection) return; const { isCurrent } = operation.capture(); setFailure("");
     try { await researchApi("withdrawResearchCollection", { params: { id: collection.id }, body: { expectedVersion: collection.version } }); if (!isCurrent()) return; setSelectedId(undefined); setSourceId(undefined); await collections.refresh(); }
@@ -186,7 +149,7 @@ function LibraryBody() {
     </div>
     {zoteroId && collection?.id === zoteroId && collection.owned && collection.scope === "owner_private" && <ZoteroImport key={zoteroId} collection={collection} onClose={() => setZoteroId(undefined)} onSaved={refresh} />}
     {editing && <CollectionEditor key={editing === "new" ? "new" : editing.id} collection={editing === "new" ? undefined : editing} onClose={() => setEditing(undefined)} onSaved={refresh} />}
-    {importing && <FileImport key={`${importing.collection.id}:${importing.source?.id || "new"}`} {...importing} onClose={() => setImporting(undefined)} onSaved={refresh} />}
+    {importing && <FileImport key={`${importing.collection.id}:${importing.source?.id || "new"}`} {...importing} onClose={() => setImporting(undefined)} onSaved={refreshAfterImport} />}
   </div>;
 }
 
