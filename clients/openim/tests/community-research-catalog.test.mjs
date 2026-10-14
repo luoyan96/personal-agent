@@ -213,7 +213,7 @@ test("catalog keeps original pinned sources distinct from callable abilities and
     require,
   );
   const entries = catalog.communityResearchCatalog;
-  assert.equal(new Set(entries.map((e) => e.id)).size, 2);
+  assert.equal(new Set(entries.map((e) => e.id)).size, 4);
   for (const entry of entries) {
     assert.match(entry.revision, /^[a-f0-9]{40}$/);
     assert.match(
@@ -230,9 +230,17 @@ test("catalog keeps original pinned sources distinct from callable abilities and
     assert(!("instructions" in entry));
   }
   assert.equal(catalog.communityEntry("zotero-mcp").installable, false);
+  assert.equal(catalog.communityEntry("peer-review").installable, true);
+  assert.equal(catalog.communityEntry("paperqa2").installable, false);
+  assert.equal(catalog.communityEntry("paperqa2").status, "needs_connector");
   assert.equal(catalog.communityEntry("unknown"), undefined);
   assert.equal(catalog.matchingCommunityEntries("全部", "  ZOTERO  ").length, 1);
   assert.equal(catalog.matchingCommunityEntries("文献与阅读", "科研稿件").length, 0);
+  assert.equal(
+    catalog.matchingCommunityEntries("文献与阅读", "  PAPERQA2  ").length,
+    1,
+  );
+  assert.equal(catalog.matchingCommunityEntries("写作与表达", "主张").length, 2);
 });
 
 test("main process retains selected root; renderer cannot forge a URL, selection or frame", async () => {

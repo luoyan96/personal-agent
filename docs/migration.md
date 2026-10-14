@@ -109,3 +109,5 @@ paper-framework-figure-studio-pro 固定修订仅在 Git 外测试完整包往�
 2026-10-13续接Zotero条目，仅新建本机只读元数据适配，确认选中的TXT经现有importResearchFile保存到本人私人集合。沿用版本、原件、权限和幂等契约，schema022无需新迁移；不迁入上游MCP/插件、私人库或凭据，不修改agents/skills，不写Zotero。受测原生传输/响应为合成，无安装包/部署变化，详见development/zotero-local-library.md。
 
 同日Skill导入解析识别metadata.version并保留数字原写法。只作用于新的解析/更新，未迁移数据库或重算旧修订/原件/摘要；格式及API契约保持，未新增依赖或第三方源码。内置单一来源保持，完整CI649项通过，详见development/skill-release-metadata.md。
+
+2026-10-14沿用社区来源目录增收固定Writer peer-review与PaperQA2；仅客户端中文元数据/测试/交接。Peer-review走既有固定子目录私人安装，25原件及根MIT许可仅保存在本机；PaperQA为待适配，不安装/执行上游运行时或预建索引。API/worker/数据库/版本/权限保持，agents/skills不变，无部署或安装包。14离线样例、6客户端检查、7实际合成UI流程通过，限制和后续脚本/文献索引接入见development/research-review-catalog.md。

@@ -57,6 +57,79 @@ export const communityResearchCatalog: readonly CommunityResearchEntry[] = [
     discussions: [],
   },
   {
+    id: "peer-review",
+    name: "研究主张与证据审查",
+    category: "写作与表达",
+    author: "K-Dense Inc. / K-Dense-AI",
+    repository: "https://github.com/K-Dense-AI/claude-scientific-writer",
+    revision: "529b9f73ab4b48925027145800d7b49e96ccfd3c",
+    sourcePath: "skills/peer-review",
+    version: "Skill 2.2 · Writer 2.22.0",
+    reviewedAt: "2026-10-14",
+    license: "MIT",
+    status: "offline_reviewed",
+    installable: true,
+    summary:
+      "为课题组预审稿件、研究方案和审稿回复整理证据缺口、方法问题与可执行修改建议。",
+    input: "获准使用的稿件或研究方案、主张—证据 CSV、参考文献清单和目标期刊要求。",
+    deliverables:
+      "结构化审查草稿、证据缺口与修改清单；离线工具可输出报告规范、引用一致性及审稿意见结构检查。",
+    prerequisites:
+      "文字流程可经确认安装为私人 Skill；聊天使用你的已配置模型。8 个离线 Python 脚本需 Python 3.11+ 标准库，AcceptCat 尚未接通自动执行。",
+    costs:
+      "离线脚本无需模型、网络服务或 API Key；文字讨论按配置的模型服务计费，不要求安装完整 Writer。",
+    materials:
+      "只提供本次获准使用的稿件、补充材料、图表位置、已核对证据与期刊政策；安装保留 6 份参考说明、9 份模板及根 MIT 许可，不自动导入资料库。",
+    validation:
+      "固定版本 25 个原件与独立下载逐一核对，私人原件存储往返通过。14 个合成离线样例验证无证据主张、重复编号、报告规范、引用缺失、意见结构和待填草稿；未验证真实模型审稿质量。",
+    limitations:
+      "工具验证结构与用户声明，不判断证据真伪或论文价值。中文语气词检查不覆盖，不能承诺自动发现中文不当措辞。现有聊天可能使用云模型，保密审稿材料须先核对期刊工具政策与授权；安装不等于本机保密审稿、自动执行或编辑决定。",
+    discussions: [],
+  },
+  {
+    id: "paperqa2",
+    name: "PaperQA2 文献证据问答",
+    category: "文献与阅读",
+    author: "FutureHouse / Future-House",
+    repository: "https://github.com/Future-House/paper-qa",
+    revision: "57e89f7223b0960d5ee5ea048c69e3c47e088572",
+    sourcePath: "src/paperqa",
+    version: "源码快照 57e89f7（发行版本动态生成）",
+    reviewedAt: "2026-10-14",
+    license: "Apache-2.0",
+    status: "needs_connector",
+    installable: false,
+    summary:
+      "面向指定文献集合建立索引，检索证据片段并生成带引用的回答；收录为资料库问答适配候选。",
+    input: "明确授权的 PDF 或文本集合、研究问题及可追溯的文献元数据。",
+    deliverables:
+      "来源片段、引用关系和回答；应保存实际检索范围、无法支持的主张与复核记录。",
+    prerequisites:
+      "Python 3.11+、fhlmi / fhaviary 模型适配、嵌入服务、Tantivy 索引及 PDF 解析依赖；本地嵌入另需 sentence-transformers。不是直接可装的 SKILL.md，AcceptCat 尚无运行时连接。",
+    costs:
+      "云端生成与嵌入按所选供应商计费；本地模型需要计算资源。启用 Crossref / Semantic Scholar / Unpaywall 元数据访问时还需核对服务限制及网络可达性。",
+    materials:
+      "拟绑定的个人或团队获准文献集合、原文、页码/片段映射和来源元数据；后续适配须从明确授权的原件重建索引并隔离账号与集合权限，不接受社区预建索引。",
+    validation:
+      "核对固定提交的许可证、Python 依赖、设置和索引源码，并静态解析 Python / TOML。未安装依赖、建立真实索引、调用模型或验证中文文献问答；不标为可直接使用。",
+    limitations:
+      "固定源码仍含 pickle 索引反序列化，不能导入不可信预建索引；上游也有文件失败后跳过、本地模型索引失败的实际报告。接入前需完成索引格式、权限、失败恢复、费用控制与中文引用质量验证；生成引用本身不证明主张有依据。",
+    discussions: [
+      {
+        label: "持久索引反序列化问题 #1325",
+        url: "https://github.com/Future-House/paper-qa/issues/1325",
+      },
+      {
+        label: "失败文件再次索引被跳过 #1355",
+        url: "https://github.com/Future-House/paper-qa/issues/1355",
+      },
+      {
+        label: "本地模型索引兼容性 #1321",
+        url: "https://github.com/Future-House/paper-qa/issues/1321",
+      },
+    ],
+  },
+  {
     id: "zotero-mcp",
     name: "Zotero 文献库连接器",
     category: "文献与阅读",
