@@ -518,6 +518,8 @@ export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
         open={installing}
         title={updating ? "更新私人技能" : "安装私人技能"}
         width={760}
+        centered
+        styles={{ body: { maxHeight: "calc(100vh - 220px)", overflowY: "auto" } }}
         onCancel={() => {
           if (!busy) {
             setInstalling(false);
@@ -614,12 +616,28 @@ export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
                   ? `检测到执行依赖：${draft.package.requirements.join("、")}`
                   : "文字技能可以接入当前聊天执行器"
               }
-              description="确认后把说明和参考文字保存到你的私人账号空间，调用时发送给你的模型服务商；同时把完整原件保存于本机资料目录。脚本不会执行，图片不会自动上传或生成。"
+              description="确认后把说明和下列参考文字保存到你的私人账号空间；调用时只加载你选择的参考，并发送给模型服务商。未列出的原件仅保存在本机，脚本不会执行，图片不会自动上传或生成。"
             />
             <details>
               <summary>检查 SKILL.md</summary>
               <SafeMessageMarkdown text={draft.package.instructions} />
             </details>
+            {draft.package.references.length > 0 && (
+              <details className="skill-import-reference-review">
+                <summary>检查参考文字（{draft.package.references.length} 份）</summary>
+                <p>
+                  包含包内已有、被方法说明引用的文字模板；可逐项展开核对后再确认安装。
+                </p>
+                {draft.package.references.map((file) => (
+                  <details key={file.path}>
+                    <summary>
+                      {file.path} · {file.text.length.toLocaleString("zh-CN")} 字符
+                    </summary>
+                    <pre>{file.text}</pre>
+                  </details>
+                ))}
+              </details>
+            )}
           </section>
         )}
       </Modal>

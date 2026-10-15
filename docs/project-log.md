@@ -731,3 +731,17 @@ Windows0.10.4 NSIS87,401,201字节，SHA2566bea6f1c4f56c5f6ebf48c2422e8cd03381ad
 01:27:51Z发布，worker01:27:50.071Z—01:27:55.314Z最终同步成功，缓存version22/六项/四仓库/十八候选，全部来源error=null；Writer2475、Toolkit230 Star仅此时事实，下一次2026-10-15T16:00Z。0.10.3当前已能读取新目录，0.10.4用于新预览；私人安装不被升级或扩大权限/资料绑定。恢复只用CLI替换备份公共目录，不能整库回滚覆盖后续用户数据。
 
 Git外证据.runtime/community-curation-20261015含99份原件收据/原始metadata树、导入/往返/聊天/CLI合成输入输出、根及客户端日志、失败和最终界面实拍、最终构建/ASAR/smoke/包哈希、公开探测和维护终端发布截图；完整公共回执/SQLite备份在服务器保护目录。交接docs/development/community-evidence-review.md；不含兄弟PR35/36。后续技能任务从真实授权师生样例验证方法建议，前后端/技能任务协调受控工具执行和材料权限，社区任务继续审阅小批候选；不把Full作者自检、Star或结构检查当独立科研质量验证，harness仍not_verified。
+
+## 2026-10-16 科研技能文字模板导入与Windows0.10.5
+
+acceptcat-2，fix/skill-linked-reference-text基于PR46 / 47f6825，产品源码f063969258417c97e88cf3f5813ae0bc4c642ee2已推送，草稿PR47 https://github.com/luoyan96/personal-agent/pull/47 已附任务。实际复现包内assets/templates文字原件已保存却不可选入聊天。原生导入从已有说明/参考的Markdown本地链接、链接定义及反引号路径递归收集所选目录内已有文字，补JSON/CSV/TSV等模板；保留UTF-8原文、旧限额及API已有120,000字符边界。代码块、包外/逃逸/远程路径、脚本和未引用素材不跟随，不访问网络或执行依赖。安装前逐项核对拟保存到私人账号的参考原文及范围；展开模板后弹窗标题/关闭和确认控制可达。旧安装不自动更新，用户需重新导入并确认保存新版本。
+
+固定peer-review / 529b9f73 / Skill2.2保持25原件、8脚本/9素材，参考6→14。25原文件SHA、完整ZIP/原件存储往返、旧6参考digest继续读取25原件通过；新旧digest区分，无自动改写。真实HTTP/SQLite/ChatWorker私人安装绑定后，完整说明和仅选定study_profile_template.json及claim_evidence_matrix_template.csv进入提示并保存成功回执，其他合成账号源码/调用记录404。依赖需明确接受仅文字模式；模型为固定合成回执，没有实际供应商、脚本/统计执行或科研质量验收，资料绑定/权限未扩大。
+
+客户端原生回归13项（新增3项）、既有API Skill13项、客户端及原生非composite类型通过。真实React/HTTP/SQLite/原生导入两组流程通过，14参考/25原件、JSON逐字核对、取消零安装、私人范围说明、1536×1024与1024×726内容/关闭/确认可达，pageerror0/无框架覆盖层。Browser skill未提供，使用环境Playwright与隔离Edge；账号/窗口/IPC传输/固定公开ZIP下载为夹具。已知Antd bodyStyle/findDOMNode及Router两个future flag警告保留，无未解释console error。原VM数组跨realm断言、展开模板关闭控制越界、将兼容警告当错误的检查及修正均保留。
+
+只改客户端导入/预览/版本及定向测试，未改共享契约、内置agents/skills、API/worker、数据库或依赖，按范围未重复本地根全套。上一批4d0bc4b的38666191233首轮Windows667/669、旧上下文30秒/015迁移20秒超时，保留日志且仅重跑失败节点后Ubuntu22.19/24和Windows24全部成功，未改共享门槛。本批f063969的38767651485最新快照两Linux成功、Windows仍运行，独立于客户端验证和后续文档HEAD，未计三平台全部通过。
+
+Windows x64 NSIS0.10.5以固定f063969完整构建，87,402,569字节，SHA2566256b59b26075c69b2e63d55f2c1283c8013abb5b68e5886b34c7cd2df9d9428，clients/openim/release/Base/0.10.5/AcceptCat_0.10.5.exe与C:/Users/luo/Desktop副本一致，安装说明一并放桌面。ASAR版本/新增导入/预览文案/最终CSS/运行依赖及真实打包exe隔离账号目录启动、原生桥接通过，既有electron-log重复initialize警告保留。publish never，未代用户安装或重启旧窗口、未上传Release/改自动更新源。
+
+现有API兼容新参考路径，无后台部署、数据库迁移或公共目录发布。后台沿用部署记录47c42ac / community-47c42ac / contract0.25 / chat1.12 / schema022，本轮独立公网ready200/0.25/ok及数据库/存储/认证正常，harness not_verified；未重新inspect镜像或读取真实用户资料。最终文档check:content184份Markdown/10技能定义及diff --check通过，CRLF正规化提示保留。Git外证据.runtime/skill-quality-20261016包含基线/最终日志、来源/旧新digest收据、合成调用、UI实拍与首败、构建/包/启动、CI和公开探测。隔离4726/4727服务已关闭，仅root活动；不含兄弟PR35/36。交接docs/development/skill-linked-reference-text.md。下一步继续授权师生科研质量样例与受控工具适配；既有依赖启发式可能将否定生图的说明误报为绘图依赖，本批未改分类或放开执行。

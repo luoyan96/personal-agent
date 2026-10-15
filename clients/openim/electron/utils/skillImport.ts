@@ -16,6 +16,45 @@ const decoder = new TextDecoder("utf-8", { fatal: true });
 const MAX_FILES = 8000,
   MAX_BYTES = 100 * 1024 * 1024;
 type Entry = { path: string; size: number; read: () => Promise<Buffer> };
+// Follow only provided text documents. A link is never a download, a read
+// outside this selected package, or permission to run the linked file.
+function linkedTextPaths(file: SkillFile) {
+  const prose = file.text.replace(
+    /^ {0,3}(`{3,}|~{3,})[^\n]*\n[\s\S]*?^ {0,3}\1[^\n]*(?:\n|$)/gm,
+    "",
+  );
+  const linkProse = prose.replace(/`+[^`\n]*`+/g, "");
+  const links = [
+    ...Array.from(
+      linkProse.matchAll(/\]\(\s*(?:<([^>\n]+)>|([^\s)]+))/g),
+      (m) => m[1] || m[2]!,
+    ),
+    ...Array.from(
+      linkProse.matchAll(/^ {0,3}\[[^\]\n]+\]:\s*(?:<([^>\n]+)>|([^\s]+))/gm),
+      (m) => m[1] || m[2]!,
+    ),
+    ...Array.from(prose.matchAll(/`([^`\n]+)`/g), (m) => m[1]!),
+  ];
+  return links.flatMap((link) => {
+    try {
+      if (/^(?:[a-z][a-z\d+.-]*:|\/|\\)/i.test(link)) return [];
+      const raw = decodeURIComponent(link.split(/[?#]/, 1)[0]!);
+      if (!raw || raw.startsWith("/") || /[\\\x00-\x1f:]/.test(raw)) return [];
+      const target = path.posix.normalize(
+        path.posix.join(path.posix.dirname(file.path), raw),
+      );
+      safeSkillPath(target);
+      if (
+        /^(?:scripts|_upstream-notices)\//.test(target) ||
+        !/\.(?:md|txt|json|ya?ml|csv|tsv)$/i.test(target)
+      )
+        return [];
+      return [target];
+    } catch {
+      return [];
+    }
+  });
+}
 export type SkillBundleData = {
   package: ReturnType<typeof parseImportedSkill>;
   manifest: SkillBundleManifest;
@@ -109,6 +148,26 @@ async function parsed(
       size: data.length,
       sha256: sha(data),
     });
+  }
+  // Templates and method docs outside references/ were preserved as originals
+  // but unavailable to chat. Include only text explicitly mentioned by the
+  // instruction/reference graph; retain every original byte in the local bundle.
+  let textBytes = textual.reduce((n, e) => n + e.size, 0);
+  for (let i = 0; i < files.length; i++) {
+    for (const target of linkedTextPaths(files[i]!)) {
+      const data = contents.get(target);
+      if (!data || textPaths.has(target)) continue;
+      if (data.length > 400000) throw Error("单个说明文件超过 400 KB。");
+      if (textBytes + data.length > 900000)
+        throw Error("技能说明和参考文字超过 900 KB，未导入，请先拆分技能。");
+      const text = decoder.decode(data);
+      if (text.length > 120000)
+        throw Error("单个参考文字超过 120,000 字符，未截断导入，请先拆分文件。");
+      files.push({ path: target, text });
+      textPaths.add(target);
+      textBytes += data.length;
+      if (files.length > 300) throw Error("技能文字文件过多，请先拆分技能。");
+    }
   }
   const pkg = parseImportedSkill(
     files,

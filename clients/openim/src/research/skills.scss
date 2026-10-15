@@ -133,6 +133,35 @@
   margin: 16px 0;
 }
 .skill-import-review {
+  .skill-import-reference-review {
+    margin-top: 12px;
+    > p {
+      color: #72818a;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+    > details {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border: 1px solid #e8edef;
+      border-radius: 8px;
+    }
+    summary {
+      overflow-wrap: anywhere;
+      cursor: pointer;
+    }
+    pre {
+      max-height: 220px;
+      overflow: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #f5f8fa;
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+  }
   margin: 20px 0;
   details {
     margin-top: 14px;
