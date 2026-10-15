@@ -161,7 +161,7 @@
   }
   .capability-discovery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
     gap: 22px 18px;
     align-items: start;
   }
@@ -852,5 +852,41 @@
     padding: 12px;
     border-radius: 8px;
     margin-top: auto;
+  }
+}
+
+.community-reviewed-preview {
+  height: auto;
+  min-height: 320px;
+  h4 {
+    overflow-wrap: anywhere;
+  }
+  dl {
+    margin: auto 0 0;
+    display: grid;
+    gap: 10px;
+  }
+  dl > div {
+    background: #ffffffb8;
+    border: 1px solid #ffffff;
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+  dt {
+    color: #59747d;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  dd {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #344a54;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
   }
 }

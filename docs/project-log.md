@@ -713,3 +713,21 @@ Windows0.10.3 NSIS87,399,966字节/SHA2565799fe92a664ae9c2a96882e63ad4ac89fd22ba
 后续每日社区任务核对候选依赖/许可/材料/模型成本/真实样例后，通过operator-only发布路径收录；GitHub热度和元数据更新不等于可运行科研能力。已安装Skill更新、应用二进制更新、执行沙箱/向量/绘图/PaperQA和真实师生交付质量继续独立处理。未包含兄弟PR35/36，当前公共更新源仍未获得本地0.10.3。
 
 后续确认：生产源码47c42ac的38543331737失败Windows节点重跑成功，Ubuntu22.19/24及Windows24最终三平台全部通过，实际github-ci-last.json保留；初次失败日志仍保留。文档HEAD检查独立于固定生产源码结果。
+
+## 2026-10-15 社区研究设计自查、报告流程审阅与桌面0.10.4
+
+acceptcat-3接续同线程acceptcat/acceptcat-2，feature/community-evidence-review基于PR45 / 67a9749，产品源码4d0bc4bc8a04dece0dcc2c90d6a4a23628c91ffb，草稿PR46 https://github.com/luoyan96/personal-agent/pull/46 已附任务。增收scientific-critical-thinking固定529b9f73 / Skill1.3（MIT，私人文字流程）与research-toolkit固定09e9a8c / 1.1.0（MIT，待接入无安装/调用）。原仓库/固定文件/维护事实、许可、依赖成本和公开案例分别核对，不按Star批量晋级，不复制上游正文/素材/脚本进Git，agents/skills保持单一来源。
+
+原生importer实际9原件/7参考/零脚本/版本1.3核对Git blob及固定ZIP、存储/完整原包往返通过；真实HTTP/SQLite/ChatWorker以合成课程观察研究走通私人安装、绑定、仅两份选定参考和完整说明、成功回执，其他账号源码/记录404，默认不公开。合成模型回执不构成真实科研质量验收。Toolkit90原件静态Python/来源校验，标准库CLI7次虚构出货报告Lite重放及缺失检查/未通过不完成/目录穿越守卫通过，保留unreviewed/independent_review=false；未装MCP或调用模型/外部CLI，嵌套Skill包装页依赖目录外方法和脚本，保持待适配。可选绘图/统计/联网未接通。
+
+客户端动态来源卡片展示真实输入和文字交付或待接入后的交付，详情补漏掉的输入，不再对无脚本Skill笼统声称脚本待接入。实际1024窗口发现第二块被296px封面裁掉，改自适应高度；分类单项撑满窗口改auto-fill。最终React/真实HTTP/SQLite/原生handler三组检查、1536/1024截图和内容边界、pageerror0/无覆盖层通过，Browser skill未提供，使用环境Playwright和隔离Edge；账号、窗口及固定公开ZIP下载为夹具，没有真实用户材料或供应商科研质量验收。
+
+根pnpm run ci53文件/669项、生产CLI/HTTP两项/B0/隔离通过；客户端目录/能力12项、类型、最终Vite/Electron构建与真实打包exe隔离启动/IPC通过。包ASAR核对新文字/最终CSS/依赖和版本0.10.4；Windows路径分隔错误导致首次ASAR检查失败，保留并用原生路径修复，没有改包或放宽校验。已知Sass/Vite/electron-log重复初始化警告保留。其他首次GBK、下载超时、关键字数量、分类选择器、布局失败、机器重启进程异常及错误ready路径404均保留。读取契约实际/health/ready后公网200/0.25/ok，目录匿名401。通过后仅桌面布局/版本及文档变更，不重复根全套。产品4d0bc4b远端38666191233当时三平台仍运行，独立追踪。
+
+Windows0.10.4 NSIS87,401,201字节，SHA2566bea6f1c4f56c5f6ebf48c2422e8cd03381ad2899dfa6758780bc02134b77b8c，clients/openim/release/Base/0.10.4/AcceptCat_0.10.4.exe与桌面副本相同。固定产品4d0bc4b完整构建；早于裁切/单项列宽修正的构建日志保留、未用为交付包。publish never，未代装或重启旧客户端、未上传GitHub Release、未改公开更新源。需要退出旧版手动覆盖安装。
+
+实际线上用既有operator CLI追加两条公共描述，未部署API/worker镜像或重启/迁移。生产实例/镜像预检通过；SQLite一致性备份并integrity_check，原公共目录导出/重读防覆盖，备份/srv/research-openim-backups/community-review-20261015T012748Z含platform.sqlite和reviewed-before.json，0700，未下载私人DB。传输发布脚本SHA2564b3706eaaca6c764e8436b574a1f311c35245db6cae43d69a8538a7fb3d41ffc、描述JSON4f684f5a7a1b40f79c5861ac68e9933625cd512d37e818e76f5fbfa901148eaf两端相同。原四项逐项保持；新增两项实际状态/安装开关符合。后台仍47c42ac / research-openim-api:community-47c42ac / sha256:b78613b5c6e1f77d07e7af392149744161e25460cb7e4f14b2ec0500e3fda2cc，contract0.25/chat1.12/schema022，API healthy/worker running。
+
+01:27:51Z发布，worker01:27:50.071Z—01:27:55.314Z最终同步成功，缓存version22/六项/四仓库/十八候选，全部来源error=null；Writer2475、Toolkit230 Star仅此时事实，下一次2026-10-15T16:00Z。0.10.3当前已能读取新目录，0.10.4用于新预览；私人安装不被升级或扩大权限/资料绑定。恢复只用CLI替换备份公共目录，不能整库回滚覆盖后续用户数据。
+
+Git外证据.runtime/community-curation-20261015含99份原件收据/原始metadata树、导入/往返/聊天/CLI合成输入输出、根及客户端日志、失败和最终界面实拍、最终构建/ASAR/smoke/包哈希、公开探测和维护终端发布截图；完整公共回执/SQLite备份在服务器保护目录。交接docs/development/community-evidence-review.md；不含兄弟PR35/36。后续技能任务从真实授权师生样例验证方法建议，前后端/技能任务协调受控工具执行和材料权限，社区任务继续审阅小批候选；不把Full作者自检、Star或结构检查当独立科研质量验证，harness仍not_verified。

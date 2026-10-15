@@ -1,6 +1,18 @@
 # 新 AI 接手：当前项目状态
 
-更新日期：2026-10-14（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+更新日期：2026-10-15（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+
+## 最新交付：两项科研来源上线与 Windows 0.10.4
+
+`acceptcat-3` 接续同线程前后端/技能任务，`feature/community-evidence-review` 基于PR45 / 67a9749，产品源码 **4d0bc4bc8a04dece0dcc2c90d6a4a23628c91ffb**，[草稿PR46](https://github.com/luoyan96/personal-agent/pull/46)。增收研究设计与证据自查（固定Writer SHA / Skill1.3 / MIT，私人文字流程可安装）及Research Toolkit（固定09e9a8c / 1.1.0 / MIT，待接入无安装/调用）。动态卡片显示实际输入和交付物，详情补输入要求；小窗口不裁交付内容、单项分类保留正常列宽。没有复制上游技能正文/脚本进Git，`agents/skills`和权限边界保持。
+
+Windows x64 NSIS **0.10.4** 已制作，桌面 `AcceptCat_0.10.4.exe`，**87,401,201字节**，SHA256 **6bea6f1c4f56c5f6ebf48c2422e8cd03381ad2899dfa6758780bc02134b77b8c**，副本一致；实际打包exe隔离启动/原生桥接和ASAR新文案/最终CSS/运行依赖核对通过。需退出旧版后手动覆盖安装，未代装/重启、未发布GitHub Release或修改更新源。源版本不等于用户现装版本。
+
+根CI **53文件/669项**、生产两项/B0/隔离通过，后续仅桌面布局和文档不重跑根全套。客户端12项、类型/最终构建、真实React/HTTP/SQLite/原生导入三组流程、1536×1024和1024×726最终截图/内容边界通过，pageerror0。研究设计9原件/7参考/版本1.3真实导入和存储往返、合成HTTP/ChatWorker调用及跨账号源码/记录隔离通过；Toolkit90原件静态审阅与CLI7次公开虚构样例/完成及目录守卫通过。**没有真实模型科研质量、MCP/外部评审或用户账号现装验收。** 首次下载/编码/选择器/裁切/ASAR路径失败和机器重启中断保留。产品4d0bc4b远端38666191233三平台当时仍运行，独立追踪，不把本机通过当远端通过。
+
+两项描述已用既有运营CLI在01:27:51Z加入实际生产目录。SQLite一致性备份/integrity_check通过，原四项不变；备份 `/srv/research-openim-backups/community-review-20261015T012748Z`。同步01:27:50.071Z—01:27:55.314Z成功，公共缓存version22，**六项/四仓库/十八候选**，所有metadata error=null；下一次2026-10-15T16:00Z。API healthy/worker running，公网ready200/0.25/ok。后台二进制仍 **47c42ac / research-openim-api:community-47c42ac / b78613b5c6e1f77d07e7af392149744161e25460cb7e4f14b2ec0500e3fda2cc**，**未重启、部署或迁移**，contract0.25/chat1.12/schema022。0.10.3已可读取新目录；新布局需装0.10.4。已安装私人Skill、资料授权和模型Key保持。
+
+[来源、验证、发布和恢复](development/community-evidence-review.md)，证据Git外 `.runtime/community-curation-20261015`。不包含兄弟PR35/36。接续重点为Toolkit受控执行/授权材料、已安装Skill实际中文科研结果评估；脚本、绘图、统计与外部评审尚未自动接通，harness仍not_verified。
 
 ## 最新交付：Windows 0.10.3 与社区目录每日同步已上线
 

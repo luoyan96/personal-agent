@@ -58,10 +58,23 @@ export function CommunityResearchCatalog({
               communityFeedCopy[entry.id] ? (
                 <CapabilityOutcomePreview id={entry.id} />
               ) : (
-                <div className="capability-outcome-preview preview-blue community-candidate-preview">
-                  <span className="capability-preview-label">已收录能力</span>
+                <div className="capability-outcome-preview preview-blue community-reviewed-preview">
+                  <span className="capability-preview-label">
+                    {entry.installable
+                      ? "文字 Skill · 使用说明"
+                      : "工具接入方案 · 待接入"}
+                  </span>
                   <h4>{entry.name}</h4>
-                  <p>{entry.summary}</p>
+                  <dl>
+                    <div>
+                      <dt>准备什么</dt>
+                      <dd>{entry.input}</dd>
+                    </div>
+                    <div>
+                      <dt>{entry.installable ? "文字流程交付" : "接入后可交付"}</dt>
+                      <dd>{entry.deliverables}</dd>
+                    </div>
+                  </dl>
                 </div>
               )
             }
@@ -90,7 +103,7 @@ export function CommunityResearchCatalog({
           <div className="community-research-detail">
             <span className="capability-detail-kind">
               {selected.installable
-                ? "社区 Skill · 文字流程可安装，脚本待接入"
+                ? "社区 Skill · 可安装文字流程，工具能力以依赖说明为准"
                 : selected.localMetadataAdapter
                 ? "本机元数据选入可用 · 上游 MCP 待接入"
                 : "接入方案 · 尚不可调用"}
@@ -127,6 +140,7 @@ export function CommunityResearchCatalog({
                     ? "仓库元数据已同步，不能据此判断科研效果。"
                     : "尚未同步",
                 ],
+                ["准备什么", selected.input],
                 ["交付物", selected.deliverables],
                 ["资料与知识库", selected.materials],
                 ["依赖与接入", selected.prerequisites],

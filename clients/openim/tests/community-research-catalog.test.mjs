@@ -226,7 +226,7 @@ test("catalog keeps original pinned sources distinct from callable abilities and
     ),
     require,
   ).communityCatalogSeed;
-  assert.equal(new Set(entries.map((e) => e.id)).size, 4);
+  assert.equal(new Set(entries.map((e) => e.id)).size, 6);
   for (const entry of entries) {
     assert.match(entry.revision, /^[a-f0-9]{40}$/);
     assert.match(
@@ -246,6 +246,15 @@ test("catalog keeps original pinned sources distinct from callable abilities and
   assert.equal(entries.find((e) => e.id === "peer-review").installable, true);
   assert.equal(entries.find((e) => e.id === "paperqa2").installable, false);
   assert.equal(entries.find((e) => e.id === "paperqa2").status, "needs_connector");
+  const critical = entries.find((e) => e.id === "scientific-critical-thinking");
+  assert.equal(critical.installable, true);
+  assert.equal(critical.status, "offline_reviewed");
+  assert.equal(critical.category, "研究设计");
+  assert.match(critical.limitations, /统计计算/);
+  const toolkit = entries.find((e) => e.id === "research-toolkit");
+  assert.equal(toolkit.installable, false);
+  assert.equal(toolkit.status, "needs_connector");
+  assert.match(toolkit.prerequisites, /嵌套 SKILL.md/);
   assert.equal(
     entries.find((e) => e.id === "unknown"),
     undefined,
@@ -264,7 +273,7 @@ test("catalog keeps original pinned sources distinct from callable abilities and
   );
   assert.equal(
     catalog.matchingCommunityEntries(entries, "写作与表达", "主张").length,
-    2,
+    3,
   );
   assert.equal(
     catalog.matchingCommunityEntries(entries, "全部", "投稿")[0].id,

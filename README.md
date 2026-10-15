@@ -1,5 +1,7 @@
 # AcceptCat · 老师与实验室团队的科研工作平台
 
+2026-10-15：[科研设计自查与报告流程来源](docs/development/community-evidence-review.md)已加入在线社区目录，六项来源/四仓库，待接入工具不开放安装。Windows **0.10.4**补齐动态卡片输入/交付预览、小窗口和分类布局；安装包在桌面，需手动覆盖安装，未发布公开Release。根669项、客户端12项与真实导入/合成聊天、打包启动通过；准确哈希、上线与质量验证边界见[当前状态](docs/current-state.md)。
+
 2026-10-14：Windows **0.10.3** 与[社区目录每日同步](docs/development/community-catalog-sync.md)已交付并上线配套API/worker（contract0.25 / schema022无迁移）。后台首次及北京时间每日零点同步GitHub Star/代码更新时间与待审阅发现，客户端直接读取服务器目录；审阅SHA和私人Skill保持独立。服务器首次同步三仓库/四已收录/二十候选成功，根669项和本机打包启动通过；[安装与上线记录](docs/deployment/acceptcat-0.10.3.md)。安装包在桌面，需手动覆盖安装，本批未公开GitHub Release；候选科研质量与工具执行仍分别适配。
 
 2026-10-14：Windows **0.10.2** 已交付[科研广场信息流](docs/development/research-discovery-feed.md)：竖版用途卡片和交付形式预览，点开看材料与用法，真实添加私人助手或检查社区技能。空公开列表不再占据首屏。9组真实React/HTTP/SQLite流程、类型/构建/原生启动通过，安装包在本机桌面，需手动覆盖安装；未发布GitHub Release。本批只改桌面，后台仍为下述0.10.1配套版本。
