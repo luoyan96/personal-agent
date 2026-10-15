@@ -745,3 +745,17 @@ acceptcat-2，fix/skill-linked-reference-text基于PR46 / 47f6825，产品源码
 Windows x64 NSIS0.10.5以固定f063969完整构建，87,402,569字节，SHA2566256b59b26075c69b2e63d55f2c1283c8013abb5b68e5886b34c7cd2df9d9428，clients/openim/release/Base/0.10.5/AcceptCat_0.10.5.exe与C:/Users/luo/Desktop副本一致，安装说明一并放桌面。ASAR版本/新增导入/预览文案/最终CSS/运行依赖及真实打包exe隔离账号目录启动、原生桥接通过，既有electron-log重复initialize警告保留。publish never，未代用户安装或重启旧窗口、未上传Release/改自动更新源。
 
 现有API兼容新参考路径，无后台部署、数据库迁移或公共目录发布。后台沿用部署记录47c42ac / community-47c42ac / contract0.25 / chat1.12 / schema022，本轮独立公网ready200/0.25/ok及数据库/存储/认证正常，harness not_verified；未重新inspect镜像或读取真实用户资料。最终文档check:content184份Markdown/10技能定义及diff --check通过，CRLF正规化提示保留。Git外证据.runtime/skill-quality-20261016包含基线/最终日志、来源/旧新digest收据、合成调用、UI实拍与首败、构建/包/启动、CI和公开探测。隔离4726/4727服务已关闭，仅root活动；不含兄弟PR35/36。交接docs/development/skill-linked-reference-text.md。下一步继续授权师生科研质量样例与受控工具适配；既有依赖启发式可能将否定生图的说明误报为绘图依赖，本批未改分类或放开执行。
+
+## 2026-10-16 Windows0.10.6科研任务材料下载恢复
+
+acceptcat接续PR47 / f29917d，fix/task-artifact-download，产品源码663a0330c083faef0d09632a64a756cbee24543a已推送，草稿PR48 https://github.com/luoyan96/personal-agent/pull/48 已附任务。确认ResearchTaskPanel普通新窗口材料链接被Electron交给外部浏览器，而登录Cookie属于桌面代理会话；通用客户端又将契约二进制读成JSON。现既有content GET在应用内按会话读取，独立二进制分支限制类型/空文件/10MiB及流取消；其他路由/错误JSON与会话失效处理保持。匹配当前原件大小/SHA256后才请求Blob下载，保留中文名并清理文件名路径/控制字符。下载卡提供停止、失败原因、重试与已撤回禁用，只显示系统保存请求，不虚称落盘成功。账号/路由/会话/任务材料身份变化取消旧读取并阻止晚保存。
+
+新增7项加既有发送/桌面代理共18项、服务认证5项、真实API/SQLite协作13项通过；客户端最终类型通过，内容185份Markdown/10Skill定义通过。先在旧实现复现正常二进制JSON错误、大小边界等待超时及取消未关闭reader，原失败保留。实际React任务详情/HTTP/SQLite七组合成流程覆盖接受前无材料入口、学生承接后原始UTF8/中文名/SHA下载、503重试、错误字节零保存、停止/重试/晚回复、换未授权账号、教师撤回禁用及实际GET404；1536×1024与1024×726内容/按钮无横向溢出，pageerror0、无框架覆盖层。Browser skill未提供，使用环境Playwright/隔离Edge，壳/SDK是夹具、网络延迟/503/错误字节明确注入；没有用户账号/材料或模型调用。
+
+实际Electron22.3.27隔离窗口/Cookie存储运行当前React，保存原件磁盘SHA一致、模拟原生取消后再点重试成功、外部窗口请求0；不把原生夹具当用户现装窗口。首次图标英文参与按钮名称、Edge downloads-hub被计作业务弹窗、撤回夹具缺expectedVersion、默认node_modules无Electron二进制、包校验误用不存在历史素材名的失败与修正保留。已知Antd findDOMNode、Router future flag、Sass/Node和打包electron-log initialize警告保留，主动503/404有明确来源，无未解释console error。
+
+固定663a033完整Vite/Electron+NSIS构建，Windows0.10.6安装器87,402,492字节，SHA256ebb16e7e8f786f08cadffc715982d95033f946684ceedcb3f5a5acdbf4b2e600，clients/openim/release/Base/0.10.6/AcceptCat_0.10.6.exe与C:/Users/luo/Desktop副本一致，安装说明同在桌面。ASAR版本/新材料下载/上一批Skill预览/实际猫咪素材图标/运行依赖核对，真实打包exe隔离启动及原生桥接通过。publish never，未代装/重启旧客户端、上传Release或更改公开更新源，需退出旧版手动覆盖安装。
+
+仅桌面代码/版本/测试及交接变更，未改共享/内置Skill/依赖/API/worker/数据库，按范围不重复本地根全套。旧content端点兼容已用真实HTTP核验，无云端部署、迁移或公共目录发布，权限/资料绑定/模型Key保持。后台沿用部署记录47c42ac / community-47c42ac / contract0.25 / chat1.12 / schema022；独立公网ready200/ok/0.25，数据库/存储/认证ok、harness not_verified，未重新inspect线上镜像。上批f063969的38767651485三平台全部成功；本批663a033的38771771667最新快照两Linux成功、Windows运行中，独立于客户端检查及后续文档HEAD，未计全通过。
+
+证据Git外.runtime/task-download-20261016包含基线/最终检查、实际任务合成输入与下载文件、UI首败/实拍/最终回执、Electron原生保存/取消、构建/包/启动、CI和公开ready。隔离4746/4747服务和原生窗口已关闭，仅root活动，无其他工作文件，未包含兄弟PR35/36。交接docs/development/task-artifact-download.md。后续继续真实师生课题交接与其他下载入口可靠性、科研质量和受控执行适配；无法删除此前保存到用户磁盘的副本，不宣称所有IM/资料库下载入口都已修复。

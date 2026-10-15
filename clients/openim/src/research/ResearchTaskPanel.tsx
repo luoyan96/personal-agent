@@ -8,6 +8,7 @@ import { useResearchStore } from "./store";
 import { taskStateLabels, planDate } from "./task-planning";
 import { teamNextStep } from "./research-team";
 import { ResearchTeamAccountHint } from "./ResearchTeamAccountHint";
+import { TaskArtifactDownload } from "./TaskArtifactDownload";
 
 export function ResearchTaskPanel({
   taskId,
@@ -394,22 +395,7 @@ export function ResearchTaskPanel({
         </Button>
       )}
       {artifacts?.map((artifact) => (
-        <div key={artifact.id} className="border p-2">
-          <p>
-            {artifact.filename} / 版本 {artifact.version}
-          </p>
-          <p className="text-xs">
-            {artifact.id} · {artifact.size} 字节 ·{" "}
-            {artifact.accessStatus || "available"}
-          </p>
-          <a
-            href={`/api/v1/artifacts/${encodeURIComponent(artifact.id)}/content`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            下载获准材料
-          </a>
-        </div>
+        <TaskArtifactDownload key={artifact.id} artifact={artifact} />
       ))}
       {allowed("upload") && (
         <label className="block border p-3">

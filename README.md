@@ -1,5 +1,7 @@
 # AcceptCat · 老师与实验室团队的科研工作平台
 
+2026-10-16：Windows **0.10.6**修复[任务材料下载](docs/development/task-artifact-download.md)，在当前应用会话读取并核对原件，支持停止/重试与换账号晚响应隔离。实际Electron保存/取消后重试及合成师生权限检查通过；安装包和说明在桌面，需覆盖安装，无后台升级。准确哈希、QA与交付范围见[当前状态](docs/current-state.md)。
+
 2026-10-16：Windows **0.10.5**修复[包内文字模板无法选为Skill参考](docs/development/skill-linked-reference-text.md)，安装前可逐项核对原文。固定审查Skill参考6→14、原25原件不变，私人调用/隔离与实际包启动通过；安装包在桌面，旧Skill需重新导入并确认更新，无需升级后台。准确哈希与验证范围见[当前状态](docs/current-state.md)。
 
 2026-10-15：[科研设计自查与报告流程来源](docs/development/community-evidence-review.md)已加入在线社区目录，六项来源/四仓库，待接入工具不开放安装。Windows **0.10.4**补齐动态卡片输入/交付预览、小窗口和分类布局；安装包在桌面，需手动覆盖安装，未发布公开Release。根669项、客户端12项与真实导入/合成聊天、打包启动通过；准确哈希、上线与质量验证边界见[当前状态](docs/current-state.md)。

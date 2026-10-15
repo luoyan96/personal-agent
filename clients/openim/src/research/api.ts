@@ -128,9 +128,13 @@ async function requestResearchApi<K extends RouteName>(
   }
   let value: unknown;
   try {
-    value = await response.json();
+    value =
+      name === "content" && response.ok
+        ? await readArtifactContent(response, options.signal)
+        : await response.json();
   } catch (error) {
     if (options.signal?.aborted) throw error;
+    if (error instanceof ResearchApiError) throw error;
     throw new ResearchApiError(
       response.ok ? "INVALID_RESPONSE" : "SERVICE_UNAVAILABLE",
       response.status,
@@ -163,6 +167,61 @@ async function requestResearchApi<K extends RouteName>(
   }
   if (route.method !== "GET") slots.delete(intent);
   return result;
+}
+
+// Task material is binary. Keep it in the authenticated app transport instead
+// of opening a URL in an external browser with a different cookie store.
+async function readArtifactContent(response: Response, signal?: AbortSignal) {
+  const invalid = () =>
+    new ResearchApiError(
+      "INVALID_RESPONSE",
+      response.status,
+      "材料响应与预期不符，未保存文件。请重新读取任务后重试。",
+    );
+  const limit = 10 * 1024 * 1024;
+  const type = response.headers.get("content-type")?.split(";")[0].trim();
+  const length = response.headers.get("content-length");
+  if (
+    !type ||
+    !["text/plain", "application/pdf", "image/png"].includes(type) ||
+    (length !== null && (!/^\d+$/.test(length) || Number(length) > limit)) ||
+    !response.body
+  ) {
+    await response.body?.cancel();
+    throw invalid();
+  }
+  const reader = response.body.getReader();
+  const cancel = () => {
+    void reader.cancel().catch(() => {});
+  };
+  signal?.addEventListener("abort", cancel, { once: true });
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      assertRequestActive(signal);
+      const part = await reader.read();
+      assertRequestActive(signal);
+      if (part.done) break;
+      size += part.value.byteLength;
+      if (size > limit) throw invalid();
+      chunks.push(part.value);
+    }
+    if (!size) throw invalid();
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return bytes;
+  } catch (error) {
+    cancel();
+    throw error;
+  } finally {
+    signal?.removeEventListener("abort", cancel);
+    reader.releaseLock();
+  }
 }
 export function clearResearchSession() {
   csrfToken = "";
