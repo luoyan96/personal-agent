@@ -11,3 +11,4 @@ Read docs/current-state.md, docs/project-log.md, README.md and docs/roadmap.md b
 - Extend Harness through its documented interfaces; do not vendor its source into this repository. Pin and verify any selected runtime version separately.
 - Prefer a small branch and reviewable PR for subsequent work. The initial empty-repository import may establish main directly. Do not deploy or publish a package as a side effect of a code change.
 - Keep source attribution and migration decisions in docs/migration.md and NOTICE.md. Do not remove old exploration repositories as part of routine migration.
+- Keep the root README focused on the product, useful screenshots, trial/download entry points and concise current availability. Put chronological engineering updates, QA counts and deployment details in docs/current-state.md and docs/project-log.md. Verify public Releases before changing download claims; a local build or branch push is not a public release.

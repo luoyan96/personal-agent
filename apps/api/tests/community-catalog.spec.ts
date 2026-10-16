@@ -38,7 +38,8 @@ describe('Community catalog / daily public GitHub synchronization',{timeout:1500
   const login=await app.inject({method:'POST',url:'/api/v1/auth/login',headers:{origin:s.config.origin},payload:{username:'catalog_http',password:'12345678'}});expect(login.statusCode).toBe(200)
   const cookie=String(login.headers['set-cookie']).split(';')[0]!
   const response=await app.inject({url:'/api/v1/community-catalog',headers:{cookie}});expect(response.statusCode).toBe(200)
-  expect(response.json().data.entries).toHaveLength(6);expect(response.json().data.entries.every((e:{github:unknown})=>e.github===null)).toBe(true)
+  expect(response.json().data.entries).toHaveLength(8);expect(response.json().data.entries.every((e:{github:unknown})=>e.github===null)).toBe(true)
+  expect(response.json().data.entries.filter((e:{id:string})=>['scientific-problem-selection','hypothesis-generation'].includes(e.id)).map((e:{status:string;installable:boolean})=>[e.status,e.installable])).toEqual([['offline_reviewed',true],['offline_reviewed',true]])
   expect(response.json().data.sync.state).toBe('never');expect(response.body).not.toMatch(/tokenFile|leaseOwner|repositoryEtag|Bearer|12345678/)
   expect((await app.inject({url:'/api/v1/community-catalog/peer-review',headers:{cookie}})).json().data.revision).toBe(communityCatalogSeed[1]!.revision)
   expect((await app.inject({url:'/api/v1/community-catalog/unknown',headers:{cookie}})).statusCode).toBe(404)
@@ -46,20 +47,20 @@ describe('Community catalog / daily public GitHub synchronization',{timeout:1500
  })
  it('deduplicates shared repositories, persists live facts/candidates and schedules next Beijing midnight without moving reviewed commits',async()=>{
   moment=Date.parse('2026-10-14T16:02:00Z');const s=setup(),upstream=transport();const worker=new CommunityCatalogWorker(s.db,s.config,{fetch:upstream.fetch,now:clock})
-  expect(await worker.tick()).toBe(true);expect(upstream.calls).toHaveLength(10)
+  expect(await worker.tick()).toBe(true);expect(upstream.calls).toHaveLength(12)
   const result=readCommunityCatalog(s.db,s.config).data
   expect(result.sync).toMatchObject({state:'ok',discoveryState:'ok',nextCheckAt:'2026-10-15T16:00:00.000Z'})
   expect(result.entries[0]!.github).toMatchObject({stars:1234,forks:56,latestRevision:'b'.repeat(40),error:null})
   expect(result.entries.map(e=>e.revision)).toEqual(communityCatalogSeed.map(e=>e.revision))
   expect(result.candidates).toHaveLength(1);expect(result.candidates[0]!.status).toBe('needs_review')
-  const version=result.version;expect(await worker.tick()).toBe(false);expect(readCommunityCatalog(s.db,s.config).data.version).toBe(version);expect(upstream.calls).toHaveLength(10)
+  const version=result.version;expect(await worker.tick()).toBe(false);expect(readCommunityCatalog(s.db,s.config).data.version).toBe(version);expect(upstream.calls).toHaveLength(12)
   const another=openDatabase(s.config.databasePath);try{expect(readCommunityCatalog(another,s.config).data).toEqual(result)}finally{another.close()}
   expect(JSON.stringify(result)).not.toMatch(/repositoryEtag|commitEtag|leaseOwner/)
  })
  it('uses independent ETags and retains validated metadata on 304 with another successful check timestamp',async()=>{
   const s=setup();moment=Date.parse('2026-10-14T16:02:00Z');await new CommunityCatalogWorker(s.db,s.config,{fetch:transport().fetch,now:clock}).tick()
   moment+=86400000;const upstream=transport({etagOnly:true});await new CommunityCatalogWorker(s.db,s.config,{fetch:upstream.fetch,now:clock}).tick()
-  expect(upstream.calls.filter(c=>c.headers.has('if-none-match'))).toHaveLength(8)
+  expect(upstream.calls.filter(c=>c.headers.has('if-none-match'))).toHaveLength(10)
   expect(readCommunityCatalog(s.db,s.config).data.entries[0]!.github).toMatchObject({stars:1234,latestRevision:'b'.repeat(40),syncedAt:new Date(moment).toISOString(),error:null})
  })
  it('backs off rate limits globally and preserves last good stars/candidates instead of inventing zeros',async()=>{
@@ -89,7 +90,7 @@ describe('Community catalog / daily public GitHub synchronization',{timeout:1500
  it('operator reviewed catalog can add an entry without a new client; candidates cannot install or change the reviewed list over HTTP',async()=>{
   const s=setup(),original=readCommunityCatalog(s.db,s.config).data.entries
   replaceReviewedCommunityCatalog(s.db,[...original.map(({github:_g,...entry})=>entry),{...communityCatalogSeed[0]!,id:'new-public-workflow',name:'合成新增科研流程',installable:false}])
-  expect(readCommunityCatalog(s.db,s.config).data.entries).toHaveLength(7)
+  expect(readCommunityCatalog(s.db,s.config).data.entries).toHaveLength(9)
   expect(()=>replaceReviewedCommunityCatalog(s.db,[{...communityCatalogSeed[0]!,repository:'http://127.0.0.1/private'}])).toThrow()
   expect(()=>replaceReviewedCommunityCatalog(s.db,[{...communityCatalogSeed[0]!,status:'needs_connector',installable:true}])).toThrow()
   expect(()=>replaceReviewedCommunityCatalog(s.db,[{...communityCatalogSeed[0]!,localMetadataAdapter:true}])).toThrow()

@@ -1,5 +1,9 @@
 # 来源与许可说明
 
+## 2026-10-16：AcceptCat产品介绍资产
+
+GitHub首页展示既有蜷睡橘猫图标和实际开发界面的合成科研流程截图，来源、受测版本及原件核对见[展示素材说明](docs/assets/README.md)。截图为产品示例，不包含用户真实研究资料；图标沿用用户此前指定的Catnap Desktop已有像素，其独立许可尚未追溯，不新增未核实的作者或MIT声明。较新集成版的OpenMuse主题/布局及其许可见展示素材说明中的固定来源；本次文档发布不迁入应用实现或改变OpenIM派生部分许可。
+
 本仓库由 `luoyan96` 的科研探索代码与本次新增的平台起步材料整理而来，迁入文件与提交记录见 [docs/migration.md](docs/migration.md)。
 
 - 原 `dsh-research-plugins` 的 package.json 声明 MIT；迁入时源目录未包含独立 LICENSE 文件。本记录保留来源与该声明，不补写未核实的原始版权人信息。

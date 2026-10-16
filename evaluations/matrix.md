@@ -20,6 +20,8 @@ The installed-Skill routing fixture is an HTTP/SQLite/ChatWorker integration che
 
 ## Manual gate
 
+Community research planning review (2026-10-16): `scientific-problem-selection` is checked for private installation, full instructions plus only selected risk/decision references, absent live search and cross-account denial. `hypothesis-generation` uses published synthetic templates for schema, rival predictions, measurements, controls, evidence and scaffold validation, with malformed/proven claims, duplicate keys, identical rival expectations and overwrite refusal. English causal lint and a known Chinese miss are recorded separately. Fixed synthetic ChatWorker replies prove routing and saved receipts, not scientific quality, source accuracy, novelty or independent review. Source corrections and raw/ZIP roundtrip evidence are documented in `docs/development/research-question-catalog.md`; no upstream Skill bodies are duplicated here.
+
 - Does the name/description route the task to the right skill and reject its nearest confusion case?
 - Are tool parameters deferred to the current plugin schemas?
 - Are all material outputs stored with `artifact_save` and traceable to sources or raw data?

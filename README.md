@@ -1,182 +1,146 @@
-# AcceptCat · 老师与实验室团队的科研工作平台
+<p align="center">
+  <img src="docs/assets/acceptcat-icon.png" width="104" height="104" alt="AcceptCat 的蜷睡橘猫图标" />
+</p>
 
-2026-10-16：Windows **0.10.6**修复[任务材料下载](docs/development/task-artifact-download.md)，在当前应用会话读取并核对原件，支持停止/重试与换账号晚响应隔离。实际Electron保存/取消后重试及合成师生权限检查通过；安装包和说明在桌面，需覆盖安装，无后台升级。准确哈希、QA与交付范围见[当前状态](docs/current-state.md)。
+<h1 align="center">AcceptCat</h1>
 
-2026-10-16：Windows **0.10.5**修复[包内文字模板无法选为Skill参考](docs/development/skill-linked-reference-text.md)，安装前可逐项核对原文。固定审查Skill参考6→14、原25原件不变，私人调用/隔离与实际包启动通过；安装包在桌面，旧Skill需重新导入并确认更新，无需升级后台。准确哈希与验证范围见[当前状态](docs/current-state.md)。
+<p align="center"><strong>和学生、AI 一起，把科研任务推进到成果。</strong></p>
 
-2026-10-15：[科研设计自查与报告流程来源](docs/development/community-evidence-review.md)已加入在线社区目录，六项来源/四仓库，待接入工具不开放安装。Windows **0.10.4**补齐动态卡片输入/交付预览、小窗口和分类布局；安装包在桌面，需手动覆盖安装，未发布公开Release。根669项、客户端12项与真实导入/合成聊天、打包启动通过；准确哈希、上线与质量验证边界见[当前状态](docs/current-state.md)。
+<p align="center">面向学校教师、科研工作者与实验室团队的科研协作桌面应用。</p>
 
-2026-10-14：Windows **0.10.3** 与[社区目录每日同步](docs/development/community-catalog-sync.md)已交付并上线配套API/worker（contract0.25 / schema022无迁移）。后台首次及北京时间每日零点同步GitHub Star/代码更新时间与待审阅发现，客户端直接读取服务器目录；审阅SHA和私人Skill保持独立。服务器首次同步三仓库/四已收录/二十候选成功，根669项和本机打包启动通过；[安装与上线记录](docs/deployment/acceptcat-0.10.3.md)。安装包在桌面，需手动覆盖安装，本批未公开GitHub Release；候选科研质量与工具执行仍分别适配。
+<p align="center">
+  Windows 优先 · 个人科研助理 · 课题组协作 · 可复用科研方法
+</p>
 
-2026-10-14：Windows **0.10.2** 已交付[科研广场信息流](docs/development/research-discovery-feed.md)：竖版用途卡片和交付形式预览，点开看材料与用法，真实添加私人助手或检查社区技能。空公开列表不再占据首屏。9组真实React/HTTP/SQLite流程、类型/构建/原生启动通过，安装包在本机桌面，需手动覆盖安装；未发布GitHub Release。本批只改桌面，后台仍为下述0.10.1配套版本。
+<p align="center">
+  <a href="#试用与下载">试用与下载</a> ·
+  <a href="#从一次组会任务开始">看一次完整工作流</a> ·
+  <a href="#找到适合当前研究的能力">探索科研能力</a> ·
+  <a href="#开发与参与">开发与参与</a>
+</p>
 
-2026-10-14：Windows **0.10.1** [安装包及配套后台已交付](docs/deployment/acceptcat-0.10.1.md)。桌面包包含近期科研目录、Zotero元数据选入、Skill版本和资料导入恢复，实际构建/启动/包内检查通过；API与worker同步更新，Skill连续输入修复在线生效，schema022无迁移。安装包副本在本机桌面，需手动覆盖安装，尚未上传GitHub Release。准确版本、备份和限制见[当前状态](docs/current-state.md)。
+<p align="center">
+  <img src="docs/assets/research-square.png" width="100%" alt="AcceptCat 科研广场：通过文献阅读、论文修改、研究方案和图表构思卡片，查看需要的输入与交付形式" />
+  <br />
+  <sub>桌面开发预览 · 实际界面与示例数据；公开下载版与最新试用版的范围见下文。</sub>
+</p>
 
-Windows **0.10.0** 已完成[科研能力中心与资料素材库第一阶段](docs/development/research-capability-center.md)：科研 Agent 分类、六份私人文字配置、资料来源 / 版本 / 原件、本人 Agent 资料检索与片段回执、完整本机 Skill 素材。安装包已制作，配套 API / worker 已部署 contract0.24 / schema022。尚未公开 Release，需手工安装本地包；绘图、向量检索和执行沙箱留待后续。准确安装与云端状态见[当前状态](docs/current-state.md)。
+## 科研里的事情，应该接得上
 
-2026-10-14技能库本地候选修复[所选科研 Skill 的连续调用](docs/development/skill-continuous-routing.md)：补充消息保持所选说明、参考文件和资料片段，避免误转创建/助理分派或拆批；旧混合请求在调用前停止，新消息可恢复。23项真实HTTP/SQLite/合成模型及656项完整检查通过，尚未部署或打包，工具执行与真实学术质量未计为完成。
+一篇论文从聊天里发过来，一项任务在组会上布置，学生把新一版结果放进文件夹。到了下一次讨论，大家还要重新找：**目标是什么、谁接下了、卡在哪里、这次交付改了什么。**
 
-2026-10-14本地候选修复[科研资料导入恢复](docs/development/research-file-import-recovery.md)：未知回执后只重试原请求，新版本不重复增加；集合范围变化阻断上传，实际保存后的列表故障只刷新。七组真实React/HTTP/SQLite合成流程、客户端类型/构建和649项完整检查通过；尚未打包或上线，当前窗口关闭/重启后的恢复待补。
+AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求，用 AI 整理材料和研究思路，再把计划、分工、成果与审阅接起来。老师能看到需要自己决策的事情，学生知道下一步该做什么，个人也可以独立使用。
 
-AcceptCat 面向学校老师和实验室团队，目标是提升科研效率、沉淀标准流程，并方便负责人管理和对齐。采用微信式聊天，真人和 Agent 共用通讯录；个人助理帮助成员工作，项目、任务、交付和审阅串联课题组协作。接下来约半年以本人和学生的真实课题持续使用为主，优先完善 Windows 桌面基础体验、团队任务流程、可复用科研模板和真实进展总览。微信 / 企微连接器及面向广泛消费者的扩展暂缓。产品目标和工程已实现范围分别记录，见[产品规划v0.9](docs/product-plan.md)、[开发路线](docs/roadmap.md)与[当前状态](docs/current-state.md)。
-
-2026-10-10：AcceptCat **0.9.0** 的[科研团队工作台](docs/development/research-team-workbench.md)和Windows安装包已完成，配套API / worker已成对部署（contract0.23 / schema021无迁移）。目标规划、学生本人承接、阻碍跟进、成果提交、导师反馈和修订验收使用真实状态；私人AI规划使用发起人默认模型，普通新消息不误带旧论文。603项共享检查、9组合成师生流程、实际NSIS及原生启动通过；[部署与恢复记录](docs/deployment/acceptcat-research-team.md)、准确安装包与验证边界见[当前状态](docs/current-state.md)。此包未公开Release，需手工安装。
-
-2026-10-09：上一本地AcceptCat **0.8.6** 重做[桌面记忆体验](docs/development/memory-experience.md)：先查看已确认内容的摘要和分类，再管理具体条目；新增、修改和设置独立打开，候选确认后才生效，错误保留编辑内容并提供重试。柔和淡蓝摘要、鼠尾草绿操作与更清楚的文字层级；小窗口只滚动内容，顶部导航与关闭入口保持可见。复用现有真实记忆API，准确安装包与验证范围见[当前状态](docs/current-state.md)。本地候选未公开Release。
-
-上一本地AcceptCat **0.8.5** 新增[图片正文整理与Agent校对](docs/development/ocr-readable-text.md)：识字默认合并为无回车的一整段，可保留段落或查看原始识别；当前Agent模型可校对错字，失败保留本机正文。复制、原生保存与插入均使用当前文字，长图裁切残行去除；沿用0.8.4猫咪科研入口与橘猫图标。本批为本地安装候选，未公开Release，准确安装包与验证范围见[当前状态](docs/current-state.md)。
-
-此前AcceptCat **0.8.1** 新增[图片粘贴与批量识字](docs/development/desktop-image-paste-ocr.md)：Ctrl+V、多选与拖入图片，先在本机预览，再识别、保存或发送文字。微信私有消息复制格式提供保存图片后批量拖入的备用流程。
-
-2026-10-09：上一本地AcceptCat **0.8.0** 采用[OpenMuse风格Windows界面](docs/development/openmuse-desktop-ui.md)：浅色导航、可收起聊天列表、居中正文、柔和消息与浮动输入区，工作台及设置统一主题。继续使用OpenIM原生SDK、现有账号和任务后台，保留连续发送、失败重试、本地文件和更新入口。包含0.7.0的[科研任务规划](docs/development/research-task-planning.md)：可编辑步骤、负责人 / 依赖 / 验收条件、草案恢复、确认生成真实任务与下一步。安装身份、数据目录和GitHub更新源不变；公开Release与云端仍是下方0.6.0，准确安装包与受测范围见[当前状态](docs/current-state.md)。本项目继续沿用现有代码和[早期迁移成果](docs/migration.md)，历史版本及验证记录保留。
-
-上次正式公开的Windows0.6.0私人技能和当时配套API / worker已发布（contract0.22 / schema21）；安装、授权、聊天文字流程与边界见 [当前状态](docs/current-state.md)。
-
-## 历史版本与实现记录
-
-以下内容按对应历史版本阅读，当前运行状态以[交接入口](docs/current-state.md)为准。
-
-Windows **0.5.2已发布**：[安装与发布说明](https://github.com/luoyan96/personal-agent/releases/tag/v0.5.2)。修复慢响应导致历史消息永久“正在加载消息”，读取失败提供明确重试，协作建议失败不隐藏正文；公开更新入口已核对。微信式消息、统一人与Agent通讯录、工作台、能力广场，版本更新入口在左下角设置。配套API/worker为06262a6b（contract0.21/schema20），019/020与工作台/广场上线验证保持，本批无后台部署或迁移。功能见[桌面协作工作区](docs/development/desktop-social-workspace.md)，精确源码、验证边界和备份见[当前状态](docs/current-state.md)与[上下文部署记录](docs/deployment/personal-agent-conversation-context.md)。
-
-Windows桌面 **0.3.3** 新增固定入口：**左下角设置 → 版本更新**，始终显示当前版本并支持检查、下载进度和安装重启；模型设置保留在同一菜单。自动检查仍为启动15秒后、每6小时及电脑唤醒，发现新版才提示。下载与准确受测范围见[当前状态](docs/current-state.md)及[Windows更新](docs/development/windows-updates.md)。保留0.3.2的发送等待恢复；升级前复制旧版未确认需求，待发内容尚不支持跨软件重启恢复。
-
-历史候选 **Windows0.4.0** 增加“定时任务”：一次、每天、每周提醒或让自己的 Agent 到点执行，支持聊天安排、暂停 / 修改和运行记录。此候选原需contract0.20/schema19，现已包含在0.5.1与云端0.21/schema20中，准确进度见[当前状态](docs/current-state.md)，范围与部署见[定时任务](docs/development/recurring-agent-tasks.md)。
-
-Windows桌面 **0.3.2** 修复发送等待和错误 / 重试入口被遮挡：30秒未确认保留原请求，重试沿用原编号；可停止等待、持续输入和切换联系人。下载与准确受测范围见[当前状态](docs/current-state.md)。升级前复制旧版未确认需求；本批未新增跨软件重启的待发恢复。
-
-**最终目标是以个人为中心的Personal Agent：采用类似微信的交流方式，人与Agent共用通讯录；个人助理根据任务类型和难度组织协作，积累获准的长期记忆，持续推进、主动跟进并从反馈中改进。** 科研小组是第一个验证场景，个人可以独立使用。
-
-Windows桌面源码 **0.3.1**：发现新版后在左下角显示“更新”，点击下载、显示进度，校验完成后可重启安装；保留微信式三栏、会话搜索、流式回复、文件任务卡与本地文件报告。更新用法见[Windows更新](docs/development/windows-updates.md)，文件与协议边界见[桌面文件工作区](docs/development/desktop-agent-workspace.md)。桌面发布以GitHub版本标签及Release为准，云端部署记录与桌面版本分别维护。
-
-主代码仓库为 [luoyan96/personal-agent](https://github.com/luoyan96/personal-agent)，`main` 是共同开发主线。每个人 / AI 用独立分支提交 PR，开发环境、客户端检查和版本回退见[协作说明](CONTRIBUTING.md)。当前发布标签 `personal-agent-2026-10-06.4` 指向已部署客户端622e84b；API代码与已部署94b26d1相同；此前协作基线 `.1` 与初始导入标签保留。GitHub代码更新和阿里云部署分别记录。
-
-2026-10-06[文档全文阅读](docs/development/document-reading.md)已上线：21:02:07发布API / worker94b26d1，21:25:34补发继续入口，22:01:49客户端622e84b补齐旧消息停留与同身份跟随，旧回执阅读全文实际按钮验收通过。真实既有IDE论文全部5页 / 29,415字符，以及真实上传13页 / 49,622字符合成PDF的模型阅读、末页标记、OpenIM投递 / 刷新去重通过；不是只按解析总数宣称读完。三批软件三平台完整CI及独立客户端检查通过，[PR5](https://github.com/luoyan96/personal-agent/pull/5) / [PR7](https://github.com/luoyan96/personal-agent/pull/7) / [PR8](https://github.com/luoyan96/personal-agent/pull/8)已合入main。新附件正文优先、独立有界预算，旧解析源可新请求继续；普通聊天仍4000 / 90秒，旧回复预算不追溯增加。扫描OCR / 图像 / 版式及无限上下文未实现。精确版本、恢复与证据见[当前状态](docs/current-state.md)。
-
-此前2026-10-06 18:16:59北京时间，[连续Agent私聊](docs/development/continuous-chat.md)已上线：可以连发补充、模型实际公开文字逐步显示、生成中调整方向；草稿 / 待发记录可在当前账号标签页刷新恢复，原请求手动重试。客户端、API / worker均为 `2e696881583842eb0e251d222083bccd925524fe`，contract0.19 / chat1.8 / schema18无迁移。同一源码三平台完整CI与客户端检查通过；真实模型增量、运行中补充、OpenIM投递和刷新去重已线上验收。长文仍可能触及4000 / 90秒预算，失败记录保留。精确镜像、证据与恢复步骤见[当前状态](docs/current-state.md)。
-
-此前2026-10-06 Personal Agent 第一批功能已上线：本人长期偏好的保存 / 纠正 / 撤回、专项工作转交站内 Agent、服务端一次性提醒及“关于我”管理。API / worker787ca23、最终客户端27c3279，契约0.18 / 聊天1.7 / 显式迁移018。根CI521 + 2、客户端构建与本地13组界面流程通过；云端合成账号实际偏好保存 / 持久纠正、关闭页面后的提醒 / OpenIM投递 / 重开可见和最终简短回执分别通过。任务匹配采用合成模型验证，本批未调用真实厂商；完整行为学习、跨个人空间任务群、条件 / 周期跟进与策略自我改进仍在后续。新AI先读[当前状态](docs/current-state.md)、[产品规划v0.7](docs/product-plan.md)与[Personal Agent开发主线](docs/roadmap.md)。
-
-## 历史更新：文件聊天
-
-2026-10-06，Agent 文件聊天最终软件 `3b18c6883428f2f00bfbd61d8cce51195011b842` 已上线。个人 / 专属 Agent 私聊发送含文字 PDF 或 UTF-8 TXT / Markdown / CSV 后，真实 SDK 成功才开始解析和模型阅读；范围、部分读取与失败明确显示。默认总预算仍为 4000 / 90 秒。旧 SDK 对象网关需要重定向时，可使用“从本机选择阅读”，只重读原附件，不重复 IM 投递。详见[文件聊天交接](docs/development/agent-file-chat.md)。
-
-最终共享 CI 473 项 + 2 生产入口、客户端类型 / Web / 四 SDK 资源通过；原首版两页 PDF 的真实模型失败保留。最终线上合成验收结果：0977381版本真实 SDK 上传936字节合成两页PDF后自动回复成功；最终3b18c68版本沿同一合成附件追问第2页，真实模型回复明确该页提取文字完整并指出tiny sample，当前消息范围第2页0–54与服务记录一致。没有读取、复制或改变真实 Key / 密码，没有新增云测试账号或推 GitHub。
-
-Personal Agent面向个人的目标、联系人和协作网络：用户提出要完成的事情，平台把合适的人和AI能力组织起来，持续推进交付，并让获准留存的经验帮助下一次工作。
-
-长期围绕个人助理、共同联系人、任务组织、长期记忆和主动跟进发展；科研作为首个场景。论文、项目、知识产权、材料和学生协作按具体目标组织；初期验证实际有用，再判断其他用户能否复用及谁愿意付费。
-
-成员通过统一浏览器入口协作。公共能力共同建设和使用，个人可以保留自己的工具与方法，只按约定交付结果。拟定技术路线仍为 **DeepSeek Harness 运行底座＋科研插件＋团队服务**，真实接入状态单独记录。
-
-## 历史状态（2026-10-05）
-
-2026-10-05 23:20北京时间，加号菜单前端 `e536e759a71f59f244d740d2bfe25f2e5812bf56` 已静态上线：顶部添加朋友 / 创建 Agent / 发起群聊，输入区图片 / 文件 / 语音展开。API / worker仍为0ea0516，契约0.15 / schema16不变；八服务与精确公网首页通过。本地九组实际组件检查、客户端类型 / Web / 四SDK资源与既有Edge八组入口打开 / 取消检查通过。媒体回调与麦克风拒绝仅本地合成，本批没有重测云文件 / 录音投递。 入口与部署回退见[当前状态](docs/current-state.md)和[客户端说明](clients/openim/RESEARCH-CLIENT.md)。未推GitHub。
-
-2026-10-05 22:25北京时间，[自然语言创建Agent并开始聊天](docs/development/natural-agent-creation-brief.md)已上线：向本人的个人助理明确说“帮我创建一个……Agent”，后台保存真实联系人和专属私聊，当前页面自动打开；相同档案复用。固定前端 / API / worker为`0ea0516d71d4f3c114f96ee0621ad463924a7a85`，契约0.15.0 / 聊天1.4.0 / schema16无迁移。完整CI457 + 2与完整客户端类型 / Web / 四SDK资源通过。既有IFRC真实创建“链研直言”、最终复用 / 自动SDK开聊、两轮真实模型继续回复和历史回执重开通过。首版导航及长人设预算问题已修，原失败证据保留；普通聊天按预算保留最近完整消息，当前输入、档案和获准记忆完整保留。准确版本、备份和限制见[接手说明](docs/current-state.md)，未推GitHub。
-
-2026-10-05 20:34 北京时间，[文献阅读、论文修改、研究方案三种聊天助手](docs/development/agent-starters-brief.md)已上线：通讯录选择后保存本人联系人并开始私聊。前端固定 `a25ee9b`，API / worker 保持 `68d0592`。三档案真实本地验证与16组客户端交互闭合；既有IFRC实际添加文献阅读助手、打开SDK私聊、收到一轮真实角色回复并再次打开同会话通过。只处理提供的文本，不宣称新工具或自动科研执行；另两角色未单独调用真实模型。准确版本及证据见[接手说明](docs/current-state.md)，未推GitHub。
-
-2026-10-05 17:33 北京时间，固定软件 `68d0592de941fa0f47907ba9df6e86fddd83f250` 已发布至[科研微信](https://chat.acceptcat.com)：无需邀请码个人注册、准确用户名添加好友、人与 Agent 自然私聊、个人模型 / API Key 管理和新版设置界面。普通聊天直接发送文本，需求 / 预算 / 材料收在可选协作中。契约 **0.14.0**、聊天 **1.3.0**、迁移 **016**；共享 CI **446 + 2**、完整客户端类型 / Web / 四 SDK 资源、**17 组真实本地 HTTP + 10 组组件合成传输**通过。新站两隔离个人账号的**14个真实HTTPS / SDK门禁**闭合，好友双向消息真实送达；既有IFRC账号自然聊天连续两轮真实回复通过。模型设置支持DeepSeek / 通义千问 / 豆包固定官方地址，通义与豆包真实Key调用尚未验证。部署备份和旧数据迁移核验通过，具体软件、证据及交接以[当前状态](docs/current-state.md)为准，范围见[本轮说明](docs/development/personal-chat-brief.md)。未推GitHub。
-
-新 AI 或协作者先读[当前状态与接手说明](docs/current-state.md)和[项目进展日志](docs/project-log.md)，再按任务进入开发与部署记录。注册修复已于 2026-10-05 08:26 北京时间上线：密码最少 8 位，无复杂度组合 / 独立最大长度，用户名与邀请码仅去首尾空白，错误使用中文提示；实际 HTTPS 注册 / 登录 / 退出与测试账号清理通过。AGENTS 要求每批完成后同步更新交接入口和日志。
-
-完整 OpenIM 科研微信已独立部署至新 ECS：[chat.acceptcat.com](https://chat.acceptcat.com)，文件使用 `https://files.chat.acceptcat.com`。上一批2026-10-05 13:58 北京时间，前端 / API / worker 统一发布 `979b7c10afb0b75b2a72572431cc08fb5195cf47`：精简 AI 输入协议与授权历史，完整计入模型缓存用量；修复状态详情挤塌输入框、发送后跳回旧消息和异步回复未自动跟随。根共享 CI **419 项 + 2 项生产入口测试**通过，独立客户端类型 / 构建 / 四个 SDK 资源及 6 项输入区、12 项滚动合成回归通过。已登录的新 IFRC 真实模型连续两次返回“收到一”“收到二”，完整总量 916 / 1214 Token，预算各为 4000；全程无手动滚动，编辑器保持可用。负责人已自行启用 `deepseek-flash`，本轮未读取或复制 Key。契约 **0.13.1**、IM 桥 **1.0.0**、迁移 **015**不变。最终一致备份核验及八服务 / HTTPS 健康通过；此前注册和双浏览器媒体证据保留受测版本，未冒充本轮重测。真实科研需求规划、组群、执行与交付闭环仍待独立验收。详见[新 ECS 部署与验收](docs/deployment/openim-ecs.md)。本批未推 GitHub；下文旧部署状态指 `research.acceptcat.com`，历史验收不替代新站记录。
-
-此前以 [完整 OpenIM React/Electron 客户端](clients/openim/RESEARCH-CLIENT.md) 重建科研微信，源码位于 `clients/openim`。科研账号、人与 Agent 联系人、成员同意与任务权限使用现有权威 API，普通聊天和媒体接真实 SDK。契约 **0.13.0**、IM 桥协议 **1.0.0**、迁移 **015**；后端说明见 [桥接交接](docs/development/openim-bridge-backend-report.md)。[独立联调服务](deploy/openim/README.md)需要 Docker，包含派生身份校验服务。构建产物与服务连通分别验收，该批提交时尚未推 GitHub 或部署；实际新 ECS 状态以上段记录为准。
-
-上一批本地完成[需求入口、群协作链条与页面完善](docs/development/chat-workflow-brief.md)：固定协调入口提供可编辑需求模板，任务群展示当前授权的承接、执行、最新交付、验收与下一步。邀请和执行建议复用任务命令的实际预检；修复邀请范围被轮询收起及窄屏发送按钮被挤出的问题。契约 **0.12.0**、聊天协议 **1.2.0**、迁移 **014** 保持兼容。最终源码 `cdf168d` 全量 CI **377 项**、真实 HTTP/SQLite/Edge 分阶段 **12 组**及 IAB 页面检查通过。验收使用合成 ModelCall；该批未推 GitHub 或部署。线上仍为下文所列的旧批次。
-
-前一批本地新增[人与 Agent 联系人、档案与持续记忆](docs/development/agent-contacts-brief.md)：统一发现/添加/私聊，设定专属 Agent，维护稳定档案、性格与获准记忆，固定置顶“需求与协作”协调需求和任务群。契约 **0.12.0**、聊天协议 **1.2.0**、迁移 **014**。总控全量 CI 361 项、独立真实 HTTP 10 组及旧预览数据库 59 张原有表内容保留检查通过；后续前端修复的 98 项测试、构建、类型与生产隔离通过。Edge 真实协作 18 组与 IAB 桌面/320px 档案、记忆和私聊检查通过，已完成本地整合验收。本批未推 GitHub 或部署；记忆由用户明确保存，模型检查使用合成 ModelCall。以下保留此前通过记录。
-
-此前本地批次已采用 OpenIM 客户端源码完善科研聊天：蓝白三栏界面、人与 AI 联系人详情、时间分组、成员独立未读与置顶、刷新草稿及会话失效清理。契约 **0.11.0**、聊天协议 **1.1.0**、迁移 **013**。全量 CI 338 项通过；最后前端修复后构建、类型、89 项前端测试及生产隔离通过。独立真实 HTTP 11 组、Edge 真实协作 11 组与 IAB 桌面/320px 发送验收通过。范围、源码来源与证据见[OpenIM 采用和整合验收](docs/development/openim-adoption-brief.md)。本批未推 GitHub、未部署；没有接入 OpenIM Server/SDK，也未新做真实模型调用。
-
-此前“固定个人智能体私聊＋真人/AI 任务群”已完成[共同验收](docs/development/research-chat-overall.md)，用户授权将固定提交 `52629857c069761ff8ebf78a4141dc0975425b17` 部署 ECS，已完成备份恢复、重复迁移和线上合成验收，详见[ECS 记录](docs/deployment/ecs.md#2026-10-04-科研聊天升级已部署)。线上仍为该批次；生产真实模型和成功 AI 群协作闭环尚未验收。
-
-网页、任务服务、worker 和科研聊天入口已在现有 ECS 上线，当前运行代码提交 `52629857c069761ff8ebf78a4141dc0975425b17`，契约 **0.10.0**、聊天协议 **1.0.0**、迁移 **012**。登录默认固定个人助理；实验室负责人仍可自行管理成员邀请码和本实验室模型设置，密码至少 9 个字符。已有真实账号、邀请码、材料和模型配置保留，部署前核查已有 1 个实验室启用模型，未读取或代用其 Key。独立无模型配置的合成实验室完成 HTTPS 和浏览器验收，三名验收账号已停用及撤销会话；真实模型调用、成功 AI 群协作、真实成员试用和 P1 仍待完成。维护规则见[注册说明](docs/deployment/registration.md)，备份/回退见[ECS 记录](docs/deployment/ecs.md)。以下 G5a 验收数字保留历史受测基线。
-
-**G1—G3、G4a 和 G5a 已共同通过；下一步是实际运行与真实小组试用。产品第一阶段尚未完成。** 已能找回草案、查看本人待办及授权总览、记录成员承诺和可用时间，并在任务中处理依赖阻塞、安排变更、退出转交、取消撤权、附件与交付版本。
-
-G5a 完整受测组合为 `1049ad300f4146045c36fd0b74aff63ed79e2aa6`，契约 **0.6.2**，回复契约 **1.0.0**。根 CI **258 项**，正式账号浏览器 7 组、历史浏览器 62 组，以及生产 HTTPS 协作、独立备份恢复均通过。详见 [G5a 共同复核](docs/development/reports/G5a-overall-2026-09-30.md)。该基线当时尚未合入 main、部署或通过真实小组试用；当前部署状态以上述最新记录为准。本轮无新增模型调用，既有真实 AI 证据见 G3/G4a 报告。
-
-| 内容 | 当前能力与边界 |
+| 你现在要做的事 | 在 AcceptCat 里怎样开展 |
 | --- | --- |
-| 网页与团队 API | F3 真实规划/同草案修改、授权查询、公共文本候选及后台运行已接通；保留人类协作 |
-| 任务持久化 | 身份/会话、方案与承诺版本、附件引用、交付和验收由服务端保存 |
-| 实验室全貌 | 授权全量计数、分页任务、草案历史与人员安排已接通；快照检查后手动刷新变化 |
-| 协调与附件 | 已验收交付依赖、阻塞恢复、协商变更、转交、取消撤权及授权附件已验证；其余依赖类型和附件运维边界见 G2 报告 |
-| [科研核心](packages/research-core/README.md) | 本地 Project/Artifact 与来源存取；不是多人平台的权威数据库 |
-| [十项 Skills](agents/README.md)及[加载包](packages/research-skills/README.md) | 方法资源可构建和加载，不代表十项能力都能实际执行 |
-| [Harness 适配](integrations/deepseek-harness/README.md) | 官方固定 0.2.0-rc.1 受限运行组合已安装并真实调用；旧六工具不用于团队 worker |
-| 结论与公共方法 | 结论留存/授权复用、现有公共方法候选试跑与人工启停、本人请求及样例授权找回已共同验证；私人能力托管未开放 |
+| 读一篇论文，准备组会讨论 | 交给文献助手，围绕问题、方法、结果和局限提问，并查看实际读取范围 |
+| 把一个研究想法变成计划 | 整理目标、步骤、负责人、依赖关系和验收要求，确认后建立任务 |
+| 和学生推进一项课题 | 邀请承接、记录阻碍、提交阶段成果，再由导师反馈、要求修改或验收 |
+| 把好用的方法留下来 | 安装自己的 Skill，按次选择参考和获准材料，继续用于自己的 Agent |
 
-B5a/F5a 已共同通过账号维护、生产参考路径、恢复演练与首次使用验证；当时尚未部署。成员先读[一页使用指引](docs/first-use.md)。正式维护、启动与备份恢复见[B5a联调包](docs/development/b5a-handoff.md)及[阶段报告](docs/development/reports/B5a-backend-2026-09-30.md)。原业务权限规则见 [B4a 联调包](docs/development/b4a-handoff.md)；逐项真实证据及用量见 [G4a 报告](docs/development/reports/G4a-overall-2026-09-30.md)。根 CI 已覆盖新的 Harness runtime，真实模型专项仍须显式凭据。
+## 从一次组会任务开始
 
-## 第一阶段要完成什么
+> “这周先把这几篇论文的方法和实验设置比较清楚。小林整理证据，小陈检查实验条件，周五给我一版能讨论的材料。”
 
-用户说“我有一项工作要安排”，平台帮助明确交付要求、匹配本人/成员/公共能力，确认后产生真实安排。成员接受后用自己的方式工作；系统记录卡点、交付和验收；下次任务只复用有权使用的资料与结论。
+1. **先说清楚要交付什么。** 在个人助理中讨论目标，提供本次允许使用的资料。
+2. **把计划变成可以承接的工作。** 调整步骤、负责人、前后依赖、截止时间和验收条件，再确认创建。
+3. **进展和问题留在任务里。** 学生接受任务；缺数据、缺设备或需要导师决定时，记录阻碍及所需支持。
+4. **交付的是具体成果。** 提交材料和说明，保留版本；导师可以要求修改，也可以明确验收。
+5. **下次讨论接着往前走。** 在工作台查看当前进展、最新成果和下一步，不必重新拼凑每个人的聊天记录。
 
-入口采用用户已选择的微信式个人助理私聊与任务群，人与智能体共享通讯录，聊天中的[协作单](docs/design/adaptive-responses.md)展示创建任务、邀请、执行和交付等受控操作。实验室总览和任务详情作为辅助入口，用户无需先搭流程或维护多套看板；该交互已完成本地工程与合成模型联合验收。
+<p align="center">
+  <img src="docs/assets/task-review.png" width="100%" alt="科研任务的交付与审阅界面：同一任务保留初稿、导师修改意见、修订版及明确验收记录" />
+  <br />
+  <sub>协作流程预览 · 图中为虚构导师、学生和示例阅读任务；展示交付版本与反馈如何保留。</sub>
+</p>
 
-```mermaid
-flowchart LR
-    A[表达需求] --> B[理解交付与匹配能力]
-    B --> C[确认分工与承接]
-    C --> D[人和公共智能体执行]
-    D --> E[交付与验收]
-    E --> F[保留获准的经验]
-    F --> B
-```
+## 一个工作空间，几种日常用法
 
-完整目标见[产品规划v0.7](docs/product-plan.md)，后续顺序见[路线图](docs/roadmap.md)。[第一阶段范围](docs/phase-one.md)保留科研P1 / 工程G1的历史划分；任务语义见[分配规则](docs/task-allocation.md)，实际收益见[试点计划](docs/validation-plan.md)。新增Personal Agent目标单独验收，完整私人能力托管、公开市场及学校行政系统不随目标更新自动开放。
+### 聊天：随时讨论，随时补充
 
-契约 0.6.2 新增本人任务样例授权分页查询；0.7.0 新增邀请码注册；0.8.0 新增实验室负责人自助管理邀请码；0.9.0 新增本实验室大模型设置；0.9.1 当时将密码最短长度统一为 9 个字符；0.10.0 新增联系人、会话、消息、受控动作与智能体回复；0.11.0 新增每成员会话阅读位置与置顶偏好；0.12.0 新增公开档案、专属 Agent、联系人同意和版本化记忆；0.13.0 新增完整 OpenIM 身份与受控桥接；0.13.1 按用户要求统一 min8 密码、账号首尾空白处理和中文错误。新站迁移 015，旧站仍为 012。原前后端报告保留当时状态，以最新整合记录为准。
+人与 Agent 使用统一的联系人和聊天入口。支持流式回复、连续补充、附件阅读，以及图片粘贴、批量识字与正文整理。模型或网络出错时保留明确的状态和重试入口。你可以为自己的 Agent 选择模型，按需要维护可修改、可撤回的长期偏好。
 
-## 下一批怎样开发
+### 工作台：把目标、分工和成果放在一起
 
-个人智能体、任务群、[OpenIM 客户端采用](docs/development/openim-adoption-brief.md)及当前[联系人与记忆](docs/development/agent-contacts-brief.md)以前后端独立克隆分工、总控同步契约与整合提交，先向用户展示可操作本地版本；新功能不随开发自动部署。
+科研计划可以先保存为草案，再确认成任务。任务记录承接、阻碍、阶段交付、反馈和验收；负责人查看获准范围内的团队进展。支持一次、每天或每周的提醒与文字 Agent 定时任务，运行记录可查；关闭客户端后仍需后台服务持续运行。
 
-聊天闭环通过后继续 **G5b：实际运行与小组试用**。负责人完成模型配置交接，再选择一项当前真实任务开始。步骤见[试用启动说明](docs/pilot-launch.md)。成员使用已部署的 HTTPS 入口。
+### 资料与方法：按这次任务的需要使用
 
-2026-10-01 已完成现有 ECS 的独立服务、HTTPS 与合成协作部署验证；[ECS 部署说明](docs/deployment/ecs.md)记录实际状态，[部署准备包](deploy/ecs/README.md)供后续维护参考。
+资料集合保留来源和版本，Agent 使用当前授权的材料；本机 Zotero 可选入个人库的元数据与摘要。你可以从文件夹、ZIP 或固定 GitHub 来源预览 Skill，再安装到自己的私人空间，选择本次要用的参考。**公开一个 Agent，不等于公开它背后的私人材料。**
 
-[开发索引](docs/development/README.md)提供当前分工；[历史 G5b 指令](docs/development/prompts.md#当前下一步-g5b)保留试用交接要求。新批次采用总控整合并验收的同一完整提交；G5a 报告保留历史基线。
+## 找到适合当前研究的能力
 
-## 本地开始
+广场按“文献与阅读、写作与表达、研究设计、图表与可视化、数据与代码、课题协作”组织能力。先看它能交付什么、你需要准备什么，再决定是否使用。
 
-建议 Node.js 24；要求 Node.js ≥ 22.19，pnpm 11.21.0。先检出交接指定的集成提交；单独 clone main 不保证包含本轮功能。
+当前可探索的方向包括：
+
+- **文献与写作**：文献阅读、稿件修改、引用与证据自查。
+- **研究设计**：选题价值、项目风险、竞争解释、可证伪假设与检验计划。
+- **课题协作**：任务拆解、阶段材料、组会进展与下一步对齐。
+
+社区条目保留作者、原仓库、固定审阅版本、许可、依赖和费用说明。后台每天北京时间零点同步 GitHub Star、代码更新时间和待审阅候选；**发现新仓库后仍要审阅，可使用的文字 Skill 与待接入工具会分别标明。**
+
+> 截至 **2026-10-16**，在线目录已收录 **8 项来源、涉及 5 个仓库**。联网检索、自动绘图、通用脚本执行和完整 PaperQA 等工具仍在适配；当前文字流程不等于这些工具已经接通。科研结论、引用和实验设计仍需结合原文与实际数据核对。
+
+## 试用与下载
+
+**AcceptCat 正在与小范围科研团队持续打磨，当前优先 Windows 桌面端。** 上面的预览来自较新的开发与试用版本。
+
+| 版本入口 | 当前状态 |
+| --- | --- |
+| **最新桌面试用版：0.10.6** | 已制作并交付小范围试用，尚未上传公开 Release；包含新版界面、科研协作和近期可靠性修复。[查看试用与版本说明](docs/product-status.md) |
+| **GitHub 公开下载：v0.6.0** | 可从 [Releases](https://github.com/luoyan96/personal-agent/releases/latest) 下载；安装文件仍叫 `ResearchWeChat_0.6.0.exe`，属于早期版本，未包含这里展示的全部体验 |
+| **最新产品源码** | 当前集成在 [feature/research-question-catalog](https://github.com/luoyan96/personal-agent/tree/feature/research-question-catalog)；默认分支的应用代码仍是较早基线，文档与软件发布分别维护 |
+
+已有试用版的团队：登录后在设置中配置自己的模型，从一个真实课题的小任务开始。新团队如希望参与试用，可以在 [Issues](https://github.com/luoyan96/personal-agent/issues) 留下使用场景和试用意向；请不要提交账号密钥、未公开论文或学生的私人材料。
+
+应用左下角提供“设置 → 版本更新”。它检查正式发布源；本地制作的新包或单纯推送代码不会自动变成可下载更新。社区目录更新由后台提供，通常无需重装客户端。
+
+## 接下来，把科研里的重要需求做好
+
+近期重点是让老师与学生真正用顺：**文献与资料处理 → 研究计划 → 分工推进 → 成果反馈 → 方法复用**。继续补齐受控检索、科研工具执行与中文科研结果验证，积累可检查的课题案例。
+
+微信 / 企微连接器、面向广泛消费者的扩展和手机端暂缓。当前实现、验证边界和接续工作见[版本与试用说明](docs/product-status.md)。
+
+## 开发与参与
+
+欢迎带着具体科研任务来讨论：任务是什么、现在怎样做、哪一步最耗时、希望得到什么交付物。功能建议、问题反馈和可公开的最小复现都可以放到 [Issues](https://github.com/luoyan96/personal-agent/issues)。
+
+<details>
+<summary><strong>开发环境与仓库结构</strong></summary>
+
+根工程要求 Node.js ≥ 22.19.0（建议 24）与 pnpm 11.21.0；Windows 桌面客户端在 `clients/openim`，独立使用 pnpm 10.28.0 和自己的锁文件。
 
 ```sh
+git clone https://github.com/luoyan96/personal-agent.git
+cd personal-agent
+
+# 最新试用功能暂在此集成分支，main 仍保留较早应用基线。
+git switch feature/research-question-catalog
 pnpm install --frozen-lockfile
 pnpm run ci
 ```
 
-真实 API、迁移、测试账号配置见[B5a 联调包](docs/development/b5a-handoff.md)，网页启动和环境变量见[前端说明](apps/web/README.md)。测试账号只用于合成验证；正式维护与恢复工具已验证，实际主机/证书/成员账号仍需按试用安排配置。
+以上是基础构建与检查，不会启动完整桌面服务或证明真实模型已连接。桌面构建、服务配置与部署按[贡献指南](CONTRIBUTING.md)、[客户端说明](clients/openim/RESEARCH-CLIENT.md)及对应版本交接进行。
 
-下方仅为独立合成开发环境的网页调试命令；生产 HTTPS 运行按 B5a 联调包配置，不混用 HTTP 开发入口。
+| 路径 | 内容 |
+| --- | --- |
+| `clients/openim` | React / Electron 桌面客户端与即时通信集成 |
+| `apps/api` | 科研任务、身份权限、聊天、资料与后台调度 |
+| `packages/contracts` | 前后端共享契约 |
+| `packages/research-core` · `packages/research-skills` | 科研对象与 Skill 加载基础 |
+| `agents/skills` | 内置科研方法的单一内容源 |
+| `integrations/deepseek-harness` | 受限运行适配 |
+| `docs` · `evaluations` | 产品、开发、来源与验证记录 |
 
-```sh
-# 开发 API 为 3100，APP_ORIGIN=http://127.0.0.1:4175
-pnpm --filter @research-agent/web dev --port 4175
-```
+代码检查、真实模型效果与线上部署分别记录。私人研究材料、运行数据库和凭证不进入 Git。开发和试用的准确快照见[版本说明](docs/product-status.md)。
 
-根 CI 检查文档、六个 workspace 子包（含 Harness runtime）的构建/类型、共享契约、单测、后端真实进程和前端生产隔离。浏览器回归和需要凭据的真实模型调用单独运行。基础存储演示仍可用 `pnpm demo`，F0 视觉演示为独立 `dev:demo` 模式，两者都不能证明真实 AI 可用。
+</details>
 
-## 仓库结构与协作
+## 来源与致谢
 
-```text
-apps/web/                      任务协作、真实 AI、授权复用与浏览器回归
-apps/api/                      真实身份、权限、事务与任务 API
-packages/contracts/            共享 Schema、路由与合成样例
-packages/research-core/        本地科研对象与成果存储基础
-packages/research-skills/      Skills 加载与打包
-agents/skills/                 十项方法的唯一源文件
-integrations/deepseek-harness/ 已验证的受限运行适配
-evaluations/                   方法与效果验证材料
-docs/                          规划、设计、开发指令与报告
-```
+AcceptCat 沿用作者既有科研项目探索；即时通信建立在 OpenIM 集成之上，桌面交互参考并改编 OpenMuse 的部分主题与布局，社区方法保留各自来源。感谢这些项目的维护者。
 
-每项工作用独立分支和可审查 PR，采用同一共同基线，不覆盖其他成员的工作目录。代码、方法和公开评测进入 Git；真实研究资料、私人方法、账号凭据和运行记录留在受控环境。提交代码不自动部署。
-
-第一阶段成功取决于成员能独立承接、成果可用、协调与返工负担下降，以及下一次自然需求中的复用；不以任务数量、Agent 数量或 CI 通过代替。付费与跨组需求另行验证。
-
-详见[贡献指南](CONTRIBUTING.md)、[AI 开发约定](AGENTS.md)、[迁移记录](docs/migration.md)和[来源说明](NOTICE.md)。我们使用并扩展 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)，这是独立平台项目。
+- [OpenIM](https://github.com/openimsdk) · [OpenMuse](https://github.com/CopilotKit/openmuse) · [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
+- 项目与各依赖的适用许可、改编范围见 [NOTICE](NOTICE.md)，图标和预览来源见[展示素材说明](docs/assets/README.md)。
+- 工程演进保留在[项目日志](docs/project-log.md)与[历史 README](docs/history/readme-before-product-intro-20261016.md)，首页专注介绍产品与试用方式。

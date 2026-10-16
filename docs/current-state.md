@@ -2,6 +2,28 @@
 
 更新日期：2026-10-16（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## GitHub产品首页已更新：AcceptCat介绍、猫咪图标与预览
+
+用户指出README简陋和过期后，文档提交 **52dad5f22aedaba35dbfdb44afe9c21c521871a3** 已从main6122b915普通快进发布到实际默认分支；仅12项文档/展示文件，无应用实现变化。首页围绕科研场景、师生协作流程、实际广场/交付预览、试用和开发入口组织，旧首页保留在历史快照，AGENTS约定后续工程更新不要继续prepend到README。现有集成实现与服务仍以本文件下方最新记录为准；main应用代码较早，README没有把功能分支或0.10.6试用包伪称为已公开Release。
+
+实际latest Release仍v0.6.0/ResearchWeChat旧名；本机0.10.6的87,402,492字节和SHA256重新核对一致。新增[版本与试用说明](product-status.md)区分公开包/试用包/集成源码/服务。153份Markdown/10Skill及HTML图片/导航/固定快照链接/三图原件检查通过，实际GitHub默认首页AcceptCat正文、0.10.6与v0.6.0表格、三图加载通过；IAB650px实拍与导航核对，非应用或模型质量重验。
+
+GitHub CLI/API多次TLS超时、连接器写入403、Edge CDP与IAB首次导航超时均保留；最终Git保留证书验证并以TLS1.2/HTTP1.1成功上传，仅按普通快进方式发布文档，没有force或绕过分支保护，未创建成功的PR不能计作已创建。备用API脚本在首个blob/PR读取时失败，无远端未知写入；GitHub实际已显示52dad5f并读回。当前集成合入相同文档，冲突只在README/状态/日志/路线，保留本分支最新工程事实。
+
+证据Git外 `.runtime/product-readme-20261016`，公开素材来源见[说明](assets/README.md)，无部署、迁移、模型调用或安装包发布。原GitHub用户页保留，完成页在IAB展示。
+
+## 最新收录：选题决策与可证伪假设工作流已上线
+
+`acceptcat-3`，`feature/research-question-catalog` 接续PR48 / d8cd9e9，目录源码 **ba4aa090a0484481a0522eb5e5899340734f8ef5**，[草稿PR49](https://github.com/luoyan96/personal-agent/pull/49)已附任务。新增Anthropic官方选题/项目风险/决策路线，以及K-Dense可证伪假设/检验计划；固定SHA、适用许可、中文输入/交付、材料/费用和实际限制。前者13原件/9参考/无脚本；后者28原件/18可选文字参考与模板/8个Python文件，文字流程可确认私人安装。未复制上游正文入Git，私人资料/模型Key/团队权限保持。
+
+根CI53文件/669项、生产两项/B0/隔离通过；41原件独立核对、原生导入/存储/原包往返、13次公开合成CLI及两组真实HTTP/SQLite/ChatWorker私人调用/选择性参考/跨账号隔离通过。实际React两组安装预览与1536/1024实拍通过，pageerror0，既有Antd/Router警告和首败证据保留。合成回复不代表科研效果；上游作者引用错误与中文因果词漏检已如实提示。脚本、PubMed/MCP、绘图均未自动接通。
+
+两项通过既有运营CLI于 **2026-10-15T17:22:46Z**（北京时间10月16日01:22）加入实际生产目录；SQLite一致性备份/integrity_check通过，原六项逐值保持，备份 `/srv/research-openim-backups/community-review-20261015T172242Z`。GitHub同步17:22:44.578Z—17:22:50.446Z成功，最终公共缓存 **version38 / 八项 / 五仓库 / 二十候选**，全部metadata error=null；下一次10月16日16:00Z（北京时间17日零点）。后台仍47c42ac / community-47c42ac / b78613b5c6e1f77d07e7af392149744161e25460cb7e4f14b2ec0500e3fda2cc，未重启、部署或迁移，contract0.25/chat1.12/schema022保持。独立公网ready200/0.25/ok，harness not_verified。
+
+**现有Windows0.10.6打开“广场→研究设计”刷新即可读取，无需新安装包。** 本轮不发0.10.7，不更新已安装私人Skill或公开Release。旧客户端0.10.4及以下可能无法选择包内JSON/CSV，旧安装需新版明确重新导入。远端ba4aa09的38776266627首轮两Linux成功、Windows旧registration迁移/reuse撤回测试分别15000/5000ms超时；保存失败并仅重跑失败节点，未计全通过。上一批663a033的38771771667首轮Windows旧文件解析超时，保留失败并仅重跑失败节点，尚在运行。其他分支PR35/36未包含。
+
+[来源、验证与发布恢复](development/research-question-catalog.md)，证据Git外 `.runtime/community-curation-20261016`。隔离4766/4767服务已按完整命令行核对后停止；后续优先用授权课题资料验证中文科研交付质量，再接入受控检索和脚本执行。
+
 ## 最新交付：Windows 0.10.6 修复任务材料下载
 
 `acceptcat`，`fix/task-artifact-download` 接续PR47 / f29917d，产品源码 **663a0330c083faef0d09632a64a756cbee24543a**，[草稿PR48](https://github.com/luoyan96/personal-agent/pull/48)已附任务。任务材料改为当前应用会话读取，解决普通新窗口链接被Electron交给没有登录Cookie的外部浏览器。成功二进制单独处理，校验类型/10MiB/当前版本大小及SHA256后才请求系统下载；错误可重试，可停止，换账号/任务及晚响应不保存。撤回状态禁用，实际GET仍重新授权；只称已请求保存，不冒称系统落盘成功。
