@@ -121,3 +121,46 @@ test("newly included text preserves size, encoding and aggregate limits before a
   );
   assert.equal(untouched.package.references.length, 0);
 });
+
+test("ordinary and linked reference text report the same API limit and exact path", async () => {
+  for (const relative of ["references/protocol.md", "assets/template.json"])
+    for (const character of ["x", "中"])
+      await assert.rejects(
+        read(bundle(`Read \`${relative}\`.`, { [relative]: character.repeat(120001) })),
+        (error) => error.message.includes(relative) && error.message.includes("120,000"),
+      );
+});
+
+test("malformed UTF-8 in either reference route identifies the original file", async () => {
+  for (const relative of ["references/bad.md", "assets/bad.json"])
+    await assert.rejects(
+      read(bundle(`Read \`${relative}\`.`, { [relative]: Buffer.from([255, 254, 255]) })),
+      (error) => error.message.includes(relative) && error.message.includes("UTF-8"),
+    );
+});
+
+test("exact-limit Chinese instructions and references preserve complete original ZIP bytes", async () => {
+  const body = "中".repeat(120000),
+    text = "文".repeat(120000),
+    bytes = bundle(body, { "references/protocol.md": text }),
+    value = await read(bytes);
+  assert.equal(value.package.instructions, body);
+  assert.equal(value.package.references[0].text, text);
+  assert.equal(value.contents.get("references/protocol.md").toString("utf8"), text);
+  assert.deepEqual(value.originalZip, bytes);
+});
+
+test("folder import rejects excessive reference text before producing an install preview", async () => {
+  const directory = await fs.mkdtemp(path.resolve(client, "../../../.runtime/skill-text-limit-folder-"));
+  await fs.mkdir(path.join(directory, "references"));
+  await fs.writeFile(path.join(directory, "SKILL.md"), skill("Use the supplied protocol."));
+  const relative = "references/protocol.md";
+  await fs.writeFile(path.join(directory, relative), "x".repeat(120001));
+  await assert.rejects(exports.importSkillFolderBundle(directory),
+    (error) => error.message.includes(relative) && error.message.includes("120,000"));
+  const text = "中".repeat(120000);
+  await fs.writeFile(path.join(directory, relative), text);
+  const value = await exports.importSkillFolderBundle(directory);
+  assert.equal(value.package.references[0].text, text);
+  assert.equal(value.contents.get(relative).toString("utf8"), text);
+});

@@ -32,6 +32,16 @@ export type ImportedSkill = {
   scriptCount: number;
   assetCount: number;
 };
+// Match the existing instructions/reference limit in the SkillPackage API.
+// YAML front matter is metadata, not part of the instruction character budget.
+export function validateImportedSkillText(path: string, text: string) {
+  if (text.includes("\0"))
+    throw new Error(`技能文字文件“${path}”包含空字符，不是有效文本。`);
+  if (text.length > 120000)
+    throw new Error(
+      `技能文字文件“${path}”超过 120,000 字符，未截断导入，请先拆分文件。`
+    );
+}
 export function safeSkillPath(value: string) {
   if (
     !value ||
@@ -70,12 +80,15 @@ export function parseImportedSkill(
   for (const f of files) {
     safeSkillPath(f.path);
     bytes += decoder.encode(f.text).length;
-    if (f.text.includes("\0")) throw new Error("技能文字不是有效文本。");
+    if (f.path === "SKILL.md") {
+      if (f.text.includes("\0"))
+        throw new Error("技能文字文件“SKILL.md”包含空字符，不是有效文本。");
+    } else validateImportedSkillText(f.path, f.text);
   }
   if (bytes > 900000)
     throw new Error("技能文字超过 900 KB；请拆分技能，不能静默截断。");
   const root = files.find((f) => f.path === "SKILL.md");
-  if (!root || root.text.length > 120000)
+  if (!root)
     throw new Error("请选择包含 SKILL.md 的技能包。");
   const match = /^\uFEFF?---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]+)$/.exec(
     root.text
@@ -100,6 +113,7 @@ export function parseImportedSkill(
   const instructions = match[2]!.trim(),
     requirements: string[] = [];
   if (!instructions) throw new Error("技能没有操作说明。");
+  validateImportedSkillText("SKILL.md", instructions);
   if (scriptCount) requirements.push("脚本执行");
   if (/image[_ -]?gen|IMAGE_GENERATE|image generation|生图/.test(instructions))
     requirements.push("图片生成与参考图输入");

@@ -185,6 +185,42 @@ describe(
   "private skill installation and real chat integration (synthetic model only)",
   { timeout: 30000 },
   () => {
+    it("preserves exact-limit text through install, revise, rollback and selected-reference chat", async () => {
+      const s = await setup();
+      let skill = await s.bind(await s.install());
+      const legacy = s.db.prepare("SELECT * FROM installed_skill_versions WHERE skill_id=? AND revision=1").get(skill.id);
+      const instructions = "x".repeat(120000);
+      const revised = await s.call("reviseSkill", {
+        expectedVersion: skill.version,
+        package: { ...pkg, instructions, references: [] }, source,
+      }, skill.id);
+      expect(revised.status, JSON.stringify(revised.value)).toBe(200);
+      expect((await s.call("skillSource", null, skill.id)).value.data.package.instructions).toBe(instructions);
+      const rolledBack = await s.call("rollbackSkill", { expectedVersion: revised.value.data.version, revision: 1 }, skill.id);
+      expect(rolledBack.status).toBe(200);
+      expect(s.db.prepare("SELECT * FROM installed_skill_versions WHERE skill_id=? AND revision=1").get(skill.id)).toEqual(legacy);
+
+      const end = "REFERENCE_END_17", text = "x".repeat(120000 - end.length) + end;
+      expect(text.length).toBe(120000);
+      skill = await s.bind(await s.install({ ...pkg, references: [
+        { path: "references/check.md", text }, pkg.references[1]!,
+      ] }));
+      expect((await s.send(skill)).status).toBe(201);
+      let calls = 0;
+      await s.tick(async (request) => {
+        const input = JSON.parse(request.prompt);
+        expect(input.selectedSkill.references).toEqual([{ path: "references/check.md", text }]);
+        expect(request.prompt).not.toContain("UNSELECTED_SECRET_GAMMA");
+        calls++;
+        return result("Synthetic exact-limit reference received; no research quality claim.");
+      });
+      expect(calls).toBe(1);
+      expect((await s.call("skillUses", null, skill.id)).value.data[0].status).toBe("succeeded");
+      expect((await s.call("skillSource", null, skill.id, 1)).status).toBe(404);
+      const before = s.db.prepare("SELECT count(*) AS n FROM installed_skills").get()!.n;
+      expect((await s.call("installSkill", { package: { ...pkg, references: [{ path: "references/oversize.md", text: "x".repeat(120001) }] }, source })).status).toBe(400);
+      expect(s.db.prepare("SELECT count(*) AS n FROM installed_skills").get()!.n).toBe(before);
+    });
     it("preserves parsed nested numeric releases through revise/replay/rollback without rewriting legacy versions or permissions", async () => {
       const s = await setup();
       let skill = await s.bind(await s.install({ ...pkg, release: "未标注" }));

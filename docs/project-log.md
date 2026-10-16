@@ -793,3 +793,15 @@ GitHub CLI TLS handshake和schannel/OpenSSL EOF首败、API上传首个blob与PR
 managed worktree工具因线程cwd不在Git目录失败后，命令行在明确路径D:/deepseek-agent/.worktrees/acceptcat-product-readme从origin/main建隔离checkout；原集成工作区保持。公开文档随后合入当前集成，四处文本冲突保留最新工程状态/日志/路线、采用新版产品README；合并命令首次缺身份在开始前失败，重试仅命令级Codex身份，未改全局配置。证据Git外.runtime/product-readme-20261016，完整工程/上线事实继续见前批记录，公开README不再覆盖这些事实。
 
 发布收尾补记：main与docs/acceptcat-product-readme已普通快进至b7c4646（README正文仍52dad5f，补充实际发布日志并去除三份新增文档EOF空行）。集成首次暂存diff检查发现该三份新文件末尾空行，归一化后重新通过；此前未暂存时的diff check不覆盖它们，首败保留。当前集成合入b7c4646，保留最新完整工程日志，最终内容检查189份Markdown/10Skill，不重复根功能测试。文档checkout无应用改动，已在确认发布和clean后清理；现有PR49自动接续集成文档合并，没有虚构新PR。
+
+### 2026-10-17：科研Skill文字导入边界与真实调用
+
+`acceptcat-2`从干净a6f877e / feature/research-question-catalog另建fix/skill-import-text-limits，源码db87e7906db719688f1f8837b91204617a7da28f。先读规定状态/日志/README/路线、检查Git与已有技能链路，选定普通references缺120,000字符校验及SKILL.md把YAML误计入正文的问题。旧代码六例失败后，增加共享正文/参考校验；原生普通/链接参考统一使用同一校验及带路径的400KB/UTF-8错误，不截断或执行脚本。正文仍唯一来自agents/skills，十项内容及授权不改。
+
+本地根ci54文件/675项、生产CLI/HTTP2、B0及生产隔离通过。随后补充一个HTTP/SQLite/ChatWorker边界，最终API定向14项：准确上限正文修订/读取/回退不改旧行；准确上限参考全文及尾标记进入合成模型、未选文字不入提示、成功记录与其他账号404；超限400且没有新增Skill。新增例在根全套之后运行，没有把根结果写为676。测试起初缺相对契约引用，以及API尾标记人工长度算错，均分别保留首次失败并修正夹具。
+
+最终原生11项，含普通与链接、文件夹与ZIP、中英文、UTF-8、400KB/900KB及参考字数、原件/原ZIP、取消/页面身份和固定绘图包所有原件回归。既有peer-review/hypothesis-generation/scientific-problem-selection三包66原件/41参考，与前次完整package、manifest、digest/ZIP逐字节一致，本机往返及不同账号拒绝通过。只用已核对固定公开包，未联网换HEAD、运行脚本或调用真实模型。客户端类型通过，原生默认composite检查出现既有imageClipboard TS6307，保留原错，以composite=false独立检查通过；不改无关tsconfig。
+
+本批不生成新安装版本、不部署API/worker/网页、不迁移、不改公共目录或Release；正文上限的线上修复必须下次前后端配套发布。桌面0.10.6和生产47c42ac / contract0.25 / chat1.12 / schema022沿用上批，未重新inspect，未读取真实科研/凭证。前批38771771667实际三平台success、38776266627两Linuxsuccess/Windowsfailure回执已独立保存，不把本轮本地通过当远端绿灯。证据.runtime/skill-import-limits-20261017，复现/发布边界见docs/development/skill-import-text-limits.md；产品README保持展示文档，不加入工程流水。
+
+分支通过命令级TLS1.2/HTTP1.1正常push成功，gh实际创建草稿PR50并附任务，base为feature/research-question-catalog；没有合入main。本批db87e79的Foundation checks 38930884416（run97）实际in_progress，不称远端三平台全通过。追加API用例后的API类型检查通过，文档内容190份Markdown/10Skill及暂存diff检查通过；未运行服务或启动用户客户端，仅root活动。

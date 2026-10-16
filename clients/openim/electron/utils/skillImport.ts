@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 import {
   parseImportedSkill,
+  validateImportedSkillText,
   safeSkillPath,
   type SkillFile,
   type SkillBundleManifest,
@@ -15,6 +16,18 @@ const AdmZip = createRequire(__filename)("adm-zip");
 const decoder = new TextDecoder("utf-8", { fatal: true });
 const MAX_FILES = 8000,
   MAX_BYTES = 100 * 1024 * 1024;
+function readSkillText(relative: string, data: Buffer) {
+  if (data.length > 400000)
+    throw Error(`技能文字文件“${relative}”超过 400 KB，未导入，请先拆分文件。`);
+  let text: string;
+  try {
+    text = decoder.decode(data);
+  } catch {
+    throw Error(`技能文字文件“${relative}”不是有效 UTF-8，请转换编码后重试。`);
+  }
+  if (relative !== "SKILL.md") validateImportedSkillText(relative, text);
+  return text;
+}
 type Entry = { path: string; size: number; read: () => Promise<Buffer> };
 // Follow only provided text documents. A link is never a download, a read
 // outside this selected package, or permission to run the linked file.
@@ -125,12 +138,12 @@ async function parsed(
   const textPaths = new Set(textual.map((e) => e.path));
   for (const e of scoped) {
     if (textPaths.has(e.path) && e.size > 400000)
-      throw Error("单个说明文件超过 400 KB。");
+      throw Error(`技能文字文件“${e.path}”超过 400 KB，未导入，请先拆分文件。`);
     const data = await e.read();
     if (data.length !== e.size) throw Error("技能文件已变化或 ZIP 长度损坏。");
     actualBytes += data.length;
     if (actualBytes > MAX_BYTES) throw Error("技能包实际解压超过 100 MB。");
-    if (textPaths.has(e.path)) files.push({ path: e.path, text: decoder.decode(data) });
+    if (textPaths.has(e.path)) files.push({ path: e.path, text: readSkillText(e.path, data) });
     contents.set(e.path, data);
     manifestFiles.push({
       path: e.path,
@@ -157,12 +170,9 @@ async function parsed(
     for (const target of linkedTextPaths(files[i]!)) {
       const data = contents.get(target);
       if (!data || textPaths.has(target)) continue;
-      if (data.length > 400000) throw Error("单个说明文件超过 400 KB。");
+      const text = readSkillText(target, data);
       if (textBytes + data.length > 900000)
         throw Error("技能说明和参考文字超过 900 KB，未导入，请先拆分技能。");
-      const text = decoder.decode(data);
-      if (text.length > 120000)
-        throw Error("单个参考文字超过 120,000 字符，未截断导入，请先拆分文件。");
       files.push({ path: target, text });
       textPaths.add(target);
       textBytes += data.length;
