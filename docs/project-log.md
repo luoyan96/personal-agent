@@ -805,3 +805,23 @@ managed worktree工具因线程cwd不在Git目录失败后，命令行在明确�
 本批不生成新安装版本、不部署API/worker/网页、不迁移、不改公共目录或Release；正文上限的线上修复必须下次前后端配套发布。桌面0.10.6和生产47c42ac / contract0.25 / chat1.12 / schema022沿用上批，未重新inspect，未读取真实科研/凭证。前批38771771667实际三平台success、38776266627两Linuxsuccess/Windowsfailure回执已独立保存，不把本轮本地通过当远端绿灯。证据.runtime/skill-import-limits-20261017，复现/发布边界见docs/development/skill-import-text-limits.md；产品README保持展示文档，不加入工程流水。
 
 分支通过命令级TLS1.2/HTTP1.1正常push成功，gh实际创建草稿PR50并附任务，base为feature/research-question-catalog；没有合入main。本批db87e79的Foundation checks 38930884416（run97）实际in_progress，不称远端三平台全通过。追加API用例后的API类型检查通过，文档内容190份Markdown/10Skill及暂存diff检查通过；未运行服务或启动用户客户端，仅root活动。
+
+### 2026-10-17：数据体检与申请书方法来源候选
+
+`acceptcat-3`先读AGENTS/状态/日志/产品README/路线，Git干净33e3aac，只有root活动；另建feature/research-data-catalog，目录源码839b13112ae1051718c45e307457066d3fa1de51，实际草稿PR51（base PR50分支）已附任务。不覆盖前批共享解析器修复、内置Skill正文或私人/团队授权。
+
+联网阅读原始库、固定源码、许可/依赖和实际讨论：Scientific Agent Skills HEAD a1043ef544e3a100c28e70a736b6cf32554d0677 / EDA1.4，MIT；Writer固定529b9f73ab4b48925027145800d7b49e96ccfd3c / research-grants1.3，MIT。50个文件Git blob/大小/SHA核对，14Python AST及关键I/O/可选载入审阅。实际整仓ZIP读到33,554,612字节超过32MiB后中止，失败留存，不用小目录绕过既有全包检查；EDAneeds_connector/installable=false，统计分析2.0同仓库/未验证科学环境留为候选，没有多放一个不可用入口。
+
+EDA Python3.12.14实际18次标准库CLI：合成6行、1缺失、中位数3/均值22、1对象跨split正确标记；中文TSV、2行前缀、JSON结构、重复键/NaN/非矩形表拒绝、Excel仅参考、URL/路径及输出覆盖拒绝。数据/源码SHA不变、标识符与金丝雀不输出；未装可选依赖、请求网络/模型、自动删异常/插补或声称全数据质量。token不等于匿名化，字段/汇总可能敏感；范围和实际输出都写入目录。
+
+申请书17原件/15参考含3模板与独立源码/原ZIP对应，私人原件存储往返/其他账号拒绝通过；0.10.6实际ASAR导入/解析模块（Node夹具、同版本YAML依赖）与新解析器完整package/manifest一致。根包9,893,431字节/SHA71ac931d618219cc1df8764483d3787925da9887f9f2edbdd6210d3661eb5859。首次夹具缺少旧模块YAML解析依赖失败保留，未改产品依赖。真实HTTP/SQLite/ChatWorker私装、本人绑定、完整正文与仅选核心结构/目标参考、回执及其他账号源码/使用记录404通过，合成模型不计科研质量。上游NIH模块预算误写$250K，官方为$25,000且有条件；目录明确错误、保留原件，并指出不含国自然当年指南，不称合规/经费/资助或自动提交工具。
+
+目录11项定向、根ci54文件/676项、生产2/B0/生产隔离通过。实际React/HTTP/SQLite/原生导入两组卡片/详情/版本/原文预览/取消零安装/待接入无入口通过，1536与1024截图查看，pageerror0；既有Antd/Router/findDOMNode警告保留。第一次截图在Antd准备动画期且搜索尚未Enter，保留原图后用实际opacity/动画条件与搜索提交补拍；没有把过渡帧当界面缺陷或仅填框当过滤成功。Browser技能未列出，沿frontend-testing-debugging用已安装Playwright与隔离Edge，无新依赖；桌面框架/SDK/IPC与固定公共下载是夹具。无前端组件修改，不重复客户端构建/发包。
+
+已授权Edge阿里云维护主页面仍显示原实例，点击远程连接后实际Workbench登录页过期，已markHandoff并异步请求重新登录；未尝试密码/验证码或扩大权限。独立原始ECS页保留，尚无服务器命令、备份、目录写入、镜像inspect/部署/重启/迁移。已在Git外准备两项公共JSON、发布脚本和传输校验：new-reviewed SHA2281c846d08eb46b0c5cee4fe19320d5c2331f23b593d9289b62af48b78b3622；先核对既有主机/镜像、只读一致性备份，保留原八项并并发重读后才调用原CLI。状态prepared_not_uploaded_waiting_for_login，不能称10项已经上线；后台仍沿上批47c42ac/contract0.25/chat1.12/schema022和八项记录，0.10.6兼容也不代表此刻可见。
+
+分支按命令级TLS1.2/HTTP1.1普通push，gh创建PR51并附任务，无main合并/公共Release/安装包。839b131的38934745489（run99）已开始，未计三平台全通过。协调读取PR50 db87e79的38930884416：两Linux成功，Windows旧personal-assistant迁移017→020测试5000ms超时，675/676，原始失败日志存Git外pr50-windows-failure.log；不放宽生产/测试时限、不反复重跑。后续前后端任务处理配套发布与该门槛，技能库任务可据实际32MiB阻碍规划子目录获取，不抢改其共享文件。
+
+证据.runtime/community-curation-20261017，详情docs/development/research-data-grant-catalog.md。根README保持产品展示，本批资料/脚本/模型输出不入Git；上线结果须登录恢复后再补记。
+
+收尾：source839b131 / 38934745489最新实际两Linuxsuccess、Windowsin_progress，回执source-ci-snapshot.json保留，未称全通过。隔离Node36608/44052按可执行文件与完整server.mjs/vite.mjs命令行逐一核对后停止，4786/4787无监听；只停止本轮自建进程。维护页URL仍为阿里云登录页并再次markHandoff，没有后台命令或线上发布。最终文档检查191Markdown/10Skill、暂存diff检查通过，分支保留供登录后继续。
