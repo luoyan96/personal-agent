@@ -2,6 +2,16 @@
 
 更新日期：2026-10-17（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 本轮前后端维护：资料库原件下载可靠性（待配套发版）
+
+`acceptcat`，`fix/library-original-download` 接续PR51 / 60bd743；产品源码 **9d08fa30d870b0ee8cc20700000a02bb85868c52**，[草稿PR52](https://github.com/luoyan96/personal-agent/pull/52)已附任务。资料库现在按所选不可变版本核对响应类型、10MiB/实际大小及SHA256后才请求保存，提供停止、重试和明确版本提示；切换版本/来源/账号/面板取消旧读取，晚结果不保存。复用已有任务材料Blob保存与文件名清理，JSON/Markdown/其他合法原件类型保持。实际GET仍由服务重新授权，已保存副本不能远程收回。
+
+旧实现新例6/8失败保留；客户端定向25项、资料API真实HTTP/SQLite10项、客户端类型通过。实际React9组流程与1536/1024实拍通过，pageerror0、无未解释console错误；实际Electron22.3.27隔离窗口v2/v1落盘SHA/中文名、模拟系统取消/重试通过，外部窗口请求0。夹具首败/登出401/复用登录限流429保留，最终新临时库验证，不放宽产品限制。只改桌面，不重复共享全套或使用真实用户资料/模型；[实现与界面QA](development/library-original-download.md)，证据 `.runtime/library-download-20261017`。
+
+本轮保留可审阅修复，**未新打包、部署、迁移或发布公共Release**，现有试用包仍0.10.6，旧安装不会包含本轮变化。下载本身兼容现有API；集成分支继承PR50解析器待桌面/API配套发版，维护登录请求仍待回复，不重复询问。PR51两项目录描述也仍待原运营流程发布。后台47c42ac / contract0.25 / chat1.12 / schema022沿用记录，本轮未重新inspect线上或读取账号资料。根README继续保持产品展示。
+
+协调读取上批839b131 / Foundation38934745489已三平台成功，回执 `previous-source-ci-final.json` 保留；PR50原Windows迁移超时事实不抹去、不放宽时限或重跑。PR52实现/文档头3ab1f0a的38938558378初次查询三平台运行，未计全部通过；后续文档头独立追踪。4796/4797隔离服务按完整命令行核对后已关闭；无其他文件被覆盖。
+
 ## 最新广场候选：申请书结构与数据体检（待维护登录发布）
 
 `acceptcat-3`，`feature/research-data-catalog` 接续PR50 / 33e3aac，目录源码 **839b13112ae1051718c45e307457066d3fa1de51**，[草稿PR51](https://github.com/luoyan96/personal-agent/pull/51)已附任务。本地种子10项/6仓库：Writer申请书目标/路线/里程碑为可确认私装文字流程（Skill1.3、MIT、17原件/15参考）；Scientific Agent Skills数据体检为待接入（Skill1.4、MIT、13Python文件），实际全仓库ZIP超过32MiB且没有脚本运行时，无安装入口。明确中国申报需本次指南，提示上游NIH模块步长错误；数据体检不夸大格式、匿名化或因果结论。

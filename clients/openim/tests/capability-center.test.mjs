@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import vm from "node:vm";
 import ts from "typescript";
-import { ErrorResponse } from "@research-agent-platform/contracts";
 import { ContactProfileInput } from "@research-agent-platform/contracts";
 async function load(file, substitutes = {}, globals = {}) {
   const source = await fs.readFile(new URL(`../src/research/${file}`, import.meta.url), "utf8");
@@ -40,16 +39,9 @@ test("six research starter configurations stay valid editable text profiles with
   }
   assert.equal(helpers.capabilityCategory({ displayName: "图表构思助手", profile: profiles.agentStarters.find(item => item.id === "figure-planning").profile }), "图表与可视化");
 });
-class ApiError extends Error { constructor(code, status, message) { super(message); this.code = code; this.status = status; } }
-let response;
-const library = await load("research-library-api.ts", { "@research-agent-platform/contracts": { ErrorResponse }, "./api": { ResearchApiError: ApiError }, "./request-deadline": { withRequestDeadline: fn => fn(new AbortController().signal) } }, { AbortController, fetch: async () => response });
-test("original downloads return binary and reject denied sources before producing a file", async () => {
-  const blob = new Blob(["original bytes"], { type: "application/octet-stream" });
-  response = { ok: true, blob: async () => blob };
-  assert.equal(await (await library.readResearchFileBytes("source_synthetic", 2)).text(), "original bytes");
-  response = { ok: false, status: 403, json: async () => ({ error: { code: "FORBIDDEN", message: "denied", requestId: "synthetic" } }) };
-  await assert.rejects(library.readResearchFileBytes("source_synthetic", 2), error => error.status === 403 && /未获准/.test(error.message));
-});
+// Original-download transport is covered by library-original-download.test.mjs.
+const library = await load("research-library-api.ts");
+
 test("empty and oversized uploads fail before reading local bytes; unknown assets remain opaque originals", async () => {
   await assert.rejects(library.fileAsBase64({ size: 0 }), /非空/);
   await assert.rejects(library.fileAsBase64({ size: 10485761 }), /10 MiB/);

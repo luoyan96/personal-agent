@@ -825,3 +825,19 @@ EDA Python3.12.14实际18次标准库CLI：合成6行、1缺失、中位数3/均
 证据.runtime/community-curation-20261017，详情docs/development/research-data-grant-catalog.md。根README保持产品展示，本批资料/脚本/模型输出不入Git；上线结果须登录恢复后再补记。
 
 收尾：source839b131 / 38934745489最新实际两Linuxsuccess、Windowsin_progress，回执source-ci-snapshot.json保留，未称全通过。隔离Node36608/44052按可执行文件与完整server.mjs/vite.mjs命令行逐一核对后停止，4786/4787无监听；只停止本轮自建进程。维护页URL仍为阿里云登录页并再次markHandoff，没有后台命令或线上发布。最终文档检查191Markdown/10Skill、暂存diff检查通过，分支保留供登录后继续。
+
+## 2026-10-17：acceptcat 资料库原件校验与切换取消
+
+前后端维护从干净feature/research-data-catalog / 60bd743接续，先读AGENTS、状态、日志、产品README及路线；检查已有交付避免重做0.10.6任务材料下载。新分支fix/library-original-download，产品源码9d08fa30d870b0ee8cc20700000a02bb85868c52，仅六项桌面文件，根README与共享/内置Skill/API实现/权限不变。
+
+复现资料库response.blob缺少原件校验、版本切换不取消、主动停止/保存状态缺失。按明确版本读取，匹配类型、实际大小/10MiB、SHA256后才请求保存，继续支持JSON/Markdown/任意合法原件。独立下载组件保留重试、版本状态和停止；版本、来源、账号、路由或面板变化时取消旧读取并阻止晚保存。复用任务附件Blob保存/文件名清理，只称已请求保存。GET实时授权保持，不宣称可撤销已保存副本。
+
+新检查8项旧代码6失败/2通过，baseline.log保留；最终客户端25项、API资料库实际HTTP/SQLite10项、客户端类型通过。只改桌面，未重复本地根CI。实际React/API/SQLite9组验证、6次Edge原件保存和1536/1024实拍通过；成功/历史/503重试/损坏或HTML零保存/停止后重试/换版本、来源和账号/收回范围404/撤回404。pageerror0，无框架覆盖层或未解释console error；已有Antd/Router兼容警告和主动503/404保留。实际Electron22.3.27隔离窗口v2/v1原文落盘SHA/中文名一致，模拟原生取消再重试通过，外部窗口请求0；未使用现装客户端或真实模型/私人资料。
+
+首次图标辅助名导致定位失败后设为装饰；Antd隐藏input点击被覆盖，改用实际容器；模拟登出未卸载旧面板的401、累计测试登录429均保留，修正夹具生命周期、使用新临时数据库完成最终验证，不弱化限流/忽略未知错误。4796/4797各Node PID35636/17516已按完整命令行和可执行文件核对后停止，Electron验证窗口关闭。
+
+本轮源码尚未安装包/上线；现有桌面0.10.6与后台47c42ac/contract0.25/chat1.12/schema022沿用记录，不重新inspect用户资料。下载接口已有线上兼容，但继承PR50解析器须桌面/API配套发版；维护登录仍待之前异步请求，不重复问权限，不单换桌面宣称完整修复。PR51两项新来源也未擅自发布。无新迁移、镜像、公共Release、自动更新源或用户客户端重启。先保留草稿PR，再在登录恢复后按既定配套流程发版。
+
+上批839b131的38934745489本轮实际查询三平台success，公共回执保留previous-source-ci-final.json；PR50原迁移超时失败记录不抹去/不重跑。证据Git外.runtime/library-download-20261017，详情docs/development/library-original-download.md；截图与合成原件不入Git，不变更公共/团队/私人范围。
+
+PR交接：正常push并创建、附加草稿PR52 https://github.com/luoyan96/personal-agent/pull/52，base为feature/research-data-catalog。实现/验证文档头3ab1f0acf56bd0f88136f0fd396372326f38cb31实际远端Foundation38938558378三平台运行中，pr-final.json保留；不等待/反复轮询或称全部通过。此后只有交接文档变化，未再次运行已通过的产品检查，工作区无其他贡献者改动。

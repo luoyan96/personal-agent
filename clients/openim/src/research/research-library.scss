@@ -18,6 +18,8 @@
 .research-source-facts { margin: 18px 0; > div { display: grid; grid-template-columns: 70px minmax(0,1fr); gap: 12px; margin: 10px 0; } dt { color: #758398; } dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; } .research-source-hash { font-family: monospace; font-size: 10px; color: #718097; } }
 .research-library-empty { padding: 40px 20px; text-align: center; color: #758398; h2, h3 { color: #33475c; font-weight: 600; margin: 0 0 9px; } p { line-height: 1.7; } }
 .research-library-muted { font-size: 12px; color: #718097; line-height: 1.75; }
+.research-original-download { margin-bottom: 12px; .research-library-actions { margin-bottom: 8px; } p { margin: 8px 0; overflow-wrap: anywhere; } }
+.research-download-error { font-size: 12px; line-height: 1.75; color: #b42318; }
 .research-library-form { display: flex; flex-direction: column; gap: 17px; padding: 12px 0; > label { display: flex; flex-direction: column; gap: 7px; font-size: 13px; font-weight: 500; } p, small { color: #718097; font-size: 12px; line-height: 1.75; } > .ant-btn { align-self: end; } input[type="file"] { padding: 12px; border: 1px dashed #c7d2df; border-radius: 10px; font-size: 12px; } }
 .research-search-results > button { width: 100%; display: block; padding: 17px 12px; background: #fff; text-align: left; border-bottom: 1px solid #e6ebf2; border-radius: 8px; strong, small { display: block; } small { font-size: 11px; color: #78859a; margin: 8px 0; } p { white-space: pre-wrap; color: #42546b; font-size: 13px; line-height: 1.75; } &:hover { background: #f5f8fb; } }
 .research-library-withdraw { padding-top: 20px; }

@@ -1,5 +1,5 @@
 import { Alert, App, Button, Input, Modal, Select, Segmented } from "antd";
-import { FileTextOutlined, FolderOutlined, UploadOutlined, DownloadOutlined } from "@ant-design/icons";
+import { FileTextOutlined, FolderOutlined, UploadOutlined } from "@ant-design/icons";
 import { useRef, useState } from "react";
 import type { ResponseFor } from "@research-agent-platform/contracts";
 import { researchApi, ResearchApiError } from "./api";
@@ -8,7 +8,8 @@ import { useResearchStore } from "./store";
 import { usePersonalOperation } from "./usePersonalOperation";
 import { workspaceAvailability } from "./workspace-availability";
 import { withRequestDeadline } from "./request-deadline";
-import { readResearchFileBytes, researchScopeLabels } from "./research-library-api";
+import { researchScopeLabels } from "./research-library-api";
+import { ResearchFileDownload } from "./ResearchFileDownload";
 import "./research-library.scss";
 import { ZoteroImport } from "./ZoteroImport";
 import { ResearchFileImport as FileImport } from "./ResearchFileImport";
@@ -72,15 +73,6 @@ function SourceDetail({ id, collection, onVersion, onChanged, onClose }: { id: s
   const operation = usePersonalOperation(true, `source-detail:${id}`);
   const { modal } = App.useApp();
   const data = read.data?.data, source = data?.file, selectedVersion = data?.versions.find(v => v.version === (version ?? source?.version));
-  const download = async () => {
-    if (!source || !selectedVersion || busy) return;
-    const { isCurrent } = operation.capture(); setBusy(true); setError("");
-    try {
-      const blob = await readResearchFileBytes(id, selectedVersion.version); if (!isCurrent()) return;
-      const url = URL.createObjectURL(blob), link = document.createElement("a"); link.href = url; link.download = selectedVersion.filename; link.click(); setTimeout(() => URL.revokeObjectURL(url), 30000);
-    } catch (error) { if (isCurrent()) setError(failureText(error)); }
-    finally { if (isCurrent()) setBusy(false); }
-  };
   const withdraw = async () => {
     if (!source || busy) return;
     const { isCurrent } = operation.capture(); setBusy(true); setError("");
@@ -96,7 +88,8 @@ function SourceDetail({ id, collection, onVersion, onChanged, onClose }: { id: s
       <h4><FileTextOutlined /> {selectedVersion.filename}</h4>
       <Select aria-label="来源版本" value={selectedVersion.version} options={data?.versions.map(v => ({ value: v.version, label: `v${v.version}${v.version === source.version ? " · 当前版本" : ""}` }))} onChange={setVersion} />
       <dl className="research-source-facts"><div><dt>资料范围</dt><dd>{researchScopeLabels[collection.scope]}</dd></div><div><dt>导入时间</dt><dd>{new Date(selectedVersion.createdAt).toLocaleString("zh-CN")}</dd></div><div><dt>原件大小</dt><dd>{(selectedVersion.byteLength / 1024).toFixed(1)} KiB</dd></div><div><dt>SHA256</dt><dd className="research-source-hash">{selectedVersion.sha256}</dd></div></dl>
-      <div className="research-library-actions"><Button icon={<DownloadOutlined />} type="primary" loading={busy} onClick={() => void download()}>下载原始文件</Button>{source.owned && <Button icon={<UploadOutlined />} disabled={busy} onClick={() => onVersion(source)}>导入新版本</Button>}</div>
+      <ResearchFileDownload id={id} version={selectedVersion} disabled={busy || source.status !== "available" || collection.status !== "available"} />
+      {source.owned && <Button icon={<UploadOutlined />} disabled={busy} onClick={() => onVersion(source)}>导入新版本</Button>}
       <section><h3>基本信息</h3><dl className="research-source-facts"><div><dt>标题</dt><dd>{selectedVersion.metadata.title || "未填写"}</dd></div><div><dt>作者</dt><dd>{selectedVersion.metadata.authors.join("、") || "未填写"}</dd></div><div><dt>年份 / DOI</dt><dd>{[selectedVersion.metadata.year, selectedVersion.metadata.doi].filter(Boolean).join(" / ") || "未填写"}</dd></div><div><dt>标签</dt><dd>{selectedVersion.metadata.tags.join("、") || "未填写"}</dd></div><div><dt>备注</dt><dd>{selectedVersion.metadata.note || "未填写"}</dd></div></dl></section>
       <section><h3>实际读取范围</h3><p>{selectedVersion.extraction === "text_extracted" ? `已提取 ${selectedVersion.pageCount} 页 / ${selectedVersion.characterCount} 字符。检索结果只引用实际提取片段。` : selectedVersion.extraction === "original_only" ? "仅保存原始文件，未提取文字或执行内容。" : "文字提取未完成，原始文件仍可下载。"}</p>{selectedVersion.extractionReason && <p className="research-library-muted">{selectedVersion.extractionReason}</p>}{selectedVersion.version === source.version && data?.preview.map((excerpt, index) => <div key={index}><p className="research-library-muted">第 {excerpt.citation.pageNumber} 页 · 字符 {excerpt.citation.start}–{excerpt.citation.end} · v{excerpt.citation.version}</p><pre className="research-source-preview">{excerpt.text}</pre></div>)}{selectedVersion.version !== source.version && <p className="research-library-muted">历史版本可下载原件；当前预览仅展示最新版本。</p>}</section>
       {source.owned && <Button danger disabled={busy} onClick={() => modal.confirm({ title: "撤回此来源？", content: "后续检索与 Agent 使用将停止读取此来源。", onOk: withdraw })}>撤回来源</Button>}
