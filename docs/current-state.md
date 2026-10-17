@@ -2,6 +2,18 @@
 
 更新日期：2026-10-18（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新技能库与Windows交付：0.10.10，素材导入范围与恢复
+
+`acceptcat-2`，`release/acceptcat-0.10.10` 接续PR58 / da6ec83，产品和包源码 **24858567a318ab4302f53eead42713e1405dea1f**。Skill原件加入资料库改用现有文件导入：选集合/读原件只准备，确认后才上传；保留原路径/修订/SHA256、首次快照/key的未知结果重试、已确认结果分流和范围变化阻断。读取期间锁定目标，换账号/会话/Skill/面板清除迟到结果；清单失败不再显示无原件，普通本机文件导入保持。[实现与QA](development/skill-material-import.md)。
+
+客户端22项/0跳过、类型、真实React/HTTP/SQLite/本机原件九组及窄窗/普通导入专项通过；服务器保存后丢响应重试仅一份来源，私人变公开旧窗口零写入、B私人/本机原件拒绝而团队/公开按范围可读。1536/1024最终实拍已看，pageerror0、无未解释错误；夹具/截图动画首败和既有警告保留。无真实模型或生产私人材料，未修改共享/内置Skill、不重复根全套；前批PR58三平台SUCCESS本轮已读回。证据Git外 `.runtime/skill-material-import-20261018`。
+
+**Windows x64 NSIS0.10.10已交付桌面** `C:/Users/luo/Desktop/AcceptCat_0.10.10.exe` 及说明，**87,396,801字节** / SHA256 **5f046ace333612dbf3c8d757364c14fad7800b131c8a226d6f1bd2c99e78a2e8**。55运行依赖/16生产JS/实际安装器EXE及ASAR一致、隔离隐藏原生桥及renderer稳定启动通过，既有electron-log警告保留。未代安装或关闭用户窗口，旧包/数据保留；[交付](deployment/acceptcat-0.10.10.md)。
+
+无需新后台接口/迁移；未部署API/worker、发布目录、公共Release或更新源，实际latest仍v0.6.0已核实。PR50后台边界和三项目录运营仍待既有维护登录，本轮不重复请求或新inspect生产；旧47c42ac/0.25/1.12/022仅沿用记录。仅root活动，旧预览未动；本轮4856/4857自建服务核对关闭。
+
+[草稿PR59](https://github.com/luoyan96/personal-agent/pull/59)已附任务，首读e20c155的三平台Foundation均进行中，未称全部通过；4856/4857 Node26636/29248已按完整命令核对关闭，回执cleanup.json。
+
 ## 最新Windows交付：0.10.9，真人与Agent跨设备名片
 
 `acceptcat`，`release/acceptcat-0.10.9` 接续PR57/19acbe3，最终产品/打包源码 **a44e4471262757fe0df8a7618111a82282b53ee5**。修复原名片链接实际指向桌面随机loopback地址的问题，改为携带真实服务origin/唯一Contact ID的版本化名片口令；通讯录可整段粘贴、查找真人/Agent，显示服务端实际资料，同名不猜目标。其他服务先拒绝、不外访或自动切服务；真人和私人Agent仍分别申请/审批，收件人不获管理权。复制失败全选、关闭前晚结果阻断；窄窗弹窗居中及内部滚动，修复底部裁切。详见[实现](development/portable-contact-cards.md)。

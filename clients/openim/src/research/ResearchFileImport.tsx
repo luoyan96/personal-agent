@@ -12,6 +12,11 @@ import {
 type Collection = ResponseFor<"researchCollections">["data"][number];
 type Source = ResponseFor<"researchFiles">["data"][number];
 type ImportBody = RequestFor<"importResearchFile">["body"];
+export type PreparedResearchFile = {
+  file: File;
+  note: string;
+  tags: string[];
+};
 const message = (error: unknown) =>
   error instanceof Error ? error.message : "导入未完成，请重试。";
 const split = (value: string) =>
@@ -37,19 +42,23 @@ function sameScope(a: Collection, b: Collection) {
 export function ResearchFileImport({
   collection,
   source,
+  preparedFile,
   onClose,
   onSaved,
 }: {
   collection: Collection;
   source?: Source;
+  preparedFile?: PreparedResearchFile;
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
-  const [file, setFile] = useState<File>(),
+  const [file, setFile] = useState<File | undefined>(preparedFile?.file),
     [title, setTitle] = useState(source?.metadata.title || "");
   const [authors, setAuthors] = useState(source?.metadata.authors.join("，") || ""),
-    [tags, setTags] = useState(source?.metadata.tags.join("，") || ""),
-    [note, setNote] = useState(source?.metadata.note || "");
+    [tags, setTags] = useState(
+      source?.metadata.tags.join("，") ?? preparedFile?.tags.join("，") ?? "",
+    ),
+    [note, setNote] = useState(source?.metadata.note ?? preparedFile?.note ?? "");
   const [busy, setBusy] = useState(false),
     busyRef = useRef(false);
   const [error, setError] = useState(""),
@@ -206,12 +215,18 @@ export function ResearchFileImport({
         </p>
         <label>
           原始文件
-          <input
-            type="file"
-            aria-label="导入原始文件"
-            disabled={disabled}
-            onChange={(e) => setFile(e.target.files?.[0])}
-          />
+          {preparedFile ? (
+            <strong>
+              {preparedFile.file.name} · {preparedFile.file.size} 字节
+            </strong>
+          ) : (
+            <input
+              type="file"
+              aria-label="导入原始文件"
+              disabled={disabled}
+              onChange={(e) => setFile(e.target.files?.[0])}
+            />
+          )}
         </label>
         <p className="research-library-muted">
           含文字 PDF、TXT、Markdown、CSV

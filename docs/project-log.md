@@ -912,3 +912,18 @@ acceptcat前后端维护，release/acceptcat-0.10.9接续PR57/19acbe3，最终�
 首轮旧布局构建按完整进程树核对后中止，原日志/进程记录保留，最终从a44e447重新打包。真实Windows0.10.9 NSIS/55运行依赖/16生产JS/新行为/旧功能/猫素材/无QA、实际安装器EXE/ASAR一致、隔离隐藏原生桥和renderer稳定启动通过；electron-log重复initialize原警告保持。安装器87,396,864字节/SHA256 5719cd499ebd6eb79ba5c508d2600056a824e11ce43ffb3ad3036139ef5313be，桌面AcceptCat_0.10.9.exe和安装说明交付，未代安装/关闭用户窗口，旧文件/账号/目录保持。仅关闭自建4846/4847 Node32448/35008，cleanup.json留证，旧预览未动。
 
 无需新后台接口/迁移；未部署API/worker、发布目录、公共Release或更新源，实际latest本轮重新核实v0.6.0。PR50后台边界和三项目录运营仍待之前请求的维护登录，不重复提问，旧生产47c42ac/0.25/1.12/022仅沿用记录，本轮未inspect私人后台。实现/验证见docs/development/portable-contact-cards.md和docs/deployment/acceptcat-0.10.9.md，证据.runtime/contact-cards-20261018；仅root活动，未覆盖其他任务。
+
+
+## 2026-10-18 acceptcat-2：Skill素材导入范围与恢复，Windows0.10.10
+
+开始读取AGENTS、状态、日志、README和roadmap，Git release/acceptcat-0.10.9 / da6ec83干净，仅root活动。本轮先fix/skill-material-import，出包时改名release/acceptcat-0.10.10；产品固定 **24858567a318ab4302f53eead42713e1405dea1f**，没有覆盖共享/来源/其他任务。
+
+旧目标下拉在素材读取期间可改，闭包目标与界面范围可能不同；原素材上传绕开既有文件恢复流程，清单失败又显示“无本机原件”。改为ref锁+明确操作范围，先准备后复用ResearchFileImport，预备File不可替换，路径/修订/哈希预填；首次快照/key/已确认来源/未知结果重试及范围冲突均复用。换账号/会话/技能/面板清旧状态，所有成功/失败回调核对当前操作，旧finally不解锁新操作；普通导入保持。agents/skills内容、API/契约/数据库均未改。
+
+22项定向/0跳过及类型通过；真实React/API/SQLite/SkillBundleStore九组和窄窗/普通文件专项通过，含服务器已写但响应丢失相同请求重试最终一份来源、私人集合转公开旧提交阻断零新增、B私人与本机原件拒绝而团队/公开可读、准备后换账号不上传与预览迟到清除。1536/1024最终截图已看，窄窗620×641/726px确认可达，pageerror0、无框架覆盖/未解释console。未用模型或生产材料。只客户端不重复根全套，前批PR58三平台SUCCESS本轮读回。Browser plugin absent，独立Edge/已有Playwright；初始fixture服务目录/缺proxy、重复条目、图标exactname定位、过渡动画截图保留，修夹具未放宽产品权限/限流；网络ERR_FAILED/409/登出401/私人404为对应故障注入/预期。
+
+实际科研Vite/55依赖/Electron22.3.27/NSIS/blockmap通过；16生产JS逐字节、实际NSIS payload EXE/ASAR一致、隔离隐藏原生桥/renderer稳定启动通过；既有electron-log initialize警告保留。安装器 **87,396,801字节/SHA256 5f046ace333612dbf3c8d757364c14fad7800b131c8a226d6f1bd2c99e78a2e8** 已复制桌面AcceptCat_0.10.10.exe并附说明，没有代安装/关闭现装窗口，旧包/数据保持。详见docs/development/skill-material-import.md、docs/deployment/acceptcat-0.10.10.md，证据Git外.runtime/skill-material-import-20261018。
+
+无需后台升级/迁移，未部署API/worker、运营目录、公共Release或更新源，actual latest仍v0.6.0已核实。原生产47c42ac/0.25/1.12/022仅沿用记录，本轮不新inspect私人后台。PR50解析器配套与三项目录仍待旧维护登录，不重复请求；只核对关闭本轮QA4856/4857完整Node命令，旧预览未动。下一步继续获准真实课题材料的使用质量与许可副本管理，工具执行仍需独立适配。
+
+本批草稿PR59已创建并附任务：https://github.com/luoyan96/personal-agent/pull/59；首读e20c155三平台Foundation均IN_PROGRESS，回执pr-final.json，不称本批远端全过。自建4856/4857 Node26636/29248已核对完整命令并关闭，cleanup-before.json/cleanup.json留证，旧预览保持。

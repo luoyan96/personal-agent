@@ -1,6 +1,6 @@
 import { Alert, Button, Input, Modal, Select } from "antd";
-import { useState } from "react";
-import type { InstalledSkill } from "@research-agent-platform/contracts";
+import { useLayoutEffect, useRef, useState } from "react";
+import type { InstalledSkill, ResponseFor } from "@research-agent-platform/contracts";
 import type {
   SkillBundleLocator,
   SkillBundleManifest,
@@ -10,6 +10,7 @@ import { useResearchRead } from "./useResearchRead";
 import { useResearchStore } from "./store";
 import { researchApi } from "./api";
 import { usePersonalOperation } from "./usePersonalOperation";
+import { ResearchFileImport, type PreparedResearchFile } from "./ResearchFileImport";
 
 export async function localSkillLocator(
   skill: InstalledSkill,
@@ -26,6 +27,7 @@ export async function localSkillLocator(
 export function SkillMaterials({ skill }: { skill: InstalledSkill }) {
   const generation = useResearchStore((s) => s.generation),
     memberId = useResearchStore((s) => s.actor?.member.id);
+  const native = !!window.electronAPI?.skillBundleManifest;
   const read = useResearchRead(
     async () => {
       const locator = await localSkillLocator(skill, memberId!);
@@ -35,7 +37,7 @@ export function SkillMaterials({ skill }: { skill: InstalledSkill }) {
       };
     },
     `skill-materials:${skill.id}:${skill.revision}:${skill.digest}`,
-    !!skill.owned && !!memberId && !!window.electronAPI?.skillBundleManifest,
+    !!skill.owned && !!memberId && native,
   );
   if (!skill.owned) return null;
   return (
@@ -48,16 +50,20 @@ export function SkillMaterials({ skill }: { skill: InstalledSkill }) {
           action={<Button onClick={read.refresh}>重试</Button>}
         />
       )}
-      {read.data?.manifest ? (
+      {!native ? (
+        <p className="skill-muted">请在导入此技能的 Windows 桌面端查看本机原件。</p>
+      ) : read.data?.manifest ? (
         <MaterialBrowser
           key={`${generation}:${skill.id}:${skill.revision}:${read.data.manifest.bundleDigest}`}
           locator={read.data.locator}
           manifest={read.data.manifest}
         />
-      ) : (
+      ) : read.data && !read.error ? (
         <p className="skill-muted">
           此修订尚无本机原件。旧版安装和授权文字副本只有说明；重新导入完整包后可浏览素材。本机原件不会随技能授权共享。
         </p>
+      ) : (
+        !read.error && <p role="status">正在读取本机原件清单…</p>
       )}
     </section>
   );
@@ -79,7 +85,25 @@ function MaterialBrowser({
     [busy, setBusy] = useState(false);
   const [upload, setUpload] = useState(false),
     [collectionId, setCollectionId] = useState<string>();
-  const operation = usePersonalOperation(true, "skill-material-library");
+  const [importing, setImporting] = useState<{
+    collection: ResponseFor<"researchCollections">["data"][number];
+    preparedFile: PreparedResearchFile;
+  }>();
+  const flight = useRef<symbol>();
+  const operation = usePersonalOperation(
+    true,
+    `skill-material-library:${locator.accountKey}:${locator.skillId}:${locator.revision}:${locator.digest}:${manifest.bundleDigest}`,
+  );
+  useLayoutEffect(() => {
+    flight.current = undefined;
+    setBusy(false);
+    setStatus("");
+    setFile(undefined);
+    setPreview(undefined);
+    setUpload(false);
+    setImporting(undefined);
+    setCollectionId(undefined);
+  }, [operation.scope]);
   const collections = useResearchRead(
     (signal) =>
       researchApi("researchCollections", {
@@ -103,28 +127,35 @@ function MaterialBrowser({
       (category === "all" || f.category === category) &&
       f.path.toLowerCase().includes(search.toLowerCase()),
   );
-  async function action(fn: () => Promise<void>) {
-    if (busy) return;
+  async function action(fn: (isCurrent: () => boolean) => Promise<void>) {
+    if (flight.current) return;
     const { isCurrent } = operation.capture();
+    if (!isCurrent()) return;
+    const ticket = Symbol();
+    flight.current = ticket;
     setBusy(true);
     setStatus("");
     try {
-      await fn();
+      await fn(isCurrent);
     } catch (error) {
       if (isCurrent())
         setStatus(error instanceof Error ? error.message : "素材读取失败。");
     } finally {
-      if (isCurrent()) setBusy(false);
+      if (flight.current === ticket) {
+        flight.current = undefined;
+        if (isCurrent()) setBusy(false);
+      }
     }
   }
   async function inspect(selected: SkillBundleFile) {
-    setFile(selected);
-    setPreview(undefined);
-    await action(async () => {
+    await action(async (isCurrent) => {
+      setFile(selected);
+      setPreview(undefined);
       const result = await window.electronAPI!.readSkillBundleAsset(
         locator,
         selected.path,
       );
+      if (!isCurrent()) return;
       if (/^image\/(png|jpeg|webp|gif)$/.test(result.mediaType))
         setPreview({ image: `data:${result.mediaType};base64,${result.base64}` });
       else if (
@@ -140,38 +171,29 @@ function MaterialBrowser({
     });
   }
   async function save(relative: string) {
-    await action(async () => {
+    await action(async (isCurrent) => {
       const result = await window.electronAPI!.saveSkillBundleAsset(locator, relative);
+      if (!isCurrent()) return;
       setStatus(result.saved ? "原件已保存。" : "已取消另存。");
     });
   }
-  async function addToLibrary() {
+  async function prepareLibraryImport() {
     if (!file || !collection || file.size > 10 * 1024 * 1024) return;
-    const { isCurrent } = operation.capture();
-    await action(async () => {
+    await action(async (isCurrent) => {
       const value = await window.electronAPI!.readSkillBundleAsset(locator, file.path);
       if (!isCurrent()) return;
-      await researchApi("importResearchFile", {
-        params: { id: collection.id },
-        body: {
-          filename: file.path.split("/").pop()!,
-          mediaType: value.mediaType,
-          contentBase64: value.base64,
-          expectedCollectionVersion: collection.version,
-          metadata: {
-            title: "",
-            authors: [],
-            year: null,
-            doi: null,
-            tags: ["Skill素材"],
-            note: `Skill原路径：${file.path}\n修订：${locator.revision}\nSHA256：${value.sha256}`,
-          },
+      const bytes = Uint8Array.from(atob(value.base64), (c) => c.charCodeAt(0));
+      setImporting({
+        collection,
+        preparedFile: {
+          file: new File([bytes], file.path.split("/").pop()!, {
+            type: value.mediaType,
+          }),
+          tags: ["Skill素材"],
+          note: `Skill原路径：${file.path}\n修订：${locator.revision}\nSHA256：${value.sha256}`,
         },
       });
-      if (!isCurrent()) return;
       setUpload(false);
-      setStatus(`原件已保存到“${collection.name}”。`);
-      await collections.refresh();
     });
   }
   return (
@@ -179,7 +201,7 @@ function MaterialBrowser({
       <p>
         {manifest.files.length} 个原件 ·{" "}
         {(manifest.totalBytes / 1024 / 1024).toFixed(1)} MiB ·
-        本机保存，未上传素材或执行脚本
+        原件保存在本机，确认导入后才上传选定文件
       </p>
       <p className="skill-muted">
         资料位置：AcceptCat 用户数据目录 /
@@ -277,24 +299,29 @@ function MaterialBrowser({
       {status && <Alert type="info" message={status} />}
       <Modal
         open={upload}
-        title="将选定原件加入科研资料库"
+        title="选择素材的目标资料集合"
+        centered
+        styles={{ body: { maxHeight: "calc(100vh - 180px)", overflowY: "auto" } }}
+        closable={!busy}
+        maskClosable={!busy}
+        keyboard={!busy}
         onCancel={() => {
-          if (!busy) setUpload(false);
+          if (!flight.current) setUpload(false);
         }}
         footer={
           <Button
             type="primary"
             loading={busy}
             disabled={!collection}
-            onClick={() => void addToLibrary()}
+            onClick={() => void prepareLibraryImport()}
           >
-            确认上传此原件
+            继续填写资料
           </Button>
         }
       >
         <p>
           {file?.path} · {file?.size}{" "}
-          字节。此操作将选定原件发送到科研服务器，仅保存原始素材，不执行脚本或表示已理解图像。
+          字节。下一步可核对原件与资料范围，确认导入后才发送到科研服务器。
         </p>
         {collections.error && (
           <Alert
@@ -307,6 +334,7 @@ function MaterialBrowser({
           aria-label="技能素材的目标资料集合"
           placeholder="选择自己的资料集合"
           value={collectionId}
+          disabled={busy}
           onChange={setCollectionId}
           options={collections.data?.data
             .filter((c) => c.owned && c.status === "available")
@@ -333,6 +361,16 @@ function MaterialBrowser({
         )}
         {status && <Alert type="info" message={status} />}
       </Modal>
+      {importing && (
+        <ResearchFileImport
+          collection={importing.collection}
+          preparedFile={importing.preparedFile}
+          onClose={() => setImporting(undefined)}
+          onSaved={async () => {
+            setStatus(`原件已保存到“${importing.collection.name}”。`);
+          }}
+        />
+      )}
     </>
   );
 }
