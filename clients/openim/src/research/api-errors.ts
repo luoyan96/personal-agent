@@ -4,10 +4,10 @@ type ValidationIssue = { path: readonly PropertyKey[]; code?: string };
 export function validationMessage(issues: readonly ValidationIssue[]): string {
   const field = issues[0]?.path.at(-1);
   if (field === "username")
-    return "用户名需为 1–100 个字符，只能包含字母、数字、下划线和连字符。";
+    return "AcceptCat 号需为 1–100 个字符，只能包含字母、数字、下划线和连字符。";
   if (field === "password") return "密码至少 8 个字符。";
   if (field === "inviteCode") return "请填写完整的实验室邀请码，并检查是否复制正确。";
-  if (field === "displayName") return "请填写显示姓名，最多 200 个字符。";
+  if (field === "displayName") return "请填写昵称，最多 200 个字符。";
   if (field === "filename") return "文件名需为 1–200 个字符，不能包含路径。";
   if (field === "mediaType") return "只支持含文字的 PDF、TXT、Markdown 和 CSV。";
   if (field === "contentBase64")
@@ -51,7 +51,7 @@ const messages: Record<string, string> = {
   INTERNAL_ERROR: "服务处理失败，请稍后重试。",
   INVITE_UNAVAILABLE:
     "邀请码无效、已过期、已撤销或名额已满，请向实验室负责人索取有效邀请码。",
-  USERNAME_TAKEN: "这个用户名已被使用，请换一个；如果是你刚注册的账号，可以直接登录。",
+  USERNAME_TAKEN: "这个 AcceptCat 号已被使用，请换一个；如果是你刚注册的账号，可以直接登录。",
 };
 
 export function serviceErrorMessage(
@@ -66,7 +66,7 @@ export function serviceErrorMessage(
   )
     return "服务器尚未启用此功能，请联系管理员完成服务更新。";
   if (code === "UNAUTHENTICATED" && route === "login")
-    return "用户名或密码不正确，或账号已停用，请核对后重试。";
+    return "AcceptCat 号或密码不正确，或账号已停用，请核对后重试。";
   return (
     messages[code] ??
     (status >= 500

@@ -1,0 +1,39 @@
+.acceptcat-account-number {
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid #e3ece7;
+  border-radius: 12px;
+  background: #f5f9f6;
+  .acceptcat-account-label {
+    margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #42634f;
+  }
+  .acceptcat-account-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    .ant-input {
+      min-width: 0;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 14px;
+      background: #fff;
+    }
+    .ant-btn {
+      flex-shrink: 0;
+    }
+  }
+  .acceptcat-account-help {
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #728078;
+  }
+  .acceptcat-account-feedback {
+    margin: 6px 0 0;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #42634f;
+  }
+}

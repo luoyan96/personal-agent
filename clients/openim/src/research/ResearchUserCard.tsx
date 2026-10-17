@@ -9,6 +9,7 @@ import { useResearchRead } from "./useResearchRead";
 import { MemoryPanel } from "./MemoryPanel";
 import { useResearchContactChat } from "./useResearchContactChat";
 import { AgentConnectionPanel } from "./AgentConnectionPanel";
+import { AcceptCatAccountNumber } from "./AcceptCatAccountNumber";
 
 export const ResearchUserCard = forwardRef<
   OverlayVisibleHandle,
@@ -105,7 +106,7 @@ export const ResearchUserCard = forwardRef<
   };
   return (
     <Modal
-      title="联系人资料"
+      title={props.isSelf ? "我的资料" : "联系人资料"}
       open={isOverlayOpen}
       onCancel={close}
       footer={null}
@@ -123,9 +124,6 @@ export const ResearchUserCard = forwardRef<
             <OIMAvatar text={contact.displayName} size={48} />
             <div>
               <strong>{contact.displayName}</strong>
-              {contact.username && (
-                <p className="text-xs text-slate-500">@{contact.username}</p>
-              )}
               <div>
                 <Tag>
                   {contact.identity.kind === "human"
@@ -138,6 +136,8 @@ export const ResearchUserCard = forwardRef<
               </div>
             </div>
           </div>
+          {contact.identity.kind === "human" && <AcceptCatAccountNumber username={contact.username}
+            isSelf={contact.identity.memberId === actor?.member.id} active={isOverlayOpen} />}
           <p className="text-xs text-slate-600">
             关系：
             {
@@ -172,7 +172,7 @@ export const ResearchUserCard = forwardRef<
             <div className="space-y-2">
               {(
                 [
-                  ["displayName", "名称"],
+                    ["displayName", contact.identity.kind === "human" ? "昵称" : "名称"],
                   ["introduction", "介绍"],
                   ["capabilityDescription", "能力描述"],
                   ["personality", "性格与偏好"],

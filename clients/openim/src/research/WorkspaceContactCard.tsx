@@ -7,6 +7,7 @@ import { useResearchRead } from "./useResearchRead";
 import { useResearchStore } from "./store";
 import { usePersonalOperation } from "./usePersonalOperation";
 import { useResearchContactChat } from "./useResearchContactChat";
+import { AcceptCatAccountNumber } from "./AcceptCatAccountNumber";
 
 export const contactRelationshipLabel: Record<
   Contact["relationship"]["status"],
@@ -125,9 +126,9 @@ export function WorkspaceContactCard({
           <span className={`workspace-kind ${human ? "human" : "agent"}`}>
             {human ? "个人" : "Agent"}
           </span>
-          {c.username && <p className="workspace-muted">@{c.username}</p>}
         </div>
       </header>
+      {c.identity.kind === "human" && <AcceptCatAccountNumber username={c.username} isSelf={c.identity.memberId === actor?.member.id} />}
       <p className="workspace-card-intro">
         {c.profile.introduction || "还没有填写介绍"}
       </p>

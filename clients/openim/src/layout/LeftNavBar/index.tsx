@@ -27,6 +27,8 @@ import DesktopSettings from "./DesktopSettings";
 import { researchMode } from "@/research/api";
 import { LabSettings } from "@/research/LabSettings";
 import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
+import { AcceptCatAccountNumber } from "@/research/AcceptCatAccountNumber";
+import { useResearchStore } from "@/research/store";
 
 const { Sider } = Layout;
 
@@ -172,6 +174,7 @@ const LeftNavBar = memo(() => {
   const [personal, setPersonal] = useState(false);
   const [personalTab, setPersonalTab] = useState<"memory" | "followups">("memory");
   const selfInfo = useUserStore((state) => state.selfInfo);
+  const ownAccount = useResearchStore(state => state.contacts.find(entry => entry.contact.identity.kind === "human" && entry.contact.identity.memberId === state.actor?.member.id)?.contact);
   const userLogout = useUserStore((state) => state.userLogout);
   const updateSelfInfo = useUserStore((state) => state.updateSelfInfo);
 
@@ -264,6 +267,7 @@ const LeftNavBar = memo(() => {
           <div className="mb-1 truncate text-base font-medium">{selfInfo.nickname}</div>
         </div>
       </div>
+      {researchMode && <div className="mb-3"><AcceptCatAccountNumber username={ownAccount?.username} isSelf active={showProfile} /></div>}
       {profileMenuList.filter(menu => researchMode || menu.idx !== 4).map((menu) => (
         <div key={menu.idx}>
           <div
@@ -300,11 +304,9 @@ const LeftNavBar = memo(() => {
           open={showProfile}
           onOpenChange={(vis) => setShowProfile(vis)}
         >
-          <OIMAvatar
-            className="mb-6 cursor-pointer"
-            src={selfInfo.faceURL}
-            text={selfInfo.nickname}
-          />
+          <button type="button" aria-label="打开个人资料菜单" className="mb-6 rounded-full border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-blue-500">
+            <OIMAvatar src={selfInfo.faceURL} text={selfInfo.nickname} />
+          </button>
         </Popover>
 
         {NavList.filter(nav => researchMode || ["/chat", "/contact"].includes(nav.path)).map((nav) => (

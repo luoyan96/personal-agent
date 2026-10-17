@@ -143,7 +143,7 @@ export function ResearchContacts() {
             <Input
               className="max-w-[320px]"
               aria-label="搜索联系人"
-              placeholder="搜索名称"
+              placeholder="搜索昵称或 AcceptCat 号"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -191,7 +191,7 @@ export function ResearchContacts() {
                   <p>
                     {contact.profile.introduction ||
                       contact.profile.capabilityDescription ||
-                      (contact.username ? `@${contact.username}` : "尚未填写介绍")}
+                      (contact.username ? `AcceptCat 号：${contact.username}` : "尚未填写介绍")}
                   </p>
                 </div>
               </button>
@@ -264,7 +264,7 @@ export function ResearchContacts() {
             {
               key: "friend",
               label: "朋友与已有 Agent",
-              children: <ContactFinder onOpen={openProfile} />,
+              children: <ContactFinder onOpen={openProfile} active={adding && addTab === "friend"} />,
             },
             {
               key: "agent",

@@ -88,7 +88,7 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 
 | 版本入口 | 当前状态 |
 | --- | --- |
-| **最新桌面试用版：0.10.7** | 已制作并交付小范围试用，尚未上传公开 Release；包含新版界面、科研协作和近期可靠性修复。[查看试用与版本说明](docs/product-status.md) |
+| **最新桌面试用版：0.10.8** | 已制作并交付小范围试用，尚未上传公开 Release；包含新版界面、科研协作和近期可靠性修复。[查看试用与版本说明](docs/product-status.md) |
 | **GitHub 公开下载：v0.6.0** | 可从 [Releases](https://github.com/luoyan96/personal-agent/releases/latest) 下载；安装文件仍叫 `ResearchWeChat_0.6.0.exe`，属于早期版本，未包含这里展示的全部体验 |
 | **最新产品源码** | 当前集成在 [feature/research-question-catalog](https://github.com/luoyan96/personal-agent/tree/feature/research-question-catalog)；默认分支的应用代码仍是较早基线，文档与软件发布分别维护 |
 
@@ -116,7 +116,7 @@ git clone https://github.com/luoyan96/personal-agent.git
 cd personal-agent
 
 # 最新试用功能暂在此集成分支，main 仍保留较早应用基线。
-git switch release/acceptcat-0.10.7
+git switch release/acceptcat-0.10.8
 pnpm install --frozen-lockfile
 pnpm run ci
 ```

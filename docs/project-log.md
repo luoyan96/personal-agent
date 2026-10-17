@@ -881,3 +881,14 @@ PR交接：正常push并创建、附加草稿PR52 https://github.com/luoyan96/pe
 安装器87,390,081字节，SHA256 3941d839f8968626d481010eadf9afeba86c912b0ad224ec9de29637720b5834，桌面C:/Users/luo/Desktop/AcceptCat_0.10.7.exe与说明已交付。实际Vite/Electron22/55运行依赖/NSIS/blockmap通过；ASAR版本0.10.7、16JS逐字节/新行为/猫素材/运行依赖和无QA夹具检查通过。实际安装器payload提取EXE/ASAR与已测win-unpacked哈希一致；隐藏、隔离用户数据的实际包启动/原生桥/renderer稳定通过，仅关测试子进程，既有electron-log警告保留。无真实用户聊天/凭证/材料。
 
 源PR54 run39021205757三平台SUCCESS读回；本批版本交付不重复产品38项/14组与根CI。只读公网ready200 contract0.25/ok、harness not_verified；没有访问后台维护或改容器。正式latest重新核实仍v0.6.0，未上传公共Release/更新源，不把本地交付当自动更新。没有代用户安装或关闭现装窗口，旧文件保留。PR50超长Skill正文边界待API配套、PR51目录待运营发布分别保留，不冒称在线，不再把独立待办当成本次UI包交付的阻挡。证据.runtime/acceptcat-0.10.7-20261017，docs/deployment/acceptcat-0.10.7.md。
+
+
+## 2026-10-17：AcceptCat号与Windows0.10.8真实安装交付
+
+release/acceptcat-0.10.8接续PR55/e099cc1，源码c88f2285d78c69e81785d4f8e34dc67e049e4b2c。现有注册username明确展示为AcceptCat号，头像/本人资料/真人名片/添加窗口可复制，统一登录注册查找和错误术语；昵称单独显示，大小写与接口保持。只读号码不冒充新增内部ID/改号；复制成功才反馈，失败选中提示手动，scope/generation阻挡晚反馈。头像语义按钮支持键盘，隐藏查找停止读取并传AbortSignal。
+
+41项客户端回归/类型通过；八组真实React/API/SQLite通过，包含实际剪贴板读回、精确号码/大小写/昵称边界、发送申请并由新合成账号真实同意、复制失败/选中/晚结果、实际注册重号。1536/1024实拍已看，无横溢/框架覆盖/pageerror；既有Antd/Router警告和特意401/409解释。定位昵称与人/Agent同名的失败、暂停动画截图等待挂起保留，增加有界等待/禁用截图动画而非修改产品。无生产用户材料/真实外发/模型验证。
+
+Windows x64 NSIS0.10.8真实构建，55运行依赖、16生产JS/新号码代码/素材/无QA、实际安装器EXE/ASAR与win-unpacked字节核对通过；隔离隐藏原生桥/renderer稳定通过，electron-log原有警告保留。87,393,639字节，SHA256 beee9d36df9bed4af51cd63b8bf18d26109cccc6ab8ebe503ed3670f21cb15a1，C:/Users/luo/Desktop/AcceptCat_0.10.8.exe及说明已交付，旧包/数据保留，未代安装或关闭用户窗口。
+
+仅客户端无需迁移/新API，不重复根共享全套；没有后台部署/目录运营/公开Release/更新源。latest重新核实v0.6.0，继承PR50/PR51后台/运营待办分别保持，生产容器沿用47c42ac/0.25/1.12/022非本批inspect。证据.runtime/acceptcat-account-20261017，docs/deployment/acceptcat-0.10.8.md。

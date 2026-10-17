@@ -282,28 +282,28 @@ export default function ResearchLogin() {
                 {registering && (
                   <>
                     <Form.Item
-                      label="显示姓名"
+                      label="昵称"
                       name="displayName"
                       rules={[
-                        { required: true, message: "请输入显示姓名" },
-                        { max: 200, message: "显示姓名最多 200 个字符" },
+                        { required: true, message: "请输入昵称" },
+                        { max: 200, message: "昵称最多 200 个字符" },
                       ]}
                     >
-                      <Input placeholder="请输入你的显示姓名" autoComplete="name" />
+                      <Input placeholder="请输入你的昵称" autoComplete="name" />
                     </Form.Item>
                   </>
                 )}
                 <Form.Item
-                  label="用户名"
+                  label="AcceptCat 号"
                   name="username"
                   rules={[authRule("username")]}
-                  extra="用于登录和添加好友；区分大小写。"
+                  extra={registering ? "设置唯一号码，用于登录和添加好友。支持字母、数字、下划线和连字符，区分大小写。" : "填写注册时的用户名，用于登录和添加好友，区分大小写。"}
                 >
                   <Input
                     autoComplete="username"
                     autoCapitalize="none"
                     spellCheck={false}
-                    placeholder="请输入用户名"
+                    placeholder={registering ? "设置你的 AcceptCat 号" : "请输入 AcceptCat 号"}
                   />
                 </Form.Item>
                 <Form.Item
