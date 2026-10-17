@@ -872,3 +872,12 @@ PR交接：正常push并创建、附加草稿PR52 https://github.com/luoyan96/pe
 没有NSIS、后台部署/迁移/目录发布/公开Release/更新源，现有0.10.6不含本轮。继承PR50桌面/API配套发布、PR51目录运营发布待办不变，先前登录请求不重问；生产47c42ac/0.25/1.12/022沿用记录，未新inspect。README保持产品介绍。
 
 同批补齐GitHub发现卡片：精确来源仓库/子目录、固定版本、本人可调用/启用安装与当前站内specialist绑定后提供动作；多个绑定显式选择实际对象，停用/解绑/读取失败恢复查看，不自动创建Agent或执行Skill。新增五项源/权限/目标回归，最终38项；新增六组社区真实UI/API/SQLite通过，加原八组共14组。合成Skill来源仅用于UI绑定投影，不是上游下载验证。最终types/build-community.log通过；恢复合成启用绑定供明确标记的演示，截图证据screenshot-proof.json。
+
+
+## 2026-10-17：实际交付Windows0.10.7，广场和Agent卡片进入安装包
+
+用户指出只交源码/预览不能使用后，本批直接制作新Windows x64 NSIS。release/acceptcat-0.10.7接续PR54 c27170a，版本源码595eddaa777d082a8d690f559530700a169083a1，只改0.10.6→0.10.7，包含前述推荐/热门/最新、内置助手迁移、添加状态动作、GitHub真实绑定/多目标选择、首次私聊导航和资料库原件下载修复。
+
+安装器87,390,081字节，SHA256 3941d839f8968626d481010eadf9afeba86c912b0ad224ec9de29637720b5834，桌面C:/Users/luo/Desktop/AcceptCat_0.10.7.exe与说明已交付。实际Vite/Electron22/55运行依赖/NSIS/blockmap通过；ASAR版本0.10.7、16JS逐字节/新行为/猫素材/运行依赖和无QA夹具检查通过。实际安装器payload提取EXE/ASAR与已测win-unpacked哈希一致；隐藏、隔离用户数据的实际包启动/原生桥/renderer稳定通过，仅关测试子进程，既有electron-log警告保留。无真实用户聊天/凭证/材料。
+
+源PR54 run39021205757三平台SUCCESS读回；本批版本交付不重复产品38项/14组与根CI。只读公网ready200 contract0.25/ok、harness not_verified；没有访问后台维护或改容器。正式latest重新核实仍v0.6.0，未上传公共Release/更新源，不把本地交付当自动更新。没有代用户安装或关闭现装窗口，旧文件保留。PR50超长Skill正文边界待API配套、PR51目录待运营发布分别保留，不冒称在线，不再把独立待办当成本次UI包交付的阻挡。证据.runtime/acceptcat-0.10.7-20261017，docs/deployment/acceptcat-0.10.7.md。

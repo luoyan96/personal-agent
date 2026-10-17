@@ -1,14 +1,14 @@
 # AcceptCat：版本与试用说明
 
-核对日期：**2026-10-16，北京时间**。产品首页见 [README](../README.md)。这里区分对外可下载的版本、已交付试用的版本、集成源码与线上服务，避免把 Git 提交当成一次软件发布。
+核对日期：**2026-10-17，北京时间**。产品首页见 [README](../README.md)。这里区分对外可下载的版本、已交付试用的版本、集成源码与线上服务，避免把 Git 提交当成一次软件发布。
 
 ## 怎样体验
 
-- **小范围试用**：Windows x64 **0.10.6** 已制作并交付现有试用者，尚未上传公开 GitHub Release。已有包的团队退出旧客户端后覆盖安装，安装身份和数据目录保持。新团队可通过 [Issues](https://github.com/luoyan96/personal-agent/issues) 提交使用场景与试用意向；目前没有在 README 提供不存在的 0.10.6 公共下载链接。
+- **小范围试用**：Windows x64 **0.10.7** 已制作并交付现有试用者，尚未上传公开 GitHub Release。已有包的团队退出旧客户端后覆盖安装，安装身份和数据目录保持。新团队可通过 [Issues](https://github.com/luoyan96/personal-agent/issues) 提交使用场景与试用意向；目前没有在 README 提供不存在的 0.10.7 公共下载链接。
 - **公开下载**：实际 [latest Release](https://github.com/luoyan96/personal-agent/releases/latest) 为 **v0.6.0**，发表于2026-10-08，安装文件 `ResearchWeChat_0.6.0.exe`。它是早期版本，名称、界面与功能范围与最新预览不同，以对应 Release 说明为准。
 - **正式更新提示**：桌面“设置 → 版本更新”读取既有正式发布源；GitHub 分支有新代码、后台目录更新或本地制作了安装包，都不等于更新源已有新安装器。
 
-0.10.6 的交付记录：Windows x64 NSIS，**87,402,492字节**；SHA256 `ebb16e7e8f786f08cadffc715982d95033f946684ceedcb3f5a5acdbf4b2e600`。用于核对已取得的试用包，不代表该包已公开上传。准确检查范围见[固定版本交接](https://github.com/luoyan96/personal-agent/blob/815a4b5cdb65b0c8dfe6db0de45bc4aab79931fa/docs/current-state.md)。
+0.10.7 的交付记录：Windows x64 NSIS，**87,390,081字节**；SHA256 `3941d839f8968626d481010eadf9afeba86c912b0ad224ec9de29637720b5834`。已交付现有试用者；含新广场排序、卡片聊天/配置和近期下载修复。准确范围与包内/启动检查见[0.10.7交付记录](deployment/acceptcat-0.10.7.md)，不代表已公开上传。
 
 ## 目前能做什么
 
@@ -24,7 +24,7 @@
 
 ## 源码与服务分别在哪里
 
-最新产品功能暂在[集成分支](https://github.com/luoyan96/personal-agent/tree/feature/research-question-catalog)。本次介绍依据的固定集成快照为 `815a4b5`；0.10.6 打包源码为 `663a033`，新目录描述为 `ba4aa09`。[集成交接](https://github.com/luoyan96/personal-agent/blob/815a4b5cdb65b0c8dfe6db0de45bc4aab79931fa/docs/current-state.md)提供受测范围；[目录审阅与发布](https://github.com/luoyan96/personal-agent/blob/815a4b5cdb65b0c8dfe6db0de45bc4aab79931fa/docs/development/research-question-catalog.md)提供来源与验证。
+最新产品功能和0.10.7打包源码在[release/acceptcat-0.10.7](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.7)，固定打包源码 `595edda`。新卡片/排序/下载已进入本地试用包；[交付记录](deployment/acceptcat-0.10.7.md)区分实际打包、前端模拟通信验证与生产待办。超长Skill正文边界仍待后台配套，新增两项目录仍待运营发布；不能仅凭本包断言这些已在线。
 
 **默认分支应用代码仍是较早的0.3.0基线；更新首页文档不会自动合并全部功能分支、发布安装包或升级后台。** 开发最新产品功能时按上述集成分支和其贡献指南准备环境，不能从首页预览反推 `main` 已包含所有新功能。
 

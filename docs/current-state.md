@@ -2,6 +2,14 @@
 
 更新日期：2026-10-17（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新 Windows 交付：0.10.7 已制作到桌面
+
+用户明确要求更新安装包后，`release/acceptcat-0.10.7` 从PR54 / c27170a接续，版本源码 **595eddaa777d082a8d690f559530700a169083a1**。Windows x64 NSIS **0.10.7** 已实际生成并复制到 `C:/Users/luo/Desktop/AcceptCat_0.10.7.exe`（安装说明同目录），**87,390,081 字节**，SHA256 **3941d839f8968626d481010eadf9afeba86c912b0ad224ec9de29637720b5834**；包含下述广场排序、Agent卡片动作/首次导航及资料库下载修复。
+
+实际NSIS、55运行依赖、包内0.10.7/16生产JS/猫咪素材、桌面哈希与安装器payload中的EXE/ASAR一致通过；实际win-unpacked隔离隐藏启动、原生桥及renderer就绪通过，既有electron-log警告保留。PR54源码39021205757三平台SUCCESS已读回；只版本打包不重复产品全套。证据 `.runtime/acceptcat-0.10.7-20261017`，[交付记录](deployment/acceptcat-0.10.7.md)。没有代用户安装/关闭其窗口。
+
+**本轮不再停留于源码/演示；新本地安装包已交付，但没有生产部署、迁移、公开Release或更新源发布。** 公网ready本轮200/contract0.25/ok，harness not_verified；实际latest仍v0.6.0已核实。UI使用既有API，继承PR50的超长正文边界与PR51两项目录发布仍单独待配套，不冒称在线，也不再阻挡本次桌面体验。旧安装不会自己变为0.10.7，须运行新文件覆盖安装。生产47c42ac/chat1.12/schema022仅沿用已有容器记录。
+
 ## 最新用户改动：Agent 卡片按添加状态提供操作
 
 `feature/agent-card-actions` 接续 PR53 / e744fae；产品源码 **93da85f170285765c12aae50105ee8f82ed44912**。未添加卡片右下“查看”；真实 own/accepted Agent 右下“和它聊天”、左下“Agent 配置”，接到既有 canonical 私聊与同 ID 详情/管理入口。pending/revoked/真人和未接成聊天 Agent 的 GitHub 工具不会冒充已添加，缺聊天权限按钮禁用。独立按钮无嵌套，失败原卡重试，账号/页面/面板变化取消晚结果。
