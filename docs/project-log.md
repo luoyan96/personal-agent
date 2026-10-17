@@ -857,3 +857,18 @@ PR交接：正常push并创建、附加草稿PR52 https://github.com/luoyan96/pe
 下拉覆盖按钮与复选点击不更新的首败保留，采用明确的方向切换按钮并核对aria-pressed/真实保存。Antd动画期和中文“取消”间距、确认框定位失败保留，未强制点击。累计测试登录触发429后使用新临时SQLite核验名片，没有放宽产品限流或重置生产。图片/临时原件/合成元数据均Git外.runtime/github-discovery-20261017，详见docs/development/github-discovery-ranking.md。
 
 预览加“界面预览（演示数据）”标识，Codex打开请求返回queued，尚未确认面板显示。为用户查看保留4806前端PID38336/4807临时API PID29152，完整命令/可执行文件在preview-services.json；后续核对使用情况再清理，仅针对本轮服务。没有新NSIS、生产部署/迁移/目录发布/公开Release/更新源，现有试用仍0.10.6且不包含本轮UI。当前分支继承PR50需配套发布；先前维护登录请求仍待回复，不重复问权限、不冒称该解析边界在线。PR51两项描述发布仍独立待办。后台47c42ac/0.25/1.12/022沿用记录，未新inspect或读取生产账号；根README未插工程流水。
+
+
+## 2026-10-17：Agent卡片查看、聊天、配置与首次导航修复
+
+`feature/agent-card-actions` 接续PR53 / e744fae；产品源码93da85f170285765c12aae50105ee8f82ed44912。未添加→右下查看；真实own/accepted Agent→左下Agent配置、右下和它聊天。权限不足禁用聊天，其他维护者配置仍只读；真人/pending/revoked和未接成Agent的GitHub工具不冒充可聊天。按钮为独立同级元素，错误原卡显示和重试，scope/generation防晚导航。
+
+本机版本化template→contact提示按actor隔离，实际所属、own关系、specialist角色校验后复用，改名不覆盖；旧添加入口共用。无提示的已改历史模板不猜测，实际我的Agent卡按真实关系保持动作。单元/实际React流程复现原useConversationToggle首次新Single自己提交使旧会话guard失效而不导航，旧3/4；同tick保留提交前检查、提交后账号/路由/目标检查，四项通过，不移除异步阶段保护。
+
+定向38项、客户端类型与最终build:web通过，完整dist/四SDK资源/字体/图标/HTML核对；真实React/本地HTTP/SQLite原八组及新增社区六组通过，1536×1024和1024×726实拍已看，无横溢/嵌套按钮，pageerror0。未配置通信真实失败与重试通过；成功聊天采用明确SDK/ready mapping夹具，真实canonical私聊/联系人API与SDK目标/currentConversation/路由一致，不是生产IM或模型通过。坏存储、权限及跨账号/路由/会话异步变化均有回归，无真实私人材料。仅客户端，不重复根共享全套。
+
+早期夹具骨架等待、临时API启动竞态、账号切换回发现入口定位失败及旧路由失败保留，无放宽产品限流/权限。证据.runtime/agent-card-actions-20261017，详见docs/development/agent-card-actions.md；既有Antd/Router弃用警告解释保留。演示4816/4817 PID40144/34196留给用户预览，完整身份preview-services.json；旧4806/4807未误停。
+
+没有NSIS、后台部署/迁移/目录发布/公开Release/更新源，现有0.10.6不含本轮。继承PR50桌面/API配套发布、PR51目录运营发布待办不变，先前登录请求不重问；生产47c42ac/0.25/1.12/022沿用记录，未新inspect。README保持产品介绍。
+
+同批补齐GitHub发现卡片：精确来源仓库/子目录、固定版本、本人可调用/启用安装与当前站内specialist绑定后提供动作；多个绑定显式选择实际对象，停用/解绑/读取失败恢复查看，不自动创建Agent或执行Skill。新增五项源/权限/目标回归，最终38项；新增六组社区真实UI/API/SQLite通过，加原八组共14组。合成Skill来源仅用于UI绑定投影，不是上游下载验证。最终types/build-community.log通过；恢复合成启用绑定供明确标记的演示，截图证据screenshot-proof.json。

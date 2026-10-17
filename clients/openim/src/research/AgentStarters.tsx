@@ -10,8 +10,15 @@ import { researchApi } from "./api";
 import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
 import { useResearchContactChat } from "./useResearchContactChat";
+import { useAgentStarterLinks } from "./useAgentStarterLinks";
 
-export function AgentStarters({ onChanged, active = true }: { onChanged: () => Promise<void>; active?: boolean }) {
+export function AgentStarters({
+  onChanged,
+  active = true,
+}: {
+  onChanged: () => Promise<void>;
+  active?: boolean;
+}) {
   const actorId = useResearchStore((state) => state.actor?.member.id);
   const generation = useResearchStore((state) => state.generation);
   const location = useLocation();
@@ -19,7 +26,7 @@ export function AgentStarters({ onChanged, active = true }: { onChanged: () => P
   const currentScope = useRef(scope);
   currentScope.current = scope;
   const epoch = useRef(0);
-  const saved = useRef<Record<string, string>>({});
+  const { links, remember } = useAgentStarterLinks(actorId);
   const { data, error, refresh } = useResearchRead(
     () =>
       researchApi("chatContacts", {
@@ -34,7 +41,6 @@ export function AgentStarters({ onChanged, active = true }: { onChanged: () => P
   const openChat = useResearchContactChat();
   useLayoutEffect(() => {
     epoch.current++;
-    saved.current = {};
     setSelected(undefined);
     setBusy(false);
     setFailure("");
@@ -48,8 +54,7 @@ export function AgentStarters({ onChanged, active = true }: { onChanged: () => P
     setFailure("");
     setBusy(false);
     setSavedId(
-      saved.current[starter.id] ||
-        findOwnedStarter(data?.data || [], starter, actorId || "")?.id,
+      findOwnedStarter(data?.data || [], starter, actorId || "", links[starter.id])?.id,
     );
     setSelected(starter);
   };
@@ -74,9 +79,12 @@ export function AgentStarters({ onChanged, active = true }: { onChanged: () => P
         query: { view: "mine", scope: "local", limit: 100 },
       });
       if (!isCurrent()) return;
-      let contactId =
-        saved.current[selected.id] ||
-        findOwnedStarter(owned.data, selected, actorId)?.id;
+      let contactId = findOwnedStarter(
+        owned.data,
+        selected,
+        actorId,
+        links[selected.id],
+      )?.id;
       if (!contactId) {
         const created = await researchApi("createPersonalAgent", {
           body: selected.profile,
@@ -84,7 +92,7 @@ export function AgentStarters({ onChanged, active = true }: { onChanged: () => P
         if (!isCurrent()) return;
         contactId = created.data.id;
       }
-      saved.current[selected.id] = contactId;
+      remember(selected.id, contactId);
       setSavedId(contactId);
       await refresh();
       if (!isCurrent()) return;
@@ -112,9 +120,12 @@ export function AgentStarters({ onChanged, active = true }: { onChanged: () => P
       {error && <Alert className="mb-3" type="warning" message={error} />}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         {agentStarters.map((starter) => {
-          const existing =
-            saved.current[starter.id] ||
-            findOwnedStarter(data?.data || [], starter, actorId || "")?.id;
+          const existing = findOwnedStarter(
+            data?.data || [],
+            starter,
+            actorId || "",
+            links[starter.id],
+          )?.id;
           return (
             <article
               key={starter.id}

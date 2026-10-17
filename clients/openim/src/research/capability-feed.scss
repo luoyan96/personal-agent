@@ -201,6 +201,18 @@
 
 .capability-feed-card {
   min-width: 0;
+  background: #fff;
+  border: 1px solid #eef1f3;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+  &:hover {
+    border-color: #c8d9cf;
+    box-shadow: 0 6px 24px #182b2d0b;
+  }
+  &[data-selected="true"] {
+    border-color: #568d70;
+  }
 }
 .capability-feed-open {
   display: block;
@@ -208,22 +220,13 @@
   padding: 0;
   text-align: left;
   background: #fff;
-  border: 1px solid #eef1f3;
-  border-radius: 16px;
+  border: 0;
   overflow: hidden;
   font-family: inherit;
   color: #182b2d;
-  transition: box-shadow 0.18s ease, border-color 0.18s ease;
-  &:hover {
-    border-color: #c8d9cf;
-    box-shadow: 0 6px 24px #182b2d0b;
-  }
   &:focus-visible {
     outline: 3px solid #1473c8;
-    outline-offset: 3px;
-  }
-  &[aria-pressed="true"] {
-    border-color: #568d70;
+    outline-offset: -3px;
   }
 }
 .capability-feed-caption {
@@ -290,14 +293,57 @@
     color: #438aca;
   }
 }
-.capability-feed-action {
+.capability-feed-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 0 17px 14px;
+  button {
+    min-height: 34px;
+    border: 0;
+    border-radius: 8px;
+    padding: 5px 9px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    &:focus-visible {
+      outline: 3px solid #1473c8;
+      outline-offset: 1px;
+    }
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+.capability-feed-configure {
+  margin-right: auto;
+  background: transparent;
+  color: #65757d;
+  &:hover {
+    background: #f3f6f5;
+  }
+}
+.capability-feed-metadata {
+  padding: 0 17px 13px;
+}
+.capability-feed-error {
+  margin: 0 17px 12px;
+  color: #b33b34;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.capability-feed-actions .capability-feed-action {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 7px;
-  font-size: 11px;
-  color: #65757d;
-  margin-top: 15px;
+  color: #406f58;
+  background: #edf5f0;
+  &:hover:not(:disabled) {
+    background: #e1eee6;
+  }
 }
 
 .capability-outcome-preview {

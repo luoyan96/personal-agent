@@ -17,7 +17,7 @@ import { readWorkspaceAvailability } from "./workspace-availability";
 import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 import { CapabilityTemplates, matchingStarterTemplates } from "./CapabilityTemplates";
 import { CommunityDiscovery } from "./CommunityDiscovery";
-import { CapabilityFeedCard } from "./CapabilityFeedCard";
+import { AgentCapabilityFeedCard } from "./AgentCapabilityFeedCard";
 import { AgentResearchCollections } from "./KnowledgeLibrary";
 import {
   capabilityCategory,
@@ -359,6 +359,8 @@ export function CapabilitySquare() {
                 onRefresh={community.refresh}
                 search={query}
                 onClearSearch={resetFilters}
+                onConfigure={setSelectedContact}
+                operationScope={`${selectedContact}:${publishing}`}
               />
             ) : (
               <>
@@ -379,8 +381,12 @@ export function CapabilitySquare() {
                 )}
                 <div className="capability-discovery-grid capability-live-grid">
                   {localResults.map((c) => (
-                    <CapabilityFeedCard
+                    <AgentCapabilityFeedCard
                       key={c.id}
+                      contact={c}
+                      actionName={c.displayName}
+                      operationScope={`${view}:${selectedContact}:${publishing}:${category}:${query}`}
+                      onConfigure={(id) => setSelectedContact(id)}
                       title={c.displayName}
                       openLabel={`查看${c.displayName}配置`}
                       name={
@@ -448,6 +454,7 @@ export function CapabilitySquare() {
                         category={category}
                         search={query}
                         onChanged={refreshLists}
+                        operationScope={`${selectedContact}:${publishing}`}
                         onConfigure={(id) => {
                           setSelectedContact(id);
                           setPages([undefined]);
@@ -462,7 +469,7 @@ export function CapabilitySquare() {
               </>
             )}
           </section>
-          {selectedContact && view !== "public" && (
+          {selectedContact && (
             <aside className="workspace-square-detail">
               <Button
                 type="text"

@@ -1,4 +1,4 @@
-import { Modal } from "antd";
+import { Alert, Button, Modal } from "antd";
 import { ReadOutlined, FileSearchOutlined, StarOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -7,14 +7,33 @@ import type { DiscoveryItem } from "./community-discovery";
 import { CapabilityFeedCard, CapabilityOutcomePreview } from "./CapabilityFeedCard";
 import { communityFeedCopy } from "./capability-feed-copy";
 import { CommunityRepositoryFacts, communityDate } from "./CommunityRepositoryFacts";
+import { CommunityAgentFeedCard } from "./CommunityAgentFeedCard";
+import { communityAgentBindings } from "./community-agent-bindings";
+import { useResearchRead } from "./useResearchRead";
+import { researchApi } from "./api";
+import { useResearchStore } from "./store";
 
 export function CommunityResearchCatalog({
   items,
   showReasons = false,
+  onConfigure,
+  operationScope,
 }: {
   items: readonly DiscoveryItem[];
   showReasons?: boolean;
+  onConfigure: (id: string) => void;
+  operationScope?: string;
 }) {
+  const actorId = useResearchStore((state) => state.actor?.member.id);
+  const skills = useResearchRead(
+    (signal) => researchApi("installedSkills", { query: { scope: "mine" }, signal }),
+    "community-agent-skills",
+  );
+  const contacts = useResearchRead(
+    (signal) =>
+      researchApi("chatContacts", { query: { view: "mine", limit: 100 }, signal }),
+    "community-agent-contacts",
+  );
   const [selectedId, setSelectedId] = useState<string>();
   const [candidateId, setCandidateId] = useState<string>();
   const entries = items.flatMap((item) =>
@@ -66,14 +85,40 @@ export function CommunityResearchCatalog({
 
   return (
     <section className="community-research-catalog" aria-label="社区科研工具">
+      {(skills.error || contacts.error) && (
+        <Alert
+          style={{ gridColumn: "1 / -1" }}
+          type="warning"
+          message="已添加的 Agent 状态暂未读取，可先查看社区资料。"
+          action={
+            <Button
+              onClick={() => void Promise.all([skills.refresh(), contacts.refresh()])}
+            >
+              重试
+            </Button>
+          }
+        />
+      )}
       {items.map((discovery) => {
         if (discovery.kind === "candidate") return renderCandidate(discovery);
         const entry = discovery.entry;
         const Icon =
           entry.status === "offline_reviewed" ? FileSearchOutlined : ReadOutlined;
         return (
-          <CapabilityFeedCard
+          <CommunityAgentFeedCard
             key={discovery.key}
+            agents={
+              skills.error || contacts.error
+                ? []
+                : communityAgentBindings(
+                    entry,
+                    skills.data?.data || [],
+                    contacts.data?.data || [],
+                    actorId || "",
+                  )
+            }
+            onConfigure={onConfigure}
+            operationScope={`${operationScope}:${selectedId}:${candidateId}`}
             title={communityFeedCopy[entry.id]?.title || entry.name}
             outcomes={communityFeedCopy[entry.id]?.outcomes || entry.summary}
             name={entry.name}

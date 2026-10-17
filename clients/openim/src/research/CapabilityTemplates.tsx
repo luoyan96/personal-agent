@@ -7,7 +7,7 @@ import {
   CodeOutlined,
   ProfileOutlined,
 } from "@ant-design/icons";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   agentStarters,
   findOwnedStarter,
@@ -18,7 +18,9 @@ import { useResearchRead } from "./useResearchRead";
 import { usePersonalOperation } from "./usePersonalOperation";
 import { useResearchStore } from "./store";
 import { capabilityCategory, type ResearchCategory } from "./capability-center";
-import { CapabilityFeedCard, CapabilityOutcomePreview } from "./CapabilityFeedCard";
+import { CapabilityOutcomePreview } from "./CapabilityFeedCard";
+import { AgentCapabilityFeedCard } from "./AgentCapabilityFeedCard";
+import { useAgentStarterLinks } from "./useAgentStarterLinks";
 import { starterFeedCopy } from "./capability-feed-copy";
 
 export function matchingStarterTemplates(category: ResearchCategory, search: string) {
@@ -48,11 +50,13 @@ export function CapabilityTemplates({
   search,
   onChanged,
   onConfigure,
+  operationScope,
 }: {
   category: ResearchCategory;
   search: string;
   onChanged: () => Promise<void>;
   onConfigure: (id: string) => void;
+  operationScope?: string;
 }) {
   const read = useResearchRead(
     (signal) =>
@@ -63,14 +67,20 @@ export function CapabilityTemplates({
   const [selected, setSelected] = useState<AgentStarter>(),
     [busy, setBusy] = useState(false),
     [failure, setFailure] = useState("");
-  const saved = useRef<Record<string, string>>({});
+  const { links, remember } = useAgentStarterLinks(actorId);
+  const inFlight = useRef(false);
   const operation = usePersonalOperation(
     true,
     `capability-template:${selected?.id || ""}`,
   );
+  useLayoutEffect(() => {
+    inFlight.current = false;
+    setBusy(false);
+  }, [operation.scope]);
   const add = async () => {
-    if (!selected || !actorId || busy) return;
+    if (!selected || !actorId || inFlight.current) return;
     const { isCurrent } = operation.capture();
+    inFlight.current = true;
     setBusy(true);
     setFailure("");
     try {
@@ -78,17 +88,20 @@ export function CapabilityTemplates({
         query: { view: "mine", limit: 100 },
       });
       if (!isCurrent()) return;
-      let contactId =
-        saved.current[selected.id] ||
-        findOwnedStarter(owned.data, selected, actorId)?.id;
+      let contactId = findOwnedStarter(
+        owned.data,
+        selected,
+        actorId,
+        links[selected.id],
+      )?.id;
       if (!contactId) {
         const created = await researchApi("createPersonalAgent", {
           body: selected.profile,
         });
         if (!isCurrent()) return;
         contactId = created.data.id;
-        saved.current[selected.id] = contactId;
       }
+      remember(selected.id, contactId);
       await Promise.all([read.refresh(), onChanged()]);
       if (isCurrent()) {
         setSelected(undefined);
@@ -100,7 +113,10 @@ export function CapabilityTemplates({
           error instanceof Error ? error.message : "添加失败，配置已保留，请重试。",
         );
     } finally {
-      if (isCurrent()) setBusy(false);
+      if (isCurrent()) {
+        inFlight.current = false;
+        setBusy(false);
+      }
     }
   };
   const icons: Record<string, typeof ReadOutlined> = {
@@ -115,8 +131,12 @@ export function CapabilityTemplates({
   const visibleSelection = matching.find((starter) => starter.id === selected?.id);
   const selectedExisting =
     visibleSelection &&
-    (saved.current[visibleSelection.id] ||
-      findOwnedStarter(read.data?.data || [], visibleSelection, actorId || "")?.id);
+    findOwnedStarter(
+      read.data?.data || [],
+      visibleSelection,
+      actorId || "",
+      links[visibleSelection.id],
+    );
   return (
     <section className="capability-templates" aria-label="内置科研助手">
       {read.error && (
@@ -128,11 +148,14 @@ export function CapabilityTemplates({
       )}
       {matching.map((starter) => {
         const Icon = icons[starter.id] || ProfileOutlined;
-        const existing =
-          saved.current[starter.id] ||
-          findOwnedStarter(read.data?.data || [], starter, actorId || "")?.id;
+        const existing = findOwnedStarter(
+          read.data?.data || [],
+          starter,
+          actorId || "",
+          links[starter.id],
+        );
         return (
-          <CapabilityFeedCard
+          <AgentCapabilityFeedCard
             key={starter.id}
             title={starterFeedCopy[starter.id]?.title || starter.profile.displayName}
             outcomes={starterFeedCopy[starter.id]?.outcomes || starter.summary}
@@ -140,7 +163,14 @@ export function CapabilityTemplates({
             status={existing ? "已添加 · 私人文字 Agent" : "文字 Agent 模板"}
             icon={<Icon />}
             preview={<CapabilityOutcomePreview id={starter.id} />}
+            contact={existing}
+            operationScope={`${operationScope}:${selected?.id || ""}`}
+            onConfigure={(id) => {
+              remember(starter.id, id);
+              onConfigure(id);
+            }}
             onOpen={() => {
+              if (existing) remember(starter.id, existing.id);
               setSelected(starter);
               setFailure("");
             }}

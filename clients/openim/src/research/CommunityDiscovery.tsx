@@ -24,6 +24,8 @@ export function CommunityDiscovery({
   onRefresh,
   search,
   onClearSearch,
+  onConfigure,
+  operationScope,
 }: {
   actorId: string;
   expertise: readonly string[];
@@ -33,6 +35,8 @@ export function CommunityDiscovery({
   onRefresh: () => Promise<void>;
   search: string;
   onClearSearch: () => void;
+  onConfigure: (id: string) => void;
+  operationScope?: string;
 }) {
   const [tab, setTab] = useState<Tab>("recommended");
   const [preferences, setPreferences] = useState(() => {
@@ -178,7 +182,12 @@ export function CommunityDiscovery({
         </div>
       )}
       <div className="capability-discovery-grid">
-        <CommunityResearchCatalog items={items} showReasons={order === "recommended"} />
+        <CommunityResearchCatalog
+          items={items}
+          showReasons={order === "recommended"}
+          onConfigure={onConfigure}
+          operationScope={`${operationScope}:${tab}:${search}:${editing}`}
+        />
       </div>
       {!!items.length && (
         <p className="capability-center-boundary">

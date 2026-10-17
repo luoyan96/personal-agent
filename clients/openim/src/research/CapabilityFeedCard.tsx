@@ -16,6 +16,8 @@ export function CapabilityFeedCard({
   selected = false,
   openLabel,
   metadata,
+  actions,
+  actionName = name,
 }: {
   title: string;
   outcomes: string;
@@ -27,14 +29,23 @@ export function CapabilityFeedCard({
   selected?: boolean;
   openLabel?: string;
   metadata?: ReactNode;
+  actionName?: string;
+  actions?: {
+    onConfigure: () => void;
+    onChat: () => void;
+    canChat: boolean;
+    busy?: boolean;
+    error?: string;
+  };
 }) {
   return (
-    <article className="capability-feed-card">
+    <article className="capability-feed-card" data-selected={selected || undefined}>
       <button
         type="button"
         className="capability-feed-open"
         aria-label={openLabel || `查看${name}用法`}
         aria-pressed={selected}
+        disabled={actions?.busy}
         onClick={onOpen}
       >
         {preview}
@@ -48,12 +59,42 @@ export function CapabilityFeedCard({
               <small>{status}</small>
             </span>
           </div>
-          <span className="capability-feed-action">
-            查看用法 <ArrowRightOutlined />
-          </span>
-          {metadata}
         </div>
       </button>
+      {metadata && <div className="capability-feed-metadata">{metadata}</div>}
+      {actions?.error && (
+        <p role="alert" className="capability-feed-error">
+          {actions.error}
+        </p>
+      )}
+      <div className="capability-feed-actions">
+        {actions && (
+          <button
+            type="button"
+            className="capability-feed-configure"
+            aria-label={`配置${actionName}`}
+            onClick={actions.onConfigure}
+            disabled={actions.busy}
+          >
+            Agent 配置
+          </button>
+        )}
+        <button
+          type="button"
+          className="capability-feed-action"
+          aria-label={actions ? `和${actionName}聊天` : `查看${actionName}`}
+          disabled={actions && (!actions.canChat || actions.busy)}
+          title={
+            actions && !actions.canChat
+              ? "当前没有聊天权限，请在 Agent 配置中查看状态。"
+              : undefined
+          }
+          onClick={actions?.onChat || onOpen}
+        >
+          {actions ? (actions.busy ? "正在打开…" : "和它聊天") : "查看"}{" "}
+          <ArrowRightOutlined />
+        </button>
+      </div>
     </article>
   );
 }

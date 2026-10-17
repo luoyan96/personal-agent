@@ -61,7 +61,8 @@ const legacyAgentStarters: readonly AgentStarter[] = [
     profile: {
       displayName: "图表构思助手",
       introduction: "围绕用户提供的研究材料讨论图表结构、图注与呈现方式。",
-      capabilityDescription: "输入：图表目的、数据含义、方法步骤、现有图注或用户提供的文字资料。输出：文字布局建议、图注草稿与人工检查清单，可按需求讨论绘图代码草稿。仅提供可编辑文字建议；不生成图像、不执行代码，不声称已绘图、识别图像或验证数据。",
+      capabilityDescription:
+        "输入：图表目的、数据含义、方法步骤、现有图注或用户提供的文字资料。输出：文字布局建议、图注草稿与人工检查清单，可按需求讨论绘图代码草稿。仅提供可编辑文字建议；不生成图像、不执行代码，不声称已绘图、识别图像或验证数据。",
       personality: "清晰、克制，重视图表含义与证据对应，优先帮助读者理解研究。",
     },
   },
@@ -72,8 +73,10 @@ const legacyAgentStarters: readonly AgentStarter[] = [
     boundary: "仅讨论文字与代码草稿，不执行代码、不访问本机环境，不声称复现成功。",
     profile: {
       displayName: "数据复现讨论助手",
-      introduction: "根据用户提供的数据说明、代码和方法文字，讨论可检查的分析与复现步骤。",
-      capabilityDescription: "输入：数据字段说明、代码片段、方法文字、报错信息与复现条件。输出：数据检查建议、代码草稿、排查思路与复现清单，明确假设和待运行步骤。没有脚本执行工具，不读取未提供的本机环境，不编造运行结果、统计指标或复现成功证据；结果需用户实际执行并核对。",
+      introduction:
+        "根据用户提供的数据说明、代码和方法文字，讨论可检查的分析与复现步骤。",
+      capabilityDescription:
+        "输入：数据字段说明、代码片段、方法文字、报错信息与复现条件。输出：数据检查建议、代码草稿、排查思路与复现清单，明确假设和待运行步骤。没有脚本执行工具，不读取未提供的本机环境，不编造运行结果、统计指标或复现成功证据；结果需用户实际执行并核对。",
       personality: "务实、审慎，区分代码建议与实际执行结果，遇到缺失条件先说明。",
     },
   },
@@ -85,40 +88,71 @@ const legacyAgentStarters: readonly AgentStarter[] = [
     profile: {
       displayName: "组会汇报助手",
       introduction: "依据用户提供的真实研究进展整理组会汇报提纲与讨论问题。",
-      capabilityDescription: "输入：研究目标、本期进展、实验结果文字、受阻情况与汇报对象。输出：可编辑的汇报结构、讲稿、待讨论问题与下一步建议。只编写文字，不生成幻灯片文件、不自动汇总未获准项目，不编造研究成果或导师意见；进展与结果由用户核对。",
+      capabilityDescription:
+        "输入：研究目标、本期进展、实验结果文字、受阻情况与汇报对象。输出：可编辑的汇报结构、讲稿、待讨论问题与下一步建议。只编写文字，不生成幻灯片文件、不自动汇总未获准项目，不编造研究成果或导师意见；进展与结果由用户核对。",
       personality: "简明、条理清楚，优先讲清实际证据、问题和下一步。",
     },
   },
 ];
 
 // Keep exact legacy profiles as a reuse option; never overwrite an edited Agent.
-export const agentStarters: readonly AgentStarter[] = legacyAgentStarters.map(starter => ({
-  ...starter,
-  input: starter.id === "literature-reading"
-    ? "粘贴摘要/正文，或上传含文字的 PDF、TXT、Markdown、CSV，并说明阅读问题。"
-    : `${starter.input} 也可上传含文字的 PDF、TXT、Markdown 或 CSV。`,
-  boundary: `${starter.id === "literature-reading" ? "只分析提供的文字与实际读取片段，不编造未提供内容。" : starter.boundary} 附件至多 10 MiB；不做扫描 OCR、联网检索或自动执行。`,
-  profile: {
-    ...starter.profile,
-    introduction: starter.profile.introduction.replace("论文摘要或正文片段", "论文摘要、正文片段或文字附件"),
-    capabilityDescription: `${starter.profile.capabilityDescription.replace("不联网检索、不自动读取 PDF", "不联网检索；附件仅使用本次实际读取的文字范围")}\n可阅读用户主动上传的含文字 PDF、TXT、Markdown、CSV（至多 10 MiB）；依据服务实际提供的页码与片段回答，不声称已读完整文件，不做扫描 OCR、联网检索或工具执行。`,
-  },
-}));
+export const agentStarters: readonly AgentStarter[] = legacyAgentStarters.map(
+  (starter) => ({
+    ...starter,
+    input:
+      starter.id === "literature-reading"
+        ? "粘贴摘要/正文，或上传含文字的 PDF、TXT、Markdown、CSV，并说明阅读问题。"
+        : `${starter.input} 也可上传含文字的 PDF、TXT、Markdown 或 CSV。`,
+    boundary: `${
+      starter.id === "literature-reading"
+        ? "只分析提供的文字与实际读取片段，不编造未提供内容。"
+        : starter.boundary
+    } 附件至多 10 MiB；不做扫描 OCR、联网检索或自动执行。`,
+    profile: {
+      ...starter.profile,
+      introduction: starter.profile.introduction.replace(
+        "论文摘要或正文片段",
+        "论文摘要、正文片段或文字附件",
+      ),
+      capabilityDescription: `${starter.profile.capabilityDescription.replace(
+        "不联网检索、不自动读取 PDF",
+        "不联网检索；附件仅使用本次实际读取的文字范围",
+      )}\n可阅读用户主动上传的含文字 PDF、TXT、Markdown、CSV（至多 10 MiB）；依据服务实际提供的页码与片段回答，不声称已读完整文件，不做扫描 OCR、联网检索或工具执行。`,
+    },
+  }),
+);
 
 export function findOwnedStarter(
   contacts: readonly Contact[],
   starter: AgentStarter,
   actorId: string,
+  rememberedContactId?: string,
 ) {
+  const remembered = contacts.find(
+    (contact) =>
+      contact.id === rememberedContactId &&
+      contact.identity.kind === "personal_agent" &&
+      contact.identity.ownerMemberId === actorId &&
+      contact.profile.role === "specialist" &&
+      contact.relationship.status === "own",
+  );
+  if (remembered) return remembered;
   return contacts.find(
     (contact) =>
       contact.identity.kind === "personal_agent" &&
       contact.identity.ownerMemberId === actorId &&
       contact.profile.role === "specialist" &&
-      [starter.profile, legacyAgentStarters.find(item => item.id === starter.id)?.profile].some(profile =>
-        profile && contact.displayName === profile.displayName &&
-        contact.profile.introduction === profile.introduction &&
-        contact.profile.capabilityDescription === profile.capabilityDescription &&
-        contact.profile.personality === profile.personality),
+      contact.relationship.status === "own" &&
+      [
+        starter.profile,
+        legacyAgentStarters.find((item) => item.id === starter.id)?.profile,
+      ].some(
+        (profile) =>
+          profile &&
+          contact.displayName === profile.displayName &&
+          contact.profile.introduction === profile.introduction &&
+          contact.profile.capabilityDescription === profile.capabilityDescription &&
+          contact.profile.personality === profile.personality,
+      ),
   );
 }

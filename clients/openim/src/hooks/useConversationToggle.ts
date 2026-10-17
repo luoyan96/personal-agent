@@ -117,8 +117,11 @@ export function useConversationToggle() {
         // A Single selection commits synchronously. Keep selection and route in
         // the same tick: yielding first lets QueryChat unmount the old footer
         // for currentID !== routeID, cancelling this operation before navigate.
+        // The caller was checked immediately before this synchronous commit.
+        // Its old-conversation guard is now expected to be false because we
+        // selected the requested conversation ourselves. Check the committed
+        // target, account and route instead of rejecting our own selection.
         if (
-          params.isCurrent?.() !== false &&
           route.current === previousRoute &&
           useResearchStore.getState().generation === generation &&
           useResearchStore.getState().actor?.member.id === actorId &&
