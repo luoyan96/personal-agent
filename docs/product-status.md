@@ -1,14 +1,14 @@
 # AcceptCat：版本与试用说明
 
-核对日期：**2026-10-17，北京时间**。产品首页见 [README](../README.md)。这里区分对外可下载的版本、已交付试用的版本、集成源码与线上服务，避免把 Git 提交当成一次软件发布。
+核对日期：**2026-10-18，北京时间**。产品首页见 [README](../README.md)。这里区分对外可下载的版本、已交付试用的版本、集成源码与线上服务，避免把 Git 提交当成一次软件发布。
 
 ## 怎样体验
 
-- **小范围试用**：Windows x64 **0.10.8** 已制作并交付现有试用者，尚未上传公开 GitHub Release。已有包的团队退出旧客户端后覆盖安装，安装身份和数据目录保持。新团队可通过 [Issues](https://github.com/luoyan96/personal-agent/issues) 提交使用场景与试用意向；目前没有在 README 提供不存在的 0.10.8 公共下载链接。
+- **小范围试用**：Windows x64 **0.10.9** 已制作并交付现有试用者，尚未上传公开 GitHub Release。已有包的团队退出旧客户端后覆盖安装，安装身份和数据目录保持。新团队可通过 [Issues](https://github.com/luoyan96/personal-agent/issues) 提交使用场景与试用意向；目前没有在 README 提供不存在的 0.10.9 公共下载链接。
 - **公开下载**：实际 [latest Release](https://github.com/luoyan96/personal-agent/releases/latest) 为 **v0.6.0**，发表于2026-10-08，安装文件 `ResearchWeChat_0.6.0.exe`。它是早期版本，名称、界面与功能范围与最新预览不同，以对应 Release 说明为准。
 - **正式更新提示**：桌面“设置 → 版本更新”读取既有正式发布源；GitHub 分支有新代码、后台目录更新或本地制作了安装包，都不等于更新源已有新安装器。
 
-0.10.8 的交付记录：Windows x64 NSIS，**87,393,639字节**；SHA256 `beee9d36df9bed4af51cd63b8bf18d26109cccc6ab8ebe503ed3670f21cb15a1`。头像和资料可复制AcceptCat号，登录/注册/添加联系人统一，保留广场与下载改进。准确检查与限制见[0.10.8交付记录](deployment/acceptcat-0.10.8.md)，不代表已公开上传。
+0.10.9 的交付记录：Windows x64 NSIS，**87,396,864字节**；SHA256 `5719cd499ebd6eb79ba5c508d2600056a824e11ce43ffb3ad3036139ef5313be`。真人和Agent可复制跨设备名片，通讯录支持粘贴查找，保留AcceptCat号、广场与下载改进；窄窗资料弹窗不再裁切。准确检查与限制见[0.10.9交付记录](deployment/acceptcat-0.10.9.md)，不代表已公开上传。
 
 ## 目前能做什么
 
@@ -24,7 +24,7 @@
 
 ## 源码与服务分别在哪里
 
-最新产品功能和0.10.8打包源码在[release/acceptcat-0.10.8](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.8)，固定打包源码 `c88f228`。新卡片/排序/下载已进入本地试用包；[交付记录](deployment/acceptcat-0.10.8.md)区分实际打包、前端模拟通信验证与生产待办。超长Skill正文边界仍待后台配套，新增两项目录仍待运营发布；不能仅凭本包断言这些已在线。
+最新产品功能和0.10.9打包源码在[release/acceptcat-0.10.9](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.9)，固定打包源码 `a44e447`。新名片及卡片/排序/下载已进入本地试用包；[交付记录](deployment/acceptcat-0.10.9.md)区分实际打包、前端模拟通信验证与生产待办。超长Skill正文边界仍待后台配套，新增三项目录仍待运营发布；不能仅凭本包断言这些已在线。
 
 **默认分支应用代码仍是较早的0.3.0基线；更新首页文档不会自动合并全部功能分支、发布安装包或升级后台。** 开发最新产品功能时按上述集成分支和其贡献指南准备环境，不能从首页预览反推 `main` 已包含所有新功能。
 

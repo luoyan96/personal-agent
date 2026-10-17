@@ -902,3 +902,13 @@ acceptcat-3，feature/statistics-reporting-catalog接续PR56/47060af，目录源
 目录定向11项、根CI54文件/676项、构建/类型/契约/内容、生产CLI/HTTP2项、B0及隔离通过；不重复已过全套。PR56源码47060af三平台SUCCESS本轮实际读回。维护Workbench重新导航仍跳登录页，旧重新登录请求保持，未重复提问/越过登录。合并前批两项与本项的三项公共运营材料已准备，哈希见publication-prepared.json；没有上传/生产备份/目录写入/容器inspect重启/部署/迁移。线上8项/5仓库沿用旧记录，不能说已可见。现有0.10.8兼容，无新安装包、代安装、公开Release或自动更新源。详情docs/development/statistics-reporting-catalog.md，证据.runtime/community-stats-20261018；仅root活动，无共享改动冲突。
 
 草稿PR57已创建并附任务，75ba51a首次远端CI两平台运行/一排队，未计全部通过。4836/4837自建Node PID42304/35864按完整命令行核对后关闭，cleanup.json保留；旧预览与用户软件未动，阿里云登录页保留handoff供继续运营发布。
+
+## 2026-10-18：跨设备真人/Agent名片与Windows0.10.9交付
+
+acceptcat前后端维护，release/acceptcat-0.10.9接续PR57/19acbe3，最终产品与包源码a44e4471262757fe0df8a7618111a82282b53ee5。实际发现旧分享链接来自桌面随机loopback origin，改为已连接服务origin/唯一Contact ID的版本化名片，添加窗口支持多行整段/纯口令与原AcceptCat号。真实资料从原API读取，同名Agent按ID区分；跨服务读取前拒绝、不外访或改配置，真人/私人Agent分别授权，不转移管理权。只串接现有前后端流程，没有API/数据库/权限变化。
+
+客户端定向50项、类型、最终生产构建通过；真实React/API/SQLite九组、真实系统剪贴板/多行Ctrl+V、独立空间真人申请与同名Agent单独审批/无管理权，其他服务/损坏/失效/复制失败/关闭前晚结果通过。1536/1024实拍发现并修复资料弹窗窄窗裁切，专项确认500×641在726高窗口内、全选与同查询实际HTTP重试；pageerror0，无未解释console错误，既有弃用警告保留。Windows CRLF、复用临时库同意标签歧义、已知警告夹具失败保留；未放宽权限/限流，无真实IM/模型/生产资料验证。只客户端不重复根676项；前批PR57的19acbe3三平台SUCCESS实际读回。
+
+首轮旧布局构建按完整进程树核对后中止，原日志/进程记录保留，最终从a44e447重新打包。真实Windows0.10.9 NSIS/55运行依赖/16生产JS/新行为/旧功能/猫素材/无QA、实际安装器EXE/ASAR一致、隔离隐藏原生桥和renderer稳定启动通过；electron-log重复initialize原警告保持。安装器87,396,864字节/SHA256 5719cd499ebd6eb79ba5c508d2600056a824e11ce43ffb3ad3036139ef5313be，桌面AcceptCat_0.10.9.exe和安装说明交付，未代安装/关闭用户窗口，旧文件/账号/目录保持。仅关闭自建4846/4847 Node32448/35008，cleanup.json留证，旧预览未动。
+
+无需新后台接口/迁移；未部署API/worker、发布目录、公共Release或更新源，实际latest本轮重新核实v0.6.0。PR50后台边界和三项目录运营仍待之前请求的维护登录，不重复提问，旧生产47c42ac/0.25/1.12/022仅沿用记录，本轮未inspect私人后台。实现/验证见docs/development/portable-contact-cards.md和docs/deployment/acceptcat-0.10.9.md，证据.runtime/contact-cards-20261018；仅root活动，未覆盖其他任务。

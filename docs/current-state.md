@@ -2,6 +2,16 @@
 
 更新日期：2026-10-18（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新Windows交付：0.10.9，真人与Agent跨设备名片
+
+`acceptcat`，`release/acceptcat-0.10.9` 接续PR57/19acbe3，最终产品/打包源码 **a44e4471262757fe0df8a7618111a82282b53ee5**。修复原名片链接实际指向桌面随机loopback地址的问题，改为携带真实服务origin/唯一Contact ID的版本化名片口令；通讯录可整段粘贴、查找真人/Agent，显示服务端实际资料，同名不猜目标。其他服务先拒绝、不外访或自动切服务；真人和私人Agent仍分别申请/审批，收件人不获管理权。复制失败全选、关闭前晚结果阻断；窄窗弹窗居中及内部滚动，修复底部裁切。详见[实现](development/portable-contact-cards.md)。
+
+客户端50项/类型/生产构建通过；真实React/API/SQLite九组、实际剪贴板/多行Ctrl+V、独立空间真人添加/同名Agent单独授权与各错误边界通过，另有1024窄窗/同查询重试专项。1536/1024实拍已看，pageerror0，无未解释console错误。CRLF/临时库定位/既有警告夹具首败与因布局问题中止的首轮构建保留，最终从修正后源码重新打包；未放宽产品权限/限流。无真实IM送达、模型或生产私人材料验证。证据Git外 `.runtime/contact-cards-20261018`；仅客户端不重复根676项，前批PR57三平台SUCCESS本轮已读回。
+
+**Windows x64 NSIS0.10.9已交付桌面** `C:/Users/luo/Desktop/AcceptCat_0.10.9.exe` 及说明，**87,396,864字节**，SHA256 **5719cd499ebd6eb79ba5c508d2600056a824e11ce43ffb3ad3036139ef5313be**。实际55运行依赖/16生产JS/新名片行为/无QA、安装器payload EXE与ASAR哈希一致、隔离隐藏原生桥/renderer稳定启动通过，既有electron-log警告保留；没有代安装或关闭现装窗口，旧包/数据保持。[交付记录](deployment/acceptcat-0.10.9.md)。双方需升级才能识别新口令；旧版仍可用真人AcceptCat号。
+
+名片功能兼容既有API，无新后台接口/迁移、部署、目录运营、公开Release或更新源；最新公共包v0.6.0本轮重新核实。PR50超长正文边界和三项社区目录运营仍待既有维护登录，不重复请求；本轮未新inspect生产，旧47c42ac/0.25/1.12/022仅沿用记录。4846/4847自建服务已按完整Node命令核对关闭，旧预览未动。
+
 ## 最新社区来源：统计报告与图注自查（待维护登录发布）
 
 `acceptcat-3`，`feature/statistics-reporting-catalog` 接续PR56/47060af，目录源码 **03e4d6fa035e651afe8f257283f6cd45deaea0b9**，[草稿PR57](https://github.com/luoyan96/personal-agent/pull/57)已附任务。新增Boom5426/Nature-Paper-Skills固定6f8eaa0的统计报告/独立重复/图注自查；独立Skill未标版本，仓库0.2.0，本模块Apache-2.0、根原创MIT分别说明。中文输入/交付/费用/材料完整；明确不重算统计值，提示上游“No data were excluded”骨架不能无依据使用，不冒充期刊背书或Word工具接通。本地11项/7仓库，没有重复内置Skill或改前端组件。

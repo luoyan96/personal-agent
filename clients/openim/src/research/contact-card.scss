@@ -1,0 +1,38 @@
+.acceptcat-contact-share {
+  padding: 14px;
+  border: 1px solid #e3e9e7;
+  border-radius: 12px;
+  background: #f7faf8;
+  min-width: 0;
+  .acceptcat-contact-share-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    strong {
+      font-size: 13px;
+      color: #42634f;
+    }
+    .ant-btn {
+      flex-shrink: 0;
+    }
+  }
+  p {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #728078;
+  }
+  [role="alert"] {
+    color: #b54732;
+  }
+  [role="status"] {
+    color: #42634f;
+  }
+  textarea.ant-input {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+}

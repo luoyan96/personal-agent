@@ -10,6 +10,7 @@ import { MemoryPanel } from "./MemoryPanel";
 import { useResearchContactChat } from "./useResearchContactChat";
 import { AgentConnectionPanel } from "./AgentConnectionPanel";
 import { AcceptCatAccountNumber } from "./AcceptCatAccountNumber";
+import { ContactCardShare } from "./ContactCardShare";
 
 export const ResearchUserCard = forwardRef<
   OverlayVisibleHandle,
@@ -35,7 +36,7 @@ export const ResearchUserCard = forwardRef<
   const contact = data?.data;
   const [editing, setEditing] = useState(false);
   const [memories, setMemories] = useState(false);
-  const [connection, setConnection] = useState(false), [shareLink, setShareLink] = useState(""), [shareStatus, setShareStatus] = useState(""), [exported, setExported] = useState("");
+  const [connection, setConnection] = useState(false), [exported, setExported] = useState("");
   const [form, setForm] = useState({
     displayName: "",
     introduction: "",
@@ -63,7 +64,7 @@ export const ResearchUserCard = forwardRef<
   useEffect(() => {
     setEditing(false);
     setMemories(false);
-    setConnection(false); setShareLink(""); setShareStatus(""); setExported("");
+    setConnection(false); setExported("");
     setFailure("");
     setBusy(false);
   }, [scope]);
@@ -111,8 +112,9 @@ export const ResearchUserCard = forwardRef<
       onCancel={close}
       footer={null}
       destroyOnClose
+      centered
       width={500}
-      bodyStyle={{ maxHeight: "calc(100vh - 160px)", overflowY: "auto" }}
+      styles={{ body: { maxHeight: "calc(100vh - 180px)", overflowY: "auto" } }}
     >
       {(error || failure) && <Alert type="error" showIcon message={error || failure} />}
       {!entry && !props.contactId && (
@@ -233,12 +235,6 @@ export const ResearchUserCard = forwardRef<
                 ))}
               </dl>
               <Space wrap>
-                <Button onClick={async () => {
-                  const ticket = epoch.current, link = `${window.location.origin}/#/contact?contact=${encodeURIComponent(contact.id)}`;
-                  setShareLink(link); setShareStatus("");
-                  try { await navigator.clipboard.writeText(link); if (ticket === epoch.current) setShareStatus("名片链接已复制；对方仍需按实际权限添加。"); }
-                  catch { if (ticket === epoch.current) setShareStatus("未能自动复制，请选择下方链接复制。"); }
-                }}>复制名片链接</Button>
                 {contact.allowedActions.includes("chat") && (
                   <Button
                     type="primary"
@@ -303,7 +299,7 @@ export const ResearchUserCard = forwardRef<
                   })}>导出人设资料</Button>
                 </>}
               </Space>
-              {shareLink && <div className="space-y-1 text-xs text-slate-600"><p>{shareStatus}</p><Input aria-label="名片链接" readOnly value={shareLink} onFocus={e => e.target.select()} /><p>仅分享公开资料入口，不包含私有记忆或 API Key。</p></div>}
+              <ContactCardShare contact={contact} active={isOverlayOpen} />
               {exported && <div className="space-y-2"><p className="text-xs text-slate-600">只包含公开人设四项资料。导入会创建或复用对方自己的 Agent，不转移此联系人的身份或外部连接。</p><Input.TextArea aria-label="导出的人设 JSON" readOnly rows={6} value={exported} onFocus={e => e.target.select()} /><Button onClick={() => {
                 const url = URL.createObjectURL(new Blob([exported], { type: "application/json" })); const link = document.createElement("a"); link.href = url; link.download = "agent-profile.json"; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
               }}>保存资料 JSON</Button></div>}
