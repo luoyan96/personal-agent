@@ -890,3 +890,147 @@
     overflow: hidden;
   }
 }
+
+.community-discovery-tabs {
+  overflow-x: auto;
+  margin-bottom: 8px;
+  padding-bottom: 7px;
+  .ant-segmented {
+    background: transparent;
+    padding: 0;
+    white-space: nowrap;
+  }
+  .ant-segmented-group {
+    gap: 6px;
+  }
+  .ant-segmented-item {
+    border-radius: 9px;
+    color: #65757d;
+  }
+  .ant-segmented-item-label {
+    padding: 6px 13px;
+    font-size: 14px;
+  }
+  .ant-segmented-item-selected {
+    color: #28593f;
+    background: #e8f3ed;
+    box-shadow: none;
+    font-weight: 600;
+  }
+  .ant-segmented-thumb {
+    border-radius: 9px;
+    background: #e8f3ed;
+    box-shadow: none;
+  }
+}
+.community-discovery-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+  h2 {
+    font-size: 21px;
+    line-height: 1.5;
+    font-weight: 650;
+    margin: 0 0 4px;
+  }
+  h2 span {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 400;
+    color: #77858c;
+    margin-left: 12px;
+  }
+  p {
+    margin: 0;
+    color: #77858c;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  > .ant-btn {
+    flex-shrink: 0;
+    border-radius: 9px;
+  }
+}
+.community-interest-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 18px;
+  span {
+    padding: 4px 9px;
+    background: #eef5f1;
+    color: #4c705d;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+}
+.community-recommendation-reason {
+  margin: 12px 0 0;
+  color: #47705a;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.community-discovery-loading {
+  padding: 24px 0;
+  color: #77858c;
+}
+.community-preferences-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 0;
+  p,
+  small {
+    color: #77858c;
+    line-height: 1.8;
+    margin: 0;
+  }
+  > label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: #344a54;
+  }
+  > .ant-btn {
+    align-self: start;
+  }
+}
+.community-preferences-directions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  > [role="group"] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  button {
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid #e2e9e5;
+    border-radius: 9px;
+    background: #fafcfb;
+    color: #4c6657;
+    cursor: pointer;
+    text-align: center;
+  }
+  button[aria-pressed="true"] {
+    background: #e4f1e8;
+    border-color: #568d70;
+    color: #28593f;
+    font-weight: 600;
+  }
+  button:focus-visible {
+    outline: 2px solid #1473c8;
+    outline-offset: 2px;
+  }
+}
+@media (max-width: 620px) {
+  .community-discovery-summary {
+    align-items: start;
+    flex-wrap: wrap;
+  }
+}

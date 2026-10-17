@@ -1,5 +1,4 @@
 import { Alert, App, Button, Input, Modal, Segmented, Select } from "antd";
-import { TeamOutlined, RobotOutlined } from "@ant-design/icons";
 import { useLayoutEffect, useRef, useState } from "react";
 import type {
   CapabilityPublication,
@@ -14,12 +13,10 @@ import { WorkspaceContactCard } from "./WorkspaceContactCard";
 import { ResearchUserCard } from "./ResearchUserCard";
 import type { OverlayVisibleHandle } from "@/hooks/useOverlayVisible";
 import { workspaceApi } from "./workspace-api";
-import "./workspace.scss";
 import { readWorkspaceAvailability } from "./workspace-availability";
 import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 import { CapabilityTemplates, matchingStarterTemplates } from "./CapabilityTemplates";
-import { CommunityResearchCatalog } from "./CommunityResearchCatalog";
-import { matchingCommunityEntries } from "./community-research-catalog";
+import { CommunityDiscovery } from "./CommunityDiscovery";
 import { CapabilityFeedCard } from "./CapabilityFeedCard";
 import { AgentResearchCollections } from "./KnowledgeLibrary";
 import {
@@ -28,10 +25,10 @@ import {
   researchCategories,
   type ResearchCategory,
 } from "./capability-center";
+import "./workspace.scss";
 import "./capability-center.scss";
 import "./research-library.scss";
 import "./capability-feed.scss";
-import { CommunitySyncStatus } from "./CommunityRepositoryFacts";
 
 function ConfiguredCapabilityPreview({ contact }: { contact: Contact }) {
   const description =
@@ -47,71 +44,6 @@ function ConfiguredCapabilityPreview({ contact }: { contact: Contact }) {
   );
 }
 
-function PublicationDetail({
-  id,
-  onManage,
-  onInvite,
-  onWithdraw,
-  onChanged,
-}: {
-  id: string;
-  onManage: (contactId: string) => void;
-  onInvite: (publication: CapabilityPublication) => void;
-  onWithdraw: (publication: CapabilityPublication) => void;
-  onChanged: () => Promise<void>;
-}) {
-  const read = useResearchRead(
-    () => researchApi("capabilityPublication", { params: { id } }),
-    `square-publication:${id}`,
-  );
-  const publication = read.data?.data;
-  if (!publication)
-    return (
-      <div className="workspace-namecard">
-        {read.error ? (
-          <Alert type="warning" message={read.error} />
-        ) : (
-          <p role="status">正在读取公开能力资料…</p>
-        )}
-      </div>
-    );
-  const c = publication.contact,
-    canInvite =
-      c.allowedActions.includes("chat") &&
-      (!c.agentRuntime || c.agentRuntime.callerAllowed);
-  return (
-    <WorkspaceContactCard
-      key={c.id}
-      contactId={c.id}
-      onManage={onManage}
-      onChanged={onChanged}
-    >
-      <div className="workspace-publication-details">
-        <div className="workspace-tags">
-          {publication.tags.map((tag) => (
-            <span key={tag}>{tag}</span>
-          ))}
-        </div>
-        <p className="workspace-muted">
-          {publication.status === "published"
-            ? "本人主动公开的能力资料，不包含私人记忆、聊天和 Key。"
-            : "已撤回公开；已有好友关系由双方独立管理。"}
-        </p>
-        <div className="workspace-card-actions">
-          {canInvite && (
-            <Button onClick={() => onInvite(publication)}>邀请加入群</Button>
-          )}
-          {publication.allowedActions.includes("withdraw") && (
-            <Button danger onClick={() => onWithdraw(publication)}>
-              撤回公开
-            </Button>
-          )}
-        </div>
-      </div>
-    </WorkspaceContactCard>
-  );
-}
-
 export function CapabilitySquare() {
   const [view, setView] = useState<"public" | "lab" | "mine">("public");
   const [category, setCategory] = useState<ResearchCategory>("全部");
@@ -124,11 +56,9 @@ export function CapabilitySquare() {
     "workspace-availability",
   );
   const supported = availability.data?.available === true;
-  const read = useResearchRead(
-    () => workspaceApi.square("public", "all", query, cursor),
-    `square:public:${query}:${cursor || ""}`,
-    supported && view === "public",
-  );
+  const actor = useResearchStore((s) => s.actor),
+    generation = useResearchStore((s) => s.generation);
+  const actorId = actor?.member.id;
   const local = useResearchRead(
     (signal) =>
       researchApi("chatContacts", {
@@ -144,11 +74,13 @@ export function CapabilitySquare() {
     `square-contacts:${view}:${query}:${cursor || ""}`,
     supported && view !== "public",
   );
-  const actorId = useResearchStore((s) => s.actor?.member.id),
-    generation = useResearchStore((s) => s.generation);
-  const [selected, setSelected] = useState<string>(),
+  const community = useResearchRead(
+    (signal) => researchApi("communityCatalog", { signal }),
+    "square-community-catalog",
+    supported && view === "public",
+  );
+  const [selectedContact, setSelectedContact] = useState<string>(),
     [managedContact, setManagedContact] = useState<string>();
-  const [selectedContact, setSelectedContact] = useState<string>();
   const selectedContactRead = useResearchRead(
     (signal) =>
       researchApi("chatContact", { params: { id: selectedContact! }, signal }),
@@ -160,7 +92,8 @@ export function CapabilitySquare() {
     [contactId, setContactId] = useState(""),
     [tagText, setTagText] = useState("");
   const own = useResearchRead(
-    () => researchApi("chatContacts", { query: { view: "mine", limit: 100 } }),
+    (signal) =>
+      researchApi("chatContacts", { query: { view: "mine", limit: 100 }, signal }),
     "square-own-contacts",
     publishing && supported,
   );
@@ -169,35 +102,24 @@ export function CapabilitySquare() {
     "square-own-publications",
     publishing && supported,
   );
-  const [invite, setInvite] = useState<CapabilityPublication>(),
-    [groupId, setGroupId] = useState("");
-  const groups = useResearchRead(
-    () => researchApi("chatConversations", { query: { limit: 100 } }),
-    `square-invite:${invite?.id || ""}`,
-    !!invite && supported,
-  );
   const [busy, setBusy] = useState(false),
     [failure, setFailure] = useState(""),
     [notice, setNotice] = useState("");
   const operation = usePersonalOperation(
       true,
-      `square:${view}:${selected}:${publishing}:${invite?.id || ""}:${supported}`,
+      `square:${view}:${selectedContact}:${publishing}:${supported}`,
     ),
     inFlight = useRef(false);
   const { modal } = App.useApp();
   useLayoutEffect(() => {
     if (!supported) {
-      setSelected(undefined);
       setSelectedContact(undefined);
       setPublishing(false);
-      setInvite(undefined);
     }
   }, [supported]);
   useLayoutEffect(() => {
-    setSelected(undefined);
     setSelectedContact(undefined);
     setPublishing(false);
-    setInvite(undefined);
     setManagedContact(undefined);
     setFailure("");
     setNotice("");
@@ -206,6 +128,8 @@ export function CapabilitySquare() {
     inFlight.current = false;
     setContactId("");
     setTagText("");
+    setSearch("");
+    setQuery("");
   }, [generation]);
   useLayoutEffect(() => {
     inFlight.current = false;
@@ -218,54 +142,21 @@ export function CapabilitySquare() {
         ? c.identity.memberId === actorId
         : c.identity.kind === "personal_agent" && c.identity.ownerMemberId === actorId,
     ) || [];
-  const sourceContacts = (local.data?.data || []).filter(
+  const localResults = (local.data?.data || []).filter(
     (c) =>
-      view !== "mine" ||
-      (c.identity.kind === "personal_agent" && c.identity.ownerMemberId === actorId),
+      (view !== "mine" ||
+        (c.identity.kind === "personal_agent" &&
+          c.identity.ownerMemberId === actorId)) &&
+      (category === "全部" || capabilityCategory(c) === category),
   );
-  const community = useResearchRead(
-    (signal) => researchApi("communityCatalog", { signal }),
-    "square-community-catalog",
-    supported && view === "public",
-  );
-  const publicResults = (read.data?.data || []).filter(
-    (p) => category === "全部" || capabilityCategory(p.contact, p.tags) === category,
-  );
-  const localResults = sourceContacts.filter(
-    (c) => category === "全部" || capabilityCategory(c) === category,
-  );
-  const listError = view === "public" ? read.error : local.error;
+  const hasTemplates =
+    view === "mine" && matchingStarterTemplates(category, query).length > 0;
   const librarySupported =
     !!availability.data?.version &&
     Number(availability.data.version.split(".")[1]) >= 24;
-  const hasDiscoveryResults =
-    matchingStarterTemplates(category, query).length > 0 ||
-    (view === "public" &&
-      (matchingCommunityEntries(community.data?.data.entries || [], category, query)
-        .length > 0 ||
-        (category === "全部" &&
-          !!community.data?.data.candidates.some((c) =>
-            `${c.name} ${c.description || ""}`
-              .toLowerCase()
-              .includes(query.toLowerCase()),
-          ))));
-  const resetFilters = () => {
-    setCategory("全部");
-    setSearch("");
-    setQuery("");
-    setPages([undefined]);
-    setSelected(undefined);
-    setSelectedContact(undefined);
-  };
   const refreshLists = async () => {
-    await Promise.all([read.refresh(), local.refresh()]);
+    await Promise.all([local.refresh(), own.refresh(), mine.refresh()]);
   };
-  const ownerLabel = (c: Contact) =>
-    c.identity.kind === "human"
-      ? c.displayName
-      : c.identity.ownerMemberId === actorId
-      ? "由你维护"
-      : "由所属账号维护";
   const command = async (
     call: () => Promise<unknown>,
     success: string,
@@ -280,7 +171,7 @@ export function CapabilitySquare() {
     try {
       await call();
       if (!isCurrent()) return;
-      await read.refresh();
+      await refreshLists();
       if (isCurrent()) {
         setNotice(success);
         done?.();
@@ -306,15 +197,14 @@ export function CapabilitySquare() {
       ),
     ];
     if (tags.length > 8 || tags.some((t) => t.length > 40)) {
-      setFailure("最多填写 8 个标签，每个不超过 40 字。");
+      setFailure("最多填写8个标签，每个不超过40字。");
       return;
     }
-    const existing = mine.data.data.find((p) => p.contactId === contactId);
-    const current = operation.capture();
+    const existing = mine.data.data.find((p) => p.contactId === contactId),
+      current = operation.capture();
     modal.confirm({
       title: "公开这张能力名片？",
-      content:
-        "公开名称、介绍、能力、性格和标签，让其他注册用户发现你。私人记忆、聊天及 Key 不会公开。",
+      content: "公开名称、介绍、能力、性格和标签。私人记忆、聊天及Key不会公开。",
       onOk: () =>
         current.isCurrent()
           ? command(
@@ -332,69 +222,48 @@ export function CapabilitySquare() {
           : undefined,
     });
   };
-  const withdraw = (p: CapabilityPublication) => {
+  const withdraw = (publication: CapabilityPublication) => {
     const current = operation.capture();
     modal.confirm({
       title: "撤回公开能力？",
-      content: "广场将不再展示这张名片；不会删除联系人，也不会取消已建立的好友关系。",
+      content: "不会删除联系人或取消已建立的好友关系。",
       onOk: () =>
         current.isCurrent()
           ? command(
               () =>
                 researchApi("withdrawCapability", {
-                  params: { id: p.id },
-                  body: { expectedVersion: p.version },
+                  params: { id: publication.id },
+                  body: { expectedVersion: publication.version },
                 }),
               "已撤回公开。",
-              () => setSelected(undefined),
             )
           : undefined,
     });
   };
-  const startInvite = (p: CapabilityPublication) => {
-    setInvite(p);
-    setGroupId("");
-    setFailure("");
-  };
-  const selectedGroup = groups.data?.data.find(
-    (g) =>
-      g.id === groupId && g.kind === "group" && g.allowedActions.includes("invite"),
-  );
-  const inviteToGroup = () => {
-    if (!invite || !selectedGroup) return;
-    const current = operation.capture();
-    modal.confirm({
-      title: `邀请 ${invite.contact.displayName} 加入“${selectedGroup.title}”？`,
-      content:
-        "真人或私人 Agent 的主人仍需接受群邀请；这不授予科研任务或资料的额外权限。",
-      onOk: () =>
-        current.isCurrent()
-          ? command(
-              () =>
-                researchApi("imInviteContact", {
-                  params: { id: selectedGroup.id },
-                  body: {
-                    contactId: invite.contactId,
-                    expectedConversationVersion: selectedGroup.version,
-                  },
-                }),
-              "群邀请已按当前权限提交，等待对方同意。",
-              () => setInvite(undefined),
-            )
-          : undefined,
-    });
+  const resetFilters = () => {
+    setCategory("全部");
+    setSearch("");
+    setQuery("");
+    setPages([undefined]);
+    setSelectedContact(undefined);
   };
   return (
     <div className="social-workspace workspace-square capability-feed">
       <header className="workspace-heading">
         <div>
           <h1>科研广场</h1>
-          <p>先看交付物，再找到你的科研助手。</p>
+          <p>
+            {view === "public"
+              ? "在 GitHub 社区里，发现适合你研究的能力。"
+              : view === "mine"
+              ? "管理自己的科研助手、模型与资料。"
+              : "了解课题组成员和 Agent 的能力。"}
+          </p>
         </div>
         <Input.Search
           className="capability-feed-search"
           aria-label="搜索公开能力"
-          placeholder="搜索你想完成的事"
+          placeholder={view === "public" ? "搜索 GitHub 科研能力" : "搜索科研助手"}
           value={search}
           allowClear
           maxLength={100}
@@ -408,22 +277,23 @@ export function CapabilitySquare() {
           onSearch={(v) => {
             setQuery(v.trim());
             setPages([undefined]);
-            setSelected(undefined);
             setSelectedContact(undefined);
           }}
         />
-        <Button
-          type="primary"
-          disabled={!supported}
-          onClick={() => {
-            setPublishing(true);
-            setContactId("");
-            setTagText("");
-            setFailure("");
-          }}
-        >
-          公开我的能力
-        </Button>
+        {view !== "public" && (
+          <Button
+            type="primary"
+            disabled={!supported}
+            onClick={() => {
+              setPublishing(true);
+              setContactId("");
+              setTagText("");
+              setFailure("");
+            }}
+          >
+            公开我的能力
+          </Button>
+        )}
       </header>
       <div className="workspace-toolbar">
         <Segmented
@@ -432,9 +302,8 @@ export function CapabilitySquare() {
           value={view}
           onChange={(v) => {
             setView(v as typeof view);
-            setPages([undefined]);
-            setSelected(undefined);
-            setSelectedContact(undefined);
+            resetFilters();
+            setNotice("");
           }}
           options={[
             { label: "发现能力", value: "public" },
@@ -442,25 +311,28 @@ export function CapabilitySquare() {
             { label: "我的 Agent", value: "mine" },
           ]}
         />
-        <Segmented
-          className="capability-feed-categories"
-          aria-label="科研能力分类"
-          value={category}
-          onChange={(v) => {
-            setCategory(v as ResearchCategory);
-            setSelected(undefined);
-            setSelectedContact(undefined);
-          }}
-          options={[...researchCategories]}
-        />
+        {view !== "public" && (
+          <Segmented
+            className="capability-feed-categories"
+            aria-label="科研能力分类"
+            value={category}
+            onChange={(v) => {
+              setCategory(v as ResearchCategory);
+              setSelectedContact(undefined);
+            }}
+            options={[...researchCategories]}
+          />
+        )}
       </div>
-      {(listError || failure || notice) && (
+      {((view !== "public" && local.error) || failure || notice) && (
         <Alert
           className="mx-5 mt-3"
-          type={listError || failure ? "warning" : "info"}
-          message={listError || failure || notice}
+          type={(view !== "public" && local.error) || failure ? "warning" : "info"}
+          message={(view !== "public" && local.error) || failure || notice}
           action={
-            listError ? <Button onClick={refreshLists}>重试读取</Button> : undefined
+            local.error && view !== "public" ? (
+              <Button onClick={refreshLists}>重试读取</Button>
+            ) : undefined
           }
         />
       )}
@@ -473,182 +345,124 @@ export function CapabilitySquare() {
         />
       ) : (
         <div
-          className={`workspace-square-body ${
-            selected || selectedContact ? "has-selection" : ""
-          }`}
+          className={`workspace-square-body ${selectedContact ? "has-selection" : ""}`}
         >
           <section className="workspace-square-results" aria-label="科研发现内容">
-            {!(view === "public" ? read.data : local.data) && !listError && (
-              <p role="status" className="p-5">
-                正在读取科研能力…
-              </p>
-            )}
-            {((publicResults.length > 0 && view === "public") ||
-              (localResults.length > 0 && view !== "public")) && (
-              <div className="capability-feed-section-heading">
-                <h2>
-                  {view === "mine"
-                    ? "我的科研助手"
-                    : view === "lab"
-                    ? "来自课题组的能力"
-                    : "来自研究者的能力"}
-                </h2>
-                <p>
-                  {view === "mine"
-                    ? "打开配置，管理模型与资料。"
-                    : "由维护者填写，点开了解与联系。"}
-                </p>
-              </div>
-            )}
-            <div className="capability-discovery-grid capability-live-grid">
-              {view === "public" &&
-                publicResults.map((p) => (
-                  <CapabilityFeedCard
-                    key={p.id}
-                    title={p.contact.displayName}
-                    openLabel={`查看${p.contact.displayName}公开名片`}
-                    name={ownerLabel(p.contact)}
-                    outcomes={
-                      p.contact.profile.introduction || "打开名片了解实际用途与输入。"
-                    }
-                    status={
-                      p.status === "withdrawn"
-                        ? "已撤回公开"
-                        : capabilityStatus(p.contact)
-                    }
-                    icon={
-                      p.contact.identity.kind === "human" ? (
-                        <TeamOutlined />
-                      ) : (
-                        <RobotOutlined />
-                      )
-                    }
-                    preview={<ConfiguredCapabilityPreview contact={p.contact} />}
-                    selected={selected === p.id}
-                    onOpen={() => {
-                      setSelected(p.id);
-                      setSelectedContact(undefined);
-                    }}
-                  />
-                ))}
-              {view !== "public" &&
-                localResults.map((c) => (
-                  <CapabilityFeedCard
-                    key={c.id}
-                    title={c.displayName}
-                    openLabel={`查看${c.displayName}配置`}
-                    name={ownerLabel(c)}
-                    outcomes={c.profile.introduction || "打开配置了解实际用途与输入。"}
-                    status={capabilityStatus(c)}
-                    icon={<OIMAvatar text={c.displayName} size={32} />}
-                    preview={<ConfiguredCapabilityPreview contact={c} />}
-                    selected={selectedContact === c.id}
-                    onOpen={() => {
-                      setSelectedContact(c.id);
-                      setSelected(undefined);
-                    }}
-                  />
-                ))}
-            </div>
-            {(view === "public"
-              ? read.data && !publicResults.length
-              : local.data && !localResults.length) &&
-              (view !== "public" || !hasDiscoveryResults) && (
-                <div className="capability-feed-empty">
-                  <p>
-                    {view === "mine"
-                      ? "还没有匹配的私人 Agent，从下面的用法中挑一个开始。"
-                      : view === "lab"
-                      ? "还没有匹配的课题组能力，可以先添加自己的科研助手。"
-                      : "没有找到匹配的内容，试试“文献”“图注”或“投稿”。"}
-                  </p>
-                  {(query || category !== "全部") && (
-                    <Button size="small" onClick={resetFilters}>
-                      清除筛选
-                    </Button>
-                  )}
-                </div>
-              )}
-            {(pages.length > 1 ||
-              (view === "public" ? read.data?.nextCursor : local.data?.nextCursor)) && (
-              <div className="workspace-pages">
-                <Button
-                  size="small"
-                  disabled={pages.length === 1}
-                  onClick={() => setPages((v) => v.slice(0, -1))}
-                >
-                  上一页
-                </Button>
-                <Button
-                  size="small"
-                  disabled={
-                    !(view === "public"
-                      ? read.data?.nextCursor
-                      : local.data?.nextCursor)
-                  }
-                  onClick={() => {
-                    const nextCursor =
-                      view === "public"
-                        ? read.data?.nextCursor
-                        : local.data?.nextCursor;
-                    if (nextCursor) setPages((v) => [...v, nextCursor]);
-                  }}
-                >
-                  更多能力
-                </Button>
-              </div>
-            )}
-            {view === "public" && (
-              <CommunitySyncStatus
+            {view === "public" ? (
+              <CommunityDiscovery
+                key={`${generation}:${actorId}`}
+                actorId={actorId || ""}
+                expertise={actor?.member.publicExpertise || []}
                 catalog={community.data?.data}
                 loading={community.loading}
                 error={community.error}
                 onRefresh={community.refresh}
-              />
-            )}
-            {hasDiscoveryResults && (
-              <div className="capability-feed-section-heading">
-                <h2>
-                  {view === "public"
-                    ? "从一个具体问题开始"
-                    : "挑一个用法，开始自己的研究"}
-                </h2>
-                <p>
-                  {view === "public"
-                    ? "内置助手与社区工具 · 点开看用法"
-                    : "添加私人文字 Agent，再选择模型与资料。"}
-                </p>
-              </div>
-            )}
-            <div className="capability-discovery-grid">
-              <CapabilityTemplates
-                key={generation}
-                category={category}
                 search={query}
-                onChanged={refreshLists}
-                onConfigure={(id) => {
-                  setView("mine");
-                  setSelected(undefined);
-                  setSelectedContact(id);
-                  setPages([undefined]);
-                }}
+                onClearSearch={resetFilters}
               />
-              {view === "public" && (
-                <CommunityResearchCatalog
-                  key={`community:${generation}`}
-                  category={category}
-                  search={query}
-                  catalog={community.data?.data}
-                />
-              )}
-            </div>
-            {hasDiscoveryResults && (
-              <p className="capability-center-boundary">
-                示例展示交付形式，并非实际生成结果。具体输入、资料权限与接入状态见各项用法。
-              </p>
+            ) : (
+              <>
+                {!local.data && !local.error && (
+                  <p role="status" className="p-5">
+                    正在读取科研能力…
+                  </p>
+                )}
+                {!!localResults.length && (
+                  <div className="capability-feed-section-heading">
+                    <h2>{view === "mine" ? "我的科研助手" : "来自课题组的能力"}</h2>
+                    <p>
+                      {view === "mine"
+                        ? "打开配置，管理模型与资料。"
+                        : "由维护者填写，点开了解与联系。"}
+                    </p>
+                  </div>
+                )}
+                <div className="capability-discovery-grid capability-live-grid">
+                  {localResults.map((c) => (
+                    <CapabilityFeedCard
+                      key={c.id}
+                      title={c.displayName}
+                      openLabel={`查看${c.displayName}配置`}
+                      name={
+                        c.identity.kind === "human"
+                          ? c.displayName
+                          : c.identity.ownerMemberId === actorId
+                          ? "由你维护"
+                          : "由所属账号维护"
+                      }
+                      outcomes={
+                        c.profile.introduction || "打开配置了解实际用途与输入。"
+                      }
+                      status={capabilityStatus(c)}
+                      icon={<OIMAvatar text={c.displayName} size={32} />}
+                      preview={<ConfiguredCapabilityPreview contact={c} />}
+                      selected={selectedContact === c.id}
+                      onOpen={() => setSelectedContact(c.id)}
+                    />
+                  ))}
+                </div>
+                {local.data && !localResults.length && (
+                  <div className="capability-feed-empty">
+                    <p>
+                      {view === "mine"
+                        ? "还没有匹配的私人 Agent，从下面的内置助手挑一个开始。"
+                        : "还没有匹配的课题组能力。"}
+                    </p>
+                    {(query || category !== "全部") && (
+                      <Button size="small" onClick={resetFilters}>
+                        清除筛选
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {(pages.length > 1 || local.data?.nextCursor) && (
+                  <div className="workspace-pages">
+                    <Button
+                      size="small"
+                      disabled={pages.length === 1}
+                      onClick={() => setPages((v) => v.slice(0, -1))}
+                    >
+                      上一页
+                    </Button>
+                    <Button
+                      size="small"
+                      disabled={!local.data?.nextCursor}
+                      onClick={() => {
+                        const next = local.data?.nextCursor;
+                        if (next) setPages((v) => [...v, next]);
+                      }}
+                    >
+                      更多能力
+                    </Button>
+                  </div>
+                )}
+                {view === "mine" && hasTemplates && (
+                  <>
+                    <div className="capability-feed-section-heading">
+                      <h2>添加内置科研助手</h2>
+                      <p>选择一个文字助手，添加到你的 Agent，再配置模型与资料。</p>
+                    </div>
+                    <div className="capability-discovery-grid">
+                      <CapabilityTemplates
+                        key={generation}
+                        category={category}
+                        search={query}
+                        onChanged={refreshLists}
+                        onConfigure={(id) => {
+                          setSelectedContact(id);
+                          setPages([undefined]);
+                        }}
+                      />
+                    </div>
+                    <p className="capability-center-boundary">
+                      示例展示交付形式，并非实际生成结果。具体输入、资料权限与接入状态见各项用法。
+                    </p>
+                  </>
+                )}
+              </>
             )}
           </section>
-          {selectedContact && (
+          {selectedContact && view !== "public" && (
             <aside className="workspace-square-detail">
               <Button
                 type="text"
@@ -679,28 +493,6 @@ export function CapabilitySquare() {
               </WorkspaceContactCard>
             </aside>
           )}
-          {selected && (
-            <aside className="workspace-square-detail">
-              <Button
-                type="text"
-                className="workspace-close-detail"
-                onClick={() => setSelected(undefined)}
-              >
-                收起名片
-              </Button>
-              <PublicationDetail
-                key={selected}
-                id={selected}
-                onManage={(id) => {
-                  setManagedContact(id);
-                  profile.current?.openOverlay();
-                }}
-                onInvite={startInvite}
-                onWithdraw={withdraw}
-                onChanged={read.refresh}
-              />
-            </aside>
-          )}
         </div>
       )}
       <ResearchUserCard contactId={managedContact} ref={profile} />
@@ -714,7 +506,7 @@ export function CapabilitySquare() {
       >
         <div className="workspace-task-form">
           <p className="workspace-muted">
-            公开是可撤回的。只公开这张名片的公开资料，不包含记忆、模型 Key 或聊天内容。
+            只公开能力名片，不包含记忆、模型Key或聊天内容。可在此管理已公开的名片。
           </p>
           {(own.error || mine.error) && (
             <Alert type="error" message={own.error || mine.error} />
@@ -761,47 +553,16 @@ export function CapabilitySquare() {
           >
             确认公开
           </Button>
-        </div>
-      </Modal>
-      <Modal
-        title="邀请加入群"
-        open={!!invite}
-        onCancel={() => setInvite(undefined)}
-        footer={null}
-        destroyOnClose
-        className="workspace-add-dialog"
-      >
-        <div className="workspace-task-form">
-          <p>邀请 {invite?.contact.displayName} 参与已有群聊。</p>
-          {groups.error && <Alert type="error" message={groups.error} />}
-          <Select
-            aria-label="邀请目标群"
-            placeholder="选择你可邀请成员的群"
-            value={groupId || undefined}
-            options={groups.data?.data
-              .filter((g) => g.kind === "group" && g.allowedActions.includes("invite"))
-              .map((g) => ({ value: g.id, label: g.title }))}
-            onChange={setGroupId}
-          />
-          <p className="workspace-muted">
-            好友关系和群邀请分别取得同意，不会自动分享私人记忆或任务资料。
-          </p>
-          {groups.data &&
-            !groups.data.data.some(
-              (g) => g.kind === "group" && g.allowedActions.includes("invite"),
-            ) && (
-              <p className="workspace-muted">
-                当前没有可邀请成员的群。可以先在工作台确认一项协作安排。
-              </p>
-            )}
-          {failure && <Alert type="error" message={failure} />}
-          <Button
-            type="primary"
-            disabled={!selectedGroup || busy}
-            onClick={inviteToGroup}
-          >
-            确认邀请
-          </Button>
+          {mine.data?.data
+            .filter((p) => p.status === "published")
+            .map((p) => (
+              <div className="workspace-card-actions" key={p.id}>
+                <span>{p.contact.displayName} · 已公开</span>
+                <Button danger disabled={busy} onClick={() => withdraw(p)}>
+                  撤回公开
+                </Button>
+              </div>
+            ))}
         </div>
       </Modal>
     </div>

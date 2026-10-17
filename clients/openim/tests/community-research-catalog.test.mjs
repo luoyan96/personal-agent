@@ -226,7 +226,7 @@ test("catalog keeps original pinned sources distinct from callable abilities and
     ),
     require,
   ).communityCatalogSeed;
-  assert.equal(new Set(entries.map((e) => e.id)).size, 6);
+  assert.equal(new Set(entries.map((e) => e.id)).size, entries.length);
   for (const entry of entries) {
     assert.match(entry.revision, /^[a-f0-9]{40}$/);
     assert.match(

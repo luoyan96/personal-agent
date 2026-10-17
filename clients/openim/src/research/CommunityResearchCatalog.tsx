@@ -1,48 +1,79 @@
 import { Modal } from "antd";
 import { ReadOutlined, FileSearchOutlined, StarOutlined } from "@ant-design/icons";
 import { useState } from "react";
-import type { ResponseFor } from "@research-agent-platform/contracts";
 import { Link } from "react-router-dom";
-import {
-  communitySourceUrl,
-  matchingCommunityEntries,
-} from "./community-research-catalog";
-import type { ResearchCategory } from "./capability-center";
+import { communitySourceUrl } from "./community-research-catalog";
+import type { DiscoveryItem } from "./community-discovery";
 import { CapabilityFeedCard, CapabilityOutcomePreview } from "./CapabilityFeedCard";
 import { communityFeedCopy } from "./capability-feed-copy";
 import { CommunityRepositoryFacts, communityDate } from "./CommunityRepositoryFacts";
 
 export function CommunityResearchCatalog({
-  category,
-  search,
-  catalog,
+  items,
+  showReasons = false,
 }: {
-  category: ResearchCategory;
-  search: string;
-  catalog?: ResponseFor<"communityCatalog">["data"];
+  items: readonly DiscoveryItem[];
+  showReasons?: boolean;
 }) {
   const [selectedId, setSelectedId] = useState<string>();
   const [candidateId, setCandidateId] = useState<string>();
-  const entries = matchingCommunityEntries(catalog?.entries || [], category, search);
+  const entries = items.flatMap((item) =>
+    item.kind === "reviewed" ? [item.entry] : [],
+  );
+  const candidates = items.flatMap((item) =>
+    item.kind === "candidate" ? [item.candidate] : [],
+  );
   const selected = entries.find((entry) => entry.id === selectedId);
   const visibleSelection = selected;
-  const candidates =
-    category === "全部"
-      ? (catalog?.candidates || []).filter((c) =>
-          `${c.name} ${c.description || ""}`
-            .toLowerCase()
-            .includes(search.toLowerCase()),
-        )
-      : [];
-  const candidate = candidates.find((c) => c.repository === candidateId);
+  const candidate = candidates.find((item) => item.repository === candidateId);
+  const renderCandidate = (
+    discovery: Extract<DiscoveryItem, { kind: "candidate" }>,
+  ) => {
+    const item = discovery.candidate;
+    return (
+      <CapabilityFeedCard
+        key={discovery.key}
+        openLabel={`查看${item.name}仓库`}
+        title={item.name.split("/")[1] || item.name}
+        name={item.name.split("/")[0] || item.name}
+        outcomes={item.description || "仓库尚未提供用途说明。"}
+        status="社区发现候选 · 未适配"
+        icon={<ReadOutlined />}
+        preview={
+          <div className="capability-outcome-preview preview-blue community-candidate-preview">
+            <span className="capability-preview-label">GitHub 发现 · 待审阅</span>
+            <h4>{item.name.split("/")[1]}</h4>
+            <p>{item.description || "先查看仓库原始说明。"}</p>
+          </div>
+        }
+        metadata={
+          <>
+            {showReasons && (
+              <p className="community-recommendation-reason">{discovery.reason}</p>
+            )}
+            <div className="community-repository-facts">
+              <span aria-label="GitHub Star 数">
+                <StarOutlined aria-hidden /> 仓库 {item.stars.toLocaleString("zh-CN")}
+              </span>
+              <span>代码更新 {communityDate(item.pushedAt)}</span>
+            </div>
+          </>
+        }
+        onOpen={() => setCandidateId(item.repository)}
+      />
+    );
+  };
+
   return (
     <section className="community-research-catalog" aria-label="社区科研工具">
-      {entries.map((entry) => {
+      {items.map((discovery) => {
+        if (discovery.kind === "candidate") return renderCandidate(discovery);
+        const entry = discovery.entry;
         const Icon =
           entry.status === "offline_reviewed" ? FileSearchOutlined : ReadOutlined;
         return (
           <CapabilityFeedCard
-            key={entry.id}
+            key={discovery.key}
             title={communityFeedCopy[entry.id]?.title || entry.name}
             outcomes={communityFeedCopy[entry.id]?.outcomes || entry.summary}
             name={entry.name}
@@ -79,10 +110,15 @@ export function CommunityResearchCatalog({
               )
             }
             metadata={
-              <CommunityRepositoryFacts
-                github={entry.github}
-                reviewedRevision={entry.revision}
-              />
+              <>
+                {showReasons && (
+                  <p className="community-recommendation-reason">{discovery.reason}</p>
+                )}
+                <CommunityRepositoryFacts
+                  github={entry.github}
+                  reviewedRevision={entry.revision}
+                />
+              </>
             }
             onOpen={() => setSelectedId(entry.id)}
           />
@@ -207,44 +243,6 @@ export function CommunityResearchCatalog({
           </div>
         )}
       </Modal>
-      {catalog?.sync.discoveryState === "failed" && (
-        <p className="community-candidate-heading">
-          GitHub 候选检索未完成，保留上次列表。
-        </p>
-      )}
-      {candidates.length > 0 && (
-        <div className="community-candidate-heading">
-          <h2>GitHub 新发现 · 待审阅</h2>
-          <p>先查看仓库与用途，适配和验证后再开放安装。</p>
-        </div>
-      )}
-      {candidates.map((item) => (
-        <CapabilityFeedCard
-          key={item.repository}
-          openLabel={`查看${item.name}仓库`}
-          title={item.name.split("/")[1] || item.name}
-          name={item.name.split("/")[0] || item.name}
-          outcomes={item.description || "仓库尚未提供用途说明。"}
-          status="社区发现候选 · 未适配"
-          icon={<ReadOutlined />}
-          preview={
-            <div className="capability-outcome-preview preview-blue community-candidate-preview">
-              <span className="capability-preview-label">GitHub 发现 · 待审阅</span>
-              <h4>{item.name.split("/")[1]}</h4>
-              <p>{item.description || "先查看仓库原始说明。"}</p>
-            </div>
-          }
-          metadata={
-            <div className="community-repository-facts">
-              <span aria-label="GitHub Star 数">
-                <StarOutlined /> {item.stars.toLocaleString("zh-CN")}
-              </span>
-              <span>代码更新 {communityDate(item.pushedAt)}</span>
-            </div>
-          }
-          onOpen={() => setCandidateId(item.repository)}
-        />
-      ))}
       <Modal
         open={!!candidate}
         title={candidate?.name}

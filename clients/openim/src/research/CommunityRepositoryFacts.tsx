@@ -23,7 +23,7 @@ export function CommunityRepositoryFacts({
   return (
     <div className="community-repository-facts">
       <span aria-label="GitHub Star 数">
-        <StarOutlined />{" "}
+        <StarOutlined aria-hidden /> 仓库{" "}
         {github?.stars == null ? "—" : github.stars.toLocaleString("zh-CN")}
       </span>
       <span>代码更新 {communityDate(github?.pushedAt)}</span>

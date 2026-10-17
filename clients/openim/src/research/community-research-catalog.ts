@@ -25,6 +25,7 @@ export function matchingCommunityEntries(
         entry.author,
         entry.summary,
         entry.input,
+        entry.deliverables,
         entry.category,
         entry.id,
         communityFeedCopy[entry.id]?.title,
