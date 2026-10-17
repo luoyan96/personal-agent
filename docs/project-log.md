@@ -892,3 +892,13 @@ release/acceptcat-0.10.8接续PR55/e099cc1，源码c88f2285d78c69e81785d4f8e34dc
 Windows x64 NSIS0.10.8真实构建，55运行依赖、16生产JS/新号码代码/素材/无QA、实际安装器EXE/ASAR与win-unpacked字节核对通过；隔离隐藏原生桥/renderer稳定通过，electron-log原有警告保留。87,393,639字节，SHA256 beee9d36df9bed4af51cd63b8bf18d26109cccc6ab8ebe503ed3670f21cb15a1，C:/Users/luo/Desktop/AcceptCat_0.10.8.exe及说明已交付，旧包/数据保留，未代安装或关闭用户窗口。
 
 仅客户端无需迁移/新API，不重复根共享全套；没有后台部署/目录运营/公开Release/更新源。latest重新核实v0.6.0，继承PR50/PR51后台/运营待办分别保持，生产容器沿用47c42ac/0.25/1.12/022非本批inspect。证据.runtime/acceptcat-account-20261017，docs/deployment/acceptcat-0.10.8.md。
+
+## 2026-10-18：统计报告与图注自查来源收录，待运营发布
+
+acceptcat-3，feature/statistics-reporting-catalog接续PR56/47060af，目录源码03e4d6fa035e651afe8f257283f6cd45deaea0b9。联网检索原始GitHub/官方规范/实际讨论后，只收录Boom5426/Nature-Paper-Skills的stats-reporting-audit固定6f8eaa0（仓库0.2.0/独立Skill未标版本），本地11项/7仓库。本Skill Apache-2.0与根原创MIT分清，中文输入/交付/费用/材料/工具边界和上游排除规则模板风险明确；未改上游正文、内置Skill、前端组件或联系人。
+
+15份独立原文/blob核对；原ZIP1,796,957字节/SHA256 85ca396dde40cc4b5b5a6efd04c252b76e56e5de79acccedd6ed727a7fcd2621。8原件/5参考、0脚本/素材与完整原ZIP私人存储往返、其他账号拒绝；0.10.8实际ASAR解析器一致。真实HTTP/SQLite/ChatWorker三组合成场景验证完整说明/仅选参考，跨账号源码/记录404、调用403、停用403；实际React/API/原生预览、取消零安装和确认后唯一私人安装三组，1536/1024实拍已看，无横溢/pageerror/覆盖层。已有Antd/Router警告、夹具403/404预期首败与挂载等待首败保留，产品权限未放宽。模型合成，不计真实科研质量。
+
+目录定向11项、根CI54文件/676项、构建/类型/契约/内容、生产CLI/HTTP2项、B0及隔离通过；不重复已过全套。PR56源码47060af三平台SUCCESS本轮实际读回。维护Workbench重新导航仍跳登录页，旧重新登录请求保持，未重复提问/越过登录。合并前批两项与本项的三项公共运营材料已准备，哈希见publication-prepared.json；没有上传/生产备份/目录写入/容器inspect重启/部署/迁移。线上8项/5仓库沿用旧记录，不能说已可见。现有0.10.8兼容，无新安装包、代安装、公开Release或自动更新源。详情docs/development/statistics-reporting-catalog.md，证据.runtime/community-stats-20261018；仅root活动，无共享改动冲突。
+
+草稿PR57已创建并附任务，75ba51a首次远端CI两平台运行/一排队，未计全部通过。4836/4837自建Node PID42304/35864按完整命令行核对后关闭，cleanup.json保留；旧预览与用户软件未动，阿里云登录页保留handoff供继续运营发布。

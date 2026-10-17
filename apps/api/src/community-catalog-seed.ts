@@ -292,6 +292,32 @@ export const communityCatalogSeed: readonly CommunityEntry[] = [
       { label: "上游扫描文档过期报告：扫描标签不等于独立保证", url: "https://github.com/K-Dense-AI/scientific-agent-skills/issues/324" },
     ],
   },
+  {
+    id: "stats-reporting-audit",
+    name: "统计报告与图注自查",
+    category: "数据与代码",
+    author: "Boom5426；统计技能原作者 Yuan1z0825/nature-skills",
+    repository: "https://github.com/Boom5426/Nature-Paper-Skills",
+    revision: "6f8eaa07b4ea19fecdc73618cad9a65beb49d542",
+    sourcePath: "skills/core/stats-reporting-audit",
+    version: "独立 Skill 未标版本 · Nature-Paper-Skills 0.2.0",
+    reviewedAt: "2026-10-18",
+    license: "本 Skill Apache-2.0；仓库原创内容 MIT，完整许可见原 ZIP 的 LICENSE-APACHE 与 NOTICE",
+    status: "offline_reviewed",
+    installable: true,
+    summary: "投稿或回复审稿前，检查样本数、独立与技术重复、误差线、统计方法和研究主张是否对齐。",
+    input: "获准使用的方法/统计分析段落、结果与图注、独立实验单位和重复说明，以及本次期刊指南；只检查你提供的范围。",
+    deliverables: "带原文位置的统计报告问题、可替换的段落或图注草稿、需要作者补充的事实；区分统计计算、报告缺项与表述问题。",
+    prerequisites: "可确认安装为私人文字 Skill，使用现有聊天模型；5份可选参考，无脚本或必需外部服务。现有Windows0.10.8解析器兼容；不自动安装整套27项技能、Word工具或统计计算环境。",
+    costs: "本流程无需独立API Key、SciPy或付费订阅；聊天按你配置的模型服务计费。可选上游绘图/计算工具不包含在本次接入中。",
+    materials: "只选入本次获准的研究设计、结果数值、图注与目标期刊要求。6份技能文字、根LICENSE/NOTICE和完整原ZIP保留；Apache许可全文及归属说明在原ZIP中，不自动读取实验室数据或上传原始数据。",
+    validation: "固定提交逐文件经Git blob、独立原文与原ZIP校验；8个选中原件、5份参考、私人存储往返和跨账号拒绝通过，实际0.10.8包内解析器输出一致。真实HTTP/SQLite/ChatWorker合成调用核对完整说明、仅选参考与私有权限；未验证真实模型统计审查质量。",
+    limitations: "这是报告与措辞自查，不重算p值、样本量、功效或置信区间，也不保证发现全部统计错误。缺少独立单位、排除规则、随机化/盲法等事实时必须留待作者确认；上游骨架含“No data were excluded”，不能在未核实排除记录时直接粘贴。Nature示例不等于各学科统一规定；期刊正式指南优先，不代表期刊背书或投稿保证。Word修订/排版、原始数据分析和图表视觉核对未接通。",
+    discussions: [
+      { label: "Nature Portfolio官方报告规范（以本次期刊要求为准）", url: "https://www.nature.com/nature-portfolio/editorial-policies/reporting-standards" },
+      { label: "上游Word交付边界讨论，不能据此声称自动排版已接通", url: "https://github.com/Boom5426/Nature-Paper-Skills/issues/15" },
+    ],
+  },
 ];
 
 
