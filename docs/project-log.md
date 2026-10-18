@@ -1018,3 +1018,17 @@ Windows x64 NSIS0.10.12实际构建并复制桌面，**87,403,174字节** / SHA2
 没有API/worker部署、数据库同步/迁移、社区目录/公开Release/更新源变更，actual latest本批读回仍v0.6.0。PR50后台正文边界、三项目录运营、课题组自助创建/已有账号加入/多组与工具执行仍独立待办；维护登录本批已恢复，不再重复要求登录。后续用真实复发证据继续定位本机代理/网络并规划磁盘维护，不以本次健康探针声称永久根治。
 
 草稿PR65 https://github.com/luoyan96/personal-agent/pull/65 已创建、推送并附任务，base release/acceptcat-0.10.14。gh首次受目录属主检查拒绝，之后用进程级Git配置重试成功，未改全局safe.directory；首读8cf79c3三项Foundation为1queued/2in_progress，pr-final.json保留，不套用前批通过。212份Markdown/10份Skill与diff检查通过。仅按完整Node命令核对关闭本批QA4916/4917的32400/29664，无监听且用户现装6048仍运行；cleanup-before/cleanup.json留证。云端本次只读shell已正常exit，不退出用户Aliyun账号。桌面包最终hash与说明读回一致，产品/包固定a3a795b，后续文档提交不改变安装器。
+
+## 2026-10-19：acceptcat-3 三项目录正式上线与新候选中文边界筛查
+
+2026-10-18定时任务跨北京时间零点完成。先读取根规则/状态/日志/README/路线图、Git与其他任务，发现共享release/acceptcat-0.10.16工作台未提交改动，完整保留；从04dd9ba建独立D:/deepseek-agent/acceptcat-catalog-20261018、docs/catalog-publication-20261018，不切换共享分支。桌面任务及acceptcat-2已协调，后者维护内置Skill/评估，本批仅来源审阅与目录运营，未改客户端/API/内置Skill。
+
+申请书结构、数据体检、统计报告自查三项已有固定审阅/原生/合成权限及界面验证，本轮联网复核三份SKILL/四份许可SHA一致；沿既有Workbench正常免密重连、固定生产b78613b5镜像/主机守卫、SQLite在线一致性备份integrity=ok/表数检查、原目录导出与替换前重读，通过现有CLI实际发布。原八项逐项保持，线上11项/7仓库/20候选；两项可确认私装文字流程，EDA仍needs_connector/installable=false，不冒称脚本或模型科研质量通过。发布16:01:08.390262Z、零点同步初读running/version64保留，最终version73/sync=ok/discoveryState=ok/元数据错误0，finished2026-10-18T16:01:41.594Z，下次2026-10-19T16:00Z。
+
+备份/srv/research-openim-backups/community-review-20261018T160104Z，未下载私人数据库；服务器公共脚本/回执/root/acceptcat-community-review-20261018，最终publication-final.json。API/worker实际47c42ac/b78613b5、running/restart0/无OOM，无重启/部署/迁移，私人安装和资料范围保持。首传旧upload-command与当前脚本哈希不同，仅传输未运行；重建并断言远端SHA后才执行。终端逐字输入超时半行清除后完整粘贴续跑。首败/中间态与最终证据都保留。
+
+新候选KalarisLabs citation-verification固定df088027ff233dc511fa74cb7f406b4e87fa438c、MIT；禁网络注入虚构元数据五例复现不同中文题名/作者被ASCII清空后错误verified、缺字段及年份差1亦verified，正确英文对照/错误英文题名作为控制；不晋级并交接适配要求。SART固定e106defa0bda5db91479cc61bd110d5460959dfe/2.9.0/MIT仅初审，依赖闭包/Windows/任务写入隔离未验不装。两个候选12份原件按Git blob/SHA核对，读官方Crossref/OpenAlex/arXiv及上游324/15实际讨论，不将热度、扫描或宣传评测当科研保证。
+
+本轮目录定向11/11、公网ready200/0.25/数据库存储认证ok、匿名目录401；harness仍not_verified，无真实模型/生产私人账号科研验收。纯文档门槛内容和diff检查，不重复根全套。Git外D:/deepseek-agent/.runtime/catalog-publication-20261018保留原件、离线复现、定向日志、探针、传输失败/修复及最终截图；详见docs/development/community-publication-20261019.md。README数量、当前状态、路线图及旧待发布文档的接续提示同步。无Windows包/公共Release/更新源变化；旧三项目录待办已解除，PR50正文后台配套及真实科研试点继续独立处理。
+
+本批纯文档最终检查213份Markdown/10份Skill与diff通过；目录11项定向通过。远程维护shell正常exit，阿里云账号未退出，未停止其他任务服务。GitHub现有标签列表没有codex或codex-automation，不创建无关标签；审阅PR按实际回执接续。
