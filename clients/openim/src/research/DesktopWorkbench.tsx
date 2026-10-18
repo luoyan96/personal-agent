@@ -22,6 +22,7 @@ import { ResearchTeamWorkbench } from "./ResearchTeamWorkbench";
 import { relocatedWorkspace } from "./workspace-navigation";
 import { WorkbenchPlanning, WorkbenchLibrary } from "./WorkbenchSections";
 import { workbenchTaskPath, workbenchTaskTarget } from "./workbench-links";
+import type { PlanningPreset } from "./WorkbenchStart";
 type Category = "ongoing" | "awaiting_me" | "completed";
 function WorkbenchOverview({
   card,
@@ -142,6 +143,7 @@ export function DesktopWorkbench() {
       ? "team"
       : "tasks";
   const [planningLaunch, setPlanningLaunch] = useState(0);
+  const [planningPreset, setPlanningPreset] = useState<PlanningPreset>();
   const {
     id: requestedTask,
     kind: requestedKind,
@@ -155,18 +157,18 @@ export function DesktopWorkbench() {
       : "ongoing";
   const [pages, setPages] = useState<(string | undefined)[]>([undefined]);
   const cursor = pages[pages.length - 1];
+  const generation = useResearchStore((s) => s.generation),
+    actor = useResearchStore((s) => s.actor),
+    contacts = useResearchStore((s) => s.contacts);
   const availability = useWorkspaceAvailability(!relocated && tab !== "library");
   const supported = availability.supports(21);
   const read = useResearchRead(
     () => workspaceApi.tasks(category, cursor),
     `workbench:${category}:${cursor || ""}`,
-    tab === "tasks" && supported,
+    tab === "tasks" && supported && !!actor,
   );
   const [selected, setSelected] = useState<WorkbenchCard>(),
     [details, setDetails] = useState(false);
-  const generation = useResearchStore((s) => s.generation),
-    actor = useResearchStore((s) => s.actor),
-    contacts = useResearchStore((s) => s.contacts);
   const [creating, setCreating] = useState(false),
     [busy, setBusy] = useState(false),
     [failure, setFailure] = useState("");
@@ -264,7 +266,7 @@ export function DesktopWorkbench() {
       <header className="workspace-heading">
         <div>
           <h1>工作台</h1>
-          <p>对齐目标、成员下一步和实际科研成果</p>
+          <p>从一个目标开始，跟进任务与成果。</p>
         </div>
         <div className="workspace-heading-actions">
           {tab === "tasks" && (
@@ -279,11 +281,12 @@ export function DesktopWorkbench() {
               联系人协作任务
             </Button>
           )}
-          {tab !== "library" && (
+          {tab !== "library" && tab !== "team" && (
             <Button
               type="primary"
               disabled={!supported}
               onClick={() => {
+                setPlanningPreset(undefined);
                 if (tab !== "planning" || params.get("panel") === "scheduled")
                   setTab("planning");
                 setPlanningLaunch((value) => value + 1);
@@ -349,7 +352,8 @@ export function DesktopWorkbench() {
       ) : tab === "team" ? (
         availability.supports(23) ? (
           <ResearchTeamWorkbench
-            onPlan={() => {
+            onPlan={(preset) => {
+              setPlanningPreset(preset);
               setTab("planning");
               setPlanningLaunch((value) => value + 1);
             }}
@@ -374,6 +378,7 @@ export function DesktopWorkbench() {
       ) : tab === "planning" ? (
         <WorkbenchPlanning
           launch={planningLaunch}
+          preset={planningPreset}
           onTasks={(id) =>
             id
               ? setParams(

@@ -4,12 +4,15 @@ import { PersonalFollowupPanel } from "./PersonalFollowupPanel";
 import { TaskPlanning } from "./TaskPlanning";
 import { ResearchLibrary } from "./ResearchLibrary";
 import { WorkspaceReports } from "./WorkspaceReports";
+import type { PlanningPreset } from "./WorkbenchStart";
 
 export function WorkbenchPlanning({
   launch,
+  preset,
   onTasks,
 }: {
   launch: number;
+  preset?: PlanningPreset;
   onTasks: (taskId?: string) => void;
 }) {
   const [params, setParams] = useSearchParams();
@@ -38,7 +41,7 @@ export function WorkbenchPlanning({
           <PersonalFollowupPanel active />
         </div>
       ) : (
-        <TaskPlanning launch={launch} onTasks={onTasks} />
+        <TaskPlanning launch={launch} preset={preset} onTasks={onTasks} />
       )}
     </div>
   );

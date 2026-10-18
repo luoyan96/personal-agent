@@ -20,6 +20,8 @@ import type { PlanDraft, PlanStep, SavedPlan } from "./task-planning";
 import "./task-planning.scss";
 import { ResearchTeamAccountHint } from "./ResearchTeamAccountHint";
 import { readResearchTeamAvailability } from "./workspace-availability";
+import { planningPrompts } from "./WorkbenchStart";
+import type { PlanningPreset } from "./WorkbenchStart";
 
 const time = (value: string) =>
   new Date(value).toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
@@ -225,9 +227,11 @@ function ConfirmedPlan({
 
 export function TaskPlanning({
   launch,
+  preset,
   onTasks,
 }: {
   launch: number;
+  preset?: PlanningPreset;
   onTasks: (taskId?: string) => void;
 }) {
   const actor = useResearchStore((s) => s.actor),
@@ -395,9 +399,10 @@ export function TaskPlanning({
   useEffect(() => {
     if (launch) {
       setFailure("");
+      if (preset) setPrompt(planningPrompts[preset]);
       setComposing(true);
     }
-  }, [launch]);
+  }, [launch, preset]);
 
   const edit = (next: PlanDraft) => {
     dirty.current = true;

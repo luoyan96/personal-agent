@@ -1,6 +1,18 @@
 # 新 AI 接手：当前项目状态
 
-更新日期：2026-10-18（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+更新日期：2026-10-19（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+
+## 最新 Windows 0.10.16：清楚的科研起点、待办与进展
+
+`release/acceptcat-0.10.16`接续04dd9ba，产品/包固定 **6c50ea9c67e810a1cb5ab7c957af42bbaa519294**。总览突出新建科研计划与三个带目标的研究起点，个人待办/研究进展分栏；空状态隐藏零统计、筛选、分页和空成员栏，有任务显示简洁表格、完整详情与快速查看；范围/协作和成员下一步折叠，四主栏目及助手抽屉保持。复用原品牌照片/Ant图标，生成两状态设计后实际实现。[设计/实现/QA](development/workbench-home-redesign.md)。
+
+选入PR67产品3ed606a为6b13c33：跨登录旧请求/CSRF/401/写入取消；待办、详情和列表补actor读取门槛。未覆盖其他任务文档/分支，PR68内置统计Skill未集成，不计为本包更新。38项定向/最终类型、24条分阶段IAB/cua_repl真实React/HTTP/SQLite与1536/1024/430实拍通过，首次起点0计划0任务、保存1草案0任务、确认3任务、学生提交后导师准确待审；旧任务个人404、503区分空状态、账号切换/断线目标保留与助手抽屉通过。原生IM/SDK为夹具投影，无真实模型/科研质量验收；首败/已有警告保留，无共享/Skill改变，不重复根全套。
+
+**桌面Windows x64 NSIS0.10.16已交付** `C:/Users/luo/Desktop/AcceptCat_0.10.16.exe`与说明，**87,416,748字节 / SHA256 d9ee235500f8fafdf8c6c28a434e0f6eb5a28238ed94d33049a1c3a27f52222f**。55运行依赖、17生产JS/全部CSS逐字节、新层级/原品牌/无QA、实际NSIS载荷一致、隔离原生桥/renderer稳定启动通过，旧日志初始化警告保留。[交付](deployment/acceptcat-0.10.16.md)。未代安装、关闭用户现装或删旧包/数据；Git外证据 `.runtime/workbench-home-20261019`。
+
+本批无API/迁移/后台部署、目录运营或公开Release/更新源变更；本次公网ready200/0.25，harness仍not_verified；生产47c42ac/b78613b5沿上批inspect，本次不新inspect。actual latest仍v0.6.0已核对。独立[目录运营PR66](https://github.com/luoyan96/personal-agent/pull/66)已报告三项上线，目录11项/7仓库，本批读回其交接，旧三项待发不再作为当前阻碍；本次没有自行发布目录。PR50后台正文边界、自助开组/已有账号加入/多组、通用工具执行与真实科研质量仍待后续；服务器85%磁盘/代理链路长期稳定性沿前批风险。
+
+[草稿PR69](https://github.com/luoyan96/personal-agent/pull/69)已推送、创建并附任务，base release/acceptcat-0.10.15。首读5e445e0三项Foundation均in_progress，pr-final.json留证；前批PR65/04dd9ba三项SUCCESS已实际读回，不套用本支。214份Markdown/10份Skill及diff通过。只按完整Node命令核对关闭本批4926/4927的31580/33580，无监听；用户现装4进程保持，viewport已reset、QA页关闭，cleanup.json留证。桌面包最终hash与说明读回一致；产品/包始终固定6c50ea9。
 
 ## 最新 Windows 0.10.15：工作台连接恢复与实际生产核验
 

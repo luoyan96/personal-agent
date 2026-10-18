@@ -22,9 +22,11 @@ export function ResearchTaskPanel({
   const { modal } = App.useApp();
   const navigate = useNavigate(),
     [params] = useSearchParams();
+  const actor = useResearchStore((s) => s.actor);
   const { data, error, refresh } = useResearchRead(
     (signal) => researchApi("task", { params: { id: taskId }, signal }),
     taskId,
+    !!actor,
   );
   const [failure, setFailure] = useState(""),
     [busy, setBusy] = useState(false),
@@ -35,7 +37,6 @@ export function ResearchTaskPanel({
   const [blockReason, setBlockReason] = useState(""),
     [requestedAction, setRequestedAction] = useState("");
   const [requestedMemberId, setRequestedMemberId] = useState<string>();
-  const actor = useResearchStore((s) => s.actor);
   const members = useResearchRead(
     (signal) =>
       researchApi("members", {

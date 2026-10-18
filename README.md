@@ -80,7 +80,7 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 
 社区条目保留作者、原仓库、固定审阅版本、许可、依赖和费用说明。后台每天北京时间零点同步 GitHub Star、代码更新时间和待审阅候选；**发现新仓库后仍要审阅，可使用的文字 Skill 与待接入工具会分别标明。**
 
-> 截至 **2026-10-16**，在线目录已收录 **8 项来源、涉及 5 个仓库**。联网检索、自动绘图、通用脚本执行和完整 PaperQA 等工具仍在适配；当前文字流程不等于这些工具已经接通。科研结论、引用和实验设计仍需结合原文与实际数据核对。
+> 截至 **2026-10-19**，据[目录运营记录](https://github.com/luoyan96/personal-agent/pull/66)，在线目录已收录 **11 项来源、涉及 7 个仓库**。联网检索、自动绘图、通用脚本执行和完整 PaperQA 等工具仍在适配；当前文字流程不等于这些工具已经接通。科研结论、引用和实验设计仍需结合原文与实际数据核对。
 
 ## 试用与下载
 
@@ -88,9 +88,9 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 
 | 版本入口 | 当前状态 |
 | --- | --- |
-| **最新桌面试用版：0.10.15** | 已制作并交付小范围试用，尚未上传公开 Release；改善短暂断线恢复，保留科研分工与个人助手任务衔接。[查看试用与版本说明](docs/product-status.md) |
+| **最新桌面试用版：0.10.16** | 已制作并交付小范围试用，尚未上传公开 Release；重排科研起点、我的待办与研究进展，简化空状态。[查看试用与版本说明](docs/product-status.md) |
 | **GitHub 公开下载：v0.6.0** | 可从 [Releases](https://github.com/luoyan96/personal-agent/releases/latest) 下载；安装文件仍叫 `ResearchWeChat_0.6.0.exe`，属于早期版本，未包含这里展示的全部体验 |
-| **最新产品源码** | 当前集成在 [release/acceptcat-0.10.15](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.15)；默认分支的应用代码仍是较早基线，文档与软件发布分别维护 |
+| **最新产品源码** | 当前集成在 [release/acceptcat-0.10.16](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.16)；默认分支的应用代码仍是较早基线，文档与软件发布分别维护 |
 
 已有试用版的团队：登录后在“我的 → 模型设置”配置自己的模型，从一个真实课题的小任务开始。新团队如希望参与试用，可以在 [Issues](https://github.com/luoyan96/personal-agent/issues) 留下使用场景和试用意向；请不要提交账号密钥、未公开论文或学生的私人材料。
 
@@ -116,7 +116,7 @@ git clone https://github.com/luoyan96/personal-agent.git
 cd personal-agent
 
 # 最新试用功能暂在此集成分支，main 仍保留较早应用基线。
-git switch release/acceptcat-0.10.15
+git switch release/acceptcat-0.10.16
 pnpm install --frozen-lockfile
 pnpm run ci
 ```

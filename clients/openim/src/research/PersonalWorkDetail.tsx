@@ -43,9 +43,11 @@ export function PersonalWorkDetail({
   taskId: string;
   onChanged: () => Promise<void>;
 }) {
+  const actor = useResearchStore((s) => s.actor);
   const read = useResearchRead(
     () => workspaceApi.task(taskId),
     `personal-work:${taskId}`,
+    !!actor,
   );
   const operation = usePersonalOperation(true, `personal-work:${taskId}`),
     openConversation = useWorkspaceConversation();

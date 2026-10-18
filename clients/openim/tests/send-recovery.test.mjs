@@ -29,7 +29,7 @@ await esbuild.build({
           namespace: "synthetic",
         }));
         build.onLoad({ filter: /.*/, namespace: "synthetic" }, () => ({
-          contents: "export async function clearIMProfile() {}",
+          contents: "export async function clearIMProfile() { globalThis.__profileClears = (globalThis.__profileClears || 0) + 1; }",
         }));
       },
     },
@@ -207,4 +207,131 @@ test("an already cancelled operation cannot start even session lookup", async (t
   controller.abort();
   await assert.rejects(send(controller.signal), { name: "AbortError" });
   assert.equal(calls, 0);
+});
+
+test("switching accounts cancels old session preparation before it can send under the new cookie", async (t) => {
+  let release, calls = 0;
+  isolated(t, async () => {
+    calls++;
+    return new Promise(resolve => { release = resolve; });
+  });
+  const old = send();
+  const rejected = assert.rejects(old, { name: "AbortError" });
+  await flush();
+  api.clearResearchSession();
+  release(json(session));
+  await rejected;
+  await flush();
+  assert.equal(calls, 1, "old mutation must never be dispatched");
+});
+
+test("a late session body cannot replace the new actor's CSRF token", async (t) => {
+  let release, first = true;
+  const tokens = [];
+  isolated(t, async (_url, options) => {
+    if (first) {
+      first = false;
+      return { ok: true, status: 200, json: () => new Promise(resolve => { release = resolve; }) };
+    }
+    if (options.method === "GET") return json({ data: { ...session.data, csrfToken: "new_actor_csrf" } });
+    tokens.push(options.headers["X-CSRF-Token"]);
+    return json(acknowledged, 201);
+  });
+  const rejected = assert.rejects(api.researchApi("session"), { name: "AbortError" });
+  await flush();
+  api.clearResearchSession();
+  await api.researchApi("session");
+  release(session);
+  await rejected;
+  await flush();
+  await send();
+  assert.deepEqual(tokens, ["new_actor_csrf"]);
+});
+
+test("an old 401 cannot expire a newly verified session or remove its IM profile", async (t) => {
+  let release, oldRead = false, expirations = 0;
+  const previousWindow = globalThis.window;
+  globalThis.window = { dispatchEvent: () => { expirations++; } };
+  globalThis.__profileClears = 0;
+  t.after(() => { globalThis.window = previousWindow; delete globalThis.__profileClears; });
+  isolated(t, async () => {
+    if (oldRead) { oldRead = false; return new Promise(resolve => { release = resolve; }); }
+    return json(session);
+  });
+  await api.researchApi("session");
+  oldRead = true;
+  const rejected = assert.rejects(api.researchApi("session"), { name: "AbortError" });
+  await flush();
+  api.clearResearchSession();
+  await api.researchApi("session");
+  release(json({ error: { code: "UNAUTHENTICATED", message: "synthetic", requestId: "synthetic" } }, 401));
+  await rejected;
+  await flush();
+  assert.equal(expirations, 0);
+  assert.equal(globalThis.__profileClears, 0);
+});
+
+test("a real current 401 expires once, cancels sibling reads, and retains its service error", async (t) => {
+  let sibling = false, release, expirations = 0;
+  const previousWindow = globalThis.window;
+  globalThis.window = { dispatchEvent: () => { expirations++; } };
+  globalThis.__profileClears = 0;
+  t.after(() => { globalThis.window = previousWindow; delete globalThis.__profileClears; });
+  isolated(t, async () => {
+    if (sibling) return new Promise(resolve => { release = resolve; });
+    return json(session);
+  });
+  await api.researchApi("session");
+  sibling = true;
+  const cancelled = assert.rejects(api.researchApi("session"), { name: "AbortError" });
+  await flush();
+  globalThis.fetch = async () => json({ error: { code: "UNAUTHENTICATED", message: "synthetic", requestId: "synthetic" } }, 401);
+  await assert.rejects(api.researchApi("session"), error => error.code === "UNAUTHENTICATED" && error.status === 401);
+  await cancelled;
+  release(json(session));
+  await flush();
+  assert.equal(expirations, 1);
+  assert.equal(globalThis.__profileClears, 1);
+});
+
+test("an explicit login invalidates old reads even without a preceding logout", async (t) => {
+  let release, signal;
+  isolated(t, async (url, options) => {
+    if (url.endsWith("/auth/login")) return json({ data: session.data.member });
+    signal = options.signal;
+    return new Promise(resolve => { release = resolve; });
+  });
+  const rejected = assert.rejects(api.researchApi("session"), { name: "AbortError" });
+  await flush();
+  const login = await api.researchApi("login", { body: { username: "synthetic_new", password: "12345678" } });
+  await rejected;
+  assert.equal(login.data.id, session.data.member.id);
+  assert.equal(signal.aborted, true);
+  release(json(session));
+  await flush();
+});
+
+test("reset before the dispatch microtask cancels without any network request", async (t) => {
+  let calls = 0;
+  isolated(t, async () => { calls++; return json(session); });
+  const rejected = assert.rejects(api.researchApi("session"), { name: "AbortError" });
+  api.clearResearchSession();
+  await rejected;
+  assert.equal(calls, 0);
+});
+
+test("a late mutation acknowledgement is discarded and never treated as a new account's send", async (t) => {
+  let release, sent = 0;
+  isolated(t, async (url) => {
+    if (url.endsWith("/auth/session")) return json(session);
+    sent++;
+    return new Promise(resolve => { release = resolve; });
+  });
+  const rejected = assert.rejects(send(), { name: "AbortError" });
+  await flush();
+  api.clearResearchSession();
+  release(json(acknowledged, 201));
+  await rejected;
+  await flush();
+  assert.equal(sent, 1, "cancellation must not automatically retry an uncertain mutation");
 });
