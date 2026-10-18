@@ -1002,3 +1002,19 @@ Windows x64 NSIS0.10.12实际构建并复制桌面，**87,403,174字节** / SHA2
 最终内容检查210份Markdown/10份Skill和diff通过。仅关闭本轮完整Node命令核对的Vite4906/22660与API4907/32612，端口无监听；cleanup-before.json/cleanup.json留证，旧服务、用户现装和旧包未动。桌面新安装器与安装说明均已读回确认。
 
 草稿PR64 https://github.com/luoyan96/personal-agent/pull/64 已创建并通过attach_artifact附当前任务，base为fix/lab-capabilities-entry。首读文档头701e03a的三项Foundation均IN_PROGRESS，回执pr-final.json，不套用前批通过或视为本支远端全过。产品/包固定6d643df，后续文档提交不改变安装器；桌面安装器最终再次SHA256读回一致。
+
+## 2026-10-18：工作台超时排查、生产只读核验及Windows0.10.15
+
+用户反馈现装科研团队服务读取超时，询问后台连接/同步并提供Edge阿里云维护登录。读取规则/交接和干净Git，从release/acceptcat-0.10.14/f153d48接续，最终分支release/acceptcat-0.10.15、产品/打包源码a3a795b74775039c483c33903363efd20ecce5fc。现装进程/地址/ASAR核对与0.10.14一致，不默认main最新或覆盖旧工作。
+
+现装Node本地代理将/api转发至正式HTTPS，产品会话与阿里云维护会话独立，无需人工同步数据库。元数据日志实际GET有约21秒ETIMEDOUT/ECONNRESET，未含路径，不能精确关联截图单请求；DNS fake198.18.0.89/Clash进程确认经过虚拟地址转发，但未证明单一代理根因。初次Workbench失败为WebSocket连接失败，返回登录后等待已有免密状态并正常重连，无新增SSH/权限/凭据。正式主机实际API/worker镜像b78613b5、revision47c42ac，healthy/running、restart0/OOMfalse，其余六组件运行；ready200/0.25约0.19秒，harness仍not_verified。本地Node公网与现装代理各3轮200/40–150ms及99–121ms，当前兼容正常。磁盘85%约7.3GiB可用、内存available约5.6GiB；current旧指针94b26d1未动，按实际容器确认版本。
+
+修复DesktopWorkbench重复健康请求和健康失败卸载整页：单次公开版本分别判断0.21/0.23，当前generation只记公开契约版本；短暂健康失败显示警告、保留编辑器并继续实际业务读取。首次失败/明确旧版保留门槛，账号或入口停用清记忆，403仍清原数据；轮询/15秒退避保持，online及回到可见页复查，读取传递AbortSignal，不重试写入、不弱化ACL/TLS。曾在中间说明误称必须手动重试，核对已有轮询后当场更正，最终实测无需操作约20秒恢复。
+
+21项定向/类型、8组真实React/HTTP/SQLite合成账号和1536/1024实拍通过，pageerror0，含10秒超时仍保留未保存目标、首次/online/无操作轮询恢复、旧契约、账号切换、403清统计。Browser plugin absent，沿已读frontend-testing-debugging和React技能用既有Playwright/隔离Edge，无新依赖。首轮错误placeholder及未等待弹窗挂载、403预期未用客户端统一文案的夹具首败保留后续验，不改产品限制；预期503/403与既有Router/findDOMNode警告保留。无生产私人资料、真实IM/模型或永久网络稳定性验证；仅客户端无共享/内置Skill变化，不重复根全套。
+
+真实Electron22.3.27、55运行依赖、17生产JS逐字节/新警告/无QA/品牌素材、NSIS实际EXE/ASAR一致及隔离隐藏原生桥/renderer稳定启动通过，已有日志初始化警告保留。安装器87,413,798字节/SHA25611484e44a5f843139a513e418326dee445cf8696b287df5b79f19d8149190a58已复制桌面AcceptCat_0.10.15.exe并提供说明；未代安装、关用户现装或删旧包/账号数据。详见docs/development/service-connectivity-recovery.md、docs/deployment/acceptcat-0.10.15.md；Git外.runtime/service-recovery-20261018保留云截图、传输元数据、探针、各首败/最终QA、构建/载荷/启动证据。
+
+没有API/worker部署、数据库同步/迁移、社区目录/公开Release/更新源变更，actual latest本批读回仍v0.6.0。PR50后台正文边界、三项目录运营、课题组自助创建/已有账号加入/多组与工具执行仍独立待办；维护登录本批已恢复，不再重复要求登录。后续用真实复发证据继续定位本机代理/网络并规划磁盘维护，不以本次健康探针声称永久根治。
+
+草稿PR65 https://github.com/luoyan96/personal-agent/pull/65 已创建、推送并附任务，base release/acceptcat-0.10.14。gh首次受目录属主检查拒绝，之后用进程级Git配置重试成功，未改全局safe.directory；首读8cf79c3三项Foundation为1queued/2in_progress，pr-final.json保留，不套用前批通过。212份Markdown/10份Skill与diff检查通过。仅按完整Node命令核对关闭本批QA4916/4917的32400/29664，无监听且用户现装6048仍运行；cleanup-before/cleanup.json留证。云端本次只读shell已正常exit，不退出用户Aliyun账号。桌面包最终hash与说明读回一致，产品/包固定a3a795b，后续文档提交不改变安装器。

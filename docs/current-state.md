@@ -2,6 +2,20 @@
 
 更新日期：2026-10-18（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新 Windows 0.10.15：工作台连接恢复与实际生产核验
+
+`release/acceptcat-0.10.15`接续0.10.14/f153d48，产品与打包源码 **a3a795b74775039c483c33903363efd20ecce5fc**。总览合并重复健康请求，当前账号已确认的公开契约版本不会因一次健康复查失败而卸载任务/未保存草稿；显示真实连接警告、保留退避轮询、增加online/回到可见页复查。首次失败/旧版仍阻止未确认功能，账号变化清版本记忆；业务403清旧统计，不保留授权事实。健康读取传递AbortSignal。[诊断及QA](development/service-connectivity-recovery.md)。
+
+现装0.10.14实际地址正确、ASAR与交付一致；传输日志有ETIMEDOUT/ECONNRESET，本机Clash虚拟地址链路正在使用，尚不能单独归因代理。公网与现装loopback代理各3次ready200/0.25。Edge既有Workbench会话已恢复，生产API/worker实际镜像b78613b5/revision47c42ac，healthy/running、restart0/无OOM，其他六服务运行；服务器ready约0.19秒。**本批无需数据库同步或后台升级，未部署/重启或改网络权限。** 磁盘85%/约7.3GiB可用需后续维护；current指针仍旧94b26d1，实际后端版本按容器核验，不凭该指针推断。
+
+21项定向、类型、8组真实React/HTTP/SQLite合成流程与1536/1024实拍通过，pageerror0。包括10秒超时草稿保留、首次失败/online恢复、旧契约/账号切换、约20秒无操作轮询恢复、403清除统计；夹具选择器/挂载时机/统一错误映射首败与既有警告保留。未读取生产科研材料、验证真实IM/模型或长期网络稳定性。无共享/内置Skill变化，不重复根全套。Git外证据 `D:/deepseek-agent/.runtime/service-recovery-20261018`。
+
+**Windows x64 NSIS0.10.15已交付桌面** `C:/Users/luo/Desktop/AcceptCat_0.10.15.exe`与说明，**87,413,798字节 / SHA256 11484e44a5f843139a513e418326dee445cf8696b287df5b79f19d8149190a58**。55依赖、17生产JS逐字节/新警告/无QA、NSIS实际载荷一致、隔离隐藏原生桥/renderer稳定启动通过，已有日志初始化警告保留。[交付](deployment/acceptcat-0.10.15.md)。未代安装或关闭现装/删除旧包与数据。
+
+无社区目录发布、公共Release或更新源变更，actual latest本次仍v0.6.0。PR50后台边界和三项目录运营独立待办保留；维护登录已恢复，不再需用户重复登录。课题组自助创建、已有个人账号加入、多组及工具执行仍未实现。后续围绕真实课题使用及网络复发证据继续，不能把本次短时探针当永久根治。
+
+[草稿PR65](https://github.com/luoyan96/personal-agent/pull/65)已创建、推送并附任务，base release/acceptcat-0.10.14；首读8cf79c3三项Foundation为1queued/2in_progress，pr-final.json留证，不称远端全过。212份Markdown/10份Skill及diff检查通过。本批QA4916/4917仅按完整Node命令核对后关闭32400/29664，端口无监听、用户现装仍运行，cleanup.json留证；本次云端只读shell已exit，Aliyun账号未退出。包与说明均再次读回。
+
 ## 最新 Windows 0.10.14：科研分工与个人助手任务衔接
 
 `release/acceptcat-0.10.14` 接续 PR63 / 9b32c56，产品与安装包源码 **6d643df393b91ce9f5a5c6d3bfb6b6d6a173d3fb**。科研计划与联系人协作入口分开，计划可批量安排自己/同组邀请/待认领、确认前逐步预览；稳定类型链接连接计划/总览/准确任务及返回所属计划。个人助理聊天与总览读取同一工作台待办，委派按真实turnId定位对应任务，任务可返回真实来源对话；预选Agent与成员保持一致，新建个人任务不残留科研类型。包含PR63未打包的折叠按钮移除及课题组身份边界。[实现及QA](development/assistant-workbench-tasks.md)。

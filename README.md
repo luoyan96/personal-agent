@@ -88,9 +88,9 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 
 | 版本入口 | 当前状态 |
 | --- | --- |
-| **最新桌面试用版：0.10.14** | 已制作并交付小范围试用，尚未上传公开 Release；完善科研分工、个人助手与工作台任务衔接。[查看试用与版本说明](docs/product-status.md) |
+| **最新桌面试用版：0.10.15** | 已制作并交付小范围试用，尚未上传公开 Release；改善短暂断线恢复，保留科研分工与个人助手任务衔接。[查看试用与版本说明](docs/product-status.md) |
 | **GitHub 公开下载：v0.6.0** | 可从 [Releases](https://github.com/luoyan96/personal-agent/releases/latest) 下载；安装文件仍叫 `ResearchWeChat_0.6.0.exe`，属于早期版本，未包含这里展示的全部体验 |
-| **最新产品源码** | 当前集成在 [release/acceptcat-0.10.14](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.14)；默认分支的应用代码仍是较早基线，文档与软件发布分别维护 |
+| **最新产品源码** | 当前集成在 [release/acceptcat-0.10.15](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.15)；默认分支的应用代码仍是较早基线，文档与软件发布分别维护 |
 
 已有试用版的团队：登录后在“我的 → 模型设置”配置自己的模型，从一个真实课题的小任务开始。新团队如希望参与试用，可以在 [Issues](https://github.com/luoyan96/personal-agent/issues) 留下使用场景和试用意向；请不要提交账号密钥、未公开论文或学生的私人材料。
 
@@ -116,7 +116,7 @@ git clone https://github.com/luoyan96/personal-agent.git
 cd personal-agent
 
 # 最新试用功能暂在此集成分支，main 仍保留较早应用基线。
-git switch release/acceptcat-0.10.14
+git switch release/acceptcat-0.10.15
 pnpm install --frozen-lockfile
 pnpm run ci
 ```

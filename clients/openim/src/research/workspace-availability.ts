@@ -14,7 +14,7 @@ export function workspaceAvailability(value: unknown, minimumMinor = 21) {
 
 // Health is public and deliberately read outside the current strict contract:
 // older healthy servers must be identifiable before newer routes are called.
-function readAvailability(minimumMinor: number) {
+function readAvailability(minimumMinor: number, callerSignal?: AbortSignal) {
   return withRequestDeadline(async (signal) => {
     const response = await fetch("/api/v1/health/ready", {
       credentials: "omit",
@@ -28,11 +28,11 @@ function readAvailability(minimumMinor: number) {
       throw new Error("服务返回的状态无法确认，请稍后重新检查。");
     }
     return workspaceAvailability(value, minimumMinor);
-  }, 10000);
+  }, 10000, callerSignal);
 }
-export function readWorkspaceAvailability() {
-  return readAvailability(21);
+export function readWorkspaceAvailability(signal?: AbortSignal) {
+  return readAvailability(21, signal);
 }
-export function readResearchTeamAvailability() {
-  return readAvailability(23);
+export function readResearchTeamAvailability(signal?: AbortSignal) {
+  return readAvailability(23, signal);
 }

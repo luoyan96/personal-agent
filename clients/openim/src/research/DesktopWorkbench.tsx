@@ -15,10 +15,7 @@ import {
 import { ResearchTaskPanel } from "./ResearchTaskPanel";
 import SafeMessageMarkdown from "./SafeMessageMarkdown";
 import "./workspace.scss";
-import {
-  readWorkspaceAvailability,
-  readResearchTeamAvailability,
-} from "./workspace-availability";
+import { useWorkspaceAvailability } from "./useWorkspaceAvailability";
 import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 
 import { ResearchTeamWorkbench } from "./ResearchTeamWorkbench";
@@ -158,17 +155,8 @@ export function DesktopWorkbench() {
       : "ongoing";
   const [pages, setPages] = useState<(string | undefined)[]>([undefined]);
   const cursor = pages[pages.length - 1];
-  const availability = useResearchRead(
-    readWorkspaceAvailability,
-    "workspace-availability",
-    !relocated && tab !== "library",
-  );
-  const supported = availability.data?.available === true;
-  const teamAvailability = useResearchRead(
-    readResearchTeamAvailability,
-    "research-team-availability",
-    tab === "team",
-  );
+  const availability = useWorkspaceAvailability(!relocated && tab !== "library");
+  const supported = availability.supports(21);
   const read = useResearchRead(
     () => workspaceApi.tasks(category, cursor),
     `workbench:${category}:${cursor || ""}`,
@@ -340,6 +328,15 @@ export function DesktopWorkbench() {
           />
         )}
       </div>
+      {supported && availability.error && (
+        <Alert
+          type="warning"
+          showIcon
+          message="服务连接不稳定，正在重新检查"
+          description={`${availability.error} 已打开的任务和草稿会保留，最新进展以实际读取结果为准。`}
+          action={<Button loading={availability.loading} onClick={availability.refresh}>重新检查</Button>}
+        />
+      )}
       {tab === "library" ? (
         <WorkbenchLibrary />
       ) : !supported ? (
@@ -350,7 +347,7 @@ export function DesktopWorkbench() {
           onRetry={availability.refresh}
         />
       ) : tab === "team" ? (
-        teamAvailability.data?.available ? (
+        availability.supports(23) ? (
           <ResearchTeamWorkbench
             onPlan={() => {
               setTab("planning");
@@ -360,18 +357,13 @@ export function DesktopWorkbench() {
         ) : (
           <section className="workspace-empty workspace-unavailable" role="status">
             <h2>
-              {!teamAvailability.data && !teamAvailability.error
-                ? "正在检查科研团队服务…"
-                : teamAvailability.error
-                ? "科研团队服务暂不可用"
-                : "科研团队服务待升级"}
+              科研团队服务待升级
             </h2>
             <p>
-              {teamAvailability.error ||
-                "科研团队总览需要服务器契约 0.23 或以上。已有任务、计划与聊天可以继续访问。"}
+              科研团队总览需要服务器契约 0.23 或以上。已有任务、计划与聊天可以继续访问。
             </p>
             <div className="workspace-card-actions">
-              <Button onClick={teamAvailability.refresh}>重新检查</Button>
+              <Button onClick={availability.refresh}>重新检查</Button>
               <Button type="primary" onClick={() => setTab("tasks")}>
                 查看已有任务
               </Button>
