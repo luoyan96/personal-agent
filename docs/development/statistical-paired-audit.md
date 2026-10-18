@@ -50,3 +50,5 @@ Git 外证据：`D:/deepseek-agent/.runtime/skill-statistical-audit-20261019`，
 仅本地代码、Skill 及评估变更，未制作安装包、部署 API/worker、发布社区目录、Release 或更新源；现装与生产状态沿用原交接，本次没有新线上检查。全套默认 CI 的 Harness 适配构建/类型/缺凭据边界不等同真实模型质量。
 
 接续先审阅/合并本独立分支，协调三条并行分支的状态/日志，勿覆盖工作台改版。后续若实现受控工具执行，需另验脚本调用授权、数据范围与输出回执；真实科研样本的单位/缺失机制、区间和检验方案以及模型建议质量仍需独立评估。此审计不作为完整统计软件或自动推断能力上线。
+
+[草稿 PR68](https://github.com/luoyan96/personal-agent/pull/68) 已推送并附到当前任务，base `release/acceptcat-0.10.15`；首读 `c8289a6` 三项 Foundation 均进行中，证据 `pr-first-read.json`，远端检查不能套用本地通过。后续仅文档提交不改变 Skill 源码 `e12690f`。仓库现有标签无 `codex`/`codex-automation`，未创建新标签。

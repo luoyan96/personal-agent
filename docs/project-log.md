@@ -1028,3 +1028,5 @@ Skill/评估源码e12690f6676a776ecfc852259bcd13d5475c2021。statistical-result-
 实际合成三对均值4/样本SD2；27项打包CLI加目录1项定向通过。首轮1项精确相等被3.9999999999999996与4浮点差异触发，改用数值容差后通过，首败保留。Skill格式校验初次缺PyYAML，仅Git外证据目录用缓存PyYAML6.0.3及进程PYTHONPATH续验通过，未改产品或系统依赖。完整pnpm run ci退出0：55文件/703项，生产CLI/HTTP两项、B0与生产隔离通过；默认Harness仅构建/类型/缺凭据边界，不计真实模型。最终214文档/10技能及diff通过。四场景原始输入/JSON输出/退出码/字节不变及源/打包SHA相同证据在D:/deepseek-agent/.runtime/skill-statistical-audit-20261019（boundary-output-proof.json、ci.log等）。没有用户材料、Key或真实供应商请求。
 
 未制作Windows安装包、部署API/worker/迁移、发布社区目录/Release/更新源；本轮未新核验生产，现装沿历史记录。AcceptCat聊天执行器未接入本脚本，文字安装/知识绑定不等于可运行。后续先审阅合并独立分支，协调并行状态/日志，再另验受控工具调用、真实设计/缺失机制及科学推断/模型建议质量。兄弟acceptcat-3通知三项目录已单独发布，详见其PR66，不将其成果或线上状态归入本批。
+
+本批草稿PR68 https://github.com/luoyan96/personal-agent/pull/68 已创建并用attach_artifact附到当前任务，base release/acceptcat-0.10.15。首读c8289a6三项Foundation（Ubuntu22.19/24、Windows24）均IN_PROGRESS，pr-first-read.json保留；不称远端通过。仓库100项标签查询仅返回9种常规标签，无codex/codex-automation，未创建新标签。后续文档提交不改变Skill/评估源码e12690f。
