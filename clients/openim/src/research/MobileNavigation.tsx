@@ -1,17 +1,10 @@
 import { Button, Dropdown } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { useUserStore } from "@/store";
 import { emit } from "@/utils/events";
-import { useResearchStore } from "./store";
-import { useState } from "react";
-import { LabSettings } from "./LabSettings";
-import { PersonalAssistantPanel } from "./PersonalAssistantPanel";
 
 export function MobileNavigation() {
-  const navigate = useNavigate(),
-    [settings, setSettings] = useState(false);
-  const [personal, setPersonal] = useState(false);
+  const navigate = useNavigate();
   return (
     <div className="hidden h-11 shrink-0 items-center justify-between border-b bg-white px-2 max-[600px]:flex">
       <Button type="text" onClick={() => navigate("/chat")}>
@@ -40,33 +33,17 @@ export function MobileNavigation() {
           items: [
             { key: "requests", label: "联系人申请" },
             { key: "invitations", label: "群邀请与任务" },
-            { key: "profile", label: "我的资料" },
-            { key: "settings", label: "模型设置" },
-            { key: "personal", label: "记忆与跟进" },
-            { key: "logout", label: "退出登录" },
+            { key: "me", label: "我的" },
           ],
           onClick: ({ key }) => {
             if (key === "requests") navigate("/contact/newFriends");
             else if (key === "invitations") navigate("/contact/groupNotifications");
-            else if (key === "profile")
-              emit("OPEN_USER_CARD", {
-                isSelf: true,
-                userID: useUserStore.getState().selfInfo.userID,
-              });
-            else if (key === "settings") setSettings(true);
-            else if (key === "personal") setPersonal(true);
-            else
-              void useUserStore
-                .getState()
-                .userLogout()
-                .catch(() => {});
+            else navigate("/me");
           },
         }}
       >
         <Button type="text">更多</Button>
       </Dropdown>
-      <LabSettings open={settings} onClose={() => setSettings(false)} />
-      <PersonalAssistantPanel open={personal} onClose={() => setPersonal(false)} />
     </div>
   );
 }

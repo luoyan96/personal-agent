@@ -51,6 +51,13 @@ const router = createHashRouter([
             },
           },
           {
+            path: "me",
+            async lazy() {
+              const { MyWorkspace } = await import("@/research/MyWorkspace");
+              return { Component: MyWorkspace };
+            },
+          },
+          {
             path: "square",
             async lazy() {
               const { CapabilitySquare } = await import("@/research/CapabilitySquare");

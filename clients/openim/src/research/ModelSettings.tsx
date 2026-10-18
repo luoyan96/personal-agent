@@ -64,9 +64,11 @@ const editDraft = (config: Configuration, defaultWanted = config.isDefault): Dra
 export function ModelSettings({
   open,
   onClose,
+  embedded = false,
 }: {
   open: boolean;
   onClose: () => void;
+  embedded?: boolean;
 }) {
   const actorId = useResearchStore((s) => s.actor?.member.id);
   const actorGeneration = useResearchStore((s) => s.generation);
@@ -256,22 +258,8 @@ export function ModelSettings({
   };
   const configs = read.data?.data.configurations || [];
   const selected = configs.find((c) => c.id === draft?.id);
-  return (
-    <Modal
-      open={open}
-      onCancel={close}
-      footer={null}
-      width={800}
-      centered
-      className="model-settings-modal"
-      title={
-        <>
-          <h1>模型设置</h1>
-          <p>为你的 Agent 选择使用的模型。</p>
-        </>
-      }
-      destroyOnClose
-    >
+  const content = (
+    <>
       <div className="model-settings-layout">
         <aside className="model-settings-list" aria-label="我的模型">
           <h3>我的模型</h3>
@@ -508,6 +496,38 @@ export function ModelSettings({
           </Button>
         </div>
       </div>
+    </>
+  );
+  if (embedded)
+    return (
+      <section
+        className="model-settings-modal model-settings-page"
+        aria-label="模型设置"
+      >
+        <header className="my-section-heading">
+          <h2>模型设置</h2>
+          <p>为你的 Agent 选择使用的模型。</p>
+        </header>
+        {content}
+      </section>
+    );
+  return (
+    <Modal
+      open={open}
+      onCancel={close}
+      footer={null}
+      width={800}
+      centered
+      className="model-settings-modal"
+      title={
+        <>
+          <h1>模型设置</h1>
+          <p>为你的 Agent 选择使用的模型。</p>
+        </>
+      }
+      destroyOnClose
+    >
+      {content}
     </Modal>
   );
 }

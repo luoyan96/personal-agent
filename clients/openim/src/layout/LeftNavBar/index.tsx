@@ -1,4 +1,11 @@
-import { CompassOutlined, ContactsOutlined, FolderOpenOutlined, MessageOutlined, RightOutlined } from "@ant-design/icons";
+import {
+  CompassOutlined,
+  ContactsOutlined,
+  FolderOpenOutlined,
+  MessageOutlined,
+  RightOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import { Badge, Divider, Layout, Popover, Upload, UploadProps } from "antd";
 import clsx from "clsx";
 import i18n, { t } from "i18next";
@@ -24,6 +31,7 @@ import About from "./About";
 import styles from "./left-nav-bar.module.scss";
 import PersonalSettings from "./PersonalSettings";
 import DesktopSettings from "./DesktopSettings";
+import { useDesktopUpdates } from "./useDesktopUpdates";
 import { researchMode } from "@/research/api";
 import { LabSettings } from "@/research/LabSettings";
 import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
@@ -57,6 +65,7 @@ const NavList = [
     title: "广场",
     path: "/square",
   },
+  { icon: contact_icon, icon_active: contact_icon_active, title: "我的", path: "/me" },
 ];
 
 i18n.on("languageChanged", () => {
@@ -82,11 +91,16 @@ const resizeFile = (file: File): Promise<File> =>
 
 type NavItemType = (typeof NavList)[0];
 
-const NavItem = ({ nav: { icon, icon_active, title, path } }: { nav: NavItemType }) => {
+const NavItem = ({
+  nav: { icon, icon_active, title, path },
+  dot = false,
+}: {
+  nav: NavItemType;
+  dot?: boolean;
+}) => {
   const navigate = useNavigate();
   const locationPathname = useLocation().pathname;
-  const isActive =
-    locationPathname === path || locationPathname.startsWith(`${path}/`);
+  const isActive = locationPathname === path || locationPathname.startsWith(`${path}/`);
 
   const unReadCount = useConversationStore((state) => state.unReadCount);
   const unHandleFriendApplicationCount = useContactStore(
@@ -115,7 +129,7 @@ const NavItem = ({ nav: { icon, icon_active, title, path } }: { nav: NavItemType
   };
 
   return (
-    <Badge size="small" count={getBadge()}>
+    <Badge size="small" count={getBadge()} dot={dot}>
       <button
         type="button"
         aria-label={title}
@@ -126,9 +140,24 @@ const NavItem = ({ nav: { icon, icon_active, title, path } }: { nav: NavItemType
         )}
         onClick={tryNavigate}
       >
-        {window.electronAPI || path === "/workbench" || path === "/square" ? (
-          path === "/chat" ? <MessageOutlined /> : path === "/contact" ? <ContactsOutlined /> : path === "/workbench" ? <FolderOpenOutlined /> : <CompassOutlined />
-        ) : <img width={20} src={isActive ? icon_active : icon} alt="" />}
+        {window.electronAPI ||
+        path === "/workbench" ||
+        path === "/square" ||
+        path === "/me" ? (
+          path === "/chat" ? (
+            <MessageOutlined />
+          ) : path === "/contact" ? (
+            <ContactsOutlined />
+          ) : path === "/workbench" ? (
+            <FolderOpenOutlined />
+          ) : path === "/me" ? (
+            <UserOutlined />
+          ) : (
+            <CompassOutlined />
+          )
+        ) : (
+          <img width={20} src={isActive ? icon_active : icon} alt="" />
+        )}
         <div className="mt-1 text-xs text-gray-500">{title}</div>
       </button>
     </Badge>
@@ -166,6 +195,36 @@ i18n.on("languageChanged", () => {
   profileMenuList[3].title = t("placeholder.logOut");
 });
 
+function ResearchLeftNav() {
+  const navigate = useNavigate();
+  const selfInfo = useUserStore((s) => s.selfInfo);
+  const updates = useDesktopUpdates();
+  const hasUpdate =
+    !!updates.state?.supported &&
+    ["available", "downloading", "downloaded"].includes(updates.state.phase);
+  return (
+    <Sider
+      className="desktop-navigation no-mobile border-r border-gray-200 !bg-[#F4F4F4] dark:border-gray-800 dark:!bg-[#141414]"
+      width={window.electronAPI ? 76 : 60}
+      theme="light"
+    >
+      <div className="desktop-navigation-content mt-6 flex flex-col items-center">
+        <button
+          type="button"
+          aria-label="前往我的"
+          className="mb-6 rounded-full border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-blue-500"
+          onClick={() => navigate("/me")}
+        >
+          <OIMAvatar src={selfInfo.faceURL} text={selfInfo.nickname} />
+        </button>
+        {NavList.map((nav) => (
+          <NavItem nav={nav} key={nav.path} dot={nav.path === "/me" && hasUpdate} />
+        ))}
+      </div>
+    </Sider>
+  );
+}
+
 const LeftNavBar = memo(() => {
   const aboutRef = useRef<OverlayVisibleHandle>(null);
   const personalSettingsRef = useRef<OverlayVisibleHandle>(null);
@@ -174,7 +233,14 @@ const LeftNavBar = memo(() => {
   const [personal, setPersonal] = useState(false);
   const [personalTab, setPersonalTab] = useState<"memory" | "followups">("memory");
   const selfInfo = useUserStore((state) => state.selfInfo);
-  const ownAccount = useResearchStore(state => state.contacts.find(entry => entry.contact.identity.kind === "human" && entry.contact.identity.memberId === state.actor?.member.id)?.contact);
+  const ownAccount = useResearchStore(
+    (state) =>
+      state.contacts.find(
+        (entry) =>
+          entry.contact.identity.kind === "human" &&
+          entry.contact.identity.memberId === state.actor?.member.id,
+      )?.contact,
+  );
   const userLogout = useUserStore((state) => state.userLogout);
   const updateSelfInfo = useUserStore((state) => state.updateSelfInfo);
 
@@ -187,7 +253,8 @@ const LeftNavBar = memo(() => {
         });
         break;
       case 1:
-        if (researchMode) setLabSettings(true); else personalSettingsRef.current?.openOverlay();
+        if (researchMode) setLabSettings(true);
+        else personalSettingsRef.current?.openOverlay();
         break;
       case 2:
         aboutRef.current?.openOverlay();
@@ -196,7 +263,8 @@ const LeftNavBar = memo(() => {
         tryLogout();
         break;
       case 4:
-        setPersonalTab("memory"); setPersonal(true);
+        setPersonalTab("memory");
+        setPersonal(true);
         break;
       default:
         break;
@@ -267,26 +335,37 @@ const LeftNavBar = memo(() => {
           <div className="mb-1 truncate text-base font-medium">{selfInfo.nickname}</div>
         </div>
       </div>
-      {researchMode && <div className="mb-3"><AcceptCatAccountNumber username={ownAccount?.username} isSelf active={showProfile} /></div>}
-      {profileMenuList.filter(menu => researchMode || menu.idx !== 4).map((menu) => (
-        <div key={menu.idx}>
-          <div
-            className="flex cursor-pointer items-center justify-between rounded-md px-3 py-4 hover:bg-[var(--primary-active)]"
-            onClick={() => profileMenuClick(menu.idx)}
-          >
-            <div>{researchMode && menu.idx === 1 ? "模型设置" : menu.title}</div>
-            <RightOutlined rev={undefined} />
-          </div>
-          {menu.gap && (
-            <div className="px-3">
-              <Divider className="my-1.5 border-[var(--gap-text)]" />
-            </div>
-          )}
+      {researchMode && (
+        <div className="mb-3">
+          <AcceptCatAccountNumber
+            username={ownAccount?.username}
+            isSelf
+            active={showProfile}
+          />
         </div>
-      ))}
+      )}
+      {profileMenuList
+        .filter((menu) => researchMode || menu.idx !== 4)
+        .map((menu) => (
+          <div key={menu.idx}>
+            <div
+              className="flex cursor-pointer items-center justify-between rounded-md px-3 py-4 hover:bg-[var(--primary-active)]"
+              onClick={() => profileMenuClick(menu.idx)}
+            >
+              <div>{researchMode && menu.idx === 1 ? "模型设置" : menu.title}</div>
+              <RightOutlined rev={undefined} />
+            </div>
+            {menu.gap && (
+              <div className="px-3">
+                <Divider className="my-1.5 border-[var(--gap-text)]" />
+              </div>
+            )}
+          </div>
+        ))}
     </div>
   );
 
+  if (researchMode) return <ResearchLeftNav />;
   return (
     <Sider
       className="desktop-navigation no-mobile border-r border-gray-200 !bg-[#F4F4F4] dark:border-gray-800 dark:!bg-[#141414]"
@@ -304,26 +383,58 @@ const LeftNavBar = memo(() => {
           open={showProfile}
           onOpenChange={(vis) => setShowProfile(vis)}
         >
-          <button type="button" aria-label="打开个人资料菜单" className="mb-6 rounded-full border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-blue-500">
+          <button
+            type="button"
+            aria-label="打开个人资料菜单"
+            className="mb-6 rounded-full border-0 bg-transparent p-0 focus-visible:outline focus-visible:outline-blue-500"
+          >
             <OIMAvatar src={selfInfo.faceURL} text={selfInfo.nickname} />
           </button>
         </Popover>
 
-        {NavList.filter(nav => researchMode || ["/chat", "/contact"].includes(nav.path)).map((nav) => (
+        {NavList.filter(
+          (nav) => researchMode || ["/chat", "/contact"].includes(nav.path),
+        ).map((nav) => (
           <NavItem nav={nav} key={nav.path} />
         ))}
-        {window.electronAPI && <div className="desktop-navigation-bottom">
-          <DesktopSettings
-            onModelSettings={() => researchMode ? setLabSettings(true) : personalSettingsRef.current?.openOverlay()}
-            onMemory={researchMode ? () => { setPersonalTab("memory"); setPersonal(true); } : undefined}
-            onFollowups={researchMode ? () => { setPersonalTab("followups"); setPersonal(true); } : undefined}
-          />
-        </div>}
+        {window.electronAPI && (
+          <div className="desktop-navigation-bottom">
+            <DesktopSettings
+              onModelSettings={() =>
+                researchMode
+                  ? setLabSettings(true)
+                  : personalSettingsRef.current?.openOverlay()
+              }
+              onMemory={
+                researchMode
+                  ? () => {
+                      setPersonalTab("memory");
+                      setPersonal(true);
+                    }
+                  : undefined
+              }
+              onFollowups={
+                researchMode
+                  ? () => {
+                      setPersonalTab("followups");
+                      setPersonal(true);
+                    }
+                  : undefined
+              }
+            />
+          </div>
+        )}
       </div>
       <PersonalSettings ref={personalSettingsRef} />
       <About ref={aboutRef} />
       <LabSettings open={labSettings} onClose={() => setLabSettings(false)} />
-      {researchMode && <PersonalAssistantPanel open={personal} initialTab={personalTab} onClose={() => setPersonal(false)} />}
+      {researchMode && (
+        <PersonalAssistantPanel
+          open={personal}
+          initialTab={personalTab}
+          onClose={() => setPersonal(false)}
+        />
+      )}
     </Sider>
   );
 });

@@ -2,6 +2,18 @@
 
 更新日期：2026-10-18（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新用户改动与Windows0.10.13：独立“我的”，工作台四主栏
+
+`release/acceptcat-0.10.13`接续PR61 / 13eea26，产品及安装包源码 **8acfbed107b222c4c4f404068c8ecc6cbb821eff**。侧栏广场下“我的”独立页集中个人资料、模型、记忆、通用设置、版本/诊断，头像直达，无底部设置或头像信息Pop。我的Agent/课题组能力移入；工作台只保留总览/规划/任务/资料，定时任务与本机报告分别归规划/资料。实际资料写入、账号显示、技能返回定位和旧链接重定向；无新后台接口或迁移。[实现及QA](development/my-workspace-navigation.md)。
+
+客户端27项、最终类型、11组分阶段真实React/HTTP/SQLite、1536/1024实拍通过；通过阶段pageerror0。修复我的根布局缺少flex column，重新实拍；夹具图标名称/v前缀/任务标题、模型平台关闭503及未填时间/时区首败保留，补齐真实条件续验，未绕过ACL/校验。账号切换后迟到A资料响应不覆盖B身份/草稿；原生报告/版本/偏好为桥接投影，未计真实模型/IM、文件打开、更新下载或日志上传。Git外证据 `.runtime/my-workspace-20261018/qa-summary.json`，前批PR61三平台Foundation读回SUCCESS，无共享/Skill内容修改，不重复根全套。
+
+**Windows x64 NSIS0.10.13已交付桌面** `C:/Users/luo/Desktop/AcceptCat_0.10.13.exe`及说明，**87,406,620字节** / SHA256 **d3df15b6280a953a6065e601f357957575321334bdaecb028c743f0eacc591d7**。实际55依赖/18生产JS逐字节、无QA/猫咪素材、NSIS载荷EXE及ASAR一致、隔离隐藏原生桥/renderer稳定启动通过，既有日志初始化警告保留。[交付](deployment/acceptcat-0.10.13.md)。未代安装/关现装或删旧包/数据。
+
+无API/worker部署、目录运营、公共Release或更新源变更；actual latest仍v0.6.0本轮核对。旧47c42ac/0.25/1.12/022仅沿用记录，无本轮生产inspect；PR50后台边界、三项目录与既有维护登录待办保持，不重复请求。
+
+[草稿PR62](https://github.com/luoyan96/personal-agent/pull/62)已创建并推送，base为release/acceptcat-0.10.12。当前没有attach_artifact可调用工具，未附任务附件，保留直接链接。本轮4886/4887完整命令核对后关闭API23092/Vite13592，cleanup.json留证，旧预览未动；本支CI状态以实际PR为准，不套用前批SUCCESS。
+
 ## 最新用户改动与 Windows 0.10.12：技能收进我的 Agent
 
 `release/acceptcat-0.10.12` 接续 PR60 / a6bb210，产品与安装包源码 **da1858ecb7fe2876fc25b11a714d4cdf4f51e45c**。工作台删除并列“我的技能”，我的 Agent 内增加技能库；本人站内助手配置统一“技能 / 资料”，实际读取绑定数量/版本/启停，添加和管理定位目标助手，明确绑定保留其他助手与授权，返回恢复原助手。旧 view=skills/catalog 链接兼容；无新 API/迁移。[实现与 QA](development/agent-skill-management.md)。

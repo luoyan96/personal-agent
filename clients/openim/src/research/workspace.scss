@@ -603,3 +603,6 @@
     grid-template-columns: 1fr;
   }
 }
+
+.workspace-group-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.workspace-subnavigation { padding: 2px 30px 16px; }

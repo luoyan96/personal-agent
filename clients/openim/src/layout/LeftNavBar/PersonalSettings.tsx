@@ -44,8 +44,10 @@ export default memo(forwardRef(PersonalSettings));
 
 export const PersonalSettingsContent = ({
   closeOverlay,
+  embedded = false,
 }: {
   closeOverlay?: () => void;
+  embedded?: boolean;
 }) => {
   const localeStr = useUserStore((state) => state.appSettings.locale);
   const closeAction = useUserStore((state) => state.appSettings.closeAction);
@@ -80,15 +82,19 @@ export const PersonalSettingsContent = ({
 
   return (
     <div className="flex flex-col bg-[var(--chat-bubble)]">
-      <BlackList ref={backListRef} />
-      <div className="app-drag flex items-center justify-between bg-[var(--gap-text)] p-5">
-        <span className="text-base font-medium">{t("placeholder.accountSetting")}</span>
-        <CloseOutlined
-          className="app-no-drag cursor-pointer text-[#8e9aaf]"
-          rev={undefined}
-          onClick={closeOverlay}
-        />
-      </div>
+      {!embedded && <BlackList ref={backListRef} />}
+      {!embedded && (
+        <div className="app-drag flex items-center justify-between bg-[var(--gap-text)] p-5">
+          <span className="text-base font-medium">
+            {t("placeholder.accountSetting")}
+          </span>
+          <CloseOutlined
+            className="app-no-drag cursor-pointer text-[#8e9aaf]"
+            rev={undefined}
+            onClick={closeOverlay}
+          />
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto">
         <div className="px-6">
           <div>
@@ -137,15 +143,19 @@ export const PersonalSettingsContent = ({
             )}
           </div>
         </div>
-        <Divider className="m-0 border-4 border-[var(--gap-text)]" />
-        <div
-          className="flex cursor-pointer items-center justify-between px-6 py-4"
-          onClick={toBlackList}
-        >
-          <div className="text-base font-medium">{t("placeholder.blackList")}</div>
-          <RightOutlined rev={undefined} />
-        </div>
-        <Divider className="m-0 border-4 border-[var(--gap-text)]" />
+        {!embedded && (
+          <>
+            <Divider className="m-0 border-4 border-[var(--gap-text)]" />
+            <div
+              className="flex cursor-pointer items-center justify-between px-6 py-4"
+              onClick={toBlackList}
+            >
+              <div className="text-base font-medium">{t("placeholder.blackList")}</div>
+              <RightOutlined rev={undefined} />
+            </div>
+            <Divider className="m-0 border-4 border-[var(--gap-text)]" />
+          </>
+        )}
       </div>
     </div>
   );

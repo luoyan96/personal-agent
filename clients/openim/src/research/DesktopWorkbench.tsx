@@ -1,14 +1,12 @@
 import { Alert, Button, Input, Modal, Segmented, Select } from "antd";
 import { useLayoutEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { Id, type WorkbenchCard } from "@research-agent-platform/contracts";
 import { useResearchRead } from "./useResearchRead";
 import { useResearchStore } from "./store";
 import { usePersonalOperation } from "./usePersonalOperation";
 import { researchApi } from "./api";
 import { workspaceApi, useWorkspaceConversation } from "./workspace-api";
-import { PersonalFollowupPanel } from "./PersonalFollowupPanel";
-import { WorkspaceReports } from "./WorkspaceReports";
 import {
   PersonalWorkDetail,
   workspaceMemberLabel,
@@ -23,11 +21,9 @@ import {
 } from "./workspace-availability";
 import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 
-import { MyAgentsWorkspace } from "./MyAgentsWorkspace";
-import { TaskPlanning } from "./TaskPlanning";
 import { ResearchTeamWorkbench } from "./ResearchTeamWorkbench";
-import { ResearchLibrary } from "./ResearchLibrary";
-import { WorkbenchCapabilities } from "./CapabilitySquare";
+import { relocatedWorkspace } from "./workspace-navigation";
+import { WorkbenchPlanning, WorkbenchLibrary } from "./WorkbenchSections";
 type Category = "ongoing" | "awaiting_me" | "completed";
 function WorkbenchOverview({
   card,
@@ -132,17 +128,10 @@ function WorkbenchOverview({
 
 export function DesktopWorkbench() {
   const [params, setParams] = useSearchParams();
+  const relocated = relocatedWorkspace(params);
   const tab =
-    params.get("view") === "agents" || params.get("view") === "skills"
-      ? "agents"
-      : params.get("view") === "capabilities"
-      ? "capabilities"
-      : params.get("view") === "library"
+    params.get("view") === "library"
       ? "library"
-      : params.get("view") === "scheduled" || params.get("tab") === "scheduled"
-      ? "scheduled"
-      : params.get("view") === "reports"
-      ? "reports"
       : params.get("view") === "planning" ||
         params.get("plan") ||
         params.get("planning")
@@ -159,7 +148,7 @@ export function DesktopWorkbench() {
   const availability = useResearchRead(
     readWorkspaceAvailability,
     "workspace-availability",
-    !["reports", "library", "agents", "capabilities"].includes(tab),
+    !relocated && tab !== "library",
   );
   const supported = availability.data?.available === true;
   const teamAvailability = useResearchRead(
@@ -220,12 +209,7 @@ export function DesktopWorkbench() {
     if (value !== "planning") setPlanningLaunch(0);
     setSelected(undefined);
     setDetails(false);
-    const next = new URLSearchParams(params);
-    next.delete("task");
-    next.delete("plan");
-    next.delete("planning");
-    next.delete("tab");
-    next.set("view", value);
+    const next = new URLSearchParams({ view: value });
     setParams(next);
   };
   const select = (card: WorkbenchCard) => {
@@ -262,6 +246,7 @@ export function DesktopWorkbench() {
       inFlight.current = false;
     }
   };
+  if (relocated) return <Navigate to={relocated} replace />;
   return (
     <div className="social-workspace workspace-workbench">
       <header className="workspace-heading">
@@ -269,7 +254,7 @@ export function DesktopWorkbench() {
           <h1>工作台</h1>
           <p>对齐目标、成员下一步和实际科研成果</p>
         </div>
-        {!["library", "agents", "capabilities"].includes(tab) && (
+        {tab !== "library" && (
           <Button
             type="primary"
             disabled={!supported}
@@ -279,7 +264,8 @@ export function DesktopWorkbench() {
                 setFailure("");
                 setBusy(false);
               } else {
-                if (tab !== "planning") setTab("planning");
+                if (tab !== "planning" || params.get("panel") === "scheduled")
+                  setTab("planning");
                 setPlanningLaunch((value) => value + 1);
               }
             }}
@@ -295,12 +281,8 @@ export function DesktopWorkbench() {
           onChange={(value) => setTab(String(value))}
           options={[
             { label: "科研总览", value: "team" },
-            { label: "课题组能力", value: "capabilities" },
-            { label: "我的 Agent", value: "agents" },
             { label: "任务规划", value: "planning" },
             { label: "我的任务", value: "tasks" },
-            { label: "定时任务", value: "scheduled" },
-            { label: "本机报告", value: "reports" },
             { label: "资料与素材库", value: "library" },
           ]}
         />
@@ -322,19 +304,9 @@ export function DesktopWorkbench() {
           />
         )}
       </div>
-      {tab === "agents" || tab === "capabilities" ? (
-        <div className="workspace-full-panel capability-workbench-panel">
-          {tab === "agents" ? (
-            <MyAgentsWorkspace key={generation} />
-          ) : (
-            <WorkbenchCapabilities view="lab" />
-          )}
-        </div>
-      ) : tab === "library" ? (
-        <div className="workspace-full-panel research-library-panel">
-          <ResearchLibrary />
-        </div>
-      ) : tab !== "reports" && !supported ? (
+      {tab === "library" ? (
+        <WorkbenchLibrary />
+      ) : !supported ? (
         <WorkspaceUnavailable
           feature="工作台"
           pending={!availability.data && !availability.error}
@@ -372,15 +344,7 @@ export function DesktopWorkbench() {
           </section>
         )
       ) : tab === "planning" ? (
-        <TaskPlanning launch={planningLaunch} onTasks={() => setTab("tasks")} />
-      ) : tab === "scheduled" ? (
-        <div className="workspace-full-panel">
-          <PersonalFollowupPanel active />
-        </div>
-      ) : tab === "reports" ? (
-        <div className="workspace-full-panel">
-          <WorkspaceReports active />
-        </div>
+        <WorkbenchPlanning launch={planningLaunch} onTasks={() => setTab("tasks")} />
       ) : (
         <div className="workspace-task-body">
           <aside className="workspace-task-list">

@@ -56,7 +56,13 @@ const About: ForwardRefRenderFunction<OverlayVisibleHandle, unknown> = (_, ref) 
 
 export default memo(forwardRef(About));
 
-export const AboutContent = ({ closeOverlay }: { closeOverlay?: () => void }) => {
+export const AboutContent = ({
+  closeOverlay,
+  embedded = false,
+}: {
+  closeOverlay?: () => void;
+  embedded?: boolean;
+}) => {
   const { modal } = App.useApp();
   const [progress, setProgress] = useState(0);
 
@@ -145,16 +151,23 @@ export const AboutContent = ({ closeOverlay }: { closeOverlay?: () => void }) =>
   return (
     <Spin spinning={loading} tip={`${progress}%`}>
       <div className="bg-[var(--chat-bubble)]">
-        <div className="app-drag flex items-center justify-between bg-[var(--gap-text)] p-5">
-          <span className="text-base font-medium">{t("placeholder.about")}</span>
-          <CloseOutlined
-            className="app-no-drag cursor-pointer text-[#8e9aaf]"
-            rev={undefined}
-            onClick={closeOverlay}
-          />
-        </div>
+        {!embedded && (
+          <div className="app-drag flex items-center justify-between bg-[var(--gap-text)] p-5">
+            <span className="text-base font-medium">{t("placeholder.about")}</span>
+            <CloseOutlined
+              className="app-no-drag cursor-pointer text-[#8e9aaf]"
+              rev={undefined}
+              onClick={closeOverlay}
+            />
+          </div>
+        )}
         <div className="flex flex-col items-center justify-center">
-          <img className="mb-2 mt-7" width={56} src={logo} alt="" />
+          <img
+            className="mb-2 mt-7"
+            width={56}
+            src={embedded ? "/icons/icon.png" : logo}
+            alt=""
+          />
           <div
             className="mb-5 flex cursor-pointer flex-col items-center"
             onClick={handleCopy}
