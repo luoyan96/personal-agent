@@ -927,3 +927,16 @@ acceptcat前后端维护，release/acceptcat-0.10.9接续PR57/19acbe3，最终�
 无需后台升级/迁移，未部署API/worker、运营目录、公共Release或更新源，actual latest仍v0.6.0已核实。原生产47c42ac/0.25/1.12/022仅沿用记录，本轮不新inspect私人后台。PR50解析器配套与三项目录仍待旧维护登录，不重复请求；只核对关闭本轮QA4856/4857完整Node命令，旧预览未动。下一步继续获准真实课题材料的使用质量与许可副本管理，工具执行仍需独立适配。
 
 本批草稿PR59已创建并附任务：https://github.com/luoyan96/personal-agent/pull/59；首读e20c155三平台Foundation均IN_PROGRESS，回执pr-final.json，不称本批远端全过。自建4856/4857 Node26636/29248已核对完整命令并关闭，cleanup-before.json/cleanup.json留证，旧预览保持。
+
+
+## 2026-10-18 用户调整：广场去掉管理导航，Windows0.10.11
+
+读取AGENTS/状态/日志/README/roadmap，Git release/acceptcat-0.10.10 / 8b3386b干净，从此建立release/acceptcat-0.10.11，无共享工作覆盖；产品/打包固定 **d0386f0503701eff530a89e0e282ecc93354901d**。移除广场整排范围导航和空toolbar，固定public保留GitHub发现；把课题组与我的Agent作为工作台固定view栏目，复用原浏览器，view换挂载、账号/异步保护保持。新面板独立availability，不重复父读取；内部h2、padding与窄窗栏目滚动适配，原资料/任务/技能入口、联系人权限、添加/配置/资料绑定/聊天/名片管理保持。
+
+客户端27项、类型、7组分阶段真实React/HTTP/SQLite通过；实际创建私人文献Agent、保存资料绑定并API读回、公开与撤回、B不保留A配置且绑定被拒绝、技能/资料/科研总览入口、广场旧导航和内置区均不存在。1536/1024截图已看，无横溢/覆盖层、pageerror0，无未解释console。Browser plugin absent，已有Playwright/独立Edge；合成账号和GitHub事实，不计真实模型/IM/生产数据。初始fixture六仓库数组用于当前七仓库导致500、错误CSS selector/有条件重读按钮/confirm aria标题和英文OK/旧技能标题/截图过渡动画保留；修fixture续验已有通过事实，checkpoint记录合并，不放宽产品ACL或限流。既有Router/findDOMNode/bodyStyle警告与登出401/私人404解释保留。
+
+实际生产Vite/55依赖/Electron22.3.27/NSIS/blockmap、15生产JS逐字节/新入口/无旧范围行/无QA/猫咪素材、实际安装器EXE和ASAR一致、隔离隐藏原生桥/renderer稳定启动通过；既有electron-log警告保留。桌面安装器 **87,401,103字节/SHA256 0c763b4dd18ea9f34c3d629327d83dc4bdf3f46f366a4668d273b8cbd0568530** 与说明已交付，未代安装/关闭现装，旧包/数据保持。README换当前真实组件截图（合成目录事实明确标注）和最新版本/分支；详见docs/development/square-workbench-navigation.md与docs/deployment/acceptcat-0.10.11.md，Git外证据.runtime/square-workbench-20261018。
+
+本轮只客户端，无共享或agents/skills改动，不重复根全套；前批PR59最新8b3386b三平台Foundation本轮读回SUCCESS。无需新API/迁移，没有部署API/worker、运营目录、公共Release或更新源，actual latest仍v0.6.0已核对。旧47c42ac/0.25/1.12/022仅沿用记录；旧维护登录/PR50后台边界/三项目录待办保持，不新inspect私人后台或重复请求。只按完整命令核对关闭本轮4866/4867 QA服务，旧预览未动。
+
+草稿PR60已创建并推送：https://github.com/luoyan96/personal-agent/pull/60；首读c2c70c5三平台Foundation均IN_PROGRESS，pr-final.json保留。当前attach_artifact工具已不可调用，实际TypeError后ALL_TOOLS未找到，未称已附任务，也不另造UI/插件绕行，artifact-attachment.json记待工具恢复后处理。只关闭完整命令核对的Node24244/7076 QA4867/4866，cleanup-before.json/cleanup.json留证。

@@ -11,11 +11,16 @@
     padding: 26px 36px 14px;
     gap: 18px;
     border: 0;
-    h1 {
+    h1,
+    h2 {
+      margin: 0;
       font-size: 30px;
       font-weight: 700;
       line-height: 1.35;
       letter-spacing: -0.6px;
+    }
+    h2 {
+      font-size: 22px;
     }
     p {
       margin: 7px 0 0;
@@ -197,6 +202,16 @@
     font-size: 12px;
     color: #77858c;
   }
+}
+
+.workspace-full-panel.capability-workbench-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.workspace-workbench > .workspace-toolbar > .ant-segmented {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .capability-feed-card {

@@ -45,7 +45,14 @@ function ConfiguredCapabilityPreview({ contact }: { contact: Contact }) {
 }
 
 export function CapabilitySquare() {
-  const [view, setView] = useState<"public" | "lab" | "mine">("public");
+  return <CapabilityBrowser view="public" />;
+}
+
+export function WorkbenchCapabilities({ view }: { view: "lab" | "mine" }) {
+  return <CapabilityBrowser key={view} view={view} />;
+}
+
+function CapabilityBrowser({ view }: { view: "public" | "lab" | "mine" }) {
   const [category, setCategory] = useState<ResearchCategory>("全部");
   const [search, setSearch] = useState(""),
     [query, setQuery] = useState(""),
@@ -215,7 +222,6 @@ export function CapabilitySquare() {
               "能力名片已公开。",
               () => {
                 setPublishing(false);
-                setView("mine");
                 setPages([undefined]);
               },
             )
@@ -251,7 +257,11 @@ export function CapabilitySquare() {
     <div className="social-workspace workspace-square capability-feed">
       <header className="workspace-heading">
         <div>
-          <h1>科研广场</h1>
+          {view === "public" ? (
+            <h1>科研广场</h1>
+          ) : (
+            <h2>{view === "mine" ? "我的 Agent" : "课题组能力"}</h2>
+          )}
           <p>
             {view === "public"
               ? "在 GitHub 社区里，发现适合你研究的能力。"
@@ -262,7 +272,7 @@ export function CapabilitySquare() {
         </div>
         <Input.Search
           className="capability-feed-search"
-          aria-label="搜索公开能力"
+          aria-label={view === "public" ? "搜索公开能力" : "搜索科研助手"}
           placeholder={view === "public" ? "搜索 GitHub 科研能力" : "搜索科研助手"}
           value={search}
           allowClear
@@ -295,23 +305,8 @@ export function CapabilitySquare() {
           </Button>
         )}
       </header>
-      <div className="workspace-toolbar">
-        <Segmented
-          className="capability-feed-tabs"
-          aria-label="能力范围"
-          value={view}
-          onChange={(v) => {
-            setView(v as typeof view);
-            resetFilters();
-            setNotice("");
-          }}
-          options={[
-            { label: "发现能力", value: "public" },
-            { label: "课题组能力", value: "lab" },
-            { label: "我的 Agent", value: "mine" },
-          ]}
-        />
-        {view !== "public" && (
+      {view !== "public" && (
+        <div className="workspace-toolbar">
           <Segmented
             className="capability-feed-categories"
             aria-label="科研能力分类"
@@ -322,8 +317,8 @@ export function CapabilitySquare() {
             }}
             options={[...researchCategories]}
           />
-        )}
-      </div>
+        </div>
+      )}
       {((view !== "public" && local.error) || failure || notice) && (
         <Alert
           className="mx-5 mt-3"
@@ -338,7 +333,13 @@ export function CapabilitySquare() {
       )}
       {!supported ? (
         <WorkspaceUnavailable
-          feature="能力广场"
+          feature={
+            view === "public"
+              ? "科研广场"
+              : view === "mine"
+              ? "我的 Agent"
+              : "课题组能力"
+          }
           pending={!availability.data && !availability.error}
           error={availability.error}
           onRetry={availability.refresh}
@@ -347,7 +348,10 @@ export function CapabilitySquare() {
         <div
           className={`workspace-square-body ${selectedContact ? "has-selection" : ""}`}
         >
-          <section className="workspace-square-results" aria-label="科研发现内容">
+          <section
+            className="workspace-square-results"
+            aria-label={view === "public" ? "科研发现内容" : "科研助手内容"}
+          >
             {view === "public" ? (
               <CommunityDiscovery
                 key={`${generation}:${actorId}`}

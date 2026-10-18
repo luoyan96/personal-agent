@@ -27,6 +27,7 @@ import { SkillLibrary } from "./SkillLibrary";
 import { TaskPlanning } from "./TaskPlanning";
 import { ResearchTeamWorkbench } from "./ResearchTeamWorkbench";
 import { ResearchLibrary } from "./ResearchLibrary";
+import { WorkbenchCapabilities } from "./CapabilitySquare";
 type Category = "ongoing" | "awaiting_me" | "completed";
 function WorkbenchOverview({
   card,
@@ -132,7 +133,11 @@ function WorkbenchOverview({
 export function DesktopWorkbench() {
   const [params, setParams] = useSearchParams();
   const tab =
-    params.get("view") === "library"
+    params.get("view") === "agents"
+      ? "agents"
+      : params.get("view") === "capabilities"
+      ? "capabilities"
+      : params.get("view") === "library"
       ? "library"
       : params.get("view") === "skills"
       ? "skills"
@@ -156,7 +161,7 @@ export function DesktopWorkbench() {
   const availability = useResearchRead(
     readWorkspaceAvailability,
     "workspace-availability",
-    tab !== "reports" && tab !== "skills" && tab !== "library",
+    !["reports", "skills", "library", "agents", "capabilities"].includes(tab),
   );
   const supported = availability.data?.available === true;
   const teamAvailability = useResearchRead(
@@ -266,22 +271,24 @@ export function DesktopWorkbench() {
           <h1>工作台</h1>
           <p>对齐目标、成员下一步和实际科研成果</p>
         </div>
-        {tab !== "library" && <Button
-          type="primary"
-          disabled={!supported}
-          onClick={() => {
-            if (tab === "tasks") {
-              setCreating(true);
-              setFailure("");
-              setBusy(false);
-            } else {
-              if (tab !== "planning") setTab("planning");
-              setPlanningLaunch((value) => value + 1);
-            }
-          }}
-        >
-          {tab === "tasks" ? "新建单项任务" : "规划新任务"}
-        </Button>}
+        {!["library", "agents", "capabilities"].includes(tab) && (
+          <Button
+            type="primary"
+            disabled={!supported}
+            onClick={() => {
+              if (tab === "tasks") {
+                setCreating(true);
+                setFailure("");
+                setBusy(false);
+              } else {
+                if (tab !== "planning") setTab("planning");
+                setPlanningLaunch((value) => value + 1);
+              }
+            }}
+          >
+            {tab === "tasks" ? "新建单项任务" : "规划新任务"}
+          </Button>
+        )}
       </header>
       <div className="workspace-toolbar">
         <Segmented
@@ -290,6 +297,8 @@ export function DesktopWorkbench() {
           onChange={(value) => setTab(String(value))}
           options={[
             { label: "科研总览", value: "team" },
+            { label: "课题组能力", value: "capabilities" },
+            { label: "我的 Agent", value: "agents" },
             { label: "任务规划", value: "planning" },
             { label: "我的任务", value: "tasks" },
             { label: "定时任务", value: "scheduled" },
@@ -316,11 +325,20 @@ export function DesktopWorkbench() {
           />
         )}
       </div>
-      {tab === "library" ? (
-        <div className="workspace-full-panel research-library-panel"><ResearchLibrary /></div>
+      {tab === "agents" || tab === "capabilities" ? (
+        <div className="workspace-full-panel capability-workbench-panel">
+          <WorkbenchCapabilities view={tab === "agents" ? "mine" : "lab"} />
+        </div>
+      ) : tab === "library" ? (
+        <div className="workspace-full-panel research-library-panel">
+          <ResearchLibrary />
+        </div>
       ) : tab === "skills" ? (
         <div className="workspace-full-panel">
-          <SkillLibrary key={params.get("catalog") || ""} catalogId={params.get("catalog") || undefined} />
+          <SkillLibrary
+            key={params.get("catalog") || ""}
+            catalogId={params.get("catalog") || undefined}
+          />
         </div>
       ) : tab !== "reports" && !supported ? (
         <WorkspaceUnavailable

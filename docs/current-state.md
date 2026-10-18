@@ -2,6 +2,18 @@
 
 更新日期：2026-10-18（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新用户改动与Windows0.10.11：广场发现，工作台管理
+
+`release/acceptcat-0.10.11` 接续PR59 / 8b3386b，产品和安装包固定 **d0386f0503701eff530a89e0e282ecc93354901d**。按用户截图要求移除广场“发现能力/课题组能力/我的Agent”整排顶部导航，无空toolbar占位；广场保留GitHub推荐/Star热门/最新/方向与搜索。课题组能力、本人及内置助手移入工作台独立栏目（`view=capabilities`/`view=agents`），复用原配置、资料绑定、聊天和名片管理，不改授权/API。[实现和QA](development/square-workbench-navigation.md)。
+
+27项客户端/类型、7组分阶段真实React/API/SQLite与1536/1024实拍通过；实际模板添加/资料绑定读回、公开撤回、其他栏目及B隔离通过，pageerror0，无未解释console。fixture六仓库数组用于七仓库的500与选择器/标题/动画首败保留，修夹具后续验，不改产品ACL/限流。无共享/Skill内容修改、不重复根全套；前批PR59三平台SUCCESS已读回。证据Git外 `.runtime/square-workbench-20261018`，无真实IM、模型或生产私人数据验证。README当前预览明确合成目录事实。
+
+**Windows x64 NSIS0.10.11已交付桌面** `C:/Users/luo/Desktop/AcceptCat_0.10.11.exe` 及说明，**87,401,103字节** / SHA256 **0c763b4dd18ea9f34c3d629327d83dc4bdf3f46f366a4668d273b8cbd0568530**。实际55依赖/15生产JS/无旧范围行/无QA、安装器payload EXE和ASAR一致及隔离隐藏原生桥/renderer稳定启动通过，既有electron-log警告保留。[交付记录](deployment/acceptcat-0.10.11.md)。未代安装/关闭现装或删除旧包/数据。
+
+无需后台升级/迁移；未部署API/worker、发布目录、公共Release或更新源。实际latest仍v0.6.0已核对；旧47c42ac/0.25/1.12/022仅沿用记录，本轮未新inspect生产。PR50后台边界/三项目录运营/旧维护登录待办保持，不重复请求。自建4866/4867核对完整Node命令后关闭，旧预览未动。
+
+[草稿PR60](https://github.com/luoyan96/personal-agent/pull/60)已创建并推送；首读c2c70c5三平台Foundation均进行中。当前工具列表不再提供attach_artifact，实际尝试TypeError且检索未找到，未称已附任务，链接在此保留。自建4866/4867 Node24244/7076完整命令核对关闭，cleanup.json留证。
+
 ## 最新技能库与Windows交付：0.10.10，素材导入范围与恢复
 
 `acceptcat-2`，`release/acceptcat-0.10.10` 接续PR58 / da6ec83，产品和包源码 **24858567a318ab4302f53eead42713e1405dea1f**。Skill原件加入资料库改用现有文件导入：选集合/读原件只准备，确认后才上传；保留原路径/修订/SHA256、首次快照/key的未知结果重试、已确认结果分流和范围变化阻断。读取期间锁定目标，换账号/会话/Skill/面板清除迟到结果；清单失败不再显示无原件，普通本机文件导入保持。[实现与QA](development/skill-material-import.md)。

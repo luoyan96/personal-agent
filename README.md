@@ -20,9 +20,9 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/research-square.png" width="100%" alt="AcceptCat 科研广场：通过文献阅读、论文修改、研究方案和图表构思卡片，查看需要的输入与交付形式" />
+  <img src="docs/assets/research-square.png" width="100%" alt="AcceptCat 科研广场：直接浏览 GitHub 科研能力的推荐、热门、最新及方向筛选" />
   <br />
-  <sub>桌面开发预览 · 实际界面与示例数据；公开下载版与最新试用版的范围见下文。</sub>
+  <sub>桌面开发预览 · 实际组件、合成账号与示例目录事实；收录数量及版本范围以试用说明为准。</sub>
 </p>
 
 ## 科研里的事情，应该接得上
@@ -62,7 +62,7 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 
 ### 工作台：把目标、分工和成果放在一起
 
-科研计划可以先保存为草案，再确认成任务。任务记录承接、阻碍、阶段交付、反馈和验收；负责人查看获准范围内的团队进展。支持一次、每天或每周的提醒与文字 Agent 定时任务，运行记录可查；关闭客户端后仍需后台服务持续运行。
+科研计划可以先保存为草案，再确认成任务。任务记录承接、阻碍、阶段交付、反馈和验收；负责人查看获准范围内的团队进展。课题组能力和我的 Agent 也统一在工作台管理，包括内置助手添加与资料配置。支持一次、每天或每周的提醒与文字 Agent 定时任务，运行记录可查；关闭客户端后仍需后台服务持续运行。
 
 ### 资料与方法：按这次任务的需要使用
 
@@ -70,7 +70,7 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 
 ## 找到适合当前研究的能力
 
-广场按“文献与阅读、写作与表达、研究设计、图表与可视化、数据与代码、课题协作”组织能力。先看它能交付什么、你需要准备什么，再决定是否使用。
+广场只展示 GitHub 社区来源，支持推荐、Star 热门、代码最新，以及文献、写作、研究设计、图表、数据与课题协作等方向。先看它能交付什么、你需要准备什么，再决定是否使用。
 
 当前可探索的方向包括：
 
@@ -88,9 +88,9 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 
 | 版本入口 | 当前状态 |
 | --- | --- |
-| **最新桌面试用版：0.10.10** | 已制作并交付小范围试用，尚未上传公开 Release；包含新版界面、科研协作和近期可靠性修复。[查看试用与版本说明](docs/product-status.md) |
+| **最新桌面试用版：0.10.11** | 已制作并交付小范围试用，尚未上传公开 Release；包含新版界面、科研协作和近期可靠性修复。[查看试用与版本说明](docs/product-status.md) |
 | **GitHub 公开下载：v0.6.0** | 可从 [Releases](https://github.com/luoyan96/personal-agent/releases/latest) 下载；安装文件仍叫 `ResearchWeChat_0.6.0.exe`，属于早期版本，未包含这里展示的全部体验 |
-| **最新产品源码** | 当前集成在 [release/acceptcat-0.10.10](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.10)；默认分支的应用代码仍是较早基线，文档与软件发布分别维护 |
+| **最新产品源码** | 当前集成在 [release/acceptcat-0.10.11](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.11)；默认分支的应用代码仍是较早基线，文档与软件发布分别维护 |
 
 已有试用版的团队：登录后在设置中配置自己的模型，从一个真实课题的小任务开始。新团队如希望参与试用，可以在 [Issues](https://github.com/luoyan96/personal-agent/issues) 留下使用场景和试用意向；请不要提交账号密钥、未公开论文或学生的私人材料。
 
@@ -116,7 +116,7 @@ git clone https://github.com/luoyan96/personal-agent.git
 cd personal-agent
 
 # 最新试用功能暂在此集成分支，main 仍保留较早应用基线。
-git switch release/acceptcat-0.10.10
+git switch release/acceptcat-0.10.11
 pnpm install --frozen-lockfile
 pnpm run ci
 ```
