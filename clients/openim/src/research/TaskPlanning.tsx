@@ -45,7 +45,7 @@ function ConfirmedPlan({
 }: {
   plan: SavedPlan;
   people: Record<string, string>;
-  onTasks: () => void;
+  onTasks: (taskId?: string) => void;
 }) {
   const [taskId, setTaskId] = useState<string>();
   const availability = useResearchRead(
@@ -96,7 +96,7 @@ function ConfirmedPlan({
           }
           action={<Button onClick={availability.refresh}>重新检查</Button>}
         />
-        <Button onClick={onTasks}>查看已有任务</Button>
+        <Button onClick={() => onTasks()}>查看已有任务</Button>
       </div>
     );
   return (
@@ -144,6 +144,7 @@ function ConfirmedPlan({
             </p>
           </div>
           <Button onClick={() => setTaskId(next.id)}>处理这一步</Button>
+          <Button onClick={() => onTasks(next.id)}>在工作台打开</Button>
         </div>
       )}
       <ol className="planner-timeline">
@@ -194,7 +195,7 @@ function ConfirmedPlan({
                 )}
                 <Button
                   disabled={!facts.data?.rows[i]?.linked}
-                  onClick={() => setTaskId(facts.data!.rows[i].linked!.id)}
+                  onClick={() => onTasks(facts.data!.rows[i].linked!.id)}
                 >
                   查看任务与交付
                 </Button>
@@ -227,7 +228,7 @@ export function TaskPlanning({
   onTasks,
 }: {
   launch: number;
-  onTasks: () => void;
+  onTasks: (taskId?: string) => void;
 }) {
   const actor = useResearchStore((s) => s.actor),
     generation = useResearchStore((s) => s.generation);
@@ -249,6 +250,7 @@ export function TaskPlanning({
   const [prompt, setPrompt] = useState("");
   const [deliverable, setDeliverable] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [batchAssignee, setBatchAssignee] = useState<string>();
   const [busy, setBusy] = useState(false),
     [failure, setFailure] = useState(""),
     [notice, setNotice] = useState("");
@@ -264,6 +266,7 @@ export function TaskPlanning({
     const { isCurrent } = operation.capture();
     dialogs.current.push(
       Modal.confirm({
+        centered: true,
         ...options,
         onOk: (...args) => (isCurrent() ? options.onOk?.(...args) : undefined),
       }),
@@ -378,6 +381,7 @@ export function TaskPlanning({
     setPrompt("");
     setDeliverable("");
     setDeadline("");
+    setBatchAssignee(undefined);
     setFailure("");
     setNotice("");
     setBusy(false);
@@ -563,6 +567,15 @@ export function TaskPlanning({
     });
   const setAllocation = (i: number, value: string) => {
     if (value === "self") stepEdit(i, { allocation: { kind: "self" }, budget: null });
+    else if (value === "claim")
+      stepEdit(i, {
+        allocation: {
+          kind: "claim",
+          audience: "lab_members",
+          summary: draft.proposedItems[i].goal.trim() || "按步骤目标认领",
+        },
+        budget: null,
+      });
     else if (value.startsWith("member:"))
       stepEdit(i, {
         allocation: { kind: "invitation", memberId: value.slice(7) },
@@ -581,6 +594,59 @@ export function TaskPlanning({
           budget: { maxTokens: 100000, maxSeconds: 120 },
         });
     }
+  };
+  const people = Object.fromEntries(
+    (members.data?.data || []).map((m) => [m.id, m.displayName]),
+  );
+  const allocationLabel = (step: PlanStep) =>
+    step.allocation.kind === "self"
+      ? "我来负责"
+      : step.allocation.kind === "invitation"
+      ? `邀请 ${people[step.allocation.memberId] || "成员信息待读取"}（待接受）`
+      : step.allocation.kind === "claim"
+      ? "课题组成员认领（尚无承接者）"
+      : `公共 Agent · ${
+          availableCapabilities.find(
+            (c) =>
+              c.id ===
+              (step.allocation.kind === "public_agent"
+                ? step.allocation.capability?.id
+                : ""),
+          )?.name || "能力待核对"
+        }`;
+  const humanOptions = [
+    { value: "self", label: "我来负责" },
+    ...(members.data?.data
+      .filter((m) => m.id !== actor?.member.id)
+      .map((m) => ({ value: `member:${m.id}`, label: `邀请 ${m.displayName}` })) || []),
+    ...(actor?.spaceKind === "laboratory"
+      ? [{ value: "claim", label: "课题组成员认领" }]
+      : []),
+  ];
+  const applyBatch = () => {
+    if (
+      !batchAssignee ||
+      !humanOptions.some((option) => option.value === batchAssignee)
+    )
+      return;
+    edit({
+      ...draft,
+      proposedItems: draft.proposedItems.map((step) => ({
+        ...step,
+        budget: null,
+        allocation:
+          batchAssignee === "self"
+            ? { kind: "self" }
+            : batchAssignee === "claim"
+            ? {
+                kind: "claim",
+                audience: "lab_members",
+                summary: step.goal.trim() || "按步骤目标认领",
+              }
+            : { kind: "invitation", memberId: batchAssignee.slice(7) },
+      })),
+    });
+    setNotice("已更新全部步骤的草案分工；尚未发送邀请或创建任务。");
   };
 
   return (
@@ -797,7 +863,7 @@ export function TaskPlanning({
                 (members.data?.data || []).map((m) => [m.id, m.displayName]),
               )}
             />
-            <Button className="planner-all-tasks" onClick={onTasks}>
+            <Button className="planner-all-tasks" onClick={() => onTasks()}>
               查看工作台全部任务
             </Button>
           </>
@@ -861,8 +927,33 @@ export function TaskPlanning({
                     onClick={() =>
                       confirm({
                         title: `确认并创建 ${draft.proposedItems.length} 个步骤任务？`,
-                        content:
-                          "会保存这份草案并创建真实任务。受邀成员需要自行接受；选用公共 Agent 的步骤会建立执行请求，没有材料时等待输入。每个结果仍需要验收。",
+                        content: (
+                          <div className="planner-confirm-review">
+                            <p>
+                              确认后创建真实任务。成员须自行接受；公共 Agent
+                              会建立执行请求，结果仍需验收。
+                            </p>
+                            <ol>
+                              {draft.proposedItems.map((step, i) => (
+                                <li key={step.id}>
+                                  <strong>
+                                    {i + 1}. {step.title || "未命名步骤"}
+                                  </strong>
+                                  <p>{allocationLabel(step)}</p>
+                                  <p>交付：{step.deliverable || "未填写"}</p>
+                                  <p>
+                                    截止：
+                                    {planDate(step.schedule.hardDeadline) || "未设置"}
+                                    {step.schedule.hardDeadline &&
+                                    !step.schedule.hardDeadline.confirmed
+                                      ? "（待确认）"
+                                      : ""}
+                                  </p>
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+                        ),
                         okText: "确认并创建任务",
                         cancelText: "继续调整",
                         onOk: () => save(true),
@@ -892,6 +983,26 @@ export function TaskPlanning({
                 />
               </label>
               <ResearchTeamAccountHint />
+              <div className="planner-batch-assignment">
+                <label>
+                  统一安排负责人
+                  <Select
+                    aria-label="统一安排负责人"
+                    value={batchAssignee}
+                    placeholder="选择本次草案的分工"
+                    options={humanOptions}
+                    disabled={busy || !!members.error}
+                    onChange={setBatchAssignee}
+                  />
+                </label>
+                <Button
+                  disabled={busy || !batchAssignee || !!members.error}
+                  onClick={applyBatch}
+                >
+                  应用到全部步骤
+                </Button>
+                <p>只修改草案分工。核对每步交付、日期与依赖后，再确认创建任务。</p>
+              </div>
               <ol className="planner-timeline">
                 {draft.proposedItems.map((step, i) => (
                   <li key={step.id}>
@@ -938,13 +1049,7 @@ export function TaskPlanning({
                               : "claim"
                           }
                           options={[
-                            { value: "self", label: "我来负责" },
-                            ...(members.data?.data
-                              .filter((m) => m.id !== actor?.member.id)
-                              .map((m) => ({
-                                value: `member:${m.id}`,
-                                label: `邀请 ${m.displayName}`,
-                              })) ?? []),
+                            ...humanOptions,
                             ...availableCapabilities.map((c) => ({
                               value: `agent:${c.id}`,
                               label: `Agent · ${c.name}`,

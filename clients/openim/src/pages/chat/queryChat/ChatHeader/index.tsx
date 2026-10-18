@@ -1,5 +1,5 @@
 import { SessionType } from "@openim/wasm-client-sdk";
-import { Button, Layout, Tooltip } from "antd";
+import { Button, Drawer, Layout, Tooltip } from "antd";
 import clsx from "clsx";
 import i18n, { t } from "i18next";
 import { memo, useEffect, useRef, useState } from "react";
@@ -20,6 +20,7 @@ import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
 import { MoreOutlined, TeamOutlined, UserOutlined } from "@ant-design/icons";
 import ChatDetailsDrawer from "./ChatDetailsDrawer";
 import HistorySearch from "./HistorySearch";
+import { WorkbenchTaskInbox } from "@/research/WorkbenchTaskInbox";
 
 const menuList = [
   {
@@ -49,6 +50,8 @@ const ChatHeader = () => {
   const [aboutMe, setAboutMe] = useState(false);
   const [details, setDetails] = useState(false);
   const [history, setHistory] = useState(false);
+  const [workbenchTasks, setWorkbenchTasks] = useState(false);
+  const actorGeneration = useResearchStore((s) => s.generation);
   const singleSettingRef = useRef<OverlayVisibleHandle>(null);
   const groupSettingRef = useRef<OverlayVisibleHandle>(null);
 
@@ -76,13 +79,14 @@ const ChatHeader = () => {
     setDetails(false);
     setHistory(false);
     setAboutMe(false);
+    setWorkbenchTasks(false);
     if (singleSettingRef.current?.isOverlayOpen) {
       singleSettingRef.current?.closeOverlay();
     }
     if (groupSettingRef.current?.isOverlayOpen) {
       groupSettingRef.current?.closeOverlay();
     }
-  }, [currentConversation?.conversationID]);
+  }, [currentConversation?.conversationID, actorGeneration]);
 
   const menuClick = (idx: number) => {
     switch (idx) {
@@ -122,14 +126,14 @@ const ChatHeader = () => {
     <Layout.Header className="desktop-chat-header relative border-b border-b-[var(--gap-text)] !bg-white !px-3">
       <div className="flex h-full items-center leading-none">
         <div className="flex flex-1 items-center overflow-hidden">
-          {(
+          {
             <OIMAvatar
               src={currentConversation?.faceURL}
               text={currentConversation?.showName}
               isgroup={Boolean(currentConversation?.groupID)}
               size={42}
             />
-          )}
+          }
           <div
             className={clsx(
               "desktop-chat-heading ml-3 flex !h-10.5 flex-1 flex-col justify-between overflow-hidden",
@@ -158,6 +162,11 @@ const ChatHeader = () => {
           </div>
         </div>
         <div className="mr-2 flex items-center">
+          {researchMode && isCoordinator && (
+            <Button type="text" onClick={() => setWorkbenchTasks(true)}>
+              工作台任务
+            </Button>
+          )}
           {researchMode && isCoordinator && !window.electronAPI && (
             <Button
               className="desktop-about-me"
@@ -204,6 +213,15 @@ const ChatHeader = () => {
         </div>
       </div>
       <SingleSetting ref={singleSettingRef} />
+      <Drawer
+        title="个人助手与工作台"
+        open={workbenchTasks && isCoordinator}
+        width={560}
+        onClose={() => setWorkbenchTasks(false)}
+        destroyOnClose
+      >
+        {workbenchTasks && isCoordinator && <WorkbenchTaskInbox />}
+      </Drawer>
       <GroupSetting ref={groupSettingRef} />
       {window.electronAPI && (
         <>

@@ -1,3 +1,9 @@
+.workbench-task-inbox { padding: 18px; margin-bottom: 18px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; } h2 { font-size: 17px; font-weight: 600; } p { font-size: 12px; color: #64748b; margin: 8px 0; } }
+.workbench-inbox-row { display: grid; gap: 7px; width: 100%; text-align: left; padding: 12px 0; border-bottom: 1px solid #eef2f6; strong { overflow-wrap: anywhere; } span { font-size: 12px; color: #64748b; } &:hover { color: #1473c8; } }
+
+.workspace-heading-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; .ant-btn { height: 40px; padding: 0 20px; } }
+.workbench-inbox-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 14px; }
+
 .social-workspace {
   --workspace-green: #07a35a;
   height: 100%;

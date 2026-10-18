@@ -988,3 +988,17 @@ Windows x64 NSIS0.10.12实际构建并复制桌面，**87,403,174字节** / SHA2
 证据在Git外D:/deepseek-agent/.runtime/lab-capabilities-20261018，qa-summary.json合并8组事实、typecheck-final.log与focused.log保留命令结果。生产Web构建、四份固定SDK资源及资产引用检查通过，build-web.log保留既有antd指令/产物体积警告；208份Markdown/10份Skill内容及diff检查通过。无共享/内置Skill/API/迁移变更，不重复根完整CI。本批未制作新Windows安装包、安装、部署、目录发布、公共Release或更新源变更；现装0.10.13不会因此更新。PR50后台边界、三项目录与既有维护登录待办保持；下一步可按用户要求完善教师自助开组/已有账号受邀流程。详见docs/development/lab-capability-membership.md。
 
 最终修正提交2fe690fb32f72d57ca3189e4953768c25c750836已推送，草稿PR63 https://github.com/luoyan96/personal-agent/pull/63 已创建并通过attach_artifact附到当前任务，base为release/acceptcat-0.10.13。首读该提交三项Foundation均in_progress，不套用前批ff0f21e通过事实。核对完整Node命令后仅关闭本批API4897/22000及Vite4896/30680，端口无监听；cleanup-before.json/cleanup.json保留，旧服务与用户软件未动。Git作者缺省沿用本仓库既有Codex身份，以命令级配置提交，未改全局配置。
+
+## 2026-10-18：科研分工与个人助手任务衔接，Windows0.10.14
+
+用户要求制作安装包，并优化课题组/工作台任务安排与个人助手衔接。核对干净Git，从PR63/9b32c56建立release/acceptcat-0.10.14，保留前批修正；产品与打包固定 **6d643df393b91ce9f5a5c6d3bfb6b6d6a173d3fb**。科研/联系人入口分开，草案批量分工及认领、逐步确认；计划/总览/准确任务类型链接及返回所属计划；个人助理与总览读同一实际任务聚合，委派按实际执行编号定位对应任务，任务可返回有权限的需求对话。预选Agent自动纳入草案成员，个人新建清旧科研类型，状态中文化。没有新API/共享契约/迁移或内置Skill修改，不扩大成员/材料权限。
+
+32项定向、最终TypeScript、11组分阶段真实React/HTTP/SQLite/ChatWorker与1536×1024/1024×726实拍通过，pageerror0；新增6项定位边界在cursor空值类型修正后再次通过。包含草案无提前任务、稳定步骤/确认、书签、学生独立接受/开始/提交和导师准确验收、同Agent两次委派的旧任务定位、助手抽屉、联系人新建、未知类型/换账号拒绝、503重试与定位取消。模型为注入合成端口；SDK/会话映射为投影，返回来源实测本地IM未连接并提示失败，未声称真实模型/IM/科研质量通过。Browser plugin absent，沿既有frontend-testing-debugging及React规范用Playwright/隔离Edge，无新增依赖。图标/两字按钮名称、选择器标签遮挡、确认/抽屉定位及动画等待首败保留后分阶段续验，未放宽ACL/限流/版本/本人接受。详见docs/development/assistant-workbench-tasks.md。
+
+实际Electron22.3.27 / 55运行依赖 / NSIS / blockmap、17生产JS逐字节、新入口/无旧折叠/无QA/品牌素材、安装器EXE/ASAR实际载荷一致及隔离隐藏原生桥/renderer启动通过；既有electron-log重复initialize警告保留。Windows x64安装器 **87,418,294字节 / SHA256 b8700d88411776da4716ef0ea1695a031aaee995562b1b84cfa88435e4ff02e7** 已复制桌面AcceptCat_0.10.14.exe并附说明；未代安装、关用户软件或删旧包/数据。证据Git外D:/deepseek-agent/.runtime/task-workbench-20261018，qa-summary、installer-proof、nsis-payload-proof、electron-smoke及各首败保留；交付见docs/deployment/acceptcat-0.10.14.md。
+
+复用既有后台，无部署/目录运营/公共Release/更新源变更，actual latest重新读回仍v0.6.0。旧生产47c42ac/contract0.25/chat1.12/schema022仅沿用记录，无本轮生产inspect；PR50正文边界、三项目录及既有维护登录待办保持，不重复询问。前批PR63/9b32c56三项Foundation本轮读回success；本支检查独立记录。无共享/Skill内容变化，不重复根全套；README/产品状态更新已交付本地版本，不提供不存在的公共下载。课题组自助创建、已有个人账号加入、多组和工具执行仍未完成，后续继续获准真实师生反馈。
+
+最终内容检查210份Markdown/10份Skill和diff通过。仅关闭本轮完整Node命令核对的Vite4906/22660与API4907/32612，端口无监听；cleanup-before.json/cleanup.json留证，旧服务、用户现装和旧包未动。桌面新安装器与安装说明均已读回确认。
+
+草稿PR64 https://github.com/luoyan96/personal-agent/pull/64 已创建并通过attach_artifact附当前任务，base为fix/lab-capabilities-entry。首读文档头701e03a的三项Foundation均IN_PROGRESS，回执pr-final.json，不套用前批通过或视为本支远端全过。产品/包固定6d643df，后续文档提交不改变安装器；桌面安装器最终再次SHA256读回一致。

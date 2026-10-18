@@ -2,6 +2,20 @@
 
 更新日期：2026-10-18（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新 Windows 0.10.14：科研分工与个人助手任务衔接
+
+`release/acceptcat-0.10.14` 接续 PR63 / 9b32c56，产品与安装包源码 **6d643df393b91ce9f5a5c6d3bfb6b6d6a173d3fb**。科研计划与联系人协作入口分开，计划可批量安排自己/同组邀请/待认领、确认前逐步预览；稳定类型链接连接计划/总览/准确任务及返回所属计划。个人助理聊天与总览读取同一工作台待办，委派按真实turnId定位对应任务，任务可返回真实来源对话；预选Agent与成员保持一致，新建个人任务不残留科研类型。包含PR63未打包的折叠按钮移除及课题组身份边界。[实现及QA](development/assistant-workbench-tasks.md)。
+
+客户端32项/最终类型、11组分阶段真实React/HTTP/SQLite/合成ChatWorker与1536/1024实拍通过，通过阶段pageerror0；新增6项边界在类型修正后再次通过。首败与明确503/404故障保留，未放宽ACL/限流/版本/成员接受。原生SDK与聊天映射为投影，来源返回实测为本地IM未连接，不计真实模型/IM/科研质量；前批PR63三项Foundation已读回success。Git外证据 `D:/deepseek-agent/.runtime/task-workbench-20261018`，无共享/内置Skill变更，不重复根全套。
+
+**Windows x64 NSIS0.10.14已交付桌面** `C:/Users/luo/Desktop/AcceptCat_0.10.14.exe` 与说明，**87,418,294字节** / SHA256 **b8700d88411776da4716ef0ea1695a031aaee995562b1b84cfa88435e4ff02e7**。实际55依赖、17生产JS逐字节、无QA/旧折叠入口、实际安装载荷EXE/ASAR与隔离隐藏原生桥/renderer启动通过，既有日志初始化警告保留。[交付](deployment/acceptcat-0.10.14.md)。没有代安装、关闭现装或删除旧包/数据。
+
+无新后台接口/迁移、API/worker部署、目录运营、公共Release或更新源；actual latest本次核对仍v0.6.0。旧生产47c42ac/0.25/1.12/022仅沿用记录，未新inspect。课题组自助创建、已有个人账号加入、多课题组仍未实现；PR50后台边界、三项目录及既有维护登录待办保持。
+
+内容检查210份Markdown/10份Skill及diff通过；本批QA4906/4907按完整Node命令核对后关闭（Vite22660/API32612），端口无监听，cleanup.json留证，旧服务与用户现装保持。
+
+[草稿PR64](https://github.com/luoyan96/personal-agent/pull/64)已创建、推送并附当前任务，base为fix/lab-capabilities-entry。首读701e03a三项Foundation均IN_PROGRESS，pr-final.json留证，未声称本支远端全过；产品与包仍固定6d643df。
+
 ## 最新本地修正：聊天列表入口与课题组身份
 
 `fix/lab-capabilities-entry` 接续 `release/acceptcat-0.10.13` / `ff0f21e`。移除聊天收起/展开按钮及专用状态；“课题组能力”按服务端 session 身份显示：个人空间只有未加入说明且不读取目录，身份未知/失败保留真实状态，已加入账号沿用同组目录，负责人可打开既有网页邀请管理。此前个人空间自身成员/Agent被当成课题组内容的问题已修正。[实现与实际管理边界](development/lab-capability-membership.md)。

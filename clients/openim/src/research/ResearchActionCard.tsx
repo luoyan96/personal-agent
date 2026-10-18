@@ -1,9 +1,11 @@
 import { Alert, Button, Space } from "antd";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { ChatAction } from "@research-agent-platform/contracts";
 import { researchApi } from "./api";
 import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
+import { workbenchTaskPath } from "./workbench-links";
 
 const labels = {
   create_group: "创建协作群",
@@ -12,6 +14,7 @@ const labels = {
   run_task: "运行科研 AI",
 };
 export function ResearchActionCard({ action }: { action: ChatAction }) {
+  const navigate = useNavigate();
   const contacts = useResearchStore((s) => s.contacts);
   const p = action.payload;
   const name = (id: string) =>
@@ -149,6 +152,29 @@ export function ResearchActionCard({ action }: { action: ChatAction }) {
       )}
       {(failure || detail.error || plan.error) && (
         <Alert type="error" message={failure || detail.error || plan.error} />
+      )}
+      {p.kind === "create_group" && plan.data && (
+        <Button
+          size="small"
+          onClick={() =>
+            navigate(
+              `/workbench?${new URLSearchParams({
+                view: "planning",
+                plan: p.plan.id,
+              })}`,
+            )
+          }
+        >
+          在工作台查看计划
+        </Button>
+      )}
+      {(p.kind === "invite_task" || p.kind === "run_task") && (
+        <Button
+          size="small"
+          onClick={() => navigate(workbenchTaskPath(p.task.id, "research"))}
+        >
+          在工作台查看任务
+        </Button>
       )}
       {current.status === "proposed" && (
         <Space>

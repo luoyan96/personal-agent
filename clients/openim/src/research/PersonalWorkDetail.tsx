@@ -180,6 +180,28 @@ export function PersonalWorkDetail({
         <Alert type={error ? "error" : "info"} message={error || notice} />
       )}
       <div className="workspace-card-actions">
+        {task.sourceConversationId &&
+          !task.summaryOnly &&
+          task.sourceConversationId !== task.conversationId && (
+            <Button
+              disabled={busy}
+              onClick={async () => {
+                const { isCurrent } = operation.capture();
+                try {
+                  await openConversation(task.sourceConversationId!, isCurrent);
+                } catch (error) {
+                  if (isCurrent())
+                    setError(
+                      error instanceof Error
+                        ? error.message
+                        : "来源对话暂不可用，请重试。",
+                    );
+                }
+              }}
+            >
+              返回需求对话
+            </Button>
+          )}
         {allowed("activate") && (
           <Button
             type="primary"

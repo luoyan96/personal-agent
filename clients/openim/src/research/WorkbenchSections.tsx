@@ -10,7 +10,7 @@ export function WorkbenchPlanning({
   onTasks,
 }: {
   launch: number;
-  onTasks: () => void;
+  onTasks: (taskId?: string) => void;
 }) {
   const [params, setParams] = useSearchParams();
   const scheduled = params.get("panel") === "scheduled";

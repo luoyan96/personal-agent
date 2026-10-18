@@ -1,7 +1,7 @@
 import { Alert, Button, Input, Modal, Segmented, Select } from "antd";
 import { useLayoutEffect, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { Id, type WorkbenchCard } from "@research-agent-platform/contracts";
+import type { WorkbenchCard } from "@research-agent-platform/contracts";
 import { useResearchRead } from "./useResearchRead";
 import { useResearchStore } from "./store";
 import { usePersonalOperation } from "./usePersonalOperation";
@@ -24,6 +24,7 @@ import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 import { ResearchTeamWorkbench } from "./ResearchTeamWorkbench";
 import { relocatedWorkspace } from "./workspace-navigation";
 import { WorkbenchPlanning, WorkbenchLibrary } from "./WorkbenchSections";
+import { workbenchTaskPath, workbenchTaskTarget } from "./workbench-links";
 type Category = "ongoing" | "awaiting_me" | "completed";
 function WorkbenchOverview({
   card,
@@ -81,7 +82,11 @@ function WorkbenchOverview({
       </div>
       <section className="workspace-task-progress">
         <h3>进展</h3>
-        <p>{card.progress.label || "当前进展尚未提供"}</p>
+        <p>
+          {workspaceStatusLabel[card.progress.label] ||
+            card.progress.label ||
+            "当前进展尚未提供"}
+        </p>
         {card.progress.total > 0 && (
           <p className="workspace-muted">
             已完成 {card.progress.completed} / {card.progress.total} 项
@@ -140,10 +145,18 @@ export function DesktopWorkbench() {
       ? "team"
       : "tasks";
   const [planningLaunch, setPlanningLaunch] = useState(0);
-  const requestedTask = params.get("task");
-  const requestedValid = !!requestedTask && Id.safeParse(requestedTask).success;
-  const [category, setCategory] = useState<Category>("ongoing"),
-    [pages, setPages] = useState<(string | undefined)[]>([undefined]);
+  const {
+    id: requestedTask,
+    kind: requestedKind,
+    valid: requestedValid,
+  } = workbenchTaskTarget(params);
+  const category: Category =
+    params.get("category") === "awaiting_me"
+      ? "awaiting_me"
+      : params.get("category") === "completed"
+      ? "completed"
+      : "ongoing";
+  const [pages, setPages] = useState<(string | undefined)[]>([undefined]);
   const cursor = pages[pages.length - 1];
   const availability = useResearchRead(
     readWorkspaceAvailability,
@@ -213,6 +226,17 @@ export function DesktopWorkbench() {
     setParams(next);
   };
   const select = (card: WorkbenchCard) => {
+    if (card.taskId && card.source !== "followup") {
+      const next = new URLSearchParams(
+        workbenchTaskPath(
+          card.taskId,
+          card.source === "research_task" ? "research" : "personal",
+        ).split("?")[1],
+      );
+      next.set("category", category);
+      setParams(next);
+      return;
+    }
     setSelected(card);
     setDetails(false);
     const next = new URLSearchParams(params);
@@ -233,9 +257,9 @@ export function DesktopWorkbench() {
       if (!isCurrent()) return;
       setCreating(false);
       setForm({ title: "", goal: "", contactIds: [], agentContactId: null });
-      const next = new URLSearchParams(params);
-      next.delete("view");
-      next.set("task", created.data.id);
+      const next = new URLSearchParams(
+        workbenchTaskPath(created.data.id).split("?")[1],
+      );
       setParams(next);
       await read.refresh();
     } catch (e) {
@@ -254,25 +278,33 @@ export function DesktopWorkbench() {
           <h1>工作台</h1>
           <p>对齐目标、成员下一步和实际科研成果</p>
         </div>
-        {tab !== "library" && (
-          <Button
-            type="primary"
-            disabled={!supported}
-            onClick={() => {
-              if (tab === "tasks") {
+        <div className="workspace-heading-actions">
+          {tab === "tasks" && (
+            <Button
+              disabled={!supported}
+              onClick={() => {
                 setCreating(true);
                 setFailure("");
                 setBusy(false);
-              } else {
+              }}
+            >
+              联系人协作任务
+            </Button>
+          )}
+          {tab !== "library" && (
+            <Button
+              type="primary"
+              disabled={!supported}
+              onClick={() => {
                 if (tab !== "planning" || params.get("panel") === "scheduled")
                   setTab("planning");
                 setPlanningLaunch((value) => value + 1);
-              }
-            }}
-          >
-            {tab === "tasks" ? "新建单项任务" : "规划新任务"}
-          </Button>
-        )}
+              }}
+            >
+              {tab === "tasks" ? "安排科研任务" : "规划新任务"}
+            </Button>
+          )}
+        </div>
       </header>
       <div className="workspace-toolbar">
         <Segmented
@@ -291,7 +323,11 @@ export function DesktopWorkbench() {
             aria-label="任务分类"
             value={category}
             onChange={(value) => {
-              setCategory(value as Category);
+              const next = new URLSearchParams({
+                view: "tasks",
+                category: String(value),
+              });
+              setParams(next);
               setPages([undefined]);
               setSelected(undefined);
               setDetails(false);
@@ -344,7 +380,16 @@ export function DesktopWorkbench() {
           </section>
         )
       ) : tab === "planning" ? (
-        <WorkbenchPlanning launch={planningLaunch} onTasks={() => setTab("tasks")} />
+        <WorkbenchPlanning
+          launch={planningLaunch}
+          onTasks={(id) =>
+            id
+              ? setParams(
+                  new URLSearchParams(workbenchTaskPath(id, "research").split("?")[1]),
+                )
+              : setTab("tasks")
+          }
+        />
       ) : (
         <div className="workspace-task-body">
           <aside className="workspace-task-list">
@@ -364,7 +409,13 @@ export function DesktopWorkbench() {
               <button
                 className="workspace-task-row"
                 key={`${card.source}:${card.id}`}
-                aria-pressed={!requestedTask && activeCard?.id === card.id}
+                aria-pressed={
+                  requestedTask
+                    ? card.taskId === requestedTask &&
+                      (card.source === "research_task" ? "research" : "personal") ===
+                        requestedKind
+                    : activeCard?.id === card.id
+                }
                 onClick={() => select(card)}
               >
                 <span className="workspace-task-row-title">{card.title}</span>
@@ -376,7 +427,9 @@ export function DesktopWorkbench() {
                 <p>{card.goal || "接受后可查看获准目标"}</p>
                 <footer>
                   {card.owner.displayName}
-                  <span>{card.progress.label}</span>
+                  <span>
+                    {workspaceStatusLabel[card.progress.label] || card.progress.label}
+                  </span>
                 </footer>
               </button>
             ))}
@@ -417,11 +470,21 @@ export function DesktopWorkbench() {
           <main className="workspace-detail-pane">
             {requestedTask ? (
               requestedValid ? (
-                <PersonalWorkDetail
-                  key={requestedTask}
-                  taskId={requestedTask}
-                  onChanged={read.refresh}
-                />
+                requestedKind === "research" ? (
+                  <div className="workspace-task-detail">
+                    <ResearchTaskPanel
+                      key={requestedTask}
+                      taskId={requestedTask}
+                      onChanged={read.refresh}
+                    />
+                  </div>
+                ) : (
+                  <PersonalWorkDetail
+                    key={requestedTask}
+                    taskId={requestedTask}
+                    onChanged={read.refresh}
+                  />
+                )
               ) : (
                 <Alert type="warning" message="任务链接无效，请从列表重新选择。" />
               )
@@ -502,7 +565,16 @@ export function DesktopWorkbench() {
                   c.identity.kind === "human" ? "" : " · Agent"
                 }`,
               }))}
-              onChange={(contactIds) => setForm((s) => ({ ...s, contactIds }))}
+              onChange={(contactIds) =>
+                setForm((s) => ({
+                  ...s,
+                  contactIds,
+                  agentContactId:
+                    s.agentContactId && contactIds.includes(s.agentContactId)
+                      ? s.agentContactId
+                      : null,
+                }))
+              }
             />
           </label>
           <details>
@@ -515,7 +587,16 @@ export function DesktopWorkbench() {
               options={eligible
                 .filter((c) => c.identity.kind !== "human" && !c.agentRuntime)
                 .map((c) => ({ value: c.id, label: c.displayName }))}
-              onChange={(id) => setForm((s) => ({ ...s, agentContactId: id || null }))}
+              onChange={(id) =>
+                setForm((s) => ({
+                  ...s,
+                  agentContactId: id || null,
+                  contactIds:
+                    id && !s.contactIds.includes(id)
+                      ? [...s.contactIds, id]
+                      : s.contactIds,
+                }))
+              }
             />
           </details>
           <p className="workspace-muted">

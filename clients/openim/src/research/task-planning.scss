@@ -515,3 +515,6 @@
     scroll-behavior: auto;
   }
 }
+
+.planner-batch-assignment { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 18px 0; padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; label { display: grid; gap: 8px; min-width: 220px; } p { width: 100%; margin: 0; font-size: 12px; color: #64748b; } }
+.planner-confirm-review { max-height: 52vh; overflow-y: auto; ol { padding: 0; margin-top: 12px; list-style: none; } li { padding: 10px 0; border-top: 1px solid #e2e8f0; } p { margin: 5px 0; overflow-wrap: anywhere; } }

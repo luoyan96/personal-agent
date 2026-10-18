@@ -1,5 +1,6 @@
 import { Alert, Button, Input, Modal, Segmented } from "antd";
 import { useLayoutEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { ResearchWorkspaceRow } from "@research-agent-platform/contracts";
 import { researchApi } from "./api";
 import { useResearchStore } from "./store";
@@ -14,11 +15,14 @@ import {
 import { taskStateLabels } from "./task-planning";
 import { ResearchTeamAccountHint } from "./ResearchTeamAccountHint";
 import "./research-team.scss";
+import { workbenchTaskPath } from "./workbench-links";
+import { WorkbenchTaskInbox } from "./WorkbenchTaskInbox";
 
 type Filter = "all" | "review" | "blocked" | "deadline";
 type Page = { cursor?: string; snapshot?: string };
 
 export function ResearchTeamWorkbench({ onPlan }: { onPlan: () => void }) {
+  const navigate = useNavigate();
   const actor = useResearchStore((s) => s.actor);
   const generation = useResearchStore((s) => s.generation);
   const [scope, setScope] = useState<"lab" | "mine">("lab");
@@ -101,6 +105,7 @@ export function ResearchTeamWorkbench({ onPlan }: { onPlan: () => void }) {
   };
   return (
     <div className="research-team-workbench" aria-label="科研团队总览">
+      <WorkbenchTaskInbox />
       <div className="research-team-controls">
         <Segmented
           aria-label="总览范围"
@@ -278,12 +283,18 @@ export function ResearchTeamWorkbench({ onPlan }: { onPlan: () => void }) {
                 ) : null}
                 <footer>
                   <span>下一步：{teamNextStep(task)}</span>
-                  <Button size="small" onClick={() => setSelected(task.id)}>
+                  <Button
+                    size="small"
+                    onClick={() => navigate(workbenchTaskPath(task.id, "research"))}
+                  >
                     {row.nextActions.includes("review")
                       ? "审阅成果"
                       : row.nextActions.includes("decide")
                       ? "确认承接"
                       : "任务与交付"}
+                  </Button>
+                  <Button size="small" onClick={() => setSelected(task.id)}>
+                    快速查看
                   </Button>
                 </footer>
               </article>
@@ -340,7 +351,10 @@ export function ResearchTeamWorkbench({ onPlan }: { onPlan: () => void }) {
             <section key={id}>
               <h3>{name(id)}</h3>
               {tasks.map((row) => (
-                <button key={row.task.id} onClick={() => setSelected(row.task.id)}>
+                <button
+                  key={row.task.id}
+                  onClick={() => navigate(workbenchTaskPath(row.task.id, "research"))}
+                >
                   <strong>{row.task.title}</strong>
                   <span>{teamNextStep(row.task)}</span>
                 </button>

@@ -1,5 +1,6 @@
 import { Alert, App, Button, Input, Select, Space } from "antd";
 import { useLayoutEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { researchApi } from "./api";
 import { useResearchRead } from "./useResearchRead";
 import type { ResponseFor } from "@research-agent-platform/contracts";
@@ -9,6 +10,7 @@ import { taskStateLabels, planDate } from "./task-planning";
 import { teamNextStep } from "./research-team";
 import { ResearchTeamAccountHint } from "./ResearchTeamAccountHint";
 import { TaskArtifactDownload } from "./TaskArtifactDownload";
+import { workbenchTaskPath } from "./workbench-links";
 
 export function ResearchTaskPanel({
   taskId,
@@ -18,6 +20,8 @@ export function ResearchTaskPanel({
   onChanged?: () => Promise<void>;
 }) {
   const { modal } = App.useApp();
+  const navigate = useNavigate(),
+    [params] = useSearchParams();
   const { data, error, refresh } = useResearchRead(
     (signal) => researchApi("task", { params: { id: taskId }, signal }),
     taskId,
@@ -183,6 +187,28 @@ export function ResearchTaskPanel({
   return (
     <div className="research-task-detail space-y-3">
       <h3 className="text-base font-bold">{task.title}</h3>
+      <div className="workspace-card-actions">
+        {(params.get("task") !== task.id || params.get("taskKind") !== "research") && (
+          <Button onClick={() => navigate(workbenchTaskPath(task.id, "research"))}>
+            在工作台处理
+          </Button>
+        )}
+        {task.initiatorId === actor?.member.id &&
+          params.get("plan") !== task.planId && (
+            <Button
+              onClick={() =>
+                navigate(
+                  `/workbench?${new URLSearchParams({
+                    view: "planning",
+                    plan: task.planId,
+                  })}`,
+                )
+              }
+            >
+              查看所属计划
+            </Button>
+          )}
+      </div>
       <p>
         {task.status === "completed" && latest?.review?.decision !== "accepted"
           ? "已结束 · 验收记录待核对"
