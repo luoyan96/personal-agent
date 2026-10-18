@@ -1032,3 +1032,5 @@ Windows x64 NSIS0.10.12实际构建并复制桌面，**87,403,174字节** / SHA2
 本轮目录定向11/11、公网ready200/0.25/数据库存储认证ok、匿名目录401；harness仍not_verified，无真实模型/生产私人账号科研验收。纯文档门槛内容和diff检查，不重复根全套。Git外D:/deepseek-agent/.runtime/catalog-publication-20261018保留原件、离线复现、定向日志、探针、传输失败/修复及最终截图；详见docs/development/community-publication-20261019.md。README数量、当前状态、路线图及旧待发布文档的接续提示同步。无Windows包/公共Release/更新源变化；旧三项目录待办已解除，PR50正文后台配套及真实科研试点继续独立处理。
 
 本批纯文档最终检查213份Markdown/10份Skill与diff通过；目录11项定向通过。远程维护shell正常exit，阿里云账号未退出，未停止其他任务服务。GitHub现有标签列表没有codex或codex-automation，不创建无关标签；审阅PR按实际回执接续。
+
+本批文档提交9ceaad3已推送，草稿PR66 https://github.com/luoyan96/personal-agent/pull/66 已创建并attach_artifact附当前任务，base release/acceptcat-0.10.15。首读三项Foundation两项IN_PROGRESS/一项QUEUED，pr-final.json留证，不称远端全过；无本批软件源码或生产镜像变更。
