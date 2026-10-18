@@ -1,6 +1,16 @@
 # 新 AI 接手：当前项目状态
 
-更新日期：2026-10-18（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+更新日期：2026-10-19（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+
+## 最新广场运营：三项已上线，十一项/七仓库
+
+acceptcat-3从04dd9ba在独立worktree/`docs/catalog-publication-20261018`接续，不动共享0.10.16工作台改动；已协调桌面与内置技能库任务。北京时间2026-10-19 00:01按运营CLI实际发布申请书结构、数据体检和统计报告自查，原八项逐项保持。数据体检仍needs_connector/installable=false，另两项需确认私装文字流程，不计工具或真实科研效果通过。[发布与候选证据](development/community-publication-20261019.md)。
+
+实际API/worker仍47c42ac/b78613b5、running/restart0/无OOM，无部署/重启/迁移。SQLite在线备份integrity=ok，`/srv/research-openim-backups/community-review-20261018T160104Z`保留；最终目录version73、11项/7仓库/20候选，GitHub同步ok/元数据错误0，下次2026-10-19T16:00Z。7份上游正文/许可本轮联网哈希复核一致；目录11项检查、公网ready200/契约0.25与匿名目录401通过。无共享代码/Skill改动，不重复根全套。旧传输命令脚本哈希不符首败保留，重建并远端守卫后才执行。
+
+Kalaris引用核验五组合成例复现中文标题/作者清空误判verified，不晋级；SART2.9.0仅初审候选。Git外证据`D:/deepseek-agent/.runtime/catalog-publication-20261018`，服务器最终`/root/acceptcat-community-review-20261018/publication-final.json`。前文三项目录待发与登录阻碍由本批解除，历史不改写。PR50后台正文边界、真实师生质量和工具执行仍分别待办，无Windows包/公开Release/更新源变化。
+
+文档提交9ceaad3已推送，[草稿PR66](https://github.com/luoyan96/personal-agent/pull/66)已创建并附本任务，base为release/acceptcat-0.10.15。首读三项Foundation为两项IN_PROGRESS/一项QUEUED，未声称远端全过；213份Markdown/10份Skill内容与diff检查通过。本批维护shell正常exit，阿里云账号未退出。仓库标签没有codex/codex-automation，未添加不存在标签。
 
 ## 最新 Windows 0.10.15：工作台连接恢复与实际生产核验
 
