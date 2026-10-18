@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "design": {
+    "unitOfAnalysis": "independently sampled synthetic specimen",
+    "pairingBasis": "same specimen measured by both devices",
+    "independenceBasis": "specimens sampled separately; no shared batch declared",
+    "metric": "synthetic measurement in arbitrary units",
+    "groupA": "device A",
+    "groupB": "device B",
+    "missingPolicy": "stop"
+  },
+  "pairs": [
+    {"unitId": "specimen-1", "a": 10, "b": 12},
+    {"unitId": "specimen-2", "a": 20, "b": 24},
+    {"unitId": "specimen-3", "a": 30, "b": 36}
+  ]
+}

@@ -8,7 +8,7 @@ Evaluate artifact behavior rather than prose similarity. Each case must assert t
 | systematic-literature-review | multi-source screened set | slr-incomplete-screening | protocol, exclusions, thematic—not sequential—synthesis |
 | academic-paper-review | parsed manuscript | paper-review-abstract-only | locators, remedy per criticism, review limitations |
 | hypothesis-research-loop | small approved pilot | hypothesis-loop-unapproved | pre-registered prediction, immutable run log, approval stop |
-| statistical-result-analysis | statistical-analysis-paired | missing design fields | design-appropriate test, interval/effect size, data audit |
+| statistical-result-analysis | statistical-analysis-paired | missing design fields, incomplete/duplicate pairs, unsupported seed-only inference | declared unit/pairing, exact exclusions and input hash, numerical descriptive audit, explicit unperformed inference |
 | research-writing-and-rebuttal | evidence-mapped revision | writing-rebuttal-missing-evidence | claim map, verified references, no unperformed-work claim |
 | research-thesis | bounded thesis with named comparator | research-thesis-no-comparator | falsifier, success criterion, explicit go/no-go |
 | novelty-red-team | differentiable claim | novelty-red-team-close-overlap | closest-work evidence, overlap risk, prohibited unsupported novelty language |
@@ -22,6 +22,8 @@ The installed-Skill routing fixture is an HTTP/SQLite/ChatWorker integration che
 Imported text boundaries are checked in `packages/research-skills/tests/import-text-limits.spec.ts`, `clients/openim/tests/skill-linked-reference.test.mjs` and the exact-limit HTTP integration case in `apps/api/tests/skills.spec.ts`. Installation size limits remain distinct from the selected chat input budget; see `docs/development/skill-import-text-limits.md` for unchanged-package and release evidence.
 
 ## Manual gate
+
+Canonical paired-data audit (2026-10-19): `packages/research-skills/tests/paired-audit.spec.ts` invokes the packaged Node.js helper on synthetic data and verifies real JSON output, numerical differences, missing-data policy, duplicate/invalid input refusal, unchanged source bytes and no unperformed inference. The helper is a local, dependency-free audit; AcceptCat's text executor does not execute it. No model-generated statistical quality, design independence, hypothesis test, interval, tool connection or production release is certified by this check. [Fixture and boundaries](fixtures/statistical-analysis-paired.md) retain the seed-only clarification requirement.
 
 Community data/grant review (2026-10-17): `exploratory-data-analysis` is a pending connector, because the actual whole-repository ZIP exceeds the desktop 32MiB limit and script execution is unavailable. Eighteen synthetic CLI cases check bounded CSV/TSV/strict-JSON profiles, missingness, split overlap, sensitivity, redaction, malformed inputs and write/path refusal; these do not certify a dataset, infer causality or prove AcceptCat tool execution. `research-grants` is checked as a private text workflow with supplied current solicitation material, selected proposal-structure references and no automatic submission. The upstream NIH modular-budget increment error and missing current NSFC rules are explicit. Runtime evidence and actual publication state are recorded in `docs/development/research-data-grant-catalog.md`; no upstream Skill body is duplicated here.
 
