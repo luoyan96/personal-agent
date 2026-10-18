@@ -18,7 +18,7 @@ import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 import { CapabilityTemplates, matchingStarterTemplates } from "./CapabilityTemplates";
 import { CommunityDiscovery } from "./CommunityDiscovery";
 import { AgentCapabilityFeedCard } from "./AgentCapabilityFeedCard";
-import { AgentResearchCollections } from "./KnowledgeLibrary";
+import { AgentResources, type OpenAgentSkills } from "./AgentResources";
 import {
   capabilityCategory,
   capabilityStatus,
@@ -48,11 +48,34 @@ export function CapabilitySquare() {
   return <CapabilityBrowser view="public" />;
 }
 
-export function WorkbenchCapabilities({ view }: { view: "lab" | "mine" }) {
-  return <CapabilityBrowser key={view} view={view} />;
+export function WorkbenchCapabilities({
+  view,
+  onOpenSkills,
+  initialContactId,
+}: {
+  view: "lab" | "mine";
+  onOpenSkills?: OpenAgentSkills;
+  initialContactId?: string;
+}) {
+  return (
+    <CapabilityBrowser
+      key={`${view}:${initialContactId}`}
+      view={view}
+      onOpenSkills={onOpenSkills}
+      initialContactId={initialContactId}
+    />
+  );
 }
 
-function CapabilityBrowser({ view }: { view: "public" | "lab" | "mine" }) {
+function CapabilityBrowser({
+  view,
+  onOpenSkills,
+  initialContactId,
+}: {
+  view: "public" | "lab" | "mine";
+  onOpenSkills?: OpenAgentSkills;
+  initialContactId?: string;
+}) {
   const [category, setCategory] = useState<ResearchCategory>("全部");
   const [search, setSearch] = useState(""),
     [query, setQuery] = useState(""),
@@ -86,7 +109,9 @@ function CapabilityBrowser({ view }: { view: "public" | "lab" | "mine" }) {
     "square-community-catalog",
     supported && view === "public",
   );
-  const [selectedContact, setSelectedContact] = useState<string>(),
+  const [selectedContact, setSelectedContact] = useState<string | undefined>(
+      initialContactId,
+    ),
     [managedContact, setManagedContact] = useState<string>();
   const selectedContactRead = useResearchRead(
     (signal) =>
@@ -125,7 +150,7 @@ function CapabilityBrowser({ view }: { view: "public" | "lab" | "mine" }) {
     }
   }, [supported]);
   useLayoutEffect(() => {
-    setSelectedContact(undefined);
+    setSelectedContact(initialContactId);
     setPublishing(false);
     setManagedContact(undefined);
     setFailure("");
@@ -137,7 +162,7 @@ function CapabilityBrowser({ view }: { view: "public" | "lab" | "mine" }) {
     setTagText("");
     setSearch("");
     setQuery("");
-  }, [generation]);
+  }, [generation, initialContactId]);
   useLayoutEffect(() => {
     inFlight.current = false;
     setBusy(false);
@@ -266,7 +291,7 @@ function CapabilityBrowser({ view }: { view: "public" | "lab" | "mine" }) {
             {view === "public"
               ? "在 GitHub 社区里，发现适合你研究的能力。"
               : view === "mine"
-              ? "管理自己的科研助手、模型与资料。"
+              ? "选择助手，统一管理它的技能、模型与资料。"
               : "了解课题组成员和 Agent 的能力。"}
           </p>
         </div>
@@ -290,6 +315,9 @@ function CapabilityBrowser({ view }: { view: "public" | "lab" | "mine" }) {
             setSelectedContact(undefined);
           }}
         />
+        {view === "mine" && onOpenSkills && (
+          <Button onClick={() => onOpenSkills()}>技能库</Button>
+        )}
         {view !== "public" && (
           <Button
             type="primary"
@@ -378,7 +406,7 @@ function CapabilityBrowser({ view }: { view: "public" | "lab" | "mine" }) {
                     <h2>{view === "mine" ? "我的科研助手" : "来自课题组的能力"}</h2>
                     <p>
                       {view === "mine"
-                        ? "打开配置，管理模型与资料。"
+                        ? "打开配置，管理技能、模型与资料。"
                         : "由维护者填写，点开了解与联系。"}
                     </p>
                   </div>
@@ -491,14 +519,17 @@ function CapabilityBrowser({ view }: { view: "public" | "lab" | "mine" }) {
                 }}
                 onChanged={refreshLists}
               >
-                {selectedContactRead.data?.data.identity.kind !== "human" &&
+                {selectedContactRead.data?.data.identity.kind === "personal_agent" &&
+                  selectedContactRead.data.data.identity.ownerMemberId === actorId &&
+                  !selectedContactRead.data.data.agentRuntime &&
                   selectedContactRead.data?.data.allowedActions.includes(
                     "edit_profile",
                   ) &&
                   librarySupported && (
-                    <AgentResearchCollections
+                    <AgentResources
                       key={selectedContact}
                       agentId={selectedContact}
+                      onOpenSkills={onOpenSkills}
                     />
                   )}
               </WorkspaceContactCard>

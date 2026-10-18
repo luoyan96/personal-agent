@@ -940,3 +940,17 @@ acceptcat前后端维护，release/acceptcat-0.10.9接续PR57/19acbe3，最终�
 本轮只客户端，无共享或agents/skills改动，不重复根全套；前批PR59最新8b3386b三平台Foundation本轮读回SUCCESS。无需新API/迁移，没有部署API/worker、运营目录、公共Release或更新源，actual latest仍v0.6.0已核对。旧47c42ac/0.25/1.12/022仅沿用记录；旧维护登录/PR50后台边界/三项目录待办保持，不新inspect私人后台或重复请求。只按完整命令核对关闭本轮4866/4867 QA服务，旧预览未动。
 
 草稿PR60已创建并推送：https://github.com/luoyan96/personal-agent/pull/60；首读c2c70c5三平台Foundation均IN_PROGRESS，pr-final.json保留。当前attach_artifact工具已不可调用，实际TypeError后ALL_TOOLS未找到，未称已附任务，也不另造UI/插件绕行，artifact-attachment.json记待工具恢复后处理。只关闭完整命令核对的Node24244/7076 QA4867/4866，cleanup-before.json/cleanup.json留证。
+
+
+## 2026-10-18：Agent 内统一技能与资料，Windows 0.10.12
+
+用户反馈“我的技能”和“我的Agent”混乱后，在 `release/acceptcat-0.10.12` 接续 PR60 / a6bb210，产品固定 **da1858ecb7fe2876fc25b11a714d4cdf4f51e45c**。取消工作台独立技能栏目，增加我的Agent内技能库、本人站内助手的技能/资料配置、明确目标绑定和返回定位；保留其他绑定与授权、版本检查、素材可靠导入，旧链接兼容。无共享/内置Skill/API/迁移修改。
+
+实际客户端27项、最终TypeScript、7组分阶段React/HTTP/SQLite、1536/1024实拍通过；通过阶段无pageerror。夹具未接受好友授权403、两字按钮选择器及重复登录触发真实429首败均保留，实际好友接受/选择器修正/新隔离库与路由导航后完成，不改产品限制。Browser plugin缺席，使用已有Playwright/隔离Edge；合成账号、资料/仓库事实与包选择器投影，非真实模型/IM或本机文件导入验证。前批PR60三平台Foundation读回SUCCESS，未重复根全套。详见[实现及QA](development/agent-skill-management.md)，Git外 `.runtime/agent-skill-hierarchy-20261018`。
+
+Windows x64 NSIS0.10.12实际构建并复制桌面，**87,403,174字节** / SHA256 **990c217477b6747d49c5ae8da32bade0437df7ce1febc01f6dc01275aa900892**。55依赖/15生产JS逐字节、无QA和品牌素材，NSIS实际payload EXE/ASAR一致，隔离隐藏原生桥/renderer稳定启动通过；既有日志初始化警告保留。[交付记录](deployment/acceptcat-0.10.12.md)。没有代安装、关用户软件或删旧包/数据。
+
+本轮latest仍v0.6.0已核对，未发公共Release/更新源、未部署API/worker或发布目录；旧生产47c42ac/0.25/1.12/022仅沿用记录。PR50后台边界、三项目录及既有维护登录待办保持。
+
+
+[草稿PR61](https://github.com/luoyan96/personal-agent/pull/61)已创建并推送，base为release/acceptcat-0.10.11。当前工具列表没有attach_artifact，未附到任务附件列表；保留直接链接，不声称已附。核对本轮4876/4877完整Node命令后关闭API26060/Vite7536，cleanup.json留证，旧预览未动。本批GitHub检查以实际PR状态为准，不将前批三平台通过套用于本支。

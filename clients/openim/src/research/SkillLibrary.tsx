@@ -1,6 +1,10 @@
 import { Alert, Button, Checkbox, Input, Modal, Segmented, Select, Switch } from "antd";
 import { useLayoutEffect, useRef, useState } from "react";
-import type { InstalledSkill, RequestFor } from "@research-agent-platform/contracts";
+import type {
+  Contact,
+  InstalledSkill,
+  RequestFor,
+} from "@research-agent-platform/contracts";
 import { researchApi } from "./api";
 import { useResearchRead } from "./useResearchRead";
 import { useResearchStore } from "./store";
@@ -18,7 +22,17 @@ import {
 type Draft = RequestFor<"installSkill">["body"] & {
   localBundle?: { token: string; manifest: SkillBundleManifest };
 };
-export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
+export function SkillLibrary({
+  catalogId,
+  initialSkillId,
+  targetAgent,
+  onBack,
+}: {
+  catalogId?: string;
+  initialSkillId?: string;
+  targetAgent?: Contact;
+  onBack?: () => void;
+} = {}) {
   const [catalog, setCatalog] = useState<CommunityResearchEntry>();
   const catalogRead = useResearchRead(
     (signal) =>
@@ -28,7 +42,7 @@ export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
   );
   const candidate = catalogRead.data?.data;
   const [scope, setScope] = useState<"mine" | "available" | "public">("mine"),
-    [selected, setSelected] = useState<string>(),
+    [selected, setSelected] = useState<string | undefined>(initialSkillId),
     [draft, setDraft] = useState<Draft>(),
     [receipt, setReceipt] = useState<InstalledSkill>(),
     [updating, setUpdating] = useState<InstalledSkill>(),
@@ -40,7 +54,7 @@ export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
       [],
     );
   const state = useResearchStore(),
-    operation = usePersonalOperation(true, "skill-library"),
+    operation = usePersonalOperation(true, `skill-library:${targetAgent?.id || "all"}`),
     flight = useRef(false),
     openChat = useResearchContactChat();
   const read = useResearchRead(
@@ -72,7 +86,7 @@ export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
     setChoices([]);
     setFailure("");
     setBusy(false);
-    setSelected(undefined);
+    setSelected(initialSkillId);
     flight.current = false;
     setReceipt(undefined);
   }, [state.generation]);
@@ -92,14 +106,17 @@ export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
     },
     [draft?.localBundle?.token],
   );
-  const agents = state.contacts
-    .map((e) => e.contact)
-    .filter(
-      (c) =>
-        c.identity.kind === "personal_agent" &&
-        c.identity.ownerMemberId === state.actor?.member.id &&
-        !c.agentRuntime,
-    );
+  const knownAgents = state.contacts.map((e) => e.contact);
+  const agents = (
+    targetAgent && !knownAgents.some((c) => c.id === targetAgent.id)
+      ? [...knownAgents, targetAgent]
+      : knownAgents
+  ).filter(
+    (c) =>
+      c.identity.kind === "personal_agent" &&
+      c.identity.ownerMemberId === state.actor?.member.id &&
+      !c.agentRuntime,
+  );
   const people = state.contacts
     .map((e) => e.contact)
     .filter(
@@ -202,11 +219,16 @@ export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
       },
     );
   return (
-    <section className="skill-library" aria-label="我的技能">
+    <section className="skill-library" aria-label="技能库">
+      {onBack && (
+        <Button className="skill-library-back" onClick={onBack}>
+          返回我的 Agent
+        </Button>
+      )}
       <header className="skill-library-header">
         <div>
-          <h2>我的技能</h2>
-          <p>把自己的方法装给 Agent。安装后默认只有你能使用。</p>
+          <h2>技能库</h2>
+          <p>安装和维护助手使用的方法，安装后默认仅自己可用。</p>
         </div>
         <Button
           type="primary"
@@ -234,11 +256,19 @@ export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
           setSelected(undefined);
         }}
         options={[
-          { label: "我的技能", value: "mine" },
+          { label: "已安装", value: "mine" },
           { label: "获准使用", value: "available" },
           { label: "公开介绍", value: "public" },
         ]}
       />
+      {targetAgent && (
+        <Alert
+          className="agent-skill-target"
+          type="info"
+          message={`正在为「${targetAgent.displayName}」配置技能`}
+          description="选择已安装技能，明确绑定到这个助手；安装不会自动绑定或扩大资料权限。"
+        />
+      )}
       {failure && (
         <Alert type="error" message={failure} closable onClose={() => setFailure("")} />
       )}
@@ -309,6 +339,28 @@ export function SkillLibrary({ catalogId }: { catalogId?: string } = {}) {
                 </span>
               </div>
               <p>{skill.description}</p>
+              {targetAgent && skill.owned && skill.settings && (
+                <div className="skill-actions agent-skill-target">
+                  {skill.settings.boundAgentIds.includes(targetAgent.id) ? (
+                    <span>已绑定到「{targetAgent.displayName}」</span>
+                  ) : (
+                    <Button
+                      type="primary"
+                      disabled={busy || skill.settings.boundAgentIds.length >= 20}
+                      onClick={() =>
+                        settings({
+                          boundAgentIds: [
+                            ...skill.settings!.boundAgentIds,
+                            targetAgent.id,
+                          ],
+                        })
+                      }
+                    >
+                      绑定到「{targetAgent.displayName}」
+                    </Button>
+                  )}
+                </div>
+              )}
               <Alert
                 type={skill.requirements.length ? "warning" : "info"}
                 message={

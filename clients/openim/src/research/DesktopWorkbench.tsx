@@ -23,7 +23,7 @@ import {
 } from "./workspace-availability";
 import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 
-import { SkillLibrary } from "./SkillLibrary";
+import { MyAgentsWorkspace } from "./MyAgentsWorkspace";
 import { TaskPlanning } from "./TaskPlanning";
 import { ResearchTeamWorkbench } from "./ResearchTeamWorkbench";
 import { ResearchLibrary } from "./ResearchLibrary";
@@ -133,14 +133,12 @@ function WorkbenchOverview({
 export function DesktopWorkbench() {
   const [params, setParams] = useSearchParams();
   const tab =
-    params.get("view") === "agents"
+    params.get("view") === "agents" || params.get("view") === "skills"
       ? "agents"
       : params.get("view") === "capabilities"
       ? "capabilities"
       : params.get("view") === "library"
       ? "library"
-      : params.get("view") === "skills"
-      ? "skills"
       : params.get("view") === "scheduled" || params.get("tab") === "scheduled"
       ? "scheduled"
       : params.get("view") === "reports"
@@ -161,7 +159,7 @@ export function DesktopWorkbench() {
   const availability = useResearchRead(
     readWorkspaceAvailability,
     "workspace-availability",
-    !["reports", "skills", "library", "agents", "capabilities"].includes(tab),
+    !["reports", "library", "agents", "capabilities"].includes(tab),
   );
   const supported = availability.data?.available === true;
   const teamAvailability = useResearchRead(
@@ -303,7 +301,6 @@ export function DesktopWorkbench() {
             { label: "我的任务", value: "tasks" },
             { label: "定时任务", value: "scheduled" },
             { label: "本机报告", value: "reports" },
-            { label: "我的技能", value: "skills" },
             { label: "资料与素材库", value: "library" },
           ]}
         />
@@ -327,18 +324,15 @@ export function DesktopWorkbench() {
       </div>
       {tab === "agents" || tab === "capabilities" ? (
         <div className="workspace-full-panel capability-workbench-panel">
-          <WorkbenchCapabilities view={tab === "agents" ? "mine" : "lab"} />
+          {tab === "agents" ? (
+            <MyAgentsWorkspace key={generation} />
+          ) : (
+            <WorkbenchCapabilities view="lab" />
+          )}
         </div>
       ) : tab === "library" ? (
         <div className="workspace-full-panel research-library-panel">
           <ResearchLibrary />
-        </div>
-      ) : tab === "skills" ? (
-        <div className="workspace-full-panel">
-          <SkillLibrary
-            key={params.get("catalog") || ""}
-            catalogId={params.get("catalog") || undefined}
-          />
         </div>
       ) : tab !== "reports" && !supported ? (
         <WorkspaceUnavailable

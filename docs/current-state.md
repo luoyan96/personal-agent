@@ -2,6 +2,18 @@
 
 更新日期：2026-10-18（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新用户改动与 Windows 0.10.12：技能收进我的 Agent
+
+`release/acceptcat-0.10.12` 接续 PR60 / a6bb210，产品与安装包源码 **da1858ecb7fe2876fc25b11a714d4cdf4f51e45c**。工作台删除并列“我的技能”，我的 Agent 内增加技能库；本人站内助手配置统一“技能 / 资料”，实际读取绑定数量/版本/启停，添加和管理定位目标助手，明确绑定保留其他助手与授权，返回恢复原助手。旧 view=skills/catalog 链接兼容；无新 API/迁移。[实现与 QA](development/agent-skill-management.md)。
+
+27 项客户端、最终类型、7 组分阶段真实 React/HTTP/SQLite 及1536/1024实拍通过，通过阶段 pageerror0。合成包选择器投影不是原生导入或真实模型/IM验证；好友授权夹具/两字按钮选择器首败和重复登录429保留，完成实际好友接受、修选择器、新隔离库与路由导航后续验，未放宽 ACL/限流。无共享/内置Skill修改，不重复根全套；前批 PR60 三平台 Foundation 已读回 SUCCESS。证据 Git 外 `.runtime/agent-skill-hierarchy-20261018/qa-summary.json`。
+
+**Windows x64 NSIS 0.10.12 已交付桌面** `C:/Users/luo/Desktop/AcceptCat_0.10.12.exe` 及说明，**87,403,174字节** / SHA256 **990c217477b6747d49c5ae8da32bade0437df7ce1febc01f6dc01275aa900892**。55依赖/15生产JS逐字节/目标配置文案/无QA、实际安装器 EXE/ASAR 一致及隔离隐藏原生桥/renderer稳定启动通过，既有日志初始化警告保留。[交付记录](deployment/acceptcat-0.10.12.md)。没有代安装、关闭用户现装或删除旧包/数据。
+
+未部署 API/worker、发布目录、公共Release或更新源；实际latest仍v0.6.0本轮核对。旧47c42ac/0.25/1.12/022仅沿用记录，无本轮生产inspect；PR50后台边界、三项目录与既有维护登录待办保持，不重复请求。
+
+[草稿PR61](https://github.com/luoyan96/personal-agent/pull/61)已创建并推送，base为release/acceptcat-0.10.11。当前工具列表没有attach_artifact，未附到任务附件列表；保留直接链接，不声称已附。核对本轮4876/4877完整Node命令后关闭API26060/Vite7536，cleanup.json留证，旧预览未动。本批GitHub检查以实际PR状态为准，不将前批三平台通过套用于本支。
+
 ## 最新用户改动与Windows0.10.11：广场发现，工作台管理
 
 `release/acceptcat-0.10.11` 接续PR59 / 8b3386b，产品和安装包固定 **d0386f0503701eff530a89e0e282ecc93354901d**。按用户截图要求移除广场“发现能力/课题组能力/我的Agent”整排顶部导航，无空toolbar占位；广场保留GitHub推荐/Star热门/最新/方向与搜索。课题组能力、本人及内置助手移入工作台独立栏目（`view=capabilities`/`view=agents`），复用原配置、资料绑定、聊天和名片管理，不改授权/API。[实现和QA](development/square-workbench-navigation.md)。

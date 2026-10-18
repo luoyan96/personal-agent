@@ -1,0 +1,56 @@
+.agent-resources {
+  margin-top: 24px;
+  border-top: 1px solid #e8edef;
+  padding-top: 18px;
+  h3 {
+    margin: 0 0 12px;
+    font-size: 16px;
+  }
+  > .ant-segmented {
+    margin-bottom: 16px;
+  }
+}
+.agent-resource-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.agent-skill-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 0;
+  border-bottom: 1px solid #edf0f2;
+  > div {
+    min-width: 0;
+  }
+  strong,
+  small {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+  small {
+    color: #77858c;
+    margin-top: 5px;
+  }
+  p {
+    margin: 7px 0 0;
+    color: #65757d;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+}
+.agent-library-gate {
+  padding: 24px;
+  > .ant-btn {
+    margin-bottom: 16px;
+  }
+}
+.skill-library-back {
+  margin-bottom: 16px;
+}
+.agent-skill-target {
+  margin: 16px 0;
+}
