@@ -1018,3 +1018,13 @@ Windows x64 NSIS0.10.12实际构建并复制桌面，**87,403,174字节** / SHA2
 没有API/worker部署、数据库同步/迁移、社区目录/公开Release/更新源变更，actual latest本批读回仍v0.6.0。PR50后台正文边界、三项目录运营、课题组自助创建/已有账号加入/多组与工具执行仍独立待办；维护登录本批已恢复，不再重复要求登录。后续用真实复发证据继续定位本机代理/网络并规划磁盘维护，不以本次健康探针声称永久根治。
 
 草稿PR65 https://github.com/luoyan96/personal-agent/pull/65 已创建、推送并附任务，base release/acceptcat-0.10.14。gh首次受目录属主检查拒绝，之后用进程级Git配置重试成功，未改全局safe.directory；首读8cf79c3三项Foundation为1queued/2in_progress，pr-final.json保留，不套用前批通过。212份Markdown/10份Skill与diff检查通过。仅按完整Node命令核对关闭本批QA4916/4917的32400/29664，无监听且用户现装6048仍运行；cleanup-before/cleanup.json留证。云端本次只读shell已正常exit，不退出用户Aliyun账号。桌面包最终hash与说明读回一致，产品/包固定a3a795b，后续文档提交不改变安装器。
+
+## 2026-10-19：内置统计Skill配对设计审计（acceptcat-2，未上线）
+
+读取根规则/交接/README/路线图/分工、Git和进行中聊天后，确认主目录release/acceptcat-0.10.16有工作台未提交修改，前后端/目录任务各在独立worktree；已按用户要求协调。Codex托管worktree工具因当前根D:/deepseek-agent不是Git仓库而失败，改用命令级safe.directory在04dd9ba创建独立D:/deepseek-agent/acceptcat-skill-statistics-20261019，分支fix/skill-statistical-design-audit，未改全局Git信任、主目录分支或他人文件。该手工worktree不能附为托管附件，保留准确目录。提交初次缺作者身份，随后沿近期历史仅用命令级Codex署名提交，未修改全局配置。
+
+Skill/评估源码e12690f6676a776ecfc852259bcd13d5475c2021。statistical-result-analysis明确独立抽样/分配单位、配对依据/键、缺失整对/重复记录与重复seed/fold边界；无执行环境时给计划/未计算状态，不能声称保存或完成统计。新增Node22.19+无依赖本地audit-pairs.mjs和格式/来源参考，agents/skills仍唯一内容来源，原copy-skills打包，无API/客户端/契约/权限/数据库/锁文件变更。脚本只读1MiB以内UTF-8 JSON、原字节SHA/计数/一基排除序号/描述性B-A差值；默认缺失阻断，明确整对排除才计算，重复单位/不足/溢出停汇总，非法字段/重复JSON键/坏UTF8/超限拒绝。不回显原始ID、测量或本机路径。NIST配对/区组原始来源已查，设计声明仍未独立证实。
+
+实际合成三对均值4/样本SD2；27项打包CLI加目录1项定向通过。首轮1项精确相等被3.9999999999999996与4浮点差异触发，改用数值容差后通过，首败保留。Skill格式校验初次缺PyYAML，仅Git外证据目录用缓存PyYAML6.0.3及进程PYTHONPATH续验通过，未改产品或系统依赖。完整pnpm run ci退出0：55文件/703项，生产CLI/HTTP两项、B0与生产隔离通过；默认Harness仅构建/类型/缺凭据边界，不计真实模型。最终214文档/10技能及diff通过。四场景原始输入/JSON输出/退出码/字节不变及源/打包SHA相同证据在D:/deepseek-agent/.runtime/skill-statistical-audit-20261019（boundary-output-proof.json、ci.log等）。没有用户材料、Key或真实供应商请求。
+
+未制作Windows安装包、部署API/worker/迁移、发布社区目录/Release/更新源；本轮未新核验生产，现装沿历史记录。AcceptCat聊天执行器未接入本脚本，文字安装/知识绑定不等于可运行。后续先审阅合并独立分支，协调并行状态/日志，再另验受控工具调用、真实设计/缺失机制及科学推断/模型建议质量。兄弟acceptcat-3通知三项目录已单独发布，详见其PR66，不将其成果或线上状态归入本批。
