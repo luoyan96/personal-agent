@@ -1018,3 +1018,15 @@ Windows x64 NSIS0.10.12实际构建并复制桌面，**87,403,174字节** / SHA2
 没有API/worker部署、数据库同步/迁移、社区目录/公开Release/更新源变更，actual latest本批读回仍v0.6.0。PR50后台正文边界、三项目录运营、课题组自助创建/已有账号加入/多组与工具执行仍独立待办；维护登录本批已恢复，不再重复要求登录。后续用真实复发证据继续定位本机代理/网络并规划磁盘维护，不以本次健康探针声称永久根治。
 
 草稿PR65 https://github.com/luoyan96/personal-agent/pull/65 已创建、推送并附任务，base release/acceptcat-0.10.14。gh首次受目录属主检查拒绝，之后用进程级Git配置重试成功，未改全局safe.directory；首读8cf79c3三项Foundation为1queued/2in_progress，pr-final.json保留，不套用前批通过。212份Markdown/10份Skill与diff检查通过。仅按完整Node命令核对关闭本批QA4916/4917的32400/29664，无监听且用户现装6048仍运行；cleanup-before/cleanup.json留证。云端本次只读shell已正常exit，不退出用户Aliyun账号。桌面包最终hash与说明读回一致，产品/包固定a3a795b，后续文档提交不改变安装器。
+
+## 2026-10-19：独立桌面请求隔离候选
+
+acceptcat 自动化先读 AGENTS、current-state、日志、README、roadmap 及 CONTRIBUTING，确认主目录 release/acceptcat-0.10.16 有工作台6文件在改，广场/技能任务运行；通过任务消息协调后用独立 worktree D:/deepseek-agent/acceptcat-chat-recovery 从04dd9ba建立 fix/desktop-session-isolation。桌面工具因调用任务父目录非Git仓库拒绝创建，改用仓库内原生 git worktree，未切主目录或提交他人修改。自动化原 memory.md 不存在，本轮创建。
+
+修复产品提交3ed606a6892bdb7d680f27c3ed47a100c80e13b7：客户端会话清理和新登录同步取消旧请求；递归会话准备同范围，迟到正文/401/写入回执不能污染新认证或继续旧发送。真实当前401保留服务错误并清理同批读取，不重发未知写入，无新后台接口/迁移或共享/Skill修改。问题在合成条件下复现，不将其当成前批网络问题的已证根因。详见 docs/development/desktop-session-isolation.md。
+
+修复前6旧项通过/3新增失败，修复后23项定向0跳过、客户端TypeScript与生产Web/四份固定SDK检查通过，根pnpm build通过；没有运行根完整CI。独立客户端安装首次Husky .git文件失败，HUSKY=0原锁重试；初次file依赖未构建失败、重复复制硬链接dist同文件诊断保留，未改锁文件。Browser plugin absent，现有Playwright/Edge以实际React登录及独立HTTP/SQLite验证A退出/B登录后迟到成功和旧401两组、新账号实际写入/读回消息，以及真实当前session撤销后401/回登录一组；两尺寸实拍/pageerror0通过。旧401/忽略abort的延迟为合成注入，未配置真实IM/模型；初始/实际失效401和既有Router/findDOMNode警告解释保留，夹具按钮中文空格首败保留后修复。证据Git外 D:/deepseek-agent/.runtime/session-isolation-20261019。
+
+未新Windows安装包、代安装、生产inspect/API或worker部署、目录运营、公共Release或更新源变更。现装/线上仍按前批记录，未套用为本批重新通过；后续审阅并集成至活跃桌面分支后独立打包验收。PR50配套后台、目录运营、真实师生任务与工具执行仍独立接续，不扩大本批范围。
+
+草稿PR67 https://github.com/luoyan96/personal-agent/pull/67 已创建/推送并由attach_artifact附任务，base release/acceptcat-0.10.15；首读c37ce31三项Foundation均IN_PROGRESS，pr-final.json保留，未计远端全过。现有标签清单无codex和codex-automation，故未添加。已向0.10.16活跃任务交接独立产品提交3ed606a，提醒避免覆盖其状态文档。内容检查213份Markdown/10份Skill与diff通过。仅按完整Node命令核对关闭本批54061/54062进程2688/29108，端口无监听，cleanup-before/cleanup.json留证；主目录release/acceptcat-0.10.16仍保留原工作台修改及新增样式，未动他人文件或旧服务。独立worktree保留供审阅和集成。

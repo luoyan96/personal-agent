@@ -20,6 +20,10 @@ export const researchMode = import.meta.env.VITE_RESEARCH_MODE !== "false";
 let csrfToken = "";
 let actorVerified = false;
 const slots = new Map<string, string>();
+// Requests belong to the login that started them, including session/CSRF
+// preparation. A transport may still finish after abort, so the signal checks
+// below also fence late headers and bodies before touching shared state.
+const pendingRequests = new Set<AbortController>();
 export class ResearchApiError extends Error {
   constructor(
     public readonly code: string,
@@ -40,22 +44,32 @@ export async function researchApi<K extends RouteName>(
   name: K,
   options: Options<K> = {},
 ): Promise<ResponseFor<K>> {
+  assertRequestActive(options.signal);
+  if (name === "login") clearResearchSession();
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  options.signal?.addEventListener("abort", cancel, { once: true });
+  pendingRequests.add(controller);
   try {
     return await withRequestDeadline(
-      (signal) => requestResearchApi(name, { ...options, signal }),
+      (signal) => requestResearchApi(name, { ...options, signal }, controller),
       name === "agentFileMessage" ? 120000 : 30000,
-      options.signal,
+      controller.signal,
     );
   } catch (error) {
     if (error instanceof RequestTimeoutError)
       throw new ResearchApiError("REQUEST_TIMEOUT", 0, error.message);
     throw error;
+  } finally {
+    pendingRequests.delete(controller);
+    options.signal?.removeEventListener("abort", cancel);
   }
 }
 
 async function requestResearchApi<K extends RouteName>(
   name: K,
   options: Options<K>,
+  controller: AbortController,
 ): Promise<ResponseFor<K>> {
   assertRequestActive(options.signal);
   const route = routes[name];
@@ -79,7 +93,7 @@ async function requestResearchApi<K extends RouteName>(
     );
   const body = parsedBody.data;
   if (route.method !== "GET" && route.access === "session" && !csrfToken) {
-    const session = await requestResearchApi("session", { signal: options.signal });
+    const session = await requestResearchApi("session", { signal: options.signal }, controller);
     assertRequestActive(options.signal);
     csrfToken = session.data.csrfToken;
   }
@@ -122,7 +136,9 @@ async function requestResearchApi<K extends RouteName>(
     name !== "login" &&
     (name !== "session" || actorVerified)
   ) {
-    clearResearchSession();
+    // Preserve this request's real 401 error while cancelling other requests
+    // from the expired login. An old request cannot reach here after reset.
+    resetResearchSession(controller);
     void clearIMProfile();
     window.dispatchEvent(new Event("research-session-expired"));
   }
@@ -224,7 +240,13 @@ async function readArtifactContent(response: Response, signal?: AbortSignal) {
   }
 }
 export function clearResearchSession() {
+  resetResearchSession();
+}
+
+function resetResearchSession(except?: AbortController) {
   csrfToken = "";
   slots.clear();
   actorVerified = false;
+  for (const controller of pendingRequests)
+    if (controller !== except) controller.abort();
 }
