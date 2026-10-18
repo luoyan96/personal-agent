@@ -15,6 +15,7 @@ import type { OverlayVisibleHandle } from "@/hooks/useOverlayVisible";
 import { workspaceApi } from "./workspace-api";
 import { readWorkspaceAvailability } from "./workspace-availability";
 import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
+import { ResearchTeamAccountHint } from "./ResearchTeamAccountHint";
 import { CapabilityTemplates, matchingStarterTemplates } from "./CapabilityTemplates";
 import { CommunityDiscovery } from "./CommunityDiscovery";
 import { AgentCapabilityFeedCard } from "./AgentCapabilityFeedCard";
@@ -57,9 +58,47 @@ export function WorkbenchCapabilities({
   onOpenSkills?: OpenAgentSkills;
   initialContactId?: string;
 }) {
+  const actor = useResearchStore((s) => s.actor);
+  const error = useResearchStore((s) => s.error);
+  if (view === "lab" && actor?.spaceKind !== "laboratory") {
+    return (
+      <section className="social-workspace workspace-square capability-feed">
+        <header className="workspace-heading">
+          <div>
+            <h2>课题组能力</h2>
+            <p>查看已加入课题组的成员与 Agent 能力。</p>
+          </div>
+        </header>
+        {actor?.spaceKind === "personal" ? (
+          <div className="workspace-square-results">
+            <div className="workspace-empty" role="status">
+              <h2>你还没有加入课题组</h2>
+              <p>加入后，这里会显示课题组成员和 Agent 的能力。</p>
+              <p>
+                请联系课题组负责人获取邀请码，在注册时加入。已有个人账号目前还不能直接加入课题组。
+              </p>
+              <p>发起群聊或添加好友不会加入课题组。</p>
+            </div>
+          </div>
+        ) : (
+          <WorkspaceUnavailable
+            feature="课题组身份"
+            pending={!error}
+            error={error}
+            onRetry={() =>
+              useResearchStore
+                .getState()
+                .refresh()
+                .catch(() => {})
+            }
+          />
+        )}
+      </section>
+    );
+  }
   return (
     <CapabilityBrowser
-      key={`${view}:${initialContactId}`}
+      key={`${actor?.member.id}:${actor?.member.labId}:${view}:${initialContactId}`}
       view={view}
       onOpenSkills={onOpenSkills}
       initialContactId={initialContactId}
@@ -333,6 +372,7 @@ function CapabilityBrowser({
           </Button>
         )}
       </header>
+      {view === "lab" && <ResearchTeamAccountHint />}
       {view !== "public" && (
         <div className="workspace-toolbar">
           <Segmented

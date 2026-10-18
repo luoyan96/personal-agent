@@ -45,10 +45,9 @@
   .desktop-conversation-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .desktop-conversation-title h1 { margin: 0; font-size: 21px; line-height: 30px; font-weight: 600; letter-spacing: -.5px; }
   .desktop-conversation-title > div { display: flex; gap: 3px; }
-  .desktop-new-conversation, .desktop-collapse-chats { display: grid; place-items: center; height: 32px; width: 32px; border-radius: 50%; color: var(--ac-muted); font-size: 17px; }
+  .desktop-new-conversation { display: grid; place-items: center; height: 32px; width: 32px; border-radius: 50%; color: var(--ac-muted); font-size: 17px; }
   .desktop-new-conversation { background: var(--ac-soft); }
-  .desktop-new-conversation:hover, .desktop-collapse-chats:hover { background: #e6edf2; color: var(--ac-text); }
-  .desktop-collapse-chats { font-size: 12px; }
+  .desktop-new-conversation:hover { background: #e6edf2; color: var(--ac-text); }
   .desktop-conversation-heading .ant-input-affix-wrapper { background: var(--ac-soft); height: 36px; border-color: transparent; border-radius: 20px; padding: 6px 12px; box-shadow: none; }
   .desktop-conversation-heading .ant-input { background: transparent; font-size: 12px; }
   .desktop-conversation-heading .ant-input-prefix { margin-right: 8px; color: var(--ac-muted); }
@@ -61,7 +60,6 @@
   .desktop-agent-label { color: var(--ac-blue-dark); font-size: 9px !important; font-weight: 500; }
   .desktop-conversation-pin { color: #72a1c7; font-size: 10px; }
   .desktop-conversation-empty { padding: 20px 17px; color: var(--ac-muted); font-size: 13px; }
-  .chats-collapsed .desktop-conversation-column { display: none; }
   #chat-container { background: var(--ac-canvas); }
   .desktop-chat-header { height: 112px; padding: 12px 24px !important; flex-shrink: 0; border: 0; background: var(--ac-canvas) !important; }
   .desktop-chat-header > div > div:first-of-type { justify-content: center; flex-direction: column; gap: 7px; }
@@ -70,9 +68,8 @@
   .desktop-chat-header .text-xs { font-size: 11px; line-height: 18px; color: var(--ac-muted); }
   .desktop-chat-heading { margin-left: 0; flex: 0 1 auto; text-align: center; gap: 2px; height: auto !important; }
   .desktop-chat-header > div > div:last-child { position: absolute; right: 22px; top: 26px; margin: 0; }
-  .desktop-chat-header-action, .desktop-chat-list-toggle { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: var(--ac-muted); font-size: 20px; }
-  .desktop-chat-list-toggle { position: absolute; left: 22px; top: 26px; font-size: 17px; }
-  .desktop-chat-header-action:hover, .desktop-chat-list-toggle:hover { background: var(--ac-soft); }
+  .desktop-chat-header-action { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: var(--ac-muted); font-size: 20px; }
+  .desktop-chat-header-action:hover { background: var(--ac-soft); }
   .desktop-chat-stage { display: flex; flex: 1; flex-direction: column; min-height: 0; overflow: hidden; }
   .desktop-chat-history { flex: 1; min-height: 100px; position: relative; }
   .desktop-chat-history > .ant-layout-content { height: 100%; }

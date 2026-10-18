@@ -17,8 +17,7 @@ import SingleSetting from "../SingleSetting";
 import { researchMode } from "@/research/api";
 import { useResearchStore } from "@/research/store";
 import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
-import { MenuOutlined, MoreOutlined, TeamOutlined, UserOutlined } from "@ant-design/icons";
-import { useDesktopUI } from "@/layout/desktop-ui";
+import { MoreOutlined, TeamOutlined, UserOutlined } from "@ant-design/icons";
 import ChatDetailsDrawer from "./ChatDetailsDrawer";
 import HistorySearch from "./HistorySearch";
 
@@ -47,8 +46,6 @@ i18n.on("languageChanged", () => {
 });
 
 const ChatHeader = () => {
-  const collapsed = useDesktopUI((s) => s.chatsCollapsed);
-  const collapse = useDesktopUI((s) => s.setChatsCollapsed);
   const [aboutMe, setAboutMe] = useState(false);
   const [details, setDetails] = useState(false);
   const [history, setHistory] = useState(false);
@@ -124,7 +121,6 @@ const ChatHeader = () => {
   return (
     <Layout.Header className="desktop-chat-header relative border-b border-b-[var(--gap-text)] !bg-white !px-3">
       <div className="flex h-full items-center leading-none">
-        {window.electronAPI && collapsed && <button type="button" className="desktop-chat-list-toggle" aria-label="展开聊天列表" onClick={() => collapse(false)}><MenuOutlined /></button>}
         <div className="flex flex-1 items-center overflow-hidden">
           {(
             <OIMAvatar

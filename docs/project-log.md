@@ -968,3 +968,23 @@ Windows x64 NSIS0.10.12实际构建并复制桌面，**87,403,174字节** / SHA2
 
 
 [草稿PR62](https://github.com/luoyan96/personal-agent/pull/62)已创建并推送，base为release/acceptcat-0.10.12。当前没有attach_artifact可调用工具，未附任务附件，保留直接链接。本轮4886/4887完整命令核对后关闭API23092/Vite13592，cleanup.json留证，旧预览未动；本支CI状态以实际PR为准，不套用前批SUCCESS。
+
+## 2026-10-18：AcceptCat 项目接手核验
+
+按用户交接先读取根 AGENTS.md、docs/current-state.md、日志最新记录、README.md 与 docs/roadmap.md。实际目录 D:/deepseek-agent/research-agent-platform-chat-integration，接手时 release/acceptcat-0.10.13 / ff0f21ea6c702c53286f04bb9c3d833be723822d，工作区干净；未切换 main 或覆盖已有工作。初次 Git 因目录属主不同拒绝读取，之后用命令级 safe.directory 完成核对，未修改全局配置。
+
+实际桌面安装器重新读回 87,406,620 字节，SHA256 d3df15b6280a953a6065e601f357957575321334bdaecb028c743f0eacc591d7，与0.10.13交付记录一致。通过 gh api 实际读取 PR62：open/draft、base release/acceptcat-0.10.12、head ff0f21e；该提交 Windows/Node24、Ubuntu/Node24、Ubuntu/Node22.19.0 三项 Foundation 均 completed/success。公开 latest 仍 v0.6.0。证据为本次终端 Git、Get-Item/Get-FileHash 和 GitHub API 读回；历史产品测试、包内载荷与启动验证沿用原批次记录，本次未重跑。
+
+本批仅交接核验及状态/日志文档更新，没有安装、生产 inspect、API/worker部署、目录运营、公开Release或更新源变更。旧生产47c42ac/contract0.25/chat1.12/schema022保持历史记录属性；PR50正文边界配套、三项目录运营及既有维护登录待办保留，不重复请求。真实师生科研任务持续使用与工具执行/中文科研质量仍需分别验收。下一步接用户给出的具体需求，按批次更新状态与日志。
+
+## 2026-10-18：个人空间不冒充课题组，移除聊天折叠入口
+
+用户指出聊天标题旁按钮多余，并询问未加入课题组时的内容与创建/管理机制。从release/acceptcat-0.10.13 / ff0f21e建立fix/lab-capabilities-entry，保留接手核验的两份文档修改。客户端去掉收起/展开按钮、专用Zustand状态和样式；课题组能力先判断服务端session.spaceKind，个人空间只显示加入说明、不挂载能力浏览器或读目录，未知/错误身份显示实际状态及重新读取；已加入账号保持原目录和权限。负责人复用原网页邀请链接，按账号/课题组重挂载以清除旧结果。React检查按frontend-testing-debugging及react-best-practices技能执行，没有新依赖。
+
+实际维护/注册代码核实：维护者开通课题组并指定负责人，负责人网页签发/撤销限时限次邀请码，成员在注册时加入；不填码为个人空间。好友与群聊不改变课题组归属。尚无客户端自助创建、已有个人账号加入、多课题组切换或完整成员移除流程，本批未据此扩张权限或重构账号模型。
+
+客户端27项、TypeScript与8组分阶段真实React/HTTP/SQLite通过；1536×1024/1024×726个人空状态、负责人目录说明和聊天列表实拍已检查，通过阶段pageerror0、无框架覆盖。验证实际注册/登录身份、个人页零目录请求、保留我的Agent、负责人/普通成员差异、身份错误重读、换账号取消旧目录、旧链接和聊天搜索/菜单/会话选择。SDK/会话记录为明确投影，无真实IM或模型。Browser plugin absent，使用已有Playwright/隔离Edge。初次retry回调类型已修，图标名称选择器、测试路由取消后重复处理、重定向旧URL等待和未等登录的夹具首败保留后续验；重复合成注册409与既有Router/findDOMNode警告解释保留。未放宽ACL/限流或使用生产数据。
+
+证据在Git外D:/deepseek-agent/.runtime/lab-capabilities-20261018，qa-summary.json合并8组事实、typecheck-final.log与focused.log保留命令结果。生产Web构建、四份固定SDK资源及资产引用检查通过，build-web.log保留既有antd指令/产物体积警告；208份Markdown/10份Skill内容及diff检查通过。无共享/内置Skill/API/迁移变更，不重复根完整CI。本批未制作新Windows安装包、安装、部署、目录发布、公共Release或更新源变更；现装0.10.13不会因此更新。PR50后台边界、三项目录与既有维护登录待办保持；下一步可按用户要求完善教师自助开组/已有账号受邀流程。详见docs/development/lab-capability-membership.md。
+
+最终修正提交2fe690fb32f72d57ca3189e4953768c25c750836已推送，草稿PR63 https://github.com/luoyan96/personal-agent/pull/63 已创建并通过attach_artifact附到当前任务，base为release/acceptcat-0.10.13。首读该提交三项Foundation均in_progress，不套用前批ff0f21e通过事实。核对完整Node命令后仅关闭本批API4897/22000及Vite4896/30680，端口无监听；cleanup-before.json/cleanup.json保留，旧服务与用户软件未动。Git作者缺省沿用本仓库既有Codex身份，以命令级配置提交，未改全局配置。

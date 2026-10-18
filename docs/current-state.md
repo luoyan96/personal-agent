@@ -2,6 +2,20 @@
 
 更新日期：2026-10-18（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新本地修正：聊天列表入口与课题组身份
+
+`fix/lab-capabilities-entry` 接续 `release/acceptcat-0.10.13` / `ff0f21e`。移除聊天收起/展开按钮及专用状态；“课题组能力”按服务端 session 身份显示：个人空间只有未加入说明且不读取目录，身份未知/失败保留真实状态，已加入账号沿用同组目录，负责人可打开既有网页邀请管理。此前个人空间自身成员/Agent被当成课题组内容的问题已修正。[实现与实际管理边界](development/lab-capability-membership.md)。
+
+客户端27项/类型/生产Web与四份固定SDK资源检查、8组分阶段真实React/HTTP/SQLite通过，1536/1024实拍已看，通过阶段pageerror0；SDK/聊天记录为明确投影，无真实IM/模型或生产材料。夹具选择器/取消/重定向与首次登录等待首败保留，未放宽权限/限流。Git外证据 `D:/deepseek-agent/.runtime/lab-capabilities-20261018`。本批尚未制作新安装包、部署后台或公共发布；桌面0.10.13仍为原受测包。课题组目前仍由维护者开通、负责人网页签发邀请码、成员注册时加入；客户端自助创建与邀请已有个人账号尚未实现。PR50/三项目录与旧维护登录待办保持。
+
+修正提交 `2fe690fb32f72d57ca3189e4953768c25c750836`，已推送并创建/附上[草稿PR63](https://github.com/luoyan96/personal-agent/pull/63)，base为release/acceptcat-0.10.13；首读该提交三项Foundation均进行中，未计为远端通过。仅关闭本批完整命令核对的API4897/Node22000与Vite4896/Node30680，端口无监听，cleanup.json留证，旧服务未动。
+
+## 2026-10-18 接手核验
+
+实际工作目录 `D:/deepseek-agent/research-agent-platform-chat-integration`，接手时分支 `release/acceptcat-0.10.13`、HEAD `ff0f21ea6c702c53286f04bb9c3d833be723822d`，工作区干净；未切换到 main。已读取根 AGENTS、当前状态、日志最新记录、README 与路线图。Git 因目录属主不同拒绝初次读取，后续仅使用命令级 `safe.directory`，未修改全局 Git 配置。
+
+本次实际重新计算桌面 `AcceptCat_0.10.13.exe`：87,406,620 字节，SHA256 与下方交付记录一致。GitHub API 读回 PR62 仍为 open/draft、base `release/acceptcat-0.10.12`，head 为上述 ff0f21e；该提交三项 Foundation（Windows/Node24、Ubuntu/Node24、Ubuntu/Node22.19.0）均 completed/success。公开 latest 仍为 v0.6.0。本次仅交接核验及文档更新，未重跑产品测试、安装软件、检查或部署生产、发布目录/Release/更新源；原生产版本仅沿用历史记录。继续保留 PR50 配套后台边界、三项社区目录运营与既有维护登录待办，以及真实师生科研使用验收；等待用户下一项具体需求。
+
 ## 最新用户改动与Windows0.10.13：独立“我的”，工作台四主栏
 
 `release/acceptcat-0.10.13`接续PR61 / 13eea26，产品及安装包源码 **8acfbed107b222c4c4f404068c8ecc6cbb821eff**。侧栏广场下“我的”独立页集中个人资料、模型、记忆、通用设置、版本/诊断，头像直达，无底部设置或头像信息Pop。我的Agent/课题组能力移入；工作台只保留总览/规划/任务/资料，定时任务与本机报告分别归规划/资料。实际资料写入、账号显示、技能返回定位和旧链接重定向；无新后台接口或迁移。[实现及QA](development/my-workspace-navigation.md)。

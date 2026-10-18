@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { t } from "i18next";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "antd";
-import { LeftOutlined, SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined } from "@ant-design/icons";
 import { useParams } from "react-router-dom";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 
@@ -15,7 +15,6 @@ import ConversationItemComp from "./ConversationItem";
 import styles from "./index.module.scss";
 import { useResearchStore } from "@/research/store";
 import NewConversationButton from "@/layout/TopSearchBar/NewConversationButton";
-import { useDesktopUI } from "@/layout/desktop-ui";
 
 const ConnectBar = () => {
   const userStore = useUserStore();
@@ -59,7 +58,6 @@ const ConnectBar = () => {
 };
 
 const ConversationSider = () => {
-  const collapse = useDesktopUI((s) => s.setChatsCollapsed);
   const { conversationID } = useParams();
   const conversationList = useConversationStore((state) => state.conversationList);
   const coordinator = useResearchStore(state => state.session?.coordinator?.imConversationID);
@@ -106,7 +104,6 @@ const ConversationSider = () => {
           <div className="desktop-conversation-title">
             <h1>聊天</h1>
             <div>
-              <button type="button" className="desktop-collapse-chats" aria-label="收起聊天列表" onClick={() => collapse(true)}><LeftOutlined /></button>
               <NewConversationButton />
             </div>
           </div>

@@ -2,6 +2,7 @@
   background: #fff; font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
   > .workspace-heading { background: #fff; padding: 24px 28px; h1 { font-size: 26px; letter-spacing: -.4px; } p { font-size: 13px; color: #6c7b90; margin-top: 9px; } }
   > .workspace-toolbar { background: #fff; padding: 16px 24px; gap: 14px; .ant-segmented { background: #f3f6fa; } .ant-input-search { max-width: 280px; margin-left: auto; } }
+  > .research-team-scope { margin: 0 24px 12px; padding: 12px 16px; border-radius: 10px; background: #f6f8fa; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
   .workspace-square-results { padding: 22px 24px; }
   .workspace-capability-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 17px; }
   .workspace-capability-card { border-radius: 14px; border-color: #e1e7ef; padding: 20px; background: #fff; header h2 { font-size: 16px; font-weight: 600; } footer { font-size: 11px; color: #718096; line-height: 1.7; } }
