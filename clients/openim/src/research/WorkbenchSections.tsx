@@ -1,20 +1,11 @@
 import { Segmented } from "antd";
 import { useSearchParams } from "react-router-dom";
 import { PersonalFollowupPanel } from "./PersonalFollowupPanel";
-import { TaskPlanning } from "./TaskPlanning";
+import { PlanningHistory } from "./PlanningHistory";
 import { ResearchLibrary } from "./ResearchLibrary";
 import { WorkspaceReports } from "./WorkspaceReports";
-import type { PlanningPreset } from "./planning-presets";
 
-export function WorkbenchPlanning({
-  launch,
-  preset,
-  onTasks,
-}: {
-  launch: number;
-  preset?: PlanningPreset;
-  onTasks: (taskId?: string) => void;
-}) {
+export function WorkbenchPlanning() {
   const [params, setParams] = useSearchParams();
   const scheduled = params.get("panel") === "scheduled";
   return (
@@ -24,7 +15,7 @@ export function WorkbenchPlanning({
           <PersonalFollowupPanel active />
         </div>
       ) : (
-        <TaskPlanning launch={launch} preset={preset} onTasks={onTasks} />
+        <PlanningHistory />
       )}
     </div>
   );

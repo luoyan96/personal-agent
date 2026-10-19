@@ -1,0 +1,448 @@
+.personal-agent-desktop .workspace-workbench {
+  .workbench-content {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    flex-direction: column;
+  }
+  .workbench-content.is-planning-chat {
+    flex: 0 0 auto;
+    max-height: 28%;
+    overflow-y: auto;
+  }
+  .planning-agent {
+    flex: 0 0 auto;
+    min-width: 0;
+    min-height: 0;
+    margin: 10px 32px 20px;
+    background: #fff;
+    border: 1px solid #e4eaf0;
+    border-radius: 20px;
+    box-shadow: 0 5px 20px #203d5910;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: var(--ac-text);
+  }
+  .planning-agent.is-expanded {
+    height: min(430px, 52%);
+  }
+  .planning-agent.is-full {
+    flex: 1;
+    height: auto;
+    max-height: none;
+    margin-top: 0;
+  }
+  .planning-agent-heading {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 18px 8px;
+  }
+  .planning-agent-heading > div,
+  .planning-agent-heading nav {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .planning-agent-heading strong {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .planning-agent-heading > div > .anticon {
+    color: #5b9ecb;
+    font-size: 18px;
+  }
+  .planning-agent-heading span:not(.anticon) {
+    font-size: 11px;
+    color: var(--ac-muted);
+  }
+  .planning-agent-heading .ant-btn {
+    font-size: 12px;
+    height: 28px;
+    padding: 0 8px;
+  }
+  .planning-agent-messages {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 24px 18px;
+    border-top: 1px solid #f0f3f6;
+    scroll-behavior: smooth;
+  }
+  .planning-agent-welcome {
+    padding: 18px 0;
+    max-width: 760px;
+  }
+  .planning-agent-welcome h2 {
+    font-size: 21px;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+  .planning-agent-welcome p {
+    color: var(--ac-muted);
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  .planning-agent-welcome > div {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+  .planning-agent-welcome button {
+    padding: 10px 14px;
+    border: 1px solid #e3ebf2;
+    border-radius: 12px;
+    font-size: 12px;
+    color: #56768d;
+    text-align: left;
+  }
+  .planning-agent-welcome button:hover {
+    background: #f4faff;
+    border-color: #c8e2f5;
+  }
+  .planning-chat-message {
+    max-width: 870px;
+    margin: 0 0 16px;
+    font-size: 14px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+  .planning-chat-message > span {
+    color: #6c8395;
+    display: block;
+    font-size: 11px;
+    margin-bottom: 5px;
+  }
+  .planning-chat-message.role-user {
+    margin-left: auto;
+    max-width: min(680px, 88%);
+    padding: 10px 16px;
+    background: #edf7fd;
+    border-radius: 16px 16px 4px 16px;
+  }
+  .planning-chat-message.role-user > span {
+    display: none;
+  }
+  .planning-chat-message.role-service {
+    color: #647786;
+    font-size: 12px;
+  }
+  .planning-chat-message p {
+    margin: 0 0 5px;
+  }
+  .planning-chat-message small {
+    color: #82919b;
+    font-size: 11px;
+  }
+  .planning-agent-thinking {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    color: #657d90;
+    font-size: 12px;
+    padding: 10px 0;
+  }
+  .planning-chat-plan {
+    max-width: 940px;
+    margin: 8px 0 18px;
+    border: 1px solid #dce8f1;
+    border-radius: 16px;
+    overflow: hidden;
+    font-size: 13px;
+  }
+  .planning-chat-plan > header {
+    padding: 15px 18px;
+    background: #f7fbfe;
+  }
+  .planning-chat-plan > header > span {
+    display: block;
+    color: #6a8ba0;
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+  .planning-chat-plan > header strong {
+    font-size: 16px;
+    font-weight: 600;
+    display: block;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+  .planning-chat-plan > header small {
+    color: var(--ac-muted);
+    font-size: 11px;
+  }
+  .planning-chat-plan ol {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+  .planning-chat-plan li {
+    padding: 13px 18px;
+    border-top: 1px solid #edf1f5;
+  }
+  .planning-chat-plan li > div {
+    display: flex;
+    gap: 9px;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+  }
+  .planning-chat-plan li b {
+    font-size: 11px;
+    color: #7b9bb0;
+    font-weight: 500;
+  }
+  .planning-chat-plan li strong {
+    font-weight: 500;
+  }
+  .planning-chat-plan li > div span {
+    color: #5e819a;
+    font-size: 11px;
+    margin-left: auto;
+  }
+  .planning-chat-plan li p {
+    font-size: 12px;
+    color: #687886;
+    line-height: 1.8;
+    margin: 2px 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+  .planning-chat-plan li small {
+    display: block;
+    font-size: 11px;
+    color: #778d9d;
+    line-height: 1.7;
+  }
+  .planning-chat-plan > p,
+  .planning-chat-plan > details {
+    margin: 12px 18px;
+    line-height: 1.8;
+    color: #7c715d;
+  }
+  .planning-chat-plan summary {
+    cursor: pointer;
+  }
+  .planning-chat-plan footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #edf1f5;
+    padding: 13px 18px;
+  }
+  .planning-chat-plan footer > span {
+    color: #6d7e8b;
+    font-size: 12px;
+  }
+  .planning-created-actions {
+    padding: 14px 18px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    color: #527e64;
+  }
+  .planning-created-actions .ant-btn {
+    font-size: 12px;
+  }
+  .planning-agent-composer {
+    flex-shrink: 0;
+    padding: 8px 18px 12px;
+    background: #fff;
+  }
+  .planning-agent-composer textarea.ant-input {
+    border: 0;
+    box-shadow: none;
+    resize: none;
+    padding: 7px 4px;
+    font-size: 14px;
+    line-height: 1.7;
+    background: transparent;
+  }
+  .planning-agent-composer > div {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+  .planning-agent-composer > div > span {
+    color: #9aa6ae;
+    font-size: 10px;
+    margin-right: auto;
+  }
+  .planning-agent-composer .ant-btn-text {
+    font-size: 11px;
+    color: #7b8b97;
+    height: 28px;
+    padding: 0 4px;
+  }
+  .planning-agent-composer .ant-btn-circle {
+    width: 34px;
+    height: 34px;
+    font-size: 17px;
+  }
+  .planning-agent-note {
+    font-size: 11px;
+    color: #8a7957;
+    margin: 6px 18px;
+    line-height: 1.7;
+  }
+  .planning-agent > .ant-alert {
+    margin: 4px 18px;
+    font-size: 12px;
+  }
+  .planning-saved-history {
+    padding: 0 32px 16px;
+    font-size: 13px;
+  }
+  .planning-saved-history > header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .planning-saved-history h2 {
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .planning-saved-history header p {
+    color: var(--ac-muted);
+    margin: 4px 0 10px;
+    font-size: 12px;
+  }
+  .planning-history-details {
+    margin-top: 10px;
+    color: #647d90;
+    font-size: 12px;
+  }
+  .planning-history-details summary {
+    cursor: pointer;
+  }
+  .planning-history-details > .ant-input-affix-wrapper {
+    max-width: 300px;
+    margin-top: 12px;
+  }
+  .planning-saved-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+    margin: 12px 0;
+  }
+  .planning-saved-list > button {
+    border: 1px solid #e3eaf0;
+    background: #fff;
+    border-radius: 13px;
+    padding: 12px 15px;
+    text-align: left;
+  }
+  .planning-saved-list strong {
+    font-size: 13px;
+    font-weight: 500;
+    display: block;
+    overflow-wrap: anywhere;
+  }
+  .planning-saved-list span {
+    display: block;
+    font-size: 11px;
+    color: #8a98a3;
+    margin-top: 5px;
+  }
+  .planning-request-link {
+    display: block;
+    padding: 7px 0;
+    font-size: 12px;
+  }
+}
+.planning-chat-history {
+  max-width: 330px;
+  max-height: 360px;
+  overflow: auto;
+  p {
+    font-size: 12px;
+    color: #82919b;
+    margin-bottom: 8px;
+  }
+  button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 9px 10px;
+    border-radius: 9px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+  button:hover,
+  button[aria-pressed="true"] {
+    background: #edf7fd;
+  }
+}
+@media (max-width: 1100px) {
+  .personal-agent-desktop .workspace-workbench {
+    .planning-agent {
+      margin-left: 24px;
+      margin-right: 24px;
+    }
+    .planning-agent-heading > div > span:not(.anticon) {
+      display: none;
+    }
+    .planning-agent-messages {
+      padding: 12px 18px;
+    }
+    .planning-saved-history {
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+  }
+}
+@media (max-width: 700px) {
+  .personal-agent-desktop .workspace-workbench {
+    .planning-agent {
+      margin: 8px 14px 14px;
+    }
+    .planning-agent-heading {
+      padding: 9px 12px 6px;
+      gap: 5px;
+    }
+    .planning-agent-heading nav {
+      gap: 2px;
+    }
+    .planning-agent-heading strong {
+      font-size: 13px;
+    }
+    .planning-agent-messages {
+      padding: 10px 12px;
+    }
+    .planning-agent-composer {
+      padding: 6px 12px 10px;
+    }
+    .planning-chat-plan li {
+      padding: 10px 12px;
+    }
+    .planning-chat-plan li > div span {
+      margin-left: 0;
+      flex-basis: 100%;
+    }
+    .planning-saved-history {
+      padding-left: 18px;
+      padding-right: 18px;
+    }
+  }
+}
+
+.personal-agent-desktop .workspace-workbench .planning-step-details {
+  font-size: 11px;
+  color: #8293a0;
+  margin-top: 4px;
+}
+.personal-agent-desktop .workspace-workbench .planning-step-details summary {
+  cursor: pointer;
+}

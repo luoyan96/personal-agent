@@ -22,7 +22,7 @@ import { ResearchTeamWorkbench } from "./ResearchTeamWorkbench";
 import { relocatedWorkspace } from "./workspace-navigation";
 import { WorkbenchPlanning, WorkbenchLibrary } from "./WorkbenchSections";
 import { workbenchTaskPath, workbenchTaskTarget } from "./workbench-links";
-import type { PlanningPreset } from "./planning-presets";
+import { PlanningAgent } from "./PlanningAgent";
 type Category = "ongoing" | "awaiting_me" | "completed";
 function WorkbenchOverview({
   card,
@@ -143,7 +143,7 @@ export function DesktopWorkbench() {
       ? "team"
       : "tasks";
   const [planningLaunch, setPlanningLaunch] = useState(0);
-  const [planningPreset, setPlanningPreset] = useState<PlanningPreset>();
+  const [workbenchRevision, setWorkbenchRevision] = useState(0);
   const {
     id: requestedTask,
     kind: requestedKind,
@@ -281,20 +281,6 @@ export function DesktopWorkbench() {
               联系人协作任务
             </Button>
           )}
-          {tab !== "library" && (
-            <Button
-              type="primary"
-              disabled={!supported}
-              onClick={() => {
-                setPlanningPreset(undefined);
-                if (tab !== "planning" || params.get("panel") === "scheduled")
-                  setTab("planning");
-                setPlanningLaunch((value) => value + 1);
-              }}
-            >
-              规划新任务
-            </Button>
-          )}
         </div>
       </header>
       <div className="workspace-toolbar">
@@ -370,182 +356,194 @@ export function DesktopWorkbench() {
           }
         />
       )}
-      {tab === "library" ? (
-        <WorkbenchLibrary />
-      ) : !supported ? (
-        <WorkspaceUnavailable
-          feature="工作台"
-          pending={!availability.data && !availability.error}
-          error={availability.error}
-          onRetry={availability.refresh}
-        />
-      ) : tab === "team" ? (
-        availability.supports(23) ? (
-          <ResearchTeamWorkbench
-            onPlan={() => {
-              setPlanningPreset(undefined);
-              setTab("planning");
-              setPlanningLaunch((value) => value + 1);
-            }}
+      <div
+        className={`workbench-content ${
+          tab === "planning" && params.get("panel") !== "scheduled"
+            ? "is-planning-chat"
+            : ""
+        }`}
+      >
+        {tab === "library" ? (
+          <WorkbenchLibrary />
+        ) : !supported ? (
+          <WorkspaceUnavailable
+            feature="工作台"
+            pending={!availability.data && !availability.error}
+            error={availability.error}
+            onRetry={availability.refresh}
           />
-        ) : (
-          <section className="workspace-empty workspace-unavailable" role="status">
-            <h2>科研团队服务待升级</h2>
-            <p>
-              科研团队总览需要服务器契约 0.23 或以上。已有任务、计划与聊天可以继续访问。
-            </p>
-            <div className="workspace-card-actions">
-              <Button onClick={availability.refresh}>重新检查</Button>
-              <Button type="primary" onClick={() => setTab("tasks")}>
-                查看已有任务
-              </Button>
-              <Button onClick={() => setTab("planning")}>打开任务规划</Button>
-            </div>
-          </section>
-        )
-      ) : tab === "planning" ? (
-        <WorkbenchPlanning
-          launch={planningLaunch}
-          preset={planningPreset}
-          onTasks={(id) =>
-            id
-              ? setParams(
-                  new URLSearchParams(workbenchTaskPath(id, "research").split("?")[1]),
-                )
-              : setTab("tasks")
-          }
-        />
-      ) : (
-        <div className="workspace-task-body">
-          <aside className="workspace-task-list">
-            {read.error && (
-              <Alert
-                type="error"
-                message={read.error}
-                action={<Button onClick={read.refresh}>重试</Button>}
-              />
-            )}
-            {!read.data && !read.error && (
-              <p role="status" className="p-5">
-                正在读取任务…
+        ) : tab === "team" ? (
+          availability.supports(23) ? (
+            <ResearchTeamWorkbench
+              refresh={workbenchRevision}
+              onPlan={() => setPlanningLaunch((value) => value + 1)}
+            />
+          ) : (
+            <section className="workspace-empty workspace-unavailable" role="status">
+              <h2>科研团队服务待升级</h2>
+              <p>
+                科研团队总览需要服务器契约 0.23
+                或以上。已有任务、计划与聊天可以继续访问。
               </p>
-            )}
-            {read.data?.data.map((card) => (
-              <button
-                className="workspace-task-row"
-                key={`${card.source}:${card.id}`}
-                aria-pressed={
-                  requestedTask
-                    ? card.taskId === requestedTask &&
-                      (card.source === "research_task" ? "research" : "personal") ===
-                        requestedKind
-                    : activeCard?.id === card.id
-                }
-                onClick={() => select(card)}
-              >
-                <span className="workspace-task-row-title">{card.title}</span>
-                <span className="workspace-status">
-                  {workspaceStatusLabel[card.status] ||
-                    card.progress.label ||
-                    "查看状态"}
-                </span>
-                <p>{card.goal || "接受后可查看获准目标"}</p>
-                <footer>
-                  {card.owner.displayName}
-                  <span>
-                    {workspaceStatusLabel[card.progress.label] || card.progress.label}
+              <div className="workspace-card-actions">
+                <Button onClick={availability.refresh}>重新检查</Button>
+                <Button type="primary" onClick={() => setTab("tasks")}>
+                  查看已有任务
+                </Button>
+                <Button onClick={() => setTab("planning")}>打开任务规划</Button>
+              </div>
+            </section>
+          )
+        ) : tab === "planning" ? (
+          <WorkbenchPlanning />
+        ) : (
+          <div className="workspace-task-body">
+            <aside className="workspace-task-list">
+              {read.error && (
+                <Alert
+                  type="error"
+                  message={read.error}
+                  action={<Button onClick={read.refresh}>重试</Button>}
+                />
+              )}
+              {!read.data && !read.error && (
+                <p role="status" className="p-5">
+                  正在读取任务…
+                </p>
+              )}
+              {read.data?.data.map((card) => (
+                <button
+                  className="workspace-task-row"
+                  key={`${card.source}:${card.id}`}
+                  aria-pressed={
+                    requestedTask
+                      ? card.taskId === requestedTask &&
+                        (card.source === "research_task" ? "research" : "personal") ===
+                          requestedKind
+                      : activeCard?.id === card.id
+                  }
+                  onClick={() => select(card)}
+                >
+                  <span className="workspace-task-row-title">{card.title}</span>
+                  <span className="workspace-status">
+                    {workspaceStatusLabel[card.status] ||
+                      card.progress.label ||
+                      "查看状态"}
                   </span>
-                </footer>
-              </button>
-            ))}
-            {read.data && !read.data.data.length && (
-              <div className="workspace-empty">
-                <h2>
-                  {category === "awaiting_me"
-                    ? "暂时没有待你处理的任务"
-                    : category === "completed"
-                    ? "还没有已完成的任务"
-                    : "暂时没有进行中的任务"}
-                </h2>
-                <p>聊天中的协作建议会在这里确认，也可以手工建立一项任务。</p>
-              </div>
-            )}
-            {(pages.length > 1 || read.data?.nextCursor) && (
-              <div className="workspace-pages">
-                <Button
-                  size="small"
-                  disabled={pages.length === 1}
-                  onClick={() => setPages((v) => v.slice(0, -1))}
-                >
-                  上一页
-                </Button>
-                <Button
-                  size="small"
-                  disabled={!read.data?.nextCursor}
-                  onClick={() => {
-                    const nextCursor = read.data?.nextCursor;
-                    if (nextCursor) setPages((v) => [...v, nextCursor]);
-                  }}
-                >
-                  更多任务
-                </Button>
-              </div>
-            )}
-          </aside>
-          <main className="workspace-detail-pane">
-            {requestedTask ? (
-              requestedValid ? (
-                requestedKind === "research" ? (
-                  <div className="workspace-task-detail">
-                    <ResearchTaskPanel
+                  <p>{card.goal || "接受后可查看获准目标"}</p>
+                  <footer>
+                    {card.owner.displayName}
+                    <span>
+                      {workspaceStatusLabel[card.progress.label] || card.progress.label}
+                    </span>
+                  </footer>
+                </button>
+              ))}
+              {read.data && !read.data.data.length && (
+                <div className="workspace-empty">
+                  <h2>
+                    {category === "awaiting_me"
+                      ? "暂时没有待你处理的任务"
+                      : category === "completed"
+                      ? "还没有已完成的任务"
+                      : "暂时没有进行中的任务"}
+                  </h2>
+                  <p>聊天中的协作建议会在这里确认，也可以手工建立一项任务。</p>
+                </div>
+              )}
+              {(pages.length > 1 || read.data?.nextCursor) && (
+                <div className="workspace-pages">
+                  <Button
+                    size="small"
+                    disabled={pages.length === 1}
+                    onClick={() => setPages((v) => v.slice(0, -1))}
+                  >
+                    上一页
+                  </Button>
+                  <Button
+                    size="small"
+                    disabled={!read.data?.nextCursor}
+                    onClick={() => {
+                      const nextCursor = read.data?.nextCursor;
+                      if (nextCursor) setPages((v) => [...v, nextCursor]);
+                    }}
+                  >
+                    更多任务
+                  </Button>
+                </div>
+              )}
+            </aside>
+            <main className="workspace-detail-pane">
+              {requestedTask ? (
+                requestedValid ? (
+                  requestedKind === "research" ? (
+                    <div className="workspace-task-detail">
+                      <ResearchTaskPanel
+                        key={requestedTask}
+                        taskId={requestedTask}
+                        onChanged={read.refresh}
+                      />
+                    </div>
+                  ) : (
+                    <PersonalWorkDetail
                       key={requestedTask}
                       taskId={requestedTask}
                       onChanged={read.refresh}
                     />
-                  </div>
+                  )
                 ) : (
-                  <PersonalWorkDetail
-                    key={requestedTask}
-                    taskId={requestedTask}
-                    onChanged={read.refresh}
-                  />
+                  <Alert type="warning" message="任务链接无效，请从列表重新选择。" />
                 )
-              ) : (
-                <Alert type="warning" message="任务链接无效，请从列表重新选择。" />
-              )
-            ) : activeCard ? (
-              details && activeCard.taskId ? (
-                activeCard.source === "personal_task" ? (
-                  <PersonalWorkDetail
-                    key={activeCard.taskId}
-                    taskId={activeCard.taskId}
-                    onChanged={read.refresh}
-                  />
-                ) : (
-                  <div className="workspace-task-detail">
-                    <ResearchTaskPanel
+              ) : activeCard ? (
+                details && activeCard.taskId ? (
+                  activeCard.source === "personal_task" ? (
+                    <PersonalWorkDetail
                       key={activeCard.taskId}
                       taskId={activeCard.taskId}
+                      onChanged={read.refresh}
                     />
-                  </div>
+                  ) : (
+                    <div className="workspace-task-detail">
+                      <ResearchTaskPanel
+                        key={activeCard.taskId}
+                        taskId={activeCard.taskId}
+                      />
+                    </div>
+                  )
+                ) : (
+                  <WorkbenchOverview
+                    key={`${activeCard.source}:${activeCard.id}`}
+                    card={activeCard}
+                    onTask={() => setDetails(true)}
+                  />
                 )
               ) : (
-                <WorkbenchOverview
-                  key={`${activeCard.source}:${activeCard.id}`}
-                  card={activeCard}
-                  onTask={() => setDetails(true)}
-                />
-              )
-            ) : (
-              <div className="workspace-empty">
-                <h2>把事情交代清楚，一起推进</h2>
-                <p>
-                  选择任务查看目标、实际成员和结果。只有明确验收后，任务才会标为完成。
-                </p>
-              </div>
-            )}
-          </main>
-        </div>
+                <div className="workspace-empty">
+                  <h2>把事情交代清楚，一起推进</h2>
+                  <p>
+                    选择任务查看目标、实际成员和结果。只有明确验收后，任务才会标为完成。
+                  </p>
+                </div>
+              )}
+            </main>
+          </div>
+        )}
+      </div>
+      {tab !== "library" && !!actor && (
+        <PlanningAgent
+          available={supported && availability.supports(23)}
+          full={tab === "planning" && params.get("panel") !== "scheduled"}
+          focus={planningLaunch}
+          planId={tab === "planning" ? params.get("plan") || undefined : undefined}
+          requestId={
+            tab === "planning" ? params.get("planning") || undefined : undefined
+          }
+          onCreated={() => {
+            setWorkbenchRevision((value) => value + 1);
+            void read.refresh();
+          }}
+          onTeam={() => setTab("team")}
+        />
       )}
       <Modal
         title="新建一项任务"

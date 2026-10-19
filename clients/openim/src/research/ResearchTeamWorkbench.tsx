@@ -1,6 +1,6 @@
 import { Alert, Button, Input, Modal, Progress, Segmented } from "antd";
 import { ArrowRightOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ResearchWorkspaceRow } from "@research-agent-platform/contracts";
 import { researchApi } from "./api";
@@ -23,7 +23,13 @@ import "./workbench-home.scss";
 type Filter = "all" | "review" | "blocked" | "deadline";
 const stageLabels = { active: "正在推进", planned: "准备开展", closed: "已结束" };
 
-export function ResearchTeamWorkbench({ onPlan }: { onPlan: () => void }) {
+export function ResearchTeamWorkbench({
+  onPlan,
+  refresh,
+}: {
+  onPlan: () => void;
+  refresh?: number;
+}) {
   const navigate = useNavigate();
   const actor = useResearchStore((s) => s.actor);
   const generation = useResearchStore((s) => s.generation);
@@ -50,6 +56,16 @@ export function ResearchTeamWorkbench({ onPlan }: { onPlan: () => void }) {
     `team-progress:${actor?.member.labId}:${scope}`,
     laboratory,
   );
+  useEffect(() => {
+    if (refresh) {
+      setDirection(undefined);
+      setFilter("all");
+      setSearch("");
+      setStage("all");
+      setPage(1);
+      void read.refresh();
+    }
+  }, [refresh]);
   const members = useResearchRead(
     (signal) =>
       researchApi("members", {
@@ -206,13 +222,13 @@ export function ResearchTeamWorkbench({ onPlan }: { onPlan: () => void }) {
             <p>
               {scope === "mine"
                 ? "切换到课题组可见，查看你有权访问的其他任务。"
-                : "先规划研究目标，确认任务后，在这里跟进分工和成果。"}
+                : "在下方告诉任务规划 Agent 您的目标，任务建立后在这里跟进分工和成果。"}
             </p>
             <Button
               type="primary"
               onClick={scope === "mine" ? () => setScope("lab") : onPlan}
             >
-              {scope === "mine" ? "查看课题组可见任务" : "规划新任务"}
+              {scope === "mine" ? "查看课题组可见任务" : "和规划 Agent 聊聊"}
             </Button>
           </div>
         ) : (

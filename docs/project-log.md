@@ -1054,3 +1054,21 @@ Windows x64 NSIS0.10.12实际构建并复制桌面，**87,403,174字节** / SHA2
 本次公网ready200/contract0.25、db/storage/auth ok，harness仍not_verified；生产47c42ac/b78613b5沿前批inspect，本次不新容器inspect、部署、数据库同步或迁移。actual latest仍v0.6.0（2026-10-08）已核对，无目录/公共Release/更新源操作。PR66目录11项/7仓库沿独立运营交接；PR68统计Skill未集成，PR50后台边界、自助开组/已有账号加入/多组、长期科研效果与磁盘/网络风险独立维护。
 
 草稿PR70 https://github.com/luoyan96/personal-agent/pull/70 已推送、创建并附当前任务，base release/acceptcat-0.10.16；首读16c6b97三项Foundation均IN_PROGRESS，不套用其他分支通过。216份Markdown/10份Skill与diff检查通过。main客户端包manifest再次读回0.3.0，未切main。为用户保留4936/4937合成预览，实际26488/28896完整Node命令已核对并留preview-retained.json；viewport reset、IAB页标交付，未将预览叫作正式部署。用户现装6048/20312/9456/29724均仍在原路径；桌面0.10.17最终87,417,662字节和a5369f56 SHA256及说明再次读回一致，包内产品仍固定12c100d。
+
+## 2026-10-19：聊天式任务规划Agent与Windows0.10.18
+
+用户要求像常见AI聊天一样直接安排任务，将右上“规划新任务”移到工作台底部。实际从干净release/acceptcat-0.10.17 / b11e1f5接续0.10.18，先读AGENTS/状态/最新日志/README/roadmap，未切main或覆盖修改。初实现09840a0，日期中文序号收尾8bf46f1，最终包固定8bf46f17ee720f2e8c5e028001b4dda384c077db。
+
+底部常驻任务规划Agent，直接输入目标、具体追问、连续调整步骤/分工/交付；同一后台私人草案ID与版本更新。对话内说“确认创建任务”或同卡动作后，重读精确版本/内容、建立真实任务与邀请，展示实际链接并刷新课题组进展。研究计划为完整聊天与折叠历史，旧plan/planning链接接入上下文；原多步规划器退出主入口，源文件保留。沿0.17三个栏目/方向进度，0.14个人助手衔接、0.15断线和0.16账号隔离保持。
+
+沿现有planning-requests/plan/confirm/planTasks，未改后台API/数据库/共享包/内置Skill。最近12条连续对话/8000字符、真实成员目录有界；本机20段/每段60条缓存按服务/账号/课题组隔离，未收到写回执的意图保留原幂等键、显式核对、不自动重放。换账号/对话后迟到结果隔离。日期只用用户明确安排，默认最终交付，可定位数字/中文序号；复杂时刻/多日期要求澄清。复杂独立日程、多设备聊天、长对话管理和已确认任务的对话修改仍有限制，不把通用日程/完整聊天管理称为完成。
+
+59项定向与类型通过；收尾中文序号后13项规划helper及最终类型通过。IAB/cua_repl真实React/HTTP/SQLite/认证/ExecutionWorker、显式合成模型：模糊目标追问→三步方案→第一二项真实学生邀请/第三项导师负责，同一v1-v3；确认前1计划0任务3生成。输入确认后日期编辑/确认到v5、3正式任务；故意在提交后返回503，核对仍为原3项任务。发送回执丢失同键找回原方案，无重复模型任务。实际进展/详情/返回计划、模型失败继续补充、停止cancelled后草案v2未被迟到改写、刷新恢复、Shift+Enter、健康503保留输入、B隔离/私人目标不可见和P未入组/未配模型均验收。1536×1024与1024×726实拍、DOM宽度相等；根design-qa.md通过，源码/方案来源和实际状态不冒充完成研究。
+
+首败保留：PlanSummary无proposedItems与隐式any类型已修；首次停止遇queued→running版本409，改为先读同一请求并最多处理一次竞态后通过；日期“前两项”的“两”先漏、中文序号先未解析，分别补齐并复测。早期语义选择器/超过8秒才停止尝试不计成功；浏览器HMR夹具缺ipcSendSync/getPlatform的旧错误与首轮MODEl_UNAVAILABLE未知结果处理保留，补桥/明确失败分类/清洁重载后新error0、已有Router警告2。模型是注入函数、桥/IM是浏览器投影，不计真实供应商科研质量或生产私密数据验证。没有共享/Skill变更，按AGENTS不重复根全套。
+
+桌面AcceptCat_0.10.18.exe及说明，最终87,419,218字节/SHA256 57b2c6e94b2395b52c307c96a2fde08658fd54d5ccf800ccf2cce95bed9edbcf。55装配运行包/52归档顶层包分别核对，17生产JS/8CSS逐字节、当前聊天与原品牌/无QA入口、实际NSIS载荷一致及隐藏隔离原生启动检查通过，旧日志初始化警告保留。第一候选a5fcfabf另存Git外before-ordinal-fix.exe；桌面仅最终57b2c6e9。未代安装、关闭用户现装或删旧包/数据。证据在.runtime/planning-agent-20261019，含原始失败、SQL快照、实拍、测试/构建/ASAR/载荷/启动。
+
+本批公网ready200/contract0.25，db/storage/auth ok，harness仍not_verified；生产47c42ac/b78613b5沿前批inspect，本次无新容器inspect/部署/数据库同步。actual latest仍v0.6.0（2026-10-08）已读回，无Release/更新源/目录操作。PR66目录11项/7仓库、PR50后台正文边界、PR68统计Skill与自助开组/已有账号加入/多组、共享方向、长期科研质量各自独立，服务器磁盘/网络长期风险仍保留。
+
+草稿PR71 https://github.com/luoyan96/personal-agent/pull/71 已推送、创建并附当前任务，base release/acceptcat-0.10.17；首读dfaea8b三项Foundation均IN_PROGRESS，pr-final.json留证，不称远端全过。218份Markdown/10份Skill与diff通过。4946/4947合成预览保留供查看，实际Vite8824/API31556完整Node命令留preview-retained.json；不是生产后台。桌面0.10.18最终87,419,218字节/57b2c6e9 SHA256及说明读回一致，用户现装D:/0chat/ResearchWeChat/AcceptCat四进程在，本批只启动/关闭自己的隔离烟测进程。源码与包仍固定8bf46f1，后续文档提交不改变载荷。
