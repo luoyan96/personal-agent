@@ -84,7 +84,18 @@ const readyPromise = new Promise((resolve) => {
   child.stderr.on("data", inspect);
   const poll = setInterval(() => {
     if (!existsSync(resultPath)) return;
-    const value = JSON.parse(readFileSync(resultPath, "utf8"));
+    let value;
+    try {
+      value = JSON.parse(readFileSync(resultPath, "utf8"));
+    } catch (error) {
+      // The child replaces its loading receipt while polling is in progress.
+      // A partial JSON write is transient; the startup deadline still bounds it.
+      if (error instanceof SyntaxError || error.code === "ENOENT") return;
+      clearInterval(poll);
+      output += String(error);
+      resolve({ type: "failed" });
+      return;
+    }
     if (value.phase === "loading") return;
     clearInterval(poll);
     if (value.phase === "ready") resolve({ type: "ready" });

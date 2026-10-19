@@ -4,7 +4,7 @@ import { PersonalFollowupPanel } from "./PersonalFollowupPanel";
 import { TaskPlanning } from "./TaskPlanning";
 import { ResearchLibrary } from "./ResearchLibrary";
 import { WorkspaceReports } from "./WorkspaceReports";
-import type { PlanningPreset } from "./WorkbenchStart";
+import type { PlanningPreset } from "./planning-presets";
 
 export function WorkbenchPlanning({
   launch,
@@ -19,23 +19,6 @@ export function WorkbenchPlanning({
   const scheduled = params.get("panel") === "scheduled";
   return (
     <div className="workspace-group-panel">
-      <div className="workspace-subnavigation">
-        <Segmented
-          aria-label="任务规划栏目"
-          value={scheduled ? "scheduled" : "plans"}
-          options={[
-            { label: "研究计划", value: "plans" },
-            { label: "定时任务", value: "scheduled" },
-          ]}
-          onChange={(value) =>
-            setParams(
-              value === "scheduled"
-                ? { view: "planning", panel: "scheduled" }
-                : { view: "planning" },
-            )
-          }
-        />
-      </div>
       {scheduled ? (
         <div className="workspace-full-panel">
           <PersonalFollowupPanel active />

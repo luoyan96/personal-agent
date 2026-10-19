@@ -1036,3 +1036,21 @@ Windows x64 NSIS0.10.12实际构建并复制桌面，**87,403,174字节** / SHA2
 本批公网ready200/contract0.25、数据库/存储/认证ok，harness仍not_verified；生产47c42ac/b78613b5沿上一批实际inspect，本次不新inspect或部署。actual latest重新核对仍v0.6.0，无公共Release/更新源变更。目录PR66独立运营、PR50后台边界、PR68独立Skill、自助开组/已有账号加入/多组与工具执行分别维护，继续真实师生反馈；不把改版或合成任务流程当长期科研效果完成。
 
 草稿PR69 https://github.com/luoyan96/personal-agent/pull/69 已推送、创建并附任务，base release/acceptcat-0.10.15；首读5e445e0三项Foundation均IN_PROGRESS，不称当前远端全过。前批PR65/04dd9ba三项SUCCESS已独立读回，previous-ci.json与pr-final.json留证。214份Markdown/10份Skill及diff检查通过。仅按完整Node命令核对关闭本批Vite4926/31580、API4927/33580，无监听，现装AcceptCat四进程未动；viewport已reset、QA页关闭，cleanup-before/cleanup.json保留。桌面包最终SHA256、87,416,748字节及说明文件读回一致；源码/包固定6c50ea9，后续文档提交不改变安装器。实拍文件打开请求返回queued，未声称已在用户当前面板可见，最终答复提供直接图片与安装器链接。
+
+## 2026-10-19：按用户批注调整课题组任务，Windows0.10.17
+
+用户不接受0.10.16大图起点方向，提供旧版批注：总览改课题组任务，上部列方向/任务，下部透明展示进度与分工，参考OKR层级；箭头按任务规划并入我的任务执行。实际release/acceptcat-0.10.16/5c30f5d干净，读AGENTS/状态/最新日志/README/roadmap后接续release/acceptcat-0.10.17，未切main或覆盖其他工作。产品初实现eb673ab、摘要边界修正12c100d，最终包固定 **12c100d1cd70d4a38205c1b739e402a40578f5c2**。
+
+沿具体截图的按图实现/视觉QA流程，复用原生桌面字体、浅蓝、留白和Ant图标；无新照片/生成资产或外部发布。三个主栏目，上部研究方向与任务，下部真实计划关系的目标/任务/人员/截止/阻碍/成果/验收表及成员分工。计划和定时安排在我的任务，旧planning/plan/准确科研任务链接及返回计划保持。保留0.14助手衔接、0.15断线、0.16账号取消修复。未改后台ACL，把summary任务的未知验收进度明确显示未知、待本人接受单列，全取消不显示0/0。
+
+复用researchWorkspace：同snapshot、100条/页最多10页读出获准范围，重复分页/变版/后页错误/取消不伪装完整进度，超量明确截断；全范围汇总沿服务端。按planId归组，摘要投影单列不推断私人计划；方向名仅用获准计划目标或任务名。依赖排序恢复执行顺序，未承接/待开始归准备开展，进度仅当前明确验收、排除取消。独立共享方向/长期跨计划OKR指标管理仍待后续，未凭UI说已经实现。
+
+46项定向和最终TypeScript通过；23条分项IAB/cua_repl实际React/HTTP/SQLite，8项合成任务中学生承接/提交、导师真实验收，1/3进度准确；草案保存不共享、确认建3任务、卡片定位/活动1组计划2组/全文搜索/待审1行/快速详情与真实表单/任务跳转返回计划/定时入口、503清统计与恢复、学生3项且无私人目标、个人无课题组内容通过。摘要2条无进度条、full1条有，成员邀请计数准确。1536×1024/1024×726截图及DOM测量无横向溢出，源图与最终实拍同次view_image比较，根design-qa.md passed。无生产私人材料/真实模型或IM质量验收。
+
+首败已记录：类型stage枚举、Node扩展名测试加载、Windows ESM/UTF8、语义选择器和开发热更夹具getPlatform；清洁重载最终仅已有Router警告。合成block给无该任务权限成员返回404，改为未指定支持人，未绕过ACL。初包检查误把装配55当ASAR顶层包，实际区分顶层52并核对直接运行依赖；摘要边界收尾后的候选保留至Git外，未冒充交付。最后启动检查器轮询遇尚未写完的JSON，增加瞬态解析等待、15秒期限保留；同一最终载荷重测OPENIM_ELECTRON_READY/稳定通过，旧electron-log重复initialize警告保留。
+
+桌面AcceptCat_0.10.17.exe与说明已交付，**87,417,662字节/SHA256 a5369f56cdc51b5b063a79dfbe05241acf2191455332247048bfba725d5d2156**；17生产JS/8CSS逐字节，新结构/旧欢迎区消失/无QA、品牌素材、实际NSIS载荷及原生启动均检查。构建装配55个运行包、归档顶层52个包manifest分别记录；未代安装、关闭用户现装或删旧包/数据。Git外.runtime/lab-progress-20261019保留实拍/qa-summary/初败/测试类型/构建/ASAR/NSIS与原生启动。
+
+本次公网ready200/contract0.25、db/storage/auth ok，harness仍not_verified；生产47c42ac/b78613b5沿前批inspect，本次不新容器inspect、部署、数据库同步或迁移。actual latest仍v0.6.0（2026-10-08）已核对，无目录/公共Release/更新源操作。PR66目录11项/7仓库沿独立运营交接；PR68统计Skill未集成，PR50后台边界、自助开组/已有账号加入/多组、长期科研效果与磁盘/网络风险独立维护。
+
+草稿PR70 https://github.com/luoyan96/personal-agent/pull/70 已推送、创建并附当前任务，base release/acceptcat-0.10.16；首读16c6b97三项Foundation均IN_PROGRESS，不套用其他分支通过。216份Markdown/10份Skill与diff检查通过。main客户端包manifest再次读回0.3.0，未切main。为用户保留4936/4937合成预览，实际26488/28896完整Node命令已核对并留preview-retained.json；viewport reset、IAB页标交付，未将预览叫作正式部署。用户现装6048/20312/9456/29724均仍在原路径；桌面0.10.17最终87,417,662字节和a5369f56 SHA256及说明再次读回一致，包内产品仍固定12c100d。

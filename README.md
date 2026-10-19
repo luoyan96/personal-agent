@@ -62,7 +62,7 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 
 ### 工作台：把目标、分工和成果放在一起
 
-科研计划可以先保存为草案，再确认成任务。任务记录承接、阻碍、阶段交付、反馈和验收；负责人查看获准范围内的团队进展。工作台聚焦总览、规划、任务和资料；定时任务在“任务规划”，本机报告在“资料与素材库”。个人信息、设置、课题组能力和我的 Agent 统一放在侧栏“我的”，包括内置助手添加与技能/资料配置。支持一次、每天或每周的提醒与文字 Agent 定时任务，运行记录可查；关闭客户端后仍需后台服务持续运行。
+科研计划可以先保存为草案，再确认成任务。任务记录承接、阻碍、阶段交付、反馈和验收；负责人查看获准范围内的团队进展。工作台聚焦课题组任务、我的任务和资料与素材库；研究计划与定时安排在“我的任务”，本机报告在“资料与素材库”。个人信息、设置、课题组能力和我的 Agent 统一放在侧栏“我的”，包括内置助手添加与技能/资料配置。支持一次、每天或每周的提醒与文字 Agent 定时任务，运行记录可查；关闭客户端后仍需后台服务持续运行。
 
 ### 资料与方法：按这次任务的需要使用
 
@@ -88,9 +88,9 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 
 | 版本入口 | 当前状态 |
 | --- | --- |
-| **最新桌面试用版：0.10.16** | 已制作并交付小范围试用，尚未上传公开 Release；重排科研起点、我的待办与研究进展，简化空状态。[查看试用与版本说明](docs/product-status.md) |
+| **最新桌面试用版：0.10.17** | 已制作并交付小范围试用，尚未上传公开 Release；按方向、分工和成果进度整理课题组任务，计划与定时安排收进我的任务。[查看试用与版本说明](docs/product-status.md) |
 | **GitHub 公开下载：v0.6.0** | 可从 [Releases](https://github.com/luoyan96/personal-agent/releases/latest) 下载；安装文件仍叫 `ResearchWeChat_0.6.0.exe`，属于早期版本，未包含这里展示的全部体验 |
-| **最新产品源码** | 当前集成在 [release/acceptcat-0.10.16](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.16)；默认分支的应用代码仍是较早基线，文档与软件发布分别维护 |
+| **最新产品源码** | 当前集成在 [release/acceptcat-0.10.17](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.17)；默认分支的应用代码仍是较早基线，文档与软件发布分别维护 |
 
 已有试用版的团队：登录后在“我的 → 模型设置”配置自己的模型，从一个真实课题的小任务开始。新团队如希望参与试用，可以在 [Issues](https://github.com/luoyan96/personal-agent/issues) 留下使用场景和试用意向；请不要提交账号密钥、未公开论文或学生的私人材料。
 
@@ -116,7 +116,7 @@ git clone https://github.com/luoyan96/personal-agent.git
 cd personal-agent
 
 # 最新试用功能暂在此集成分支，main 仍保留较早应用基线。
-git switch release/acceptcat-0.10.16
+git switch release/acceptcat-0.10.17
 pnpm install --frozen-lockfile
 pnpm run ci
 ```

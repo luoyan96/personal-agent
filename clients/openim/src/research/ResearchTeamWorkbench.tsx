@@ -1,11 +1,6 @@
-import { Alert, Button, Input, Modal, Segmented, Select } from "antd";
-import {
-  ArrowRightOutlined,
-  FileTextOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
-import { useLayoutEffect, useRef, useState } from "react";
+import { Alert, Button, Input, Modal, Progress, Segmented } from "antd";
+import { ArrowRightOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ResearchWorkspaceRow } from "@research-agent-platform/contracts";
 import { researchApi } from "./api";
@@ -21,41 +16,39 @@ import {
 import { taskStateLabels } from "./task-planning";
 import { ResearchTeamAccountHint } from "./ResearchTeamAccountHint";
 import { workbenchTaskPath } from "./workbench-links";
-import { WorkbenchTaskInbox } from "./WorkbenchTaskInbox";
-import { WorkbenchStart } from "./WorkbenchStart";
-import type { PlanningPreset } from "./WorkbenchStart";
+import { collectTeamWorkspace, teamDirections } from "./team-progress";
 import "./research-team.scss";
 import "./workbench-home.scss";
 
 type Filter = "all" | "review" | "blocked" | "deadline";
-type Page = { cursor?: string; snapshot?: string };
+const stageLabels = { active: "正在推进", planned: "准备开展", closed: "已结束" };
 
-export function ResearchTeamWorkbench({
-  onPlan,
-}: {
-  onPlan: (preset?: PlanningPreset) => void;
-}) {
+export function ResearchTeamWorkbench({ onPlan }: { onPlan: () => void }) {
   const navigate = useNavigate();
   const actor = useResearchStore((s) => s.actor);
   const generation = useResearchStore((s) => s.generation);
+  const laboratory = actor?.spaceKind === "laboratory";
   const [scope, setScope] = useState<"lab" | "mine">("lab");
+  const [stage, setStage] = useState<keyof typeof stageLabels | "all">("all");
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
-  const [pages, setPages] = useState<Page[]>([{}]);
+  const [direction, setDirection] = useState<string>();
   const [selected, setSelected] = useState<string>();
-  const list = useRef<HTMLElement>(null);
-  const page = pages[pages.length - 1];
+  const [page, setPage] = useState(1);
+  const progress = useRef<HTMLElement>(null);
   const read = useResearchRead(
     (signal) =>
-      researchApi("researchWorkspace", {
-        params: { id: actor!.member.labId },
-        query: { scope, limit: 30, ...page },
+      collectTeamWorkspace(
+        (query, signal) =>
+          researchApi("researchWorkspace", {
+            params: { id: actor!.member.labId },
+            query: { scope, ...query },
+            signal,
+          }),
         signal,
-      }),
-    `team-workbench:${actor?.member.labId}:${scope}:${page.cursor || ""}:${
-      page.snapshot || ""
-    }`,
-    !!actor,
+      ),
+    `team-progress:${actor?.member.labId}:${scope}`,
+    laboratory,
   );
   const members = useResearchRead(
     (signal) =>
@@ -64,34 +57,33 @@ export function ResearchTeamWorkbench({
         query: { limit: 100 },
         signal,
       }),
-    `team-workbench-members:${actor?.member.labId}`,
-    !!actor,
+    `team-progress-members:${actor?.member.labId}`,
+    laboratory,
   );
   useLayoutEffect(() => {
     setScope("lab");
-    setPages([{}]);
-    setSelected(undefined);
-    setSearch("");
+    setStage("all");
     setFilter("all");
+    setSearch("");
+    setDirection(undefined);
+    setSelected(undefined);
+    setPage(1);
   }, [generation]);
   const people = Object.fromEntries(
     (members.data?.data || []).map((m) => [m.id, m.displayName]),
   );
-  const name = (id: string | null) => (id ? people[id] || id : "待分工");
-  const summary = read.data?.summary;
+  const name = (id: string) => people[id] || id;
   const rows = read.data?.data || [];
-  const hasTasks = !!summary?.total;
+  const directions = useMemo(() => teamDirections(rows), [read.data]);
   const query = search.trim().toLocaleLowerCase();
-  const visible = rows.filter((row) => {
+  const matches = (row: ResearchWorkspaceRow) => {
     const status = teamTaskStatus(row.task),
-      date = teamDeadline(row.task);
-    const matches =
-      filter === "all" ||
-      (filter === "review" && status === "in_review") ||
-      (filter === "blocked" && status === "blocked") ||
-      (filter === "deadline" && (row.overdue || date.soon));
+      deadline = teamDeadline(row.task);
     return (
-      matches &&
+      (filter === "all" ||
+        (filter === "review" && status === "in_review") ||
+        (filter === "blocked" && status === "blocked") ||
+        (filter === "deadline" && (row.overdue || deadline.soon))) &&
       (!query ||
         [
           row.task.title,
@@ -103,149 +95,217 @@ export function ResearchTeamWorkbench({
           .toLocaleLowerCase()
           .includes(query))
     );
-  });
-  const memberNext = new Map<string, ResearchWorkspaceRow[]>();
-  for (const row of rows) {
-    if (!isFullTask(row.task) || ["completed", "cancelled"].includes(row.task.status))
-      continue;
-    const memberId =
-      row.task.status === "in_review"
-        ? row.task.reviewerId
-        : row.acceptedAssignment?.memberId;
-    if (memberId) memberNext.set(memberId, [...(memberNext.get(memberId) || []), row]);
-  }
-  const reset = () => (pages.length === 1 ? void read.refresh() : setPages([{}]));
-  const changeScope = (value: "lab" | "mine") => {
-    setScope(value);
-    setPages([{}]);
-    setSelected(undefined);
-    setSearch("");
-    setFilter("all");
   };
+  const visible = directions.filter(
+    (g) =>
+      (stage === "all" || g.stage === stage) &&
+      (!direction || g.id === direction) &&
+      g.rows.some(matches),
+  );
+  const pageCount = Math.max(1, Math.ceil(visible.length / 8));
+  const currentPage = Math.min(page, pageCount);
+  const currentGroups = visible.slice((currentPage - 1) * 8, currentPage * 8);
+  const staged = directions.filter((g) => stage === "all" || g.stage === stage);
+  const assignments = new Map<
+    string,
+    { working: number; review: number; invited: number }
+  >();
+  for (const row of rows) {
+    const status = teamTaskStatus(row.task);
+    if (["completed", "cancelled"].includes(status)) continue;
+    const count = (id: string, key: "working" | "review" | "invited") => {
+      const value = assignments.get(id) || { working: 0, review: 0, invited: 0 };
+      value[key]++;
+      assignments.set(id, value);
+    };
+    if (row.acceptedAssignment?.memberId)
+      count(row.acceptedAssignment.memberId, "working");
+    if (isFullTask(row.task) && status === "in_review")
+      count(row.task.reviewerId, "review");
+    if (row.pendingInvitation?.memberId)
+      count(row.pendingInvitation.memberId, "invited");
+    else if (!isFullTask(row.task) && row.task.pendingInvitation && actor)
+      count(actor.member.id, "invited");
+  }
   const openTask = (id: string) => navigate(workbenchTaskPath(id, "research"));
-  const showList = hasTasks || scope === "mine" || pages.length > 1;
+  const selectDirection = (id?: string) => {
+    setDirection(id);
+    setFilter("all");
+    setSearch("");
+    setPage(1);
+    progress.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  if (!actor)
+    return (
+      <p className="workspace-muted" role="status">
+        正在确认课题组身份…
+      </p>
+    );
+  if (!laboratory)
+    return (
+      <section className="lab-tasks-empty">
+        <h2>你还没有加入课题组</h2>
+        <p>加入后，在这里查看课题组的任务、分工和成果进度。</p>
+        <ResearchTeamAccountHint />
+        <Button type="primary" onClick={() => navigate("/workbench?view=tasks")}>
+          查看我的任务
+        </Button>
+      </section>
+    );
   return (
-    <div className="research-team-workbench workbench-home" aria-label="科研团队总览">
-      <WorkbenchStart hasTasks={hasTasks} onPlan={onPlan} />
-      <div className="workbench-focus-grid">
-        <WorkbenchTaskInbox presentation="overview" />
-        <section className="workbench-research-progress" aria-label="研究进展">
-          <h2>研究进展</h2>
-          {read.error ? (
-            <Alert
-              type="warning"
-              message={read.error}
-              action={<Button onClick={reset}>重新读取进展</Button>}
-            />
-          ) : !summary ? (
-            <p role="status" className="workbench-progress-loading">
-              正在读取研究进展…
+    <div className="research-team-workbench lab-tasks-home" aria-label="课题组任务">
+      <section className="lab-directions" aria-labelledby="lab-directions-title">
+        <header className="lab-section-heading">
+          <div>
+            <h2 id="lab-directions-title">研究方向与任务</h2>
+            <p>课题组正在做什么，接下来准备做什么。</p>
+          </div>
+          <Button
+            icon={<ReloadOutlined />}
+            loading={read.loading}
+            onClick={read.refresh}
+          >
+            刷新
+          </Button>
+        </header>
+        <Segmented
+          aria-label="方向状态"
+          value={stage}
+          onChange={(v) => {
+            setStage(v as typeof stage);
+            setDirection(undefined);
+            setPage(1);
+          }}
+          options={[
+            { value: "all", label: "全部方向" },
+            ...Object.entries(stageLabels).map(([value, label]) => ({
+              value,
+              label: `${label}${
+                read.data
+                  ? ` ${directions.filter((g) => g.stage === value).length}`
+                  : ""
+              }`,
+            })),
+          ]}
+        />
+        {read.error ? (
+          <Alert
+            type="warning"
+            message={read.error}
+            action={<Button onClick={read.refresh}>重新读取任务</Button>}
+          />
+        ) : !read.data ? (
+          <p className="lab-reading" role="status">
+            正在读取课题组任务…
+          </p>
+        ) : !rows.length ? (
+          <div className="lab-empty">
+            <h3>
+              {scope === "mine" ? "还没有你参与的课题组任务" : "还没有课题组任务"}
+            </h3>
+            <p>
+              {scope === "mine"
+                ? "切换到课题组可见，查看你有权访问的其他任务。"
+                : "先规划研究目标，确认任务后，在这里跟进分工和成果。"}
             </p>
-          ) : !hasTasks ? (
-            <div className="workbench-focus-empty">
-              <FileTextOutlined aria-hidden="true" />
-              <h3>
-                {scope === "mine" ? "当前没有你参与的科研任务" : "还没有科研任务"}
-              </h3>
-              <p>
-                {scope === "mine"
-                  ? "可以切换范围，查看团队可见的任务。"
-                  : "创建计划并确认后，在这里跟进执行与成果。"}
+            <Button
+              type="primary"
+              onClick={scope === "mine" ? () => setScope("lab") : onPlan}
+            >
+              {scope === "mine" ? "查看课题组可见任务" : "规划新任务"}
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="lab-direction-grid">
+              {staged.slice(0, 3).map((group) => (
+                <button
+                  key={group.id}
+                  className="lab-direction-card"
+                  aria-pressed={direction === group.id}
+                  onClick={() => selectDirection(group.id)}
+                >
+                  <span className={`lab-direction-stage stage-${group.stage}`}>
+                    {stageLabels[group.stage]}
+                  </span>
+                  <h3>{group.title}</h3>
+                  <p>
+                    {group.rows.length} 项任务 ·{" "}
+                    {group.progressVisible ? `已验收 ${group.accepted} 项` : "摘要可见"}
+                  </p>
+                  <span className="lab-direction-link">
+                    查看任务与分工 <ArrowRightOutlined />
+                  </span>
+                </button>
+              ))}
+            </div>
+            {!staged.length && (
+              <p className="lab-reading">
+                当前没有{stage === "all" ? "全部方向" : stageLabels[stage]}
+                的任务方向，可切换其他状态。
               </p>
-              {scope === "mine" && (
-                <Button type="link" onClick={() => changeScope("lab")}>
-                  查看可见科研任务 <ArrowRightOutlined />
-                </Button>
-              )}
-            </div>
-          ) : (
-            <>
-              <dl className="workbench-progress-stats" aria-label="获准范围统计">
-                <div>
-                  <dt>科研任务</dt>
-                  <dd>{summary.total}</dd>
-                  <small>
-                    {summary.unassigned} 待分工 · {summary.awaitingAcceptance} 待承接
-                  </small>
-                </div>
-                <div>
-                  <dt>成果待审</dt>
-                  <dd>{summary.awaitingReview}</dd>
-                  <small>{summary.pendingMyReview} 项待我审阅</small>
-                </div>
-                <div>
-                  <dt>需要支持</dt>
-                  <dd>{summary.blocked}</dd>
-                  <small>{summary.overdue} 项已过截止或承诺时间</small>
-                </div>
-                <div>
-                  <dt>已验收成果</dt>
-                  <dd>{summary.accepted}</dd>
-                  <small>以实际验收记录为准</small>
-                </div>
-              </dl>
-              <Button
-                type="link"
-                className="workbench-progress-link"
-                onClick={() => {
-                  list.current?.scrollIntoView({
-                    block: "start",
-                    behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
-                      .matches
-                      ? "auto"
-                      : "smooth",
-                  });
-                  list.current?.focus({ preventScroll: true });
-                }}
-              >
-                查看科研任务 <ArrowRightOutlined />
-              </Button>
-            </>
-          )}
-          {!!summary?.pendingMyInvitation && (
-            <p className="workbench-invitation-note">
-              有 {summary.pendingMyInvitation} 项科研邀请待你确认，接受后才计为已承接。
-            </p>
-          )}
-        </section>
-      </div>
-      {showList && (
+            )}
+            {staged.length > 3 && (
+              <p className="lab-note">
+                此处展示前 3 个方向，下方可查看全部 {directions.length} 组任务。
+              </p>
+            )}
+          </>
+        )}
+      </section>
+      {read.data?.truncated && (
+        <Alert
+          type="warning"
+          message={`任务较多，当前已读取 ${rows.length} / ${read.data.summary.total} 项。下方归组和进度仅统计已读取任务。`}
+        />
+      )}
+      {read.data && !!rows.length && (
         <section
-          className="workbench-research-list"
-          aria-label="科研任务与成果"
-          ref={list}
-          tabIndex={-1}
+          className="lab-progress"
+          ref={progress}
+          aria-labelledby="lab-progress-title"
         >
-          <header className="workbench-list-heading">
-            <h2>科研任务与成果</h2>
+          <header className="lab-section-heading">
             <div>
-              <Select
-                aria-label="总览范围"
-                value={scope}
-                onChange={changeScope}
-                options={[
-                  {
-                    value: "lab",
-                    label:
-                      actor?.spaceKind === "personal" ? "可见科研任务" : "团队可见任务",
-                  },
-                  { value: "mine", label: "我参与的" },
-                ]}
-              />
-              <Button
-                aria-label="刷新总览"
-                title="刷新总览"
-                icon={<ReloadOutlined />}
-                loading={read.loading}
-                onClick={reset}
-              />
+              <h2 id="lab-progress-title">目标与任务进度</h2>
+              <p>按计划归组，逐项查看分工、下一步和成果验收。</p>
             </div>
-          </header>
-          <div className="workbench-list-controls">
             <Segmented
-              aria-label="本页事项筛选"
+              aria-label="科研任务范围"
+              value={scope}
+              options={[
+                { label: "课题组可见", value: "lab" },
+                { label: "我参与的", value: "mine" },
+              ]}
+              onChange={(v) => {
+                setScope(v as "lab" | "mine");
+                setDirection(undefined);
+                setPage(1);
+              }}
+            />
+          </header>
+          <div className="lab-progress-summary" aria-label="课题组任务统计">
+            <span>
+              科研任务 <strong>{read.data.summary.total}</strong>
+            </span>
+            <span>
+              成果待审 <strong>{read.data.summary.awaitingReview}</strong>
+            </span>
+            <span>
+              需要支持 <strong>{read.data.summary.blocked}</strong>
+            </span>
+            <span>
+              已验收 <strong>{read.data.summary.accepted}</strong>
+            </span>
+          </div>
+          <div className="lab-progress-filters">
+            <Segmented
+              aria-label="进度筛选"
               value={filter}
-              onChange={(value) => setFilter(value as Filter)}
+              onChange={(v) => {
+                setFilter(v as Filter);
+                setPage(1);
+              }}
               options={[
                 { label: "全部", value: "all" },
                 { label: "待审", value: "review" },
@@ -254,215 +314,230 @@ export function ResearchTeamWorkbench({
               ]}
             />
             <Input
-              aria-label="查找本页科研任务"
-              placeholder="查找本页任务"
               prefix={<SearchOutlined />}
+              placeholder="查找目标、任务或成果"
+              aria-label="查找课题组任务"
               allowClear
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
             />
+            {direction && (
+              <Button
+                onClick={() => {
+                  setDirection(undefined);
+                  setPage(1);
+                }}
+              >
+                显示全部方向
+              </Button>
+            )}
           </div>
-          {read.data && !visible.length ? (
-            <div className="workbench-list-empty" role="status">
-              <h3>{rows.length ? "本页没有符合条件的事项" : "当前范围暂无科研任务"}</h3>
-              <p>
-                {rows.length
-                  ? "调整本页筛选，或翻页继续查看。"
-                  : "切换范围查看，或新建一项科研计划。"}
-              </p>
-            </div>
-          ) : (
-            <div className="workbench-table-scroll">
-              <table className="workbench-task-table">
-                <caption className="sr-only">
-                  本页获准查看的科研任务，打开任务查看完整交付与审阅。
-                </caption>
-                <thead>
-                  <tr>
-                    <th>任务名称</th>
-                    <th>状态</th>
-                    <th>承接人</th>
-                    <th>下一步</th>
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visible.map((row) => {
-                    const task = row.task,
-                      status = teamTaskStatus(task),
-                      deadline = teamDeadline(task);
-                    const action = row.nextActions.includes("review")
-                      ? "审阅成果"
-                      : row.nextActions.includes("decide")
-                      ? "确认承接"
-                      : "查看任务";
-                    return (
-                      <tr key={task.id}>
-                        <td>
-                          <button
-                            className="workbench-task-title"
-                            onClick={() => openTask(task.id)}
-                          >
-                            {task.title}
-                          </button>
-                          {row.planGoal && (
-                            <span
-                              className="workbench-task-subtext"
-                              title={row.planGoal}
-                            >
-                              {row.planGoal}
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          <span className={`research-team-status status-${status}`}>
-                            {status === "completed" &&
-                            row.latestDeliverable?.review?.decision !== "accepted"
-                              ? "已结束 · 验收待核对"
-                              : taskStateLabels[status] || "状态待读取"}
-                          </span>
-                          <span
-                            className={`workbench-task-subtext ${
-                              row.overdue ? "is-overdue" : ""
-                            }`}
-                          >
-                            {deadline.label}
-                            {row.overdue ? " · 已逾期" : ""}
-                          </span>
-                        </td>
-                        <td>
-                          {row.acceptedAssignment
-                            ? row.acceptedAssignment.memberId
-                              ? name(row.acceptedAssignment.memberId)
-                              : "公共 Agent"
-                            : row.pendingInvitation || status === "awaiting_acceptance"
-                            ? "邀请待接受"
-                            : "待安排"}
-                        </td>
-                        <td>
-                          <span>{teamNextStep(task)}</span>
-                          {row.latestDeliverable && (
-                            <span className="workbench-task-subtext">
-                              阶段成果 · 第 {row.latestDeliverable.revision} 版
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          <div className="workbench-task-actions">
-                            <Button
-                              type={
-                                row.nextActions.includes("review")
-                                  ? "primary"
-                                  : "default"
-                              }
-                              size="small"
-                              onClick={() => openTask(task.id)}
-                            >
-                              {action}
-                            </Button>
-                            <Button
-                              type="link"
-                              size="small"
-                              onClick={() => setSelected(task.id)}
-                            >
-                              快速查看
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
           {members.error && (
             <Alert
               type="warning"
               message="成员姓名读取失败，暂显示成员标识。"
-              action={
-                <Button size="small" onClick={members.refresh}>
-                  重试
-                </Button>
-              }
+              action={<Button onClick={members.refresh}>重试</Button>}
             />
           )}
-          {read.data && (
-            <div className="workbench-list-footnote">
-              <span>
-                第 {pages.length} 页 · 本页 {rows.length} 项 · 筛选与搜索仅查本页
-              </span>
-              {(pages.length > 1 || read.data.nextCursor) && (
-                <div className="research-team-pages">
-                  <Button
-                    disabled={pages.length === 1 || read.loading}
-                    onClick={() => setPages((p) => p.slice(0, -1))}
-                  >
-                    上一页
-                  </Button>
-                  <Button
-                    disabled={!read.data.nextCursor || read.loading}
-                    onClick={() => {
-                      if (read.data?.nextCursor)
-                        setPages((p) => [
-                          ...p,
-                          {
-                            cursor: read.data!.nextCursor!,
-                            snapshot: read.data!.snapshot.token,
-                          },
-                        ]);
-                    }}
-                  >
-                    下一页
-                  </Button>
+          {currentGroups.map((group) => (
+            <article className="lab-objective" key={group.id}>
+              <header className="lab-objective-heading">
+                <div>
+                  <span className="lab-objective-label">
+                    {group.ownGoal ? "我的计划目标" : "任务目标"}
+                  </span>
+                  <h3>{group.title}</h3>
+                  <p>
+                    {group.ownGoal ? "计划原始目标仅本人可见" : "依据获准任务归组"}
+                    {group.cancelled ? ` · ${group.cancelled} 项已取消` : ""}
+                  </p>
                 </div>
-              )}
+                <div className="lab-objective-progress">
+                  {!group.progressVisible ? (
+                    <>
+                      <strong>当前仅能查看任务摘要</strong>
+                      <small>进度详情按任务权限查看</small>
+                    </>
+                  ) : !group.total ? (
+                    <strong>本组任务均已取消</strong>
+                  ) : (
+                    <>
+                      <strong>
+                        已验收 {group.accepted} / {group.total} 项
+                      </strong>
+                      <Progress
+                        percent={Math.round((group.accepted / group.total) * 100)}
+                        showInfo={false}
+                        strokeColor="#75b8e5"
+                      />
+                      <small>按当前成果验收计</small>
+                    </>
+                  )}
+                </div>
+              </header>
+              <div
+                className="lab-task-table"
+                role="table"
+                aria-label={`${group.title}的任务与分工`}
+              >
+                <div className="lab-task-table-head" role="row">
+                  <span role="columnheader">任务 / 阶段成果</span>
+                  <span role="columnheader">负责人</span>
+                  <span role="columnheader">当前进展</span>
+                  <span role="columnheader">截止与下一步</span>
+                  <span role="columnheader">操作</span>
+                </div>
+                {group.rows.filter(matches).map((row) => {
+                  const status = teamTaskStatus(row.task),
+                    deadline = teamDeadline(row.task);
+                  const claimable =
+                    !row.acceptedAssignment &&
+                    !row.pendingInvitation &&
+                    (isFullTask(row.task)
+                      ? row.task.access.visibility === "lab_summary"
+                      : row.task.allowedActions.includes("claim"));
+                  return (
+                    <div className="lab-task-table-row" role="row" key={row.task.id}>
+                      <div role="cell" className="lab-task-title">
+                        <span className="lab-kr">
+                          任务 {group.rows.indexOf(row) + 1}
+                        </span>
+                        <button onClick={() => openTask(row.task.id)}>
+                          {row.task.title}
+                        </button>
+                        <p>
+                          {isFullTask(row.task)
+                            ? row.task.acceptanceCriteria
+                            : row.task.deliverable}
+                        </p>
+                        {row.latestDeliverable && (
+                          <small>最新成果：{row.latestDeliverable.summary}</small>
+                        )}
+                      </div>
+                      <div role="cell">
+                        <strong>
+                          {row.acceptedAssignment?.memberId
+                            ? name(row.acceptedAssignment.memberId)
+                            : row.pendingInvitation
+                            ? "待承接"
+                            : !isFullTask(row.task) && row.task.pendingInvitation
+                            ? "待我接受"
+                            : claimable
+                            ? "待认领"
+                            : "待分工"}
+                        </strong>
+                        {row.pendingInvitation?.memberId && (
+                          <small>
+                            {name(row.pendingInvitation.memberId)} · 邀请待接受
+                          </small>
+                        )}
+                        {isFullTask(row.task) && (
+                          <small>审阅：{name(row.task.reviewerId)}</small>
+                        )}
+                        {!isFullTask(row.task) && <small>接受后可查看详细分工</small>}
+                      </div>
+                      <div role="cell">
+                        <span className={`research-team-status status-${status}`}>
+                          {claimable
+                            ? "待认领"
+                            : status === "ready"
+                            ? "待开始"
+                            : taskStateLabels[status] || status}
+                        </span>
+                        {isFullTask(row.task) && row.task.blocker && (
+                          <small className="lab-blocker">
+                            {row.task.blocker.reason}
+                          </small>
+                        )}
+                      </div>
+                      <div role="cell">
+                        <small className={row.overdue ? "is-overdue" : ""}>
+                          {deadline.label}
+                        </small>
+                        <p>
+                          {isFullTask(row.task) &&
+                          status === "ready" &&
+                          row.task.dependencies.length
+                            ? "先核对前置成果与依赖，再开始任务"
+                            : claimable
+                            ? "同组成员认领并确认范围与时间"
+                            : teamNextStep(row.task)}
+                        </p>
+                      </div>
+                      <div role="cell">
+                        <Button type="link" onClick={() => setSelected(row.task.id)}>
+                          查看详情
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </article>
+          ))}
+          {!visible.length && <p className="lab-empty">没有符合当前筛选的任务。</p>}
+          {pageCount > 1 && (
+            <div className="research-team-pages">
+              <span>
+                第 {currentPage} / {pageCount} 页 · 共 {visible.length} 组
+              </span>
+              <Button
+                disabled={currentPage <= 1}
+                onClick={() => setPage(currentPage - 1)}
+              >
+                上一页
+              </Button>
+              <Button
+                disabled={currentPage >= pageCount}
+                onClick={() => setPage(currentPage + 1)}
+              >
+                下一页
+              </Button>
             </div>
           )}
-          {!!memberNext.size && (
-            <details className="workbench-members-disclosure">
-              <summary>成员下一步 · 本页实际承接与审阅责任</summary>
-              <div className="workbench-member-rows">
-                {Array.from(memberNext, ([id, tasks]) => (
-                  <section key={id}>
-                    <h3>{name(id)}</h3>
-                    {tasks.map((row) => (
-                      <button key={row.task.id} onClick={() => openTask(row.task.id)}>
-                        <strong>{row.task.title}</strong>
-                        <span>{teamNextStep(row.task)}</span>
-                        <ArrowRightOutlined />
-                      </button>
-                    ))}
-                  </section>
+          {!!assignments.size && (
+            <section className="lab-member-section">
+              <h3>成员分工</h3>
+              <div className="lab-member-grid">
+                {Array.from(assignments, ([id, count]) => (
+                  <div key={id}>
+                    <strong>{name(id)}</strong>
+                    <span>
+                      已承接 {count.working} 项
+                      {count.review ? ` · 待审阅 ${count.review} 项` : ""}
+                    </span>
+                    {!!count.invited && (
+                      <small>另有 {count.invited} 项邀请待接受</small>
+                    )}
+                  </div>
                 ))}
               </div>
-            </details>
+            </section>
           )}
         </section>
       )}
-      <details className="workbench-scope-guide">
-        <summary>范围与协作说明</summary>
+      <details className="lab-scope-guide">
+        <summary>任务范围与进度说明</summary>
         <p>
-          这里只展示你有权查看的科研任务。私人计划目标仅本人可见；邀请待接受不计为已承接。
+          按同一计划的获准任务归组；未确认的私人草案保留在“我的任务 →
+          研究计划”。其他人的私人计划目标不会在这里公开。
         </p>
         <p>
-          先写目标并保存计划，确认后才创建实际任务；阶段成果提交后，由有权限的成员明确审阅与验收。
-        </p>
-        <p>
-          临近截止含已逾期和未来7天内的已确认截止或承诺。筛选仅针对当前页；统计覆盖当前范围的全部获准任务。
-          {read.data
-            ? ` 进展更新于 ${new Date(read.data.snapshot.at).toLocaleTimeString(
-                "zh-CN",
-              )}`
-            : ""}
+          进度按当前成果的明确验收计，已取消项不计入分母；邀请待接受不计为已承接。任务数量不代表研究质量或目标已达成。筛选与搜索覆盖本次已读取任务。
         </p>
         <ResearchTeamAccountHint />
+        {read.data && (
+          <p>更新于 {new Date(read.data.snapshot.at).toLocaleTimeString("zh-CN")}</p>
+        )}
       </details>
       <Modal
         title="任务、交付与审阅"
         open={!!selected}
         footer={null}
-        width={800}
+        width={860}
         destroyOnClose
         onCancel={() => {
           setSelected(undefined);

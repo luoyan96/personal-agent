@@ -20,8 +20,8 @@ import type { PlanDraft, PlanStep, SavedPlan } from "./task-planning";
 import "./task-planning.scss";
 import { ResearchTeamAccountHint } from "./ResearchTeamAccountHint";
 import { readResearchTeamAvailability } from "./workspace-availability";
-import { planningPrompts } from "./WorkbenchStart";
-import type { PlanningPreset } from "./WorkbenchStart";
+import { planningPrompts } from "./planning-presets";
+import type { PlanningPreset } from "./planning-presets";
 
 const time = (value: string) =>
   new Date(value).toLocaleDateString("zh-CN", { month: "short", day: "numeric" });

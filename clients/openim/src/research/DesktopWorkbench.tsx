@@ -22,7 +22,7 @@ import { ResearchTeamWorkbench } from "./ResearchTeamWorkbench";
 import { relocatedWorkspace } from "./workspace-navigation";
 import { WorkbenchPlanning, WorkbenchLibrary } from "./WorkbenchSections";
 import { workbenchTaskPath, workbenchTaskTarget } from "./workbench-links";
-import type { PlanningPreset } from "./WorkbenchStart";
+import type { PlanningPreset } from "./planning-presets";
 type Category = "ongoing" | "awaiting_me" | "completed";
 function WorkbenchOverview({
   card,
@@ -266,7 +266,7 @@ export function DesktopWorkbench() {
       <header className="workspace-heading">
         <div>
           <h1>工作台</h1>
-          <p>从一个目标开始，跟进任务与成果。</p>
+          <p>对齐目标、成员分工和实际科研成果</p>
         </div>
         <div className="workspace-heading-actions">
           {tab === "tasks" && (
@@ -281,7 +281,7 @@ export function DesktopWorkbench() {
               联系人协作任务
             </Button>
           )}
-          {tab !== "library" && tab !== "team" && (
+          {tab !== "library" && (
             <Button
               type="primary"
               disabled={!supported}
@@ -292,7 +292,7 @@ export function DesktopWorkbench() {
                 setPlanningLaunch((value) => value + 1);
               }}
             >
-              {tab === "tasks" ? "安排科研任务" : "规划新任务"}
+              规划新任务
             </Button>
           )}
         </div>
@@ -300,44 +300,74 @@ export function DesktopWorkbench() {
       <div className="workspace-toolbar">
         <Segmented
           aria-label="工作台栏目"
-          value={tab}
+          value={tab === "planning" ? "tasks" : tab}
           onChange={(value) => setTab(String(value))}
           options={[
-            { label: "科研总览", value: "team" },
-            { label: "任务规划", value: "planning" },
+            { label: "课题组任务", value: "team" },
             { label: "我的任务", value: "tasks" },
             { label: "资料与素材库", value: "library" },
           ]}
         />
-        {tab === "tasks" && (
-          <Segmented
-            aria-label="任务分类"
-            value={category}
-            onChange={(value) => {
-              const next = new URLSearchParams({
-                view: "tasks",
-                category: String(value),
-              });
-              setParams(next);
-              setPages([undefined]);
-              setSelected(undefined);
-              setDetails(false);
-            }}
-            options={[
-              { label: "进行中", value: "ongoing" },
-              { label: "待我处理", value: "awaiting_me" },
-              { label: "已完成", value: "completed" },
-            ]}
-          />
-        )}
       </div>
+      {(tab === "tasks" || tab === "planning") && (
+        <div className="workspace-subnavigation workbench-personal-tabs">
+          <Segmented
+            aria-label="我的任务栏目"
+            value={
+              tab === "tasks"
+                ? "tasks"
+                : params.get("panel") === "scheduled"
+                ? "scheduled"
+                : "planning"
+            }
+            options={[
+              { label: "我的待办", value: "tasks" },
+              { label: "研究计划", value: "planning" },
+              { label: "定时安排", value: "scheduled" },
+            ]}
+            onChange={(value) => {
+              setPlanningLaunch(0);
+              if (value === "scheduled")
+                setParams({ view: "planning", panel: "scheduled" });
+              else setTab(String(value));
+            }}
+          />
+          {tab === "tasks" && (
+            <Segmented
+              aria-label="任务分类"
+              value={category}
+              onChange={(value) => {
+                const next = new URLSearchParams({
+                  view: "tasks",
+                  category: String(value),
+                });
+                setParams(next);
+                setPages([undefined]);
+                setSelected(undefined);
+                setDetails(false);
+              }}
+              options={[
+                { label: "进行中", value: "ongoing" },
+                { label: "待我处理", value: "awaiting_me" },
+                { label: "已完成", value: "completed" },
+              ]}
+            />
+          )}
+
+          {tab === "tasks" && <p>个人助手安排与科研任务在这里衔接</p>}
+        </div>
+      )}
       {supported && availability.error && (
         <Alert
           type="warning"
           showIcon
           message="服务连接不稳定，正在重新检查"
           description={`${availability.error} 已打开的任务和草稿会保留，最新进展以实际读取结果为准。`}
-          action={<Button loading={availability.loading} onClick={availability.refresh}>重新检查</Button>}
+          action={
+            <Button loading={availability.loading} onClick={availability.refresh}>
+              重新检查
+            </Button>
+          }
         />
       )}
       {tab === "library" ? (
@@ -352,17 +382,15 @@ export function DesktopWorkbench() {
       ) : tab === "team" ? (
         availability.supports(23) ? (
           <ResearchTeamWorkbench
-            onPlan={(preset) => {
-              setPlanningPreset(preset);
+            onPlan={() => {
+              setPlanningPreset(undefined);
               setTab("planning");
               setPlanningLaunch((value) => value + 1);
             }}
           />
         ) : (
           <section className="workspace-empty workspace-unavailable" role="status">
-            <h2>
-              科研团队服务待升级
-            </h2>
+            <h2>科研团队服务待升级</h2>
             <p>
               科研团队总览需要服务器契约 0.23 或以上。已有任务、计划与聊天可以继续访问。
             </p>
