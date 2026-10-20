@@ -1,6 +1,6 @@
 import { createHmac, randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
-import { PersonalModelConfiguration, PersonalModelSettings } from '@research-agent-platform/contracts'
+import { PersonalModelConfiguration, PersonalModelSettings, PersonalModelKeyPreview } from '@research-agent-platform/contracts'
 import type { RequestFor, ModelProvider } from '@research-agent-platform/contracts'
 import type { z } from 'zod'
 import type { Actor } from './auth.js'
@@ -12,7 +12,7 @@ import { fail } from './errors.js'
 type Provider=z.infer<typeof ModelProvider>
 type Row={id:string;member_id:string;name:string;provider:Provider;model:string;enabled:number;encrypted_api_key:string|null;version:number;created_at:string;updated_at:string}
 const baseUrls={deepseek:'https://api.deepseek.com/anthropic',qwen:'https://dashscope.aliyuncs.com/compatible-mode/v1',doubao:'https://ark.cn-beijing.volces.com/api/v3'} as const
-export const personalModelCommands=['personalModels','createPersonalModel','updatePersonalModel','deletePersonalModel','defaultPersonalModel'] as const
+export const personalModelCommands=['personalModels','personalModelKeyPreview','createPersonalModel','updatePersonalModel','deletePersonalModel','defaultPersonalModel'] as const
 type Command=typeof personalModelCommands[number]
 const state=(db:DatabaseSync,actor:Actor)=>db.prepare('SELECT * FROM personal_model_settings WHERE member_id=?').get(actor.id)
 function owned(db:DatabaseSync,actor:Actor,id:string){const row=db.prepare('SELECT * FROM personal_model_configurations WHERE id=? AND member_id=?').get(id,actor.id) as Row|undefined;if(!row)fail('NOT_FOUND');return row}
@@ -39,6 +39,12 @@ export function personalModelKey(db:DatabaseSync,actor:Actor,config:Config){
 function bump(db:DatabaseSync,actor:Actor){db.prepare('INSERT INTO personal_model_settings VALUES (?,NULL,1) ON CONFLICT(member_id) DO UPDATE SET version=version+1').run(actor.id)}
 export function runPersonalModel(db:DatabaseSync,actor:Actor,name:Command,input:RequestFor<Command>,config:Config):unknown {
  if(name==='personalModels')return {data:personalModels(db,actor,config)}
+ if(name==='personalModelKeyPreview'){
+  const row=owned(db,actor,(input.params as {id:string}).id)
+  let preview:string|null=null
+  if(row.encrypted_api_key){const key=decrypt(config,secretScope(actor,row.id,row.provider),row.encrypted_api_key),outer=key.length>=16?4:2;preview=key.slice(0,outer)+'•'.repeat(8)+key.slice(-outer)}
+  return {data:PersonalModelKeyPreview.parse({configurationId:row.id,version:row.version,hasApiKey:!!row.encrypted_api_key,apiKeyPreview:preview})}
+ }
  const body=input.body as any,id=(input.params as {id?:string}).id,key=input.headers['Idempotency-Key']!,resource=id??actor.id
  const fingerprint=createHmac('sha256',signingKey(db)).update(JSON.stringify({actor:actor.id,name,id,body})).digest('hex')
  const prior=db.prepare('SELECT request_hash,response_json FROM idempotency_results WHERE actor_id=? AND command=? AND resource_id=? AND key=?').get(actor.id,name,resource,key)

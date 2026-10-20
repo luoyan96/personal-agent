@@ -1,35 +1,27 @@
-# Design QA — 聊天式任务规划 Agent
+# Design QA — 已保存模型与Key首尾预览
 
-final result: passed
+final result: passed (local implementation; production backend deployment pending)
 
-2026-10-19。用户标注将右上“规划新任务”移到底部，并明确要求使用常见AI聊天方式连续规划。沿用0.10.17方向/任务进度、三个主栏目和原桌面视觉。产品源码固定8bf46f17ee720f2e8c5e028001b4dda384c077db。
+2026-10-20，产品/API/包固定4bc8d1f7cde314a1a9a99d3360b49a8647d43497。用户提供“我的/模型设置”实拍，要求保存后知道具体型号、API Key中间隐藏。沿既有桌面视觉和配置管理流程，未生成新资产。
 
-## 参考与实拍
+## 对照与五项检查
 
-源图2556×1636物理像素；实际React界面1536×1024 CSS px/同尺寸截图，另验1024×726。源图、final-board-composer-1536.png与final-chat-context-1536.png已在同次view_image比较。密度、原生窗口按钮及合成验收条作为环境差异；源图空态另与bottom-composer-empty-1536.png比较，不把已有合成任务当同状态。
+原图2556×1636物理像素，与实际React的1536×1024和1024×726 CSS px截图分别观察；原图、final-model-settings-1536.png和model-settings-1024.png在同次view_image比较。密度、原生窗口按钮、合成控制条为环境差异，未把合成配置当作用户真实Key。
 
-- P2已修：删除工作台右上独立规划按钮，底部常驻输入；空态按钮直接聚焦同一对话，不进入多步表单。
-- P2已修：消息左右区分，当前实际方案是可读卡片，验收/依赖折叠；追问零步骤时不显示空任务卡。
-- P2已修：原方案卡过高，压缩交付说明、折叠验收/依赖；完整聊天展开到研究计划，底部输入保留，长消息/方案在内容区滚动。
-- P2已修：停止生成先重读同一请求版本，排队到运行竞态可恢复；网络未知回执有核对入口，不重复创建。
-- P2已修：含具体时刻/歧义日期阻止创建，明确追问后再确认；数字/中文步骤定位均覆盖。
-
-## 五项视觉检查
-
-| 表面 | 结果 |
+| 表面 | 实际结果 |
 | --- | --- |
-| 字体与排版 | 复用桌面字体和标题层级；聊天14px、方案13px，长中文换行，姓名与状态不挤压任务名。 |
-| 间距与布局 | 32px桌面边距、20px输入容器圆角；聊天与工作区分层，1024窗口scrollWidth=clientWidth=1024，输入在窗口内。 |
-| 颜色与token | 原ac-text/ac-muted、浅蓝选中态/用户消息、白卡；错误有文字说明，邀请与承接不靠颜色区分。 |
-| 图像质量 | 沿用品牌猫和Ant图标，无新照片或生成资产，无拉伸。 |
-| 文案与内容 | 追问来自实际生成结果，计划/任务读后台；正式创建有准确版本和链接，不把建议或邀请说成完成。 |
+| 字体/排版 | 保留中文桌面字体及原标题/表单字号，默认型号明确加粗；长型号在列表换行。 |
+| 间距/布局 | 默认摘要在配置列表上方；原两栏配置保留，1024宽文档scrollWidth=clientWidth=1024，Key输入在窗口内，底部动作可纵向滚达。 |
+| 色彩/token | 沿原浅绿选择/启用与灰色说明；“已保存/未选默认/预览不可用”均有文字，不用颜色代替状态。 |
+| 图像质量 | 原品牌猫及Ant图标，无新增位图、拉伸或不相关装饰。 |
+| 内容/状态 | 默认摘要和已保存型号读实际元数据；编辑未保存不改摘要，Key读实际本人/对应版本的脱敏响应，失败明确不可用。 |
 
-## 实际交互与边界
+P2已修：保存后列表只有服务商不易识别型号；空Key输入+“已保存”看不到身份；原密码眼睛容易让人误以为能取回完整旧Key。现列表和默认摘要列具体型号，旧Key只读首尾，更换用独立空输入。保存期间版本变化不显示旧版本预览，误贴遮罩在请求前拦截。
 
-IAB/cua_repl，真实React/HTTP/SQLite/认证与ExecutionWorker，合成模型注入。模糊目标追问→补充形成三项→一句话调整真实成员分工→输入“确认创建任务”→3项正式任务/课题组进展→详情→返回原计划均检查；确认前0任务，确认回执丢失后核对仍3项。发送回执恢复、模型失败/停止、刷新/本机对话恢复、Shift+Enter、健康503保留输入、B/P隔离和个人未配模型均验收。1024/1536布局及无框架错误覆盖；清洁重载后新error0、已有Router警告2。
+## 实际交互
 
-旧HMR桥ipcSendSync/getPlatform错误与首轮选择器、类型、日期“两”、停止竞态失败保留；补齐合成桥/重载与修正后续验。浏览器桥不等于原生IM或真实模型质量，NSIS原生启动另验。Windows为本批目标，未宣称移动端或多设备聊天已验证。
+IAB/cua_repl，真实React/HTTP/SQLite/认证、合成凭据，无模型worker或供应商调用：原Key读取、改名/换型号保存且Key不变、未保存摘要不变、拒绝遮罩、替换新Key、Qwen默认切换、移除/清默认/恢复、刷新读回、旧404/503降级、A慢预览切B不串数据均检查。客户端类型、680项共享检查、NSIS真实载荷及隔离原生启动通过。清洁重载新error0，既有Router警告2；首次类型/契约版本断言/加载超时/HMR选择器失败保留。
 
-可接受差异：完整聊天在我的任务/研究计划，工作台底部先显示精简输入；旧方案编辑器退出主入口但原文件保留兼容参考。方案仍需在对话中明确创建一次；20段本机对话/60条每段、12条最近上下文/8000字符上限、复杂日程和已确认任务的聊天修改需后续完善。
+Git外证据D:/deepseek-agent/.runtime/model-config-summary-20261019：saved-model-initial-1536.png、unsaved-model-still-original-summary.png、model-saved-key-preserved.png、reject-mask-as-key.png、replacement-key-saved.png、qwen-default-saved.png、key-removed-no-preview.png、legacy-service-keeps-settings.png、preview503-keeps-metadata.png、student-preview-isolated.png、final-model-settings-1536.png、model-settings-1024.png、browser-logs-clean.json、saved-settings-proof.json。
 
-Git外证据 D:/deepseek-agent/.runtime/planning-agent-20261019：bottom-composer-empty-1536.png、clarification-restored.png、review-chat-compact-1536.png、confirm-ack-lost.png、send-ack-lost.png、created-task-detail.png、planner-chat-1024.png、final-board-composer-1536.png、final-chat-context-1536.png、personal-model-unavailable-final.png与fresh-console.json。无待修P0/P1/P2；真实科研规划质量与长期使用独立验证。
+无待修P0/P1/P2。生产当前0.25.0，新增0.25.1预览接口待明确部署确认；此实拍是隔离验收，安装新客户端不等于线上旧Key首尾功能已启用。Windows为目标，未声称移动端或真实科研模型质量已验证。

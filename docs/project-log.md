@@ -1072,3 +1072,57 @@ Windows x64 NSIS0.10.12实际构建并复制桌面，**87,403,174字节** / SHA2
 本批公网ready200/contract0.25，db/storage/auth ok，harness仍not_verified；生产47c42ac/b78613b5沿前批inspect，本次无新容器inspect/部署/数据库同步。actual latest仍v0.6.0（2026-10-08）已读回，无Release/更新源/目录操作。PR66目录11项/7仓库、PR50后台正文边界、PR68统计Skill与自助开组/已有账号加入/多组、共享方向、长期科研质量各自独立，服务器磁盘/网络长期风险仍保留。
 
 草稿PR71 https://github.com/luoyan96/personal-agent/pull/71 已推送、创建并附当前任务，base release/acceptcat-0.10.17；首读dfaea8b三项Foundation均IN_PROGRESS，pr-final.json留证，不称远端全过。218份Markdown/10份Skill与diff通过。4946/4947合成预览保留供查看，实际Vite8824/API31556完整Node命令留preview-retained.json；不是生产后台。桌面0.10.18最终87,419,218字节/57b2c6e9 SHA256及说明读回一致，用户现装D:/0chat/ResearchWeChat/AcceptCat四进程在，本批只启动/关闭自己的隔离烟测进程。源码与包仍固定8bf46f1，后续文档提交不改变载荷。
+
+## 2026-10-20：保存后的具体模型与Key首尾脱敏，Windows0.10.19/后台待确认
+
+用户要求模型配置保存后显示具体使用哪一个，API Key中间隐藏。实际release/acceptcat-0.10.18 / 513dd3e干净，读AGENTS/当前状态/最新日志/README/roadmap后接续release/acceptcat-0.10.19；未切main或覆盖修改。源码/包固定4bc8d1f7cde314a1a9a99d3360b49a8647d43497，保留0.10.18聊天式任务规划和既有修复。
+
+模型设置顶部真实默认摘要，左列服务商+具体型号，未保存选择不冒充已生效；Key首尾只读预览、“更换”打开单独空密码输入；原值不进输入，不改变只改名称/型号时省略apiKey的保留语义。校验遮罩/空白/非法字符，保存后清新Key输入/核对ID版本；移除后预览消失，未知预览与旧版后台明确保留已保存状态，不能虚构首尾。
+
+原个人模型接口只有hasApiKey，严格响应不能直接加字段破坏0.18；契约兼容补丁0.25.1独立GET /me/model-configurations/{id}/key-preview，仅本人会话/本人配置。长Key首尾各4、短Key各2，中间8遮罩；用原AAD绑定密文即时解密裁剪，不返回完整Key/密文，不新存预览或写命令回执，不调用模型。新Schema/接口/导出/版本说明同步，无数据库迁移；匿名401、跨账号404、密文移植安全503，元数据读取保持可用。
+
+新增3个真实HTTP/SQLite测试，个人模型专项12项通过。根pnpm run ci最终54文件/680项全部通过，构建/类型/契约导出、2项生产装配/真实进程/B0/生产无夹具也通过；客户端最终类型、生产打包另验。第一轮679通过/1失败是Web测试写死旧0.25.0，按实际新契约改0.25.1，专项后完整ci重跑通过；不掩盖首败。初始UI可空类型保护已修，页面首次加载超时与HMR期间选择器失败保留。
+
+实际IAB/cua_repl/React/HTTP/SQLite：已有加密Key立即首尾；Flash改V4 Pro/改名保存仍保留原Key；未保存摘要不变；遮罩提交被拦；合成新Key替换后9012后缀，切Qwen为默认WXYZ；移除清预览/默认，恢复DeepSeek；刷新重读、旧404/预览503降级、延迟A预览切B只出现B的EFGH，不串A的9012。检查1536×1024、1024×726，文档width=scrollWidth1024，窄窗底部保存纵向可达。最后清洁重载新error0/已有Router警告2。DB只读检查证明默认、版本、原Key替换/删除实际一致，输出不含完整Key；全为合成凭据，无供应商或生产私人资料调用。
+
+Windows0.10.19已制作并复制桌面，87,419,799字节/SHA256 ad49a0c4ae921a0048152d7e9e651fb4addf49f1a269eb5b5fb4241da5b6b650；55运行包装配、52顶层包manifest、17JS/8CSS逐字节/无QA/原品牌，真实NSIS载荷和隔离隐藏原生启动通过，旧electron-log初始化警告保留。ASAR addae52ace56d9c37769b7f50a13bd0db9ba9bd711d15868aa164e36aa12eba4；EXE16536cdd585bdec7202e9fb3b3aab6d40bc10037c97475873708bc7ad358cc24。未代安装、关现装或删旧包/数据；说明文件单列后台依赖。
+
+公网本批ready200/0.25.0，db/storage/auth ok，harness not_verified；生产47c42ac/b78613b5沿前批inspect，本批未新inspect容器。独立backend-preview.patch/source.zip已备供评审，包含API/契约源码，不含运行库/Key。按AGENTS“Do not deploy or publish a package as a side effect of a code change.”，在代码、检查、安装包与补丁准备后已单独询问是否部署本人只读预览，当前待用户答复；未部署、改Key或迁移。实际公开latest仍v0.6.0，无Release/更新源/目录操作。Git外证据.runtime/model-config-summary-20261019（工作在10月19日晚开始，20日完成）；PR50/PR68/目录PR66及科研规划长期质量独立维护。
+
+草稿PR72 https://github.com/luoyan96/personal-agent/pull/72 已推送、创建并附当前任务，base release/acceptcat-0.10.18；首读86ec606三项Foundation均QUEUED，pr-final.json留证，不称远端全过。220份Markdown/10份Skill及diff通过。4956/4957合成预览保留（Vite30304/API24972，完整命令见preview-retained.json），不是生产后台；桌面最终0.10.19大小/哈希和说明读回一致，用户现装未替换或关闭。客户端包/API仍固定4bc8d1f；部署确认当前仍待答复，不把经过时间视为授权。
+
+## 2026-10-20：课题组资料与素材库调研，未改产品
+
+用户要求先调研同行如何管理论文/代码、专利、申报案例和PPT，再评估自建与复用。实际从干净release/acceptcat-0.10.19 / 69d8822接续，按根AGENTS读取状态/最新日志/README/路线图，并核对research-library契约、API/SQLite/原件存储、资料库及Zotero实现文档。确认已有集合范围、不可变原件版本、SHA/页引用、Agent绑定与关键词检索；Office/PPT、扫描OCR、科研条目多附件及模板/案例业务结构尚未完整实现，Zotero不是全文/团队库同步。
+
+阅读维护方官方文档与实际许可：Zotero集合/标签/关联/组库，飞书知识库层级权限，eLabFTW资源/模板，openBIS指定20.10.12历史模型，Nextcloud文件版本，Dify元数据与附加许可，RAGFlow格式/服务依赖和官方资源建议，Docling格式/OCR/本地运行，SQLiteFTS5、pgvector及OSS版本控制。Seafile所尝试官方路径、Nextcloud35路径读取不可用，未据此形成可用性/功能断言；Nextcloud latest页面标有upcoming，仅引用通用模型。未安装或试跑这些系统，不把官方能力描述/硬件建议当作AcceptCat实测。
+
+候选建议及来源保存在docs/development/lab-knowledge-library-research.md：自建条目/关系/权限/任务归档业务层、复用存储与文档解析检索；多视图引用同一资料、模板/案例/正式成果区分，论文关联固定代码修订，专利/项目状态需证据，PPT原件/页预览分开。素材由授权团队贡献、官方模板/有许可公开来源及团队方法审阅组成，不能用AI虚构已获批案例。初期保留SQLite与既有worker，OSS/Docling可替换适配，向量检索与PostgreSQL迁移单独评估；成本仅假设10–30人/约5000份文档下的工程估计，须先以20–50份获准样本验证后承诺。
+
+本批仅新增调研文档并更新状态/日志；未修改代码、依赖、安装包或线上数据，未调用真实模型/读取私人语料。0.10.19源码/包仍4bc8d1f，前批生产0.25.0记录未重新探测/inspect，Key预览部署仍待单独答复。未新建PR/推送、部署、迁移或公开发布。检查限于Markdown链接和Git diff，不运行无产品改动所不需要的构建/功能CI；建议不代表用户已确认开发范围。
+
+## 2026-10-20：用户同意后部署本人Key脱敏接口，contract0.25.1
+
+用户明确选择“部署脱敏预览接口”，并恢复已过期的Edge Workbench连接。沿release/acceptcat-0.10.19 / 69d8822接续，保留上一批资料库调研的状态/日志/新文档修改，未切main。实际inspect生产API/worker为47c42ac/b78613b5、healthy/running、restart0/无OOM，Compose路径与既有记录一致，磁盘可用约7.73GB。
+
+只传输受测4bc8d1f的四个API/契约源文件补丁；逐一核对旧/新SHA256，继承已核对的原镜像离线构建contracts与API，没有部署整条桌面分支、PR50正文改动、目录种子或依赖。最终镜像research-openim-api:key-preview-20261020，sha256:8defb3973bfc93a5544df1fe6b715eecf91c152fb4b1544d93f913feec874986；OCI revision明确为47c42ac完整SHA+key-preview.4bc8d1f、overlay.source为完整4bc8d1f，不冒充整份该提交。新镜像network none/无生产挂载/两合成账号HTTP验证旧加密Key重启后首尾、Key不变、no-store、匿名401/跨账号404及旧元数据响应兼容，无模型请求。
+
+首次审计把/data挂只读，SQLite辅助文件打开失败；尚未启动新镜像，流程重启原API/worker，独立公网0.25.0/200确认恢复，无数据库还原。第一份deploy.log/ops保留。v2仅修审计挂载，SQL readOnly/query_only保持；脚本SHA18e5db5536435f3943f4d67111b5f312257a8e3b934180ef1f9176a88834d969核对后执行。停写备份/srv/research-openim-backups/key-preview-20261020-20261020T011803Z/research.tar.gz，SHA7addef0a868c868be4a1bc2a314835c800c57963b09bfd9a4afa09721cbdf26b；91表/6原件的恢复副本与原库摘要一致，schema022/完整性/外键/迁移checksum通过，无迁移。启动后已有模型配置及默认选择整表哈希一致，未解密生产完整Key；首次摘要诊断换行语法错误在查询前失败，initial.stderr保留，修正后通过。
+
+原Compose加仅API/worker镜像覆盖，up --no-build --no-deps成对切换；其余六组件容器ID/镜像/状态及科研服务环境哈希/命令/挂载/内存/端口/重启设置不变。最终实际inspect两者同新镜像、running/restart0/无OOM、API healthy。09:19北京时间独立公网ready200/contract0.25.1，database/storage/authentication ok；新路由匿名401、X-Contract-Version0.25.1、Cache-Control no-store。harness仍not_verified，不称真实供应商、生产本人Key响应或用户现装界面已验收。用户用0.10.19重新进入模型设置即可获取已有Key预览，不需重填Key。
+
+Git外证据.runtime/key-preview-deploy-20261020，服务器ops/key-preview-20261020-v2包含详细收据、备份/基线/原件摘要及初次失败。Workbench文件管理指旧过期会话导致上传失败，改用已连接Shell传输，payload SHA6dfc6a3a2f113f13cb797d1fb4dff1b97bf01a4a342d8711b7edcefa6a6621b1核对；未绕过认证或新建SSH凭据。旧镜像、配置和备份保留；回退须先查当前状态并成对恢复旧镜像，不覆盖新业务数据。
+
+更新当前状态、部署记录、实现说明、路线图、README/版本说明和桌面安装说明；0.10.19 EXE重新读回仍87,419,799字节/ad49a0c4原SHA，未重制/代安装/关闭用户客户端。GitHub actual latest本次再次核对v0.6.0；无公开Release、更新源、公共目录、Nginx/OpenIM或网络/认证变动。产品源未变，沿用已完成680项CI，本批执行部署镜像隔离检查、备份/生产及文档检查，不为部署重复客户端全量构建。资料库方案仍只完成调研，尚未实施。
+
+最终222份Markdown/10份Skill及Git diff检查通过；桌面安装说明已读回新部署状态，安装器仍为原字节数/哈希。Git外deployment-receipt.json从实际终端可见收据保存，public-final.json为独立公网响应；保留失败日志和空白截图，不用其冒充通过证据。后续维护以ops/key-preview-20261020-v2为当前镜像覆盖入口，原47c42ac Compose独立保留供同schema切回。
+
+## 2026-10-20：用户已有飞书资料，收窄为优先连接的候选方案
+
+用户认为完整知识库工程过大，提出直接接飞书，并明确回复课题组“已经在用飞书，资料也在里面”。从实际干净release/acceptcat-0.10.19 / 07afd2ad1e0bd4ab9aedc50918d875108bc123fb接续，读取根AGENTS/状态/最新日志/README/路线图，检索API/客户端/包/集成源码未发现已有飞书连接器；保留原0.10.19和后台窄补丁。
+
+核对飞书官方开放平台介绍、云文档项目集成方案、Wiki节点入口、当前远程MCP工具清单、用户/应用身份、自建/商店应用类型、维护方Node SDK和本机MCP。确认有按授权读文档、知识库节点、创建/更新文档等接入路径；所读远程MCP search-doc仅doc/docx、fetch-file文档内素材5MB且需下载权限，明确这是工具限制而非全部OpenAPI统一上限。旧oapi-sdk-nodejs已弃用，推荐核验新node-sdk。部分文档直链正文未能获取，不把标题当作接口参数/限频已确认；采用官方工具清单及SDK/概述佐证范围。
+
+更新lab-knowledge-library-research.md、当前状态和路线图：优先保留飞书作为资料主要来源，AcceptCat先做用户授权、选定范围、原文引用和任务衔接；完整自建方案保留为长期参考，前估工期不套用连接器。身份与课题组/任务权限仍需绑定，授权失效/缓存/版本和PDF/PPT解析需样本验证；成果写回、群机器人及双向任务同步后置，未获对外写入/消息授权。未创建应用、索取密钥、安装SDK/MCP、绑定账号、读取课题组私人资料、打包、部署或公开发布。生产沿前批47c42ac+key-preview.4bc8d1f / 8defb397 / 0.25.1 / schema022，桌面仍原0.10.19包，本批未重新探测生产。仅文档检查，无产品代码改动，不重复功能CI。
+
+222份Markdown/10份Skill及Git diff检查通过；接入身份与资料范围尚未在用户真实飞书组织验证，不以官方可用接口等同于已接通。保留既有资料库与当前已交付任务功能。

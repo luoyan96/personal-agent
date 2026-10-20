@@ -48,6 +48,46 @@ async function setup(){
 }
 
 describe('public accounts and owned models over real local HTTP, synthetic credentials/model/IM leases only',{timeout:20000},()=>{
+ it('returns only a masked owned key preview after restart without altering existing model metadata or spending credentials',async()=>{
+  const s=await setup(),created=await s.call('createPersonalModel',modelInput(),{},1),id=created.value.data.id
+  expect(created.status,created.text).toBe(201)
+  expect(created.value.data).not.toHaveProperty('apiKeyPreview')
+  await s.restart()
+  const before=s.db.prepare('SELECT count(*) n FROM idempotency_results').get()!.n
+  const preview=await s.call('personalModelKeyPreview',null,{id},1)
+  expect(preview.status,preview.text).toBe(200)
+  expect(preview.value.data).toEqual({configurationId:id,version:1,hasApiKey:true,apiKeyPreview:secret.slice(0,4)+'•'.repeat(8)+secret.slice(-4)})
+  expect(preview.text).not.toContain(secret);expect(preview.text).not.toContain('encrypted_api_key')
+  expect(s.db.prepare('SELECT count(*) n FROM idempotency_results').get()!.n).toBe(before)
+  expect(personalModelKey(s.db,s.actor(1),s.config)).toBe(secret)
+  expect((await s.call('personalModelKeyPreview',null,{id},0)).status).toBe(404)
+  expect((await s.raw(routes.personalModelKeyPreview.path.replace('{id}',id))).status).toBe(401)
+ })
+
+ it('previews exact replacement versions, retains omitted credentials, and clears removed credentials',async()=>{
+  const s=await setup(),id=(await s.call('createPersonalModel',modelInput(),{},1)).value.data.id
+  const replacement='synthetic-replacement-credential-for-preview'
+  expect((await s.call('updatePersonalModel',{...modelInput('deepseek','deepseek-flash',replacement),expectedVersion:1},{id},1)).status).toBe(200)
+  expect((await s.call('personalModelKeyPreview',null,{id},1)).value.data).toMatchObject({version:2,apiKeyPreview:'synt'+'•'.repeat(8)+'view'})
+  await s.call('updatePersonalModel',{...modelInput('deepseek','deepseek-flash',null),name:'只改名称',expectedVersion:2},{id},1)
+  expect(personalModelKey(s.db,s.actor(1),s.config)).toBe(replacement)
+  expect((await s.call('personalModelKeyPreview',null,{id},1)).value.data.version).toBe(3)
+  await s.call('updatePersonalModel',{...modelInput('deepseek','deepseek-flash',null),enabled:false,removeApiKey:true,expectedVersion:3},{id},1)
+  expect((await s.call('personalModelKeyPreview',null,{id},1)).value.data).toEqual({configurationId:id,version:4,hasApiKey:false,apiKeyPreview:null})
+ })
+
+ it('conceals at least half of short credentials and never reveals transplanted or undecryptable credentials',async()=>{
+  const s=await setup(),a=(await s.call('createPersonalModel',modelInput('deepseek','deepseek-flash','abcdefgh'),{},1)).value.data
+  const short=(await s.call('personalModelKeyPreview',null,{id:a.id},1)).value.data
+  expect(short.apiKeyPreview).toBe('ab'+'•'.repeat(8)+'gh')
+  const b=(await s.call('createPersonalModel',modelInput(),{},2)).value.data
+  const cipher=s.db.prepare('SELECT encrypted_api_key FROM personal_model_configurations WHERE id=?').get(b.id)!.encrypted_api_key
+  s.db.prepare('UPDATE personal_model_configurations SET encrypted_api_key=? WHERE id=?').run(cipher!,a.id)
+  const rejected=await s.call('personalModelKeyPreview',null,{id:a.id},1)
+  expect(rejected.status).toBe(503);expect(rejected.text).not.toContain(secret);expect(rejected.text).not.toContain('abcdefgh')
+  expect((await s.call('personalModels',null,{},1)).status).toBe(200)
+ })
+
  it('registers without invitation into isolated personal spaces, preserving the old laboratory and public KDF/idempotency/Origin boundary',async()=>{
   const s=await setup()
   expect(s.clients[0]!.labId).toBe('lab_ifrc_synthetic');expect(s.clients[1]!.labId).not.toBe(s.clients[2]!.labId)

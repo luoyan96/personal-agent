@@ -44,6 +44,10 @@ const providers = {
     model: "",
   },
 } as const;
+const modelLabel = (model: string) =>
+  ({ "deepseek-flash": "DeepSeek Flash", "deepseek-v4-pro": "DeepSeek V4 Pro" }[
+    model
+  ] || model);
 const newDraft = (defaultWanted: boolean): Draft => ({
   name: "",
   provider: "deepseek",
@@ -121,11 +125,13 @@ export function ModelSettings({
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState("");
   const [notice, setNotice] = useState("");
+  const [replacingKey, setReplacingKey] = useState(false);
   useEffect(() => {
     setDraft(undefined);
     setBusy(false);
     setFailure("");
     setNotice("");
+    setReplacingKey(false);
   }, [scope]);
   useEffect(() => {
     if (!open || !read.data || draft) return;
@@ -138,6 +144,7 @@ export function ModelSettings({
     setDraft(next);
     setFailure("");
     setNotice("");
+    setReplacingKey(false);
   };
   const patch = (next: Partial<Draft>) => {
     setDraft((current) => (current ? { ...current, ...next } : current));
@@ -156,6 +163,10 @@ export function ModelSettings({
       ...(submitted.apiKey ? { apiKey: submitted.apiKey } : {}),
       ...(submitted.removeApiKey ? { removeApiKey: true } : {}),
     };
+    if (body.apiKey && !/^[\x21-\x7e]{8,512}$/.test(body.apiKey)) {
+      setFailure("请输入完整的新 API Key（8–512 个字符），不能提交脱敏预览或空白。");
+      return;
+    }
     if (!PersonalModelInput.safeParse(body).success) {
       setFailure(
         !body.name
@@ -190,6 +201,7 @@ export function ModelSettings({
         : (await researchApi("createPersonalModel", { body })).data;
       if (!isCurrent()) return;
       setDraft(editDraft(saved, submitted.defaultWanted));
+      setReplacingKey(false);
       const settings = (await researchApi("personalModels")).data;
       if (!isCurrent()) return;
       if (
@@ -258,8 +270,57 @@ export function ModelSettings({
   };
   const configs = read.data?.data.configurations || [];
   const selected = configs.find((c) => c.id === draft?.id);
+  const defaultConfig = configs.find(
+    (c) => c.id === read.data?.data.defaultConfigurationId,
+  );
+  const keyPreview = useResearchRead(
+    (signal) =>
+      researchApi("personalModelKeyPreview", { params: { id: selected!.id }, signal }),
+    `model-key-preview:${selected?.id}:${selected?.version}`,
+    open && !!actorId && !!selected?.hasApiKey,
+  );
+  const preview = keyPreview.data?.data;
+  const checkingPreview = keyPreview.loading || selected?.version !== draft?.version;
+  const maskedKey =
+    preview &&
+    selected &&
+    preview.configurationId === selected.id &&
+    preview.version === selected.version &&
+    preview.version === draft?.version
+      ? preview.apiKeyPreview
+      : null;
   const content = (
     <>
+      {read.data && (
+        <section className="model-saved-summary" aria-label="当前默认模型">
+          <span>当前默认模型</span>
+          <div>
+            <strong>
+              {defaultConfig
+                ? modelLabel(defaultConfig.model)
+                : read.data.data.source === "legacy_lab"
+                ? "沿用课题组模型"
+                : "尚未选择默认模型"}
+            </strong>
+            {defaultConfig && (
+              <small>
+                {providers[defaultConfig.provider].name} · {defaultConfig.name}
+              </small>
+            )}
+          </div>
+          {defaultConfig && (
+            <small>
+              {!read.data.data.platformEnabled
+                ? "平台模型服务未启用"
+                : !defaultConfig.enabled
+                ? "配置已停用"
+                : !defaultConfig.hasApiKey
+                ? "尚未保存 API Key"
+                : "已启用"}
+            </small>
+          )}
+        </section>
+      )}
       <div className="model-settings-layout">
         <aside className="model-settings-list" aria-label="我的模型">
           <h3>我的模型</h3>
@@ -277,6 +338,8 @@ export function ModelSettings({
                   {config.name}
                   <small>
                     {providers[config.provider].name}
+                    {" · "}
+                    {modelLabel(config.model)}
                     {config.isDefault ? " · 默认" : !config.enabled ? " · 已停用" : ""}
                   </small>
                 </span>
@@ -299,7 +362,11 @@ export function ModelSettings({
             <>
               <h2>{providers[draft.provider].name}</h2>
               <p className="model-form-description">
-                为科研、学习与日常交流选择你的模型。
+                {selected
+                  ? `已保存：${modelLabel(selected.model)} · ${
+                      providers[selected.provider].name
+                    }`
+                  : "为科研、学习与日常交流选择你的模型。"}
               </p>
               <div className="model-form-fields">
                 <label>
@@ -380,28 +447,71 @@ export function ModelSettings({
                   <label>
                     API Key
                     <div className="model-key-line">
-                      <Input.Password
-                        aria-label="模型 API Key"
-                        value={draft.apiKey}
-                        disabled={busy}
-                        placeholder={
-                          draft.hasApiKey ? "未显示密钥" : "输入你的 API Key"
-                        }
-                        autoComplete="off"
-                        onChange={(event) =>
-                          patch({ apiKey: event.target.value, removeApiKey: false })
-                        }
-                      />
+                      {draft.hasApiKey && !replacingKey ? (
+                        <>
+                          <Input
+                            aria-label="已保存的 API Key"
+                            readOnly
+                            value={
+                              draft.removeApiKey
+                                ? "待移除，尚未保存"
+                                : maskedKey ||
+                                  (checkingPreview
+                                    ? "正在读取密钥预览…"
+                                    : "已保存，首尾预览暂不可用")
+                            }
+                          />
+                          <Button
+                            disabled={busy || draft.removeApiKey}
+                            onClick={() => setReplacingKey(true)}
+                          >
+                            更换
+                          </Button>
+                        </>
+                      ) : (
+                        <Input.Password
+                          aria-label="模型 API Key"
+                          value={draft.apiKey}
+                          disabled={busy}
+                          placeholder={
+                            draft.hasApiKey
+                              ? "输入完整的新 API Key"
+                              : "输入你的 API Key"
+                          }
+                          autoComplete="off"
+                          onChange={(event) =>
+                            patch({ apiKey: event.target.value, removeApiKey: false })
+                          }
+                        />
+                      )}
+                      {replacingKey && (
+                        <Button
+                          disabled={busy}
+                          onClick={() => {
+                            patch({ apiKey: "" });
+                            setReplacingKey(false);
+                          }}
+                        >
+                          取消更换
+                        </Button>
+                      )}
                       {draft.hasApiKey && !draft.removeApiKey && (
                         <span className="model-key-status">
-                          <CheckCircleOutlined rev={undefined} /> 已保存
+                          <CheckCircleOutlined rev={undefined} />{" "}
+                          {draft.apiKey ? "新 Key 待保存" : "已保存"}
                         </span>
                       )}
                     </div>
                   </label>
                   <p className="model-key-help">
                     {draft.hasApiKey
-                      ? "留空保留已保存的密钥。"
+                      ? replacingKey
+                        ? "填写完整的新 Key 后保存；留空会保留原密钥。"
+                        : checkingPreview
+                        ? "正在核对已保存密钥的首尾预览，原密钥已保留。"
+                        : maskedKey
+                        ? "仅显示已保存密钥的首尾，中间已隐藏。"
+                        : "原密钥已保留，当前服务暂未提供首尾预览。"
                       : "密钥仅用于你自己的模型请求，不向联系人展示。"}
                   </p>
                   {draft.hasApiKey && (
