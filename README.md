@@ -88,10 +88,10 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 
 | 版本入口 | 当前状态 |
 | --- | --- |
-| **最新桌面试用版：0.10.23** | “课题组资料”底部直接与资料 Agent 对话、追问并核对来源，保留联网修复、规划、模型设置和已有资料；安装包已制作供覆盖安装，尚未上传公开Release。[查看交付说明](docs/deployment/acceptcat-0.10.23.md) |
+| **最新桌面试用版：0.10.24** | 聊天列表可拖动调整并记住宽度，双击恢复默认；保留底部资料对话、规划和联网修复。安装包已制作供覆盖安装，尚未上传公开Release。[查看交付说明](docs/deployment/acceptcat-0.10.24.md) |
 | **飞书本人试点版：0.10.20** | 已制作安装包，配套后台已部署、飞书应用仅本人上线；支持选定文档预览、私人副本和规划片段，真实账号授权与选定材料试读待本人验证。[查看试点范围](docs/development/feishu-readonly-pilot.md) |
 | **GitHub 公开下载：v0.6.0** | 可从 [Releases](https://github.com/luoyan96/personal-agent/releases/latest) 下载；安装文件仍叫 `ResearchWeChat_0.6.0.exe`，属于早期版本，未包含这里展示的全部体验 |
-| **产品源码** | 最新资料聊天在 [fix/library-agent-dock-0.10.23](https://github.com/luoyan96/personal-agent/tree/fix/library-agent-dock-0.10.23)，保留 [fix/desktop-network-0.10.21](https://github.com/luoyan96/personal-agent/tree/fix/desktop-network-0.10.21) 联网修复和飞书试点；默认分支仍是较早基线，源码与发布分别维护 |
+| **产品源码** | 最新桌面改进在 [fix/chat-sidebar-resize-0.10.24](https://github.com/luoyan96/personal-agent/tree/fix/chat-sidebar-resize-0.10.24)，保留 [fix/desktop-network-0.10.21](https://github.com/luoyan96/personal-agent/tree/fix/desktop-network-0.10.21) 联网修复和飞书试点；默认分支仍是较早基线，源码与发布分别维护 |
 
 已有试用版的团队：登录后在“我的 → 模型设置”配置自己的模型，从一个真实课题的小任务开始。新团队如希望参与试用，可以在 [Issues](https://github.com/luoyan96/personal-agent/issues) 留下使用场景和试用意向；请不要提交账号密钥、未公开论文或学生的私人材料。
 

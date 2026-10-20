@@ -1210,3 +1210,12 @@ Windows0.10.23 NSIS87,431,664字节，SHA256 11f46da4811d5ce68e489bcaf5fd9888ff8
 无后台部署/迁移/密钥/飞书权限、公开Release或更新源变更；后台沿前批记录contract0.26/schema023、image4ee12e77 / 47c42ac+key-preview.4bc8d1f+feishu.2bbcfbc，飞书0.1.0仅罗岩，本批不新inspect镜像。公开latest实际核对仍v0.6.0。代码、包制作、用户安装、后台部署、公开发布分别记录。[交付详情](deployment/acceptcat-0.10.23.md)。下一步以本人获准真实资料验证中文提问、检索及出处质量。
 
 收尾：文档0862a04已推送，创建并附[草稿PR76](https://github.com/luoyan96/personal-agent/pull/76)，base feat/library-agent-0.10.22，未合并。228份Markdown/10份Skill及diff检查通过；该head远端Foundation三项首读IN_PROGRESS，不称已通过。桌面安装说明已保存，最终收据留Git外；本批浏览器页、4936/4937合成服务已停止，旧安装包、用户进程、Edge维护页和私人数据保留。
+
+
+## 2026-10-20 — Windows0.10.24：聊天列表分隔条
+
+从干净2a30b65接续，分支fix/chat-sidebar-resize-0.10.24，产品2b5c0db8022bbd392333bb1649ed7024b341e06c。[交付记录](deployment/acceptcat-0.10.24.md)。修正桌面固定248像素，新增拖动/本机记忆/双击复位/键盘与窄窗约束。渲染/主进程类型、34项、实际React拖动/刷新与重开/搜索和切换会话通过；1280×720视口及820像素容器，不称多真实窗口或消息质量已验。初始编译超时、分页/HMR夹具错误保留，最终新页仅两项Router警告。Git外D:/deepseek-agent/.runtime/chat-resize-20261020。
+
+Windows包87431310字节，SHA256 6512d67a1508d0ea9417e6e05be3b98c48c85e3f296e1b17066de5a6cfa38e54，桌面AcceptCat_0.10.24.exe；实际NSIS的EXE/ASAR、18JS/8CSS、52运行包/55装配及隐藏隔离启动通过，旧electron-log提示保留。未代安装/退出用户客户端/删数据；无后台、迁移、密钥、飞书或公开发布，公开latest实读v0.6.0。后台沿0.26/schema023、image4ee12e77及飞书本人试点，未重新inspect。共享代码未改，不重复693项CI；继续真实科研材料验证。
+
+交付说明16abb76已推送，229份Markdown/10份Skill与diff检查通过。[草稿PR77](https://github.com/luoyan96/personal-agent/pull/77)基于fix/library-agent-dock-0.10.23，已附任务、未合并；该head远端Foundation首读两项IN_PROGRESS、一项QUEUED，不称已通过。临时QA浏览器与4938/4939服务已关闭。

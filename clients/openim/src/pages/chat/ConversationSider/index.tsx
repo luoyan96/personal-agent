@@ -15,6 +15,7 @@ import ConversationItemComp from "./ConversationItem";
 import styles from "./index.module.scss";
 import { useResearchStore } from "@/research/store";
 import NewConversationButton from "@/layout/TopSearchBar/NewConversationButton";
+import { useConversationWidth } from "./useConversationWidth";
 
 const ConnectBar = () => {
   const userStore = useUserStore();
@@ -58,6 +59,7 @@ const ConnectBar = () => {
 };
 
 const ConversationSider = () => {
+  const sidebar = useConversationWidth(Boolean(window.electronAPI));
   const { conversationID } = useParams();
   const conversationList = useConversationStore((state) => state.conversationList);
   const coordinator = useResearchStore(state => state.session?.coordinator?.imConversationID);
@@ -90,7 +92,8 @@ const ConversationSider = () => {
   };
 
   return (
-    <div className={clsx("desktop-conversation-column flex min-h-0 flex-col", {
+    <div ref={sidebar.columnRef} style={window.electronAPI ? { width: sidebar.width } : undefined} className={clsx("desktop-conversation-column flex min-h-0 flex-col", {
+      "is-resizing": sidebar.dragging,
       "max-[600px]:hidden": Boolean(conversationID),
       "max-[600px]:w-full": !conversationID,
     })}>
@@ -124,6 +127,7 @@ const ConversationSider = () => {
           )}
         />
       </FlexibleSider>
+      {window.electronAPI && <div className="desktop-conversation-resizer" {...sidebar.separatorProps} />}
     </div>
   );
 };

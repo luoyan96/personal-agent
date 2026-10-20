@@ -2,7 +2,19 @@
 
 更新日期：2026-10-20（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 最新批次0.10.23：资料 Agent 底部聊天框，安装包已制作
+## 最新批次0.10.24：聊天列表拖动宽度，安装包已制作
+
+评审入口：[草稿PR77](https://github.com/luoyan96/personal-agent/pull/77)，base `fix/library-agent-dock-0.10.23`，已推送并附任务，未合并。文档16abb76远端Foundation首读两项IN_PROGRESS、一项QUEUED，不称已通过。
+
+接续实际干净 `fix/library-agent-dock-0.10.23` / `2a30b65`，新分支 `fix/chat-sidebar-resize-0.10.24`，产品固定 **2b5c0db8022bbd392333bb1649ed7024b341e06c**。[交付与验收](deployment/acceptcat-0.10.24.md)。聊天列表分隔条支持左右拖动、本机记忆、双击复位及键盘调整；220—480像素，窄窗保留正文空间并在恢复宽窗后还原偏好。
+
+Windows x64 **C:/Users/luo/Desktop/AcceptCat_0.10.24.exe**，**87,431,310字节**，SHA256 **6512d67a1508d0ea9417e6e05be3b98c48c85e3f296e1b17066de5a6cfa38e54**。生产构建、实际NSIS载荷、18JS/8CSS逐字节、52运行包/55装配包和隐藏隔离原生启动通过；没有代安装或公开发布。
+
+渲染/主进程类型、34项定向及实际拖动/重开恢复/搜索/会话选择通过。1280×720视口、820像素应用容器验证收窄/恢复；最终只有旧Router警告，初始分页/HMR夹具错误保留Git外 `.runtime/chat-resize-20261020`。Browser插件缺席用CUA/Playwright；真实消息/模型和更多窗口尺寸未重验。共享代码未改，不重复根693项CI。
+
+纯客户端布局改动，无后台同步/部署/迁移/飞书或密钥变更，沿下述0.26/schema023、image4ee12e77、飞书0.1.0仅罗岩；公开latest仍v0.6.0。继续获准真实资料与科研质量验证。
+
+## 前批次0.10.23：资料 Agent 底部聊天框，安装包已制作
 
 评审入口：[草稿PR76](https://github.com/luoyan96/personal-agent/pull/76)，base `feat/library-agent-0.10.22`，已推送并附任务，未合并；文档0862a04远端Foundation三项首读IN_PROGRESS，不称已通过。
 
