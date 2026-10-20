@@ -1263,3 +1263,16 @@ Windows0.10.25已制作并复制C:/Users/luo/Desktop/AcceptCat_0.10.25.exe，87,
 本批无需后台同步/部署/迁移/新飞书权限，未改密钥、模型配置或更新源；后台沿已部署DSH0.2.1-rc.2、image34bba4d0、contract0.26/schema023，飞书0.1.0仅罗岩，本批未新inspect。公开latest实读v0.6.0，--publish never，无公开Release。下一步本人覆盖安装后用选定资料验证真实阅读和中文回答，再根据需求研究按名称查找。
 
 交付记录d34f59c已推送，232份Markdown/10份Skill与diff检查通过。[草稿PR80](https://github.com/luoyan96/personal-agent/pull/80)已创建并附任务，base fix/feishu-authorization-entry-0.10.25、未合并；该head三项Foundation首读IN_PROGRESS，不称通过。桌面安装说明已保存，三个合成浏览器页及4950/4951测试服务已关闭，原用户Edge页、现装进程、生产服务和私人数据保持。
+
+
+## 2026-10-20 — 飞书论文库命名绑定与条件查询只读验证
+
+用户提供本人指定多维表格，要求测试“这是我的论文库＋链接”后按最近一年/CCF A查询。接续实际干净feat/feishu-library-chat-0.10.26 / c612a7401483066638d394b5317bfa0cb5797125，新建docs/feishu-paper-library-investigation；重读交接，保留既有产品代码。[调研与最小范围](development/feishu-paper-library-query.md)。
+
+本人已登录Edge页面核对全部字段，以个人临时筛选对选定年度/严格CCF A匹配，逐条查看题目/会议/年份/级别；原始数量/论文详情、截图及收据只在Git外.runtime/feishu-base-investigation-20261020。未点击保存/编辑/AI总结/共享，结束清除筛选，实拍原总数及两项排序恢复，原用户页保持。只有年份无日期及Findings标签，不能称为严格过去12个月或独立分级/发表核验。核对CCF2026第七版与飞书视图/权限FAQ；查询接口深链不存在，站内搜索未得到可核验参数，具体新scope/分页参数待实施时重核。
+
+本机实际客户端helper拒绝/base/，合成docx对照通过，已构建API同样FEISHU_LINK_INVALID；无网络/凭据/模型调用。现有权限仅身份/docx/wiki，快照不建命名源或查多维表格。建议下批限对话命名绑定/字段映射/受限实时查询/来源回执；权限扩展、再授权、真实API和附件仍未做，不借个人token隐式共享全组。首次文档生成脚本模板引号错误在解析期退出、无写入，修正后重新生成。
+
+本批仅文档，无新代码/包/安装、部署/迁移、权限/密钥/模型或公开发布。产品仍96780bcdc7385e27ebd55ba6aff64169ded1cd06 / Windows0.10.26，原包保持。后台沿DSH0.2.1-rc.2/image34bba4d0/contract0.26/schema023，未重新inspect。未修改下载声明或重查公开Release，不将历史核对称为本次实时结果；无共享改动，不重复根694项CI。内容和diff检查于收尾记录。
+
+收尾本地验证：233份Markdown/10份Skill内容链接检查及git diff --check通过；新增调研文件与三份状态文档已核对，无私人链接/token/题目/作者进入Git。仅文档，无产品构建或全量CI声明。

@@ -2,6 +2,12 @@
 
 更新日期：2026-10-20（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新调研：飞书多维表格论文库（未实现整库接入）
+
+2026-10-20，接续干净 feat/feishu-library-chat-0.10.26 / c612a74，在 docs/feishu-paper-library-investigation 完成[选定论文库的只读验证与最小方案](development/feishu-paper-library-query.md)。真实 Edge 表按年份与严格级别筛选并核对匹配记录，结束清除个人临时筛选，原记录数和排序恢复。只有年份，不能精确筛过去12个月；Findings 标签不应直接当正式 CCF A 长文。私人材料、链接、截图及收据保留 Git 外 .runtime/feishu-base-investigation-20261020。
+
+本机确认客户端与已构建API均拒绝 /base/，现有 docx/wiki 快照不会保存命名论文库。建议下批限定“对话命名绑定＋字段映射＋受限只读查询＋来源回执”，沿用飞书原表。具体最小权限、本人再授权和真实API仍待完成。仅文档，无新代码、包、部署、迁移、权限或公开发布；产品与包仍0.10.26，后台沿DSH0.2.1-rc.2/image34bba4d0/contract0.26/schema023，本批未重新inspect。内容/diff检查单记，不将网页筛选称为AcceptCat端到端通过。
+
 ## 最新桌面批次0.10.26：资料 Agent 直接读飞书，安装包已制作
 
 评审入口：[草稿PR80](https://github.com/luoyan96/personal-agent/pull/80)，base `fix/feishu-authorization-entry-0.10.25`，已推送并附任务、未合并；文档d34f59c远端三项Foundation首读IN_PROGRESS，不称已通过。
