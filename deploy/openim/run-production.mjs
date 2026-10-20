@@ -17,16 +17,18 @@ try {
       (process.platform !== 'win32' && (dir.mode & 0o077) !== 0)) throw new Error('PRIVATE_DIRECTORY_REQUIRED');
   // Standalone Compose secrets can be 0444 inside the container. The sources
   // are root-only on the host; use actual 0600 per-container copies at runtime.
-  for (const [variable, name] of [
+  for (const [variable, name, optional] of [
     ['LAB_CREDENTIAL_KEY_FILE', 'lab-key'], ['OPENIM_SECRET_FILE', 'im-admin'],
     ['OPENIM_CALLBACK_KEY_FILE', 'im-callback'],
+    ['FEISHU_APP_SECRET_FILE', 'feishu-app', true],
   ]) {
     const source = process.env[variable];
+    if (optional && !source) continue;
     if (!source || !isAbsolute(source)) throw new Error('MOUNTED_SECRET_REQUIRED');
     const stat = lstatSync(source);
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 128) throw new Error('INVALID_MOUNTED_SECRET');
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > (optional ? 4096 : 128)) throw new Error('INVALID_MOUNTED_SECRET');
     const value = readFileSync(source, 'utf8').trim();
-    if (!/^[a-f0-9]{64}$/.test(value)) throw new Error('INVALID_MOUNTED_SECRET');
+    if (!(optional ? /^[A-Za-z0-9_-]{8,512}$/ : /^[a-f0-9]{64}$/).test(value)) throw new Error('INVALID_MOUNTED_SECRET');
     const target = resolve(privateDir, name);
     if (source === target && process.platform !== 'win32' && (stat.mode & 0o077) !== 0) throw new Error('PRIVATE_SECRET_REQUIRED');
     if (source !== target) {

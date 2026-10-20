@@ -1,0 +1,12 @@
+# Optional overlay, after compose.yaml + compose.production.yaml. Never enables
+# itself or generates credentials. Administrator supplies the app and host file.
+services:
+  research-api:
+    environment:
+      FEISHU_APP_ID: ${FEISHU_APP_ID:?Set the approved Feishu app ID}
+      FEISHU_APP_SECRET_FILE: /run/secrets/feishu-app
+    secrets:
+      - feishu-app
+secrets:
+  feishu-app:
+    file: ${FEISHU_APP_SECRET_PATH:?Set the absolute root-only host secret file}

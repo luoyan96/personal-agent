@@ -19,6 +19,10 @@ export function validationMessage(issues: readonly ValidationIssue[]): string {
 }
 
 const messages: Record<string, string> = {
+  FEISHU_LINK_INVALID: "请粘贴飞书新版文档或其中为新版文档的知识库链接；暂不支持表格、PDF、PPT 或文件夹链接。",
+  FEISHU_REAUTHORIZE: "飞书授权已失效或过期，请重新连接飞书后再试。",
+  FEISHU_ACCESS_DENIED: "飞书拒绝读取，请核对当前飞书账号、文档阅读权限和应用的只读权限。",
+  FEISHU_UNAVAILABLE: "飞书读取暂未完成，请稍后重试；尚未保存资料。",
   AGENT_LIMIT_REACHED: "个人 Agent 数量已达上限，请先整理已有 Agent。",
   EXTERNAL_CONSENT_REQUIRED: "请先明确授权将本条文字发送到外部服务。",
   EXTERNAL_FILES_UNSUPPORTED:

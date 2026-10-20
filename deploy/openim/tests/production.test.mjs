@@ -44,7 +44,7 @@ test('production preparation refuses existing/synthetic data and preserves indep
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('real production CLI and HTTP: explicit 022 migration, private bootstrap, one-use manager, Origin/CSRF, restart and IM unavailable', async () => {
+test('real production CLI and HTTP: explicit 023 migration, private bootstrap, one-use manager, Origin/CSRF, restart and IM unavailable', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'rap-im-production-cli-'));
   let child;
   try {
@@ -65,7 +65,7 @@ test('real production CLI and HTTP: explicit 022 migration, private bootstrap, o
     assert.equal(run('migrate').status, 0); assert.equal(run('migrate').status, 0);
     let db = new DatabaseSync(databasePath);
     try {
-      assert.equal(db.prepare('SELECT max(version) v FROM schema_migrations').get().v, 22);
+      assert.equal(db.prepare('SELECT max(version) v FROM schema_migrations').get().v, 23);
       assert.equal(db.prepare('SELECT count(*) n FROM members').get().n, 0);
       assert.equal(db.prepare('SELECT count(*) n FROM labs').get().n, 0);
     } finally { db.close(); }
@@ -81,6 +81,12 @@ test('real production CLI and HTTP: explicit 022 migration, private bootstrap, o
     const qaRecord = JSON.parse(readFileSync(join(dir, 'research/bootstrap/lab_qa.json'), 'utf8'));
     assert.notEqual(qaRecord.inviteCode, record.inviteCode);
     const probe = run('check'); assert.equal(probe.status, 0, probe.stderr);
+    const feishuSecret = 'synthetic_feishu_app_secret_only';
+    writeFileSync(join(dir, 'feishu-app.secret'), feishuSecret, { mode: 0o600 });
+    const withFeishu = run('check', { FEISHU_APP_ID: 'cli_synthetic', FEISHU_APP_SECRET_FILE: join(dir, 'feishu-app.secret') });
+    assert.equal(withFeishu.status, 0, withFeishu.stderr);
+    assert.equal(readFileSync(join(dir, 'private-secrets/feishu-app'), 'utf8').trim(), feishuSecret);
+    assert.ok(!withFeishu.stdout.includes(feishuSecret)); assert.ok(!withFeishu.stderr.includes(feishuSecret));
     const checked = JSON.parse(probe.stdout); assert.equal(checked.imTransport, 'not_verified'); assert.equal(checked.harness, 'not_verified');
     async function start() {
       child = spawn(process.execPath, [entry, 'api'], { cwd: repository, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });

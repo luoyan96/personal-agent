@@ -12,6 +12,7 @@ import { researchScopeLabels } from "./research-library-api";
 import { ResearchFileDownload } from "./ResearchFileDownload";
 import "./research-library.scss";
 import { ZoteroImport } from "./ZoteroImport";
+import { FeishuImport } from "./FeishuImport";
 import { ResearchFileImport as FileImport } from "./ResearchFileImport";
 type ResearchCollection = ResponseFor<"researchCollections">["data"][number];
 type ResearchFile = ResponseFor<"researchFiles">["data"][number];
@@ -98,6 +99,7 @@ function SourceDetail({ id, collection, onVersion, onChanged, onClose }: { id: s
 }
 
 function LibraryBody() {
+  const [feishuOpen, setFeishuOpen] = useState(false);
   const [zoteroId, setZoteroId] = useState<string>();
   const [scope, setScope] = useState<"mine" | "visible">("visible"), [collectionSearch, setCollectionSearch] = useState(""), [selectedId, setSelectedId] = useState<string>(), [sourceId, setSourceId] = useState<string>(), [search, setSearch] = useState(""), [query, setQuery] = useState("");
   const [editing, setEditing] = useState<ResearchCollection | "new">(), [importing, setImporting] = useState<{ collection: ResearchCollection; source?: ResearchFile }>();
@@ -115,7 +117,7 @@ function LibraryBody() {
     catch (error) { if (isCurrent()) { setFailure(failureText(error)); await collections.refresh(); } }
   };
   return <div className="research-library">
-    <header className="research-library-heading"><div><h2>资料与素材库</h2><p>只使用当前账号获准的资料，公开 Agent 不会公开私人资料。</p></div><Button type="primary" onClick={() => setEditing("new")}>新建集合</Button></header>
+    <header className="research-library-heading"><div><h2>资料与素材库</h2><p>只使用当前账号获准的资料，公开 Agent 不会公开私人资料。</p></div><div className="research-library-actions"><Button onClick={() => setFeishuOpen(true)}>连接飞书资料</Button><Button type="primary" onClick={() => setEditing("new")}>新建集合</Button></div></header>
     {failure && <Alert type="warning" message={failure} />}
     <div className={`research-library-body ${sourceId ? "has-source" : ""}`}>
       <aside className="research-collection-rail" aria-label="资料集合">
@@ -140,6 +142,7 @@ function LibraryBody() {
       </section>
       {sourceId && collection && <SourceDetail key={sourceId} id={sourceId} collection={collection} onClose={() => setSourceId(undefined)} onChanged={refresh} onVersion={source => setImporting({ collection, source })} />}
     </div>
+    {feishuOpen && <FeishuImport collectionId={collection?.owned && collection.scope === "owner_private" ? collection.id : undefined} onClose={() => setFeishuOpen(false)} onSaved={refreshAfterImport} />}
     {zoteroId && collection?.id === zoteroId && collection.owned && collection.scope === "owner_private" && <ZoteroImport key={zoteroId} collection={collection} onClose={() => setZoteroId(undefined)} onSaved={refresh} />}
     {editing && <CollectionEditor key={editing === "new" ? "new" : editing.id} collection={editing === "new" ? undefined : editing} onClose={() => setEditing(undefined)} onSaved={refresh} />}
     {importing && <FileImport key={`${importing.collection.id}:${importing.source?.id || "new"}`} {...importing} onClose={() => setImporting(undefined)} onSaved={refreshAfterImport} />}

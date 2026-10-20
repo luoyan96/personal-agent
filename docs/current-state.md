@@ -2,7 +2,23 @@
 
 更新日期：2026-10-20（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-2026-10-20完成[课题组资料与素材库方案调研](development/lab-knowledge-library-research.md)。用户进一步明确课题组已经用飞书且资料在其中，后续候选优先级收窄为**连接现有飞书、按授权读取并引用到科研任务**，保留飞书现有文档和协作方式；完整自建资料库方案只作长期参考。已核对官方API/SDK/MCP与应用类型，MCP的文档/素材支持有明确类型和大小限制，不能称所有PDF/PPT均可全文读取。**飞书连接尚未实现、绑定或试读私人资料**；本批无产品/依赖/安装包/部署变化。调研起始69d8822、后续独立Key预览部署07afd2a记录保留；最新接续起点是干净release/acceptcat-0.10.19 / 07afd2a，生产准确状态见下文。
+## 最新批次0.10.20：飞书本人试点后台已部署，应用已发布
+
+评审入口：[草稿PR73](https://github.com/luoyan96/personal-agent/pull/73)，基于release/acceptcat-0.10.19，已附本任务；代码与记录已推送，尚未合并。
+
+从实际干净 `release/acceptcat-0.10.19` / `b497bde01cff96c0a24b5f3422f29485a1581e95` 新建 `feat/feishu-readonly-pilot`；产品代码固定 **2bbcfbce2e369fe8b64a92caf0dd22350a22b870**。用户同意优先连接课题组已有飞书，[首批实现与边界](development/feishu-readonly-pilot.md)：资料库连接入口、本人 OAuth/PKCE、选定 docx 或 wiki/docx 纯文本预览、确认保存私人文字副本、连续原文片段带入新的任务规划对话。沿用资料库版本/引用与 Agent 显式集合绑定；没有知识库全量同步、自动授权 Agent、成果写回或群消息。
+
+contract **0.26.0** / schema **023**，新增三张飞书表，不改旧业务表。首批不申请 offline_access、不过期自动刷新，按令牌返回时限重新授权。保存前重读权限/修订/哈希，账号/空间/会话/连接变化拒绝迟到响应；密钥和令牌不下发客户端，预览加密、十分钟、每人最多五份。默认未配置时显示真实缺少配置状态。
+
+**693项/55文件全量CI、2项生产CLI检查及进程/构建/类型/契约检查通过**，客户端类型与6项规划helper检查通过。实际React/HTTP/SQLite与合成飞书服务走通预览、勾选保存和规划输入衔接；没有真实模型调用、实际文档试读或正式任务创建。首败为旧迁移夹具/版本断言，修正后通过；证据与失败日志在 Git 外 `.runtime/feishu-pilot-20261020`。
+
+**Windows0.10.20候选安装包已制作、复制桌面** `C:/Users/luo/Desktop/AcceptCat_0.10.20.exe`，87,422,226字节，SHA256 `7abe46bad498dd58eac626b4325d8f966c666d83e38454d8de00909dca2eb9ad`。实际NSIS载荷与受测EXE/ASAR一致，17JS/8CSS逐字节匹配生产dist，飞书入口存在、QA材料未打包，隐藏的隔离数据目录原生启动通过。未代安装或关闭现装，0.10.19旧包/数据保留；没有公开Release或更新源变更。
+
+用户明确批准上线本人试点后，2026-10-20 10:58已发布飞书“AcceptCat 科研资料只读接入”0.1.0，后台显示已启用/已发布/审核通过，**可用成员仅罗岩**、对外共享关闭。保留 **用户身份** `contact:user.base:readonly`、`docx:document:readonly`、`wiki:wiki:readonly`，范围与用户权限一致，精确回调 `https://chat.acceptcat.com/api/v1/feishu/callback`。App Secret已通过隐藏终端输入，仅保存服务器root/0600文件，API内复制为0600；未进入Git、镜像、安装器或明文输出。没有绑定真实用户、读取私人资料或扩大到全企业。
+
+**后台已配对部署API/worker，contract0.26.0 / schema023。** 组合修订 `47c42ac+key-preview.4bc8d1f+feishu.2bbcfbc`，镜像 `research-openim-api:feishu-20261020` / `sha256:4ee12e77f80da2e196e6640980dbdb521a1bfa5e168ac1ced6012f387e63ea0d`；仅覆盖12个运行源码，生产原公共目录种子保持。新备份及恢复副本演练022→023→022→023通过，91旧表/6原件逐项哈希一致；线上显式迁移后、启动前再次一致，启动后个人/课题组模型凭据与默认选择整表哈希未变。其余六服务和既有设置不变，API仅新增飞书环境变量/只读secret挂载。公网ready200、DB/storage/auth ok、Harness not_verified；飞书匿名401、无效callback400并带no-store/CSP/no-referrer；服务器配置检查configured:true。详见[部署与回退记录](deployment/feishu-pilot-20261020.md)。
+
+保留隔离HTTP首败：测试脚本漏开B3_AI_ENABLED，修正后通过飞书OAuth/预览/私人导入幂等/旧Key预览，不改产品代码。GitHub ba6dc89首轮Ubuntu22/24成功，Windows既有execution A12用例5秒超时，仅重跑失败节点后5分56秒成功，run39360378751三平台最终通过，未改测试时限。部署文档6fde7a7已推送，225份Markdown/10份Skill及diff检查通过；其新一轮远端文档head CI另行运行。真实OAuth、用户选定文档、科研质量仍待本人在0.10.20操作验证；飞书应用发布与AcceptCat公开发布分开，本批无Release/更新源变更。Git外证据 `.runtime/feishu-pilot-20261020`。
 
 ## 最新批次0.10.19：保存后的模型身份与密钥脱敏预览，后台已部署
 

@@ -6,6 +6,9 @@ import { reconcile } from './execution-worker.js'
 import Fastify from 'fastify'
 import {runSkills,type SkillCommand} from './skills.js'
 import { ResearchLibraryService, parseResearchImport, type ResearchLibraryCommand, type LibraryRequest } from './research-library.js'
+import { FeishuService } from './feishu.js'
+import { FeishuClient, type FeishuTransport } from './integrations/feishu-client.js'
+import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { contractVersion, data, Health, ErrorResponse, errorStatus, routes } from '@research-agent-platform/contracts'
@@ -35,9 +38,10 @@ import { OpenImClient } from './openim-client.js'
 import { OpenImCallbacks } from './openim-callback.js'
 import { readCommunityCatalog, readCommunityEntry } from './community-catalog.js'
 
-export function createServer(config: Config, options:{imClient?:OpenImClient;externalCall?:ExternalAgentCall}={}) {
+export function createServer(config: Config, options:{imClient?:OpenImClient;externalCall?:ExternalAgentCall;feishuTransport?:FeishuTransport}={}) {
   if(options.imClient&&config.mode!=='test')throw new Error('Injected OpenIM clients are test-only')
   if(options.externalCall&&config.mode!=='test')throw new Error('Injected external Agent clients are test-only')
+  if(options.feishuTransport&&config.mode!=='test')throw new Error('Injected Feishu transport is test-only')
   const imClient=options.imClient??new OpenImClient(config)
   const app = Fastify({ logger: false, bodyLimit: 1048576, genReqId: () => randomUUID(), requestTimeout: 10000 })
   let db: ReturnType<typeof openDatabase> | undefined
@@ -79,6 +83,18 @@ export function createServer(config: Config, options:{imClient?:OpenImClient;ext
     const header=(name:string)=>typeof request.headers[name]==='string'?String(request.headers[name]):''
     return transaction(connection,()=>callbacks.handle(params.command,request.body as Record<string,unknown>,{userID:header('x-rap-openim-operator'),platform:header('x-rap-openim-platform'),policy:header('x-rap-openim-policy'),operationID:header('operationid')}))
   })
+  app.get('/api/v1/feishu/callback',async(request,reply)=>{
+    reply.header('Referrer-Policy','no-referrer').header('Content-Security-Policy',"default-src 'none'; frame-ancestors 'none'; base-uri 'none'").type('text/html; charset=utf-8')
+    const query=z.object({state:z.string().regex(/^[A-Za-z0-9_-]{43}$/),code:z.string().min(1).max(4096).optional(),error:z.string().max(200).optional()}).safeParse(request.query)
+    let success=false
+    try{
+      if(!query.success||!query.data.code||query.data.error)fail('FEISHU_REAUTHORIZE')
+      await new FeishuService(database(),config,new FeishuClient(options.feishuTransport)).callback(query.data.state,query.data.code)
+      success=true
+    }catch{/* OAuth secrets and provider errors must not enter callback HTML or logs. */}
+    reply.code(success?200:400)
+    return `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>AcceptCat · 飞书授权</title><body><h1>${success?'飞书授权已完成':'飞书授权未完成'}</h1><p>${success?'请返回 AcceptCat，点击“检查授权结果”继续。':'授权可能已取消、过期或发起授权的登录已结束。请返回 AcceptCat 重新连接。'}</p></body></html>`
+  })
   for (const [name, route] of Object.entries(routes)) {
     if (route.stage === 'B0') continue
     app.route({ method: route.method, url: route.path.replace(/\{(\w+)\}/g, ':$1'), ...((name==='upload'||name==='agentFileMessage'||name==='importResearchFile')?{bodyLimit:14000000}:name==='register'?{bodyLimit:8192}:{}), handler: async (request, reply) => {
@@ -104,6 +120,19 @@ export function createServer(config: Config, options:{imClient?:OpenImClient;ext
       if(name==='communityCatalog'||name==='communityCatalogEntry'){
         authenticate(connection,token)
         return route.response.parse(name==='communityCatalog'?readCommunityCatalog(connection,config):readCommunityEntry(connection,config,(parsed.data.params as {id:string}).id))
+      }
+      if(route.stage==='FEISHU1'){
+        const authorized=()=>{const actor=authenticate(connection,token);if(route.method!=='GET')requireCsrf(actor,request.headers['x-csrf-token']);return actor}
+        const actor=authorized(),service=new FeishuService(connection,config,new FeishuClient(options.feishuTransport))
+        const controller=new AbortController();request.raw.once('aborted',()=>controller.abort());reply.raw.once('close',()=>{if(!reply.raw.writableEnded)controller.abort()})
+        const signal=AbortSignal.any([controller.signal,AbortSignal.timeout(25000)])
+        let result:unknown
+        if(name==='feishuStatus')result=transaction(connection,()=>service.status(actor))
+        else if(name==='connectFeishu')result=transaction(connection,()=>service.connect(actor,token))
+        else if(name==='disconnectFeishu')result=transaction(connection,()=>service.disconnect(actor))
+        else if(name==='previewFeishuDocument')result=await service.preview(actor,(parsed.data as RequestFor<'previewFeishuDocument'>).body.url,authorized,signal)
+        else result=await service.import(actor,(parsed.data as RequestFor<'importFeishuSnapshot'>).body,(parsed.data as RequestFor<'importFeishuSnapshot'>).headers['Idempotency-Key']!,authorized,signal)
+        authorized();return route.response.parse(result)
       }
       if(route.stage==='LIBRARY1'){
         const input=parsed.data as unknown as LibraryRequest

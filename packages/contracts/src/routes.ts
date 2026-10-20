@@ -2,6 +2,7 @@ import { z } from 'zod'
 import * as m from './models.js'
 import {skillRoutes} from './skills.js'
 import {researchLibraryRoutes} from './research-library.js'
+import {feishuRoutes} from './feishu.js'
 import { chatRoutes } from './chat.js'
 import { openImRoutes } from './openim.js'
 import { AccountUsername, AccountPassword, RegistrationCode } from './authentication.js'
@@ -33,6 +34,7 @@ function route<P extends z.ZodType, Q extends z.ZodType, B extends z.ZodType, R 
 export const routes = {
   ...communityRoutes,
   ...researchLibraryRoutes,
+  ...feishuRoutes,
   ...skillRoutes,
   ...personalAssistantRoutes,
   ...workspaceRoutes,

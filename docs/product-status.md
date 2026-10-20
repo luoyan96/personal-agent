@@ -2,7 +2,11 @@
 
 核对日期：**2026-10-20，北京时间**。产品首页见 [README](../README.md)。这里区分对外可下载的版本、已交付试用的版本、集成源码与线上服务，避免把 Git 提交当成一次软件发布。
 
-## 最新试用0.10.19，脱敏预览后台已部署
+## 飞书接入0.10.20本人试点，配套后台和应用已上线
+
+已完成Windows安装包和选定飞书文档的只读预览、私人副本、选定原文带入任务规划功能。用户独立批准后，配套API/worker已升级contract0.26.0/schema023，完成备份/恢复与迁移演练；App Secret仅服务器受限文件，旧凭据及原件保持。飞书企业自建应用0.1.0已发布，三项用户只读权限、精确回调，仅罗岩可用。真实账号OAuth与选定研究材料试读仍待本人验证；服务器配置就绪不代表已接通整个知识库。范围与检查见[交付说明](deployment/acceptcat-0.10.20.md)及[部署记录](deployment/feishu-pilot-20261020.md)。没有新增AcceptCat公开下载或正式更新。
+
+## 已交付试用0.10.19，脱敏预览后台已部署
 
 模型设置显示实际默认型号、服务商和配置名；已保存Key用只读首尾预览，单独更换。Windows包已制作，87,419,799字节/SHA256 `ad49a0c4ae921a0048152d7e9e651fb4addf49f1a269eb5b5fb4241da5b6b650`，源码固定 `4bc8d1f`，在[release/acceptcat-0.10.19](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.19)。2026-10-20用户明确授权后，只读脱敏接口已独立部署为0.25.1，无数据库迁移，保留已有凭据；使用0.10.19重新进入模型设置读取预览，旧Key无需重填。见[交付说明](deployment/acceptcat-0.10.19.md)与[部署核对](deployment/key-preview-20261020.md)。未公开Release或更新源。
 
@@ -28,13 +32,13 @@
 
 ## 源码与服务分别在哪里
 
-最新产品功能和0.10.18打包源码在[release/acceptcat-0.10.18](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.18)，固定打包源码 `8bf46f1`。聊天式任务规划Agent、课题组任务/方向与进度分层、科研分工、助手任务衔接及此前可靠性修复已进入本地试用包；[交付记录](deployment/acceptcat-0.10.18.md)区分实际打包、合成通信投影与生产待办。超长Skill正文边界仍待后台配套；三项目录已由[独立运营PR66](https://github.com/luoyan96/personal-agent/pull/66)报告上线，不能把桌面打包当成目录发布。独立PR68统计Skill未集成到本包。课题组仍需负责人邀请码注册，客户端自助开组、已有个人账号加入和多课题组尚未实现。
+最新飞书本人试点源码在[feat/feishu-readonly-pilot](https://github.com/luoyan96/personal-agent/tree/feat/feishu-readonly-pilot)，Windows0.10.20固定产品源码 `2bbcfbc`；前一试用版在release/acceptcat-0.10.19。保留0.10.18的聊天式任务规划Agent、课题组方向/分工进度、助手任务衔接及此前可靠性修复。[0.10.20交付记录](deployment/acceptcat-0.10.20.md)区分安装包、合成验收和真实授权待办。超长Skill正文边界仍待后台配套；三项目录已由[独立运营PR66](https://github.com/luoyan96/personal-agent/pull/66)报告上线，桌面打包不等于目录发布。独立PR68统计Skill未集成到本包。课题组仍需负责人邀请码注册，客户端自助开组、已有个人账号加入和多课题组尚未实现。
 
 **默认分支应用代码仍是较早的0.3.0基线；更新首页文档不会自动合并全部功能分支、发布安装包或升级后台。** 开发最新产品功能时按上述集成分支和其贡献指南准备环境，不能从首页预览反推 `main` 已包含所有新功能。
 
 规划对话与未发送内容暂保存在本机，按服务/账号/课题组隔离，不自动跨设备同步；计划和正式任务仍保存在后台。当前可用对话修改未确认方案，复杂日程和已确认任务的对话修改继续完善。
 
-最近部署记录的 API/worker 为 `47c42ac`，contract0.25/chat1.12/schema022；2026-10-18上一批已通过Edge维护会话核验实际容器healthy/running。本批仅公网ready200/0.25，无生产容器新inspect或部署。2026-10-19独立目录运营记录为11项/7仓库，GitHub同步成功；目录刷新无需新桌面包。已安装的私人 Skill 若要使用新参考或版本，仍须本人明确更新。
+2026-10-20最新API/worker组合为 `47c42ac+key-preview.4bc8d1f+feishu.2bbcfbc`，contract0.26.0/schema023，已通过Edge维护会话检查容器healthy/running及配对镜像，公网ready200。保留生产原目录种子，2026-10-19独立目录运营记录为11项/7仓库；目录刷新无需新桌面包。已安装的私人Skill若要使用新参考或版本，仍须本人明确更新。
 
 ## 预览和验证应怎样理解
 

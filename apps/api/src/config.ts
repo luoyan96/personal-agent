@@ -20,6 +20,8 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env) {
   const secretPath=(name:string)=>{const value=env[name]??null;if(value&&!isAbsolute(value))throw new Error(`${name} must be absolute`);return value}
   const openIm={apiURL:address('OPENIM_API_URL',['http:','https:'],false),publicApiURL:address('OPENIM_PUBLIC_API_URL',['http:','https:']),publicWsURL:address('OPENIM_PUBLIC_WS_URL',['ws:','wss:']),adminID:env.OPENIM_ADMIN_ID??'imAdmin',secretFile:secretPath('OPENIM_SECRET_FILE'),callbackKeyFile:secretPath('OPENIM_CALLBACK_KEY_FILE'),policyEnforced:env.OPENIM_POLICY_ENFORCED==='1'}
   const communitySync={enabled:env.GITHUB_CATALOG_SYNC==='1',tokenFile:secretPath('GITHUB_CATALOG_TOKEN_FILE')}
-  return { communitySync, aiEnabled: env.B3_AI_ENABLED === '1', model: env.DEEPSEEK_MODEL ?? 'deepseek-flash', credentialKeyFile, mode, databasePath, blobRoot, host: env.HOST ?? '127.0.0.1', port, origin, openIm }
+  const feishu={appId:env.FEISHU_APP_ID??null,secretFile:secretPath('FEISHU_APP_SECRET_FILE')}
+  if(feishu.appId&&!/^cli_[A-Za-z0-9]{4,100}$/.test(feishu.appId))throw new Error('Invalid FEISHU_APP_ID')
+  return { feishu, communitySync, aiEnabled: env.B3_AI_ENABLED === '1', model: env.DEEPSEEK_MODEL ?? 'deepseek-flash', credentialKeyFile, mode, databasePath, blobRoot, host: env.HOST ?? '127.0.0.1', port, origin, openIm }
 }
 export type Config = ReturnType<typeof readConfig>

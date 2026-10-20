@@ -13,7 +13,8 @@ import {
 import type { ResponseFor } from "@research-agent-platform/contracts";
 import type { TextAreaRef } from "antd/es/input/TextArea";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { takeFeishuPlanning } from "./feishu-planning";
 import { researchApi, ResearchApiError } from "./api";
 import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
@@ -97,6 +98,8 @@ function PlanningAgentSession({
 }: Props & { storageKey: string }) {
   const actor = useResearchStore((s) => s.actor)!;
   const navigate = useNavigate();
+  const location = useLocation();
+  const generation = useResearchStore((s) => s.generation);
   const [history, setHistory] = useState<PlannerHistory>(() => {
     let value: PlannerHistory | undefined;
     try {
@@ -133,6 +136,17 @@ function PlanningAgentSession({
       setStorageFailure(true);
     }
   };
+  useEffect(() => {
+    const nonce = (location.state as { feishuMaterialNonce?: unknown } | null)
+      ?.feishuMaterialNonce;
+    if (!nonce) return;
+    const material = takeFeishuPlanning(nonce, actor.member.id, generation);
+    navigate(location.pathname + location.search, { replace: true, state: null });
+    if (!material) return;
+    const next = { ...newPlannerThread(), title: "参考飞书资料规划", draft: material };
+    setHistory((h) => ({ active: next.id, threads: [...h.threads.slice(-19), next] }));
+    setExpanded(true);
+  }, [location.state, actor.member.id, generation]);
   useEffect(() => {
     const timer = setTimeout(() => persist(history), 200);
     return () => clearTimeout(timer);
