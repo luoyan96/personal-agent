@@ -2,6 +2,18 @@
 
 更新日期：2026-10-20（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新桌面批次0.10.26：资料 Agent 直接读飞书，安装包已制作
+
+评审入口：[草稿PR80](https://github.com/luoyan96/personal-agent/pull/80)，base `fix/feishu-authorization-entry-0.10.25`，已推送并附任务、未合并；文档d34f59c远端三项Foundation首读IN_PROGRESS，不称已通过。
+
+从实际干净 `fix/feishu-authorization-entry-0.10.25` / `d999864` 接续，新分支 `feat/feishu-library-chat-0.10.26`，产品最终 **96780bcdc7385e27ebd55ba6aff64169ded1cd06**。[交付与边界](deployment/acceptcat-0.10.26.md)。连接后主操作“去和资料 Agent 聊”，返回底部输入并保留问题；发送链接和需求，经本人飞书授权读取实际纯文本快照，复用本人私聊文件阅读，原地回答/追问并显示真实读取范围。导入资料集合变为可选，不再前置。首次仍需具体docx/wiki文档链接，一次一份，暂不按名称搜整库。
+
+Windows x64 **C:/Users/luo/Desktop/AcceptCat_0.10.26.exe**，**87,434,668字节**，SHA256 **0b130ef385acc1599b1446af6c0e9aa7419816aeab8e5827a7119c22b83612ab**。最终18JS/8CSS逐字节、52运行包/55装配包、实际NSIS载荷与隐藏隔离启动通过；未代安装或公开发布。
+
+渲染/主进程类型、34项定向通过；1280×720实际React/HTTP/SQLite/worker，合成飞书与模型走通未授权保留问题、授权后直聊、503字符快照和追问、丢回执刷新原Key恢复、拒绝无权文档、A/B隔离及取消固定后的普通提问。恢复没有重新预览/模型调用/重复消息，集合及资料来源均0。首轮VM断言误报、夹具缺模型、加载DOM嵌套警告及首包保留；修正div后新页仅旧Router/AntD提示，重新打包。Git外 `.runtime/feishu-chat-20261020`，Browser插件缺席用CUA/Playwright；其他真实窗口尺寸、真实厂商/私人资料和科研质量未验。共享代码未改，不重复根694项CI。
+
+发送区明确纯文本交给当前模型、保存在本人对话；未知回执的本机恢复记录含原快照字节，按服务/本人/课题组隔离，确认后清理，储存失败停止派发。不自动建集合、共享或写回飞书，断开飞书不撤回已交给本人私聊的文字副本。用户截图显示本人授权成功，本批不读取其生产会话或资料。无需后台部署/迁移/新权限/密钥，沿已部署DSH0.2.1-rc.2、image34bba4d0、contract0.26/schema023与飞书0.1.0仅罗岩；本批未新inspect，公开latest实读仍v0.6.0。
+
 ## 最新桌面批次0.10.25：飞书授权可操作入口，安装包已制作
 
 评审入口：[草稿PR79](https://github.com/luoyan96/personal-agent/pull/79)，base `chore/harness-0.2.1-rc.2`，已推送并附任务、未合并；文档97e4651远端三项Foundation首读IN_PROGRESS，不称已通过。

@@ -1,6 +1,7 @@
 import type { Contact } from "@research-agent-platform/contracts";
 import type { researchApi } from "./api";
 import { prepareLibraryAgent, type LibraryAgentBindings } from "./library-agent";
+import { readLibraryFile, type LibraryFile } from "./feishu-chat";
 
 export type LibrarySendIntent = {
   key: string;
@@ -9,10 +10,12 @@ export type LibrarySendIntent = {
   agentId?: string;
   bindingVersion?: number;
   conversationId?: string;
+  file?: LibraryFile;
+  fileSelection?: { messageId: string };
 };
 
 export function readLibraryIntent(raw: string | null): LibrarySendIntent | undefined {
-  if (!raw) return;
+  if (!raw || raw.length > 700000) return;
   try {
     const v = JSON.parse(raw);
     const id = (value: unknown) =>
@@ -33,7 +36,10 @@ export function readLibraryIntent(raw: string | null): LibrarySendIntent | undef
       (v.agentId !== undefined && !id(v.agentId)) ||
       (v.conversationId !== undefined && (!id(v.conversationId) || !id(v.agentId))) ||
       (v.bindingVersion !== undefined &&
-        (!Number.isSafeInteger(v.bindingVersion) || v.bindingVersion < 1))
+        (!Number.isSafeInteger(v.bindingVersion) || v.bindingVersion < 1)) ||
+      (v.file !== undefined && !readLibraryFile(v.file)) ||
+      (v.fileSelection !== undefined && !id(v.fileSelection?.messageId)) ||
+      (v.file !== undefined && v.fileSelection !== undefined)
     )
       return;
     return {
@@ -43,6 +49,10 @@ export function readLibraryIntent(raw: string | null): LibrarySendIntent | undef
       ...(v.agentId ? { agentId: v.agentId } : {}),
       ...(v.bindingVersion ? { bindingVersion: v.bindingVersion } : {}),
       ...(v.conversationId ? { conversationId: v.conversationId } : {}),
+      ...(v.file ? { file: readLibraryFile(v.file)! } : {}),
+      ...(v.fileSelection
+        ? { fileSelection: { messageId: v.fileSelection.messageId } }
+        : {}),
     };
   } catch {
     return;
@@ -127,12 +137,24 @@ export async function sendLibraryMessage(options: {
     !conversation.members.some((m) => m.contactId === agent.id && m.status === "joined")
   )
     throw new Error("资料对话与当前助手不一致，原消息尚未确认。");
-  const result = await api("agentChatMessage", {
+  const request = {
     params: { id: intent.conversationId! },
-    body: { text: intent.text, continuous: true },
     idempotencyKey: intent.key,
     signal,
-  });
+  };
+  const result = intent.file
+    ? await api("agentFileMessage", {
+        ...request,
+        body: { ...intent.file, text: intent.text },
+      })
+    : await api("agentChatMessage", {
+        ...request,
+        body: {
+          text: intent.text,
+          continuous: true,
+          ...(intent.fileSelection ? { fileSelection: intent.fileSelection } : {}),
+        },
+      });
   if (!isCurrent()) return;
   if (
     result.data.message.conversationId !== intent.conversationId ||

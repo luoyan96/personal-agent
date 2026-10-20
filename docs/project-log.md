@@ -1247,3 +1247,19 @@ Windows0.10.25已制作并复制C:/Users/luo/Desktop/AcceptCat_0.10.25.exe，87,
 纯客户端，无后台部署/迁移/密钥/飞书权限变更；后台沿已部署DSH0.2.1-rc.2、image34bba4d0、contract0.26/schema023，飞书0.1.0仅罗岩，本批未新inspect。GitHub latest实读仍v0.6.0，--publish never，无公开Release或更新源变更。下一步由本人覆盖安装后完成飞书授权与选定真实资料试读，继续资料/规划科研质量验证。
 
 交付记录97e4651已推送，231份Markdown/10份Skill与diff检查通过。[草稿PR79](https://github.com/luoyan96/personal-agent/pull/79)已创建并附任务，base chore/harness-0.2.1-rc.2、未合并；该head远端三项Foundation首读IN_PROGRESS，不称已通过。桌面安装说明已保存，本批创建的两个浏览器页与4948/4949合成服务已关闭，4946原生测试服务已退出；用户Edge维护页、现装进程和私人资料保持。
+
+## 2026-10-20 — Windows0.10.26：直接向资料 Agent 发飞书链接
+
+用户截图显示本人授权已完成，询问连接后的资料为什么还需手动导入，要求直接和资料Agent说。先读交接与实际干净fix/feishu-authorization-entry-0.10.25 / d999864，接续feat/feishu-library-chat-0.10.26。产品初版cbced6c，最终96780bcdc7385e27ebd55ba6aff64169ded1cd06。[交付范围](deployment/acceptcat-0.10.26.md)。不切main、不覆盖修改。
+
+连接后主操作“去和资料Agent聊”，保留问题并聚焦底部。直接发送具体docx/wiki链接与需求，用本人飞书授权读取实际文字，带来源/修订/时间/哈希/限制组成UTF-8快照，通过原本人私聊文件阅读接口回答与追问，显示真实fileRead范围。原集合导入折叠为可选；首次仍需链接，一次一份，不按名称搜整库。界面明确当前模型处理与本人对话留存，未自动建集合/共享/同步/写回。未知回执的本机恢复记录含原快照字节，按服务/本人/课题组隔离；确认后清理，存储失败停止派发，原Key重试不替换为飞书新修订。取消固定后按原聊天规则处理问题，不宣称清除既有历史。
+
+渲染/主进程类型、34项定向通过，覆盖链接/长中文/字节恢复/文件续读和旧功能。Browser插件缺席，CUA/Playwright，1280×720实际React、HTTP/SQLite/worker配合合成飞书/模型/IM：未授权保留问题、授权后直聊、实际503字符快照入fileExcerpts并追问同一messageId、原Key刷新恢复、无权文档不交模型、A/B隔离、取消固定后的普通提问与可选旧导入展开通过。恢复前后previews3/模型调用2保持、文件POST2→3为重放，数据库对应原问题仅1条；拒绝后previews4、POST3/模型2保持。最终收据previews5/文件POST4/合成模型调用4，5条人类输入、重试原问题仍1条，集合和资料来源均0。没有生产会话/私人资料、真实厂商调用或正式任务；其他真实窗口尺寸与科研质量未验。共享API/契约/核心/Skill未改，不重复根694项CI。
+
+保留首轮VM跨realm断言误报、夹具未配模型导致如实不可用，以及Spin的div嵌套p警告。修正测试对象、补合成模型和div容器，新页仅旧Router/AntD提示；HTML修正后重做最终安装包。首包及其NSIS/启动证据保留Git外first-candidate，移动前核对为本批生成文件哈希，未覆盖不同文件。所有日志/合成范围与计数、截图和最终收据在.runtime/feishu-chat-20261020。
+
+最终Windows0.10.26已制作并复制C:/Users/luo/Desktop/AcceptCat_0.10.26.exe，87,434,668字节，SHA256 0b130ef385acc1599b1446af6c0e9aa7419816aeab8e5827a7119c22b83612ab；实际NSIS内ASAR 1a99e2af9ae320d8dbae55b83c6c631d74089dca8b2a3deaf43a9fe7d20e943d、EXE 8bde950ea3dddaf68ab758ef1ebbe49628a008268cb7f23585d86d027daee29d与受测目录一致。18JS/8CSS逐字节、52运行包/55装配、新快照分支与旧功能/品牌/无QA内容、隐藏隔离原生启动通过，旧electron-log提示保留。未代安装、退出用户客户端或删除旧包/数据。
+
+本批无需后台同步/部署/迁移/新飞书权限，未改密钥、模型配置或更新源；后台沿已部署DSH0.2.1-rc.2、image34bba4d0、contract0.26/schema023，飞书0.1.0仅罗岩，本批未新inspect。公开latest实读v0.6.0，--publish never，无公开Release。下一步本人覆盖安装后用选定资料验证真实阅读和中文回答，再根据需求研究按名称查找。
+
+交付记录d34f59c已推送，232份Markdown/10份Skill与diff检查通过。[草稿PR80](https://github.com/luoyan96/personal-agent/pull/80)已创建并附任务，base fix/feishu-authorization-entry-0.10.25、未合并；该head三项Foundation首读IN_PROGRESS，不称通过。桌面安装说明已保存，三个合成浏览器页及4950/4951测试服务已关闭，原用户Edge页、现装进程、生产服务和私人数据保持。

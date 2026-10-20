@@ -147,6 +147,33 @@
   color: #8596a1;
   margin-bottom: 12px;
 }
+.library-chat-source {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 11px;
+  color: #657f90;
+  > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+.feishu-manual-import {
+  > summary {
+    cursor: pointer;
+    color: #658299;
+    padding: 10px 0;
+  }
+  label {
+    display: grid;
+    gap: 8px;
+  }
+  .ant-btn {
+    margin-top: 10px;
+  }
+}
 .library-chat-recovery {
   display: flex;
   align-items: center;

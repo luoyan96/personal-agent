@@ -33,6 +33,7 @@ const profiles = await load("agentStarterProfiles.ts"),
   helpers = await load("library-agent.ts", { "./agentStarterProfiles": profiles });
 const { sendLibraryMessage, readLibraryIntent } = await load("library-chat.ts", {
   "./library-agent": helpers,
+  "./feishu-chat": await load("feishu-chat.ts"),
 });
 const agent = {
   id: "agent_library",
@@ -93,7 +94,7 @@ function fixture() {
     }
     if (name === "createDirectConversation" || name === "chatConversation")
       return { data: s.group };
-    if (name === "agentChatMessage") {
+    if (name === "agentChatMessage" || name === "agentFileMessage") {
       assert.equal(s.checkpoints.at(-1).conversationId, s.group.id);
       if (!s.writes.has(o.idempotencyKey))
         s.writes.set(o.idempotencyKey, {
@@ -214,4 +215,30 @@ test("recovery snapshot validation preserves exact text and excludes malformed/o
     JSON.stringify({ ...intent, conversationId: "direct_A" }),
   ])
     assert.equal(readLibraryIntent(value), undefined);
+});
+
+test("Feishu snapshots retry the exact attachment bytes/key without re-reading or duplicating", async () => {
+  const f = fixture();
+  f.s.lost = true;
+  const file = { filename: "飞书文字快照-申请书.txt", mediaType: "text/plain", contentBase64: "c3ludGhldGlj" };
+  await assert.rejects(f.run({ intent: { ...intent, file } }), /lost response/);
+  const saved = readLibraryIntent(JSON.stringify(f.s.checkpoints.at(-1)));
+  assert.deepEqual(JSON.parse(JSON.stringify(saved.file)), file);
+  await f.run({ intent: saved, agent });
+  const posts = f.s.calls.filter(c => c[0] === "agentFileMessage");
+  assert.equal(posts.length, 2);
+  assert.deepEqual(posts[0][1].body, posts[1][1].body);
+  assert.equal(posts[0][1].idempotencyKey, posts[1][1].idempotencyKey);
+  assert.equal(f.s.writes.size, 1);
+  assert.equal(f.s.calls.some(c => c[0] === "previewFeishuDocument"), false);
+});
+
+test("followups select the same authorized file; recovery rejects malformed attachments", async () => {
+  const f = fixture();
+  await f.run({ intent: { ...intent, fileSelection: { messageId: "file_input_A" } } });
+  assert.deepEqual(f.s.calls.find(c => c[0] === "agentChatMessage")[1].body.fileSelection, { messageId: "file_input_A" });
+  for (const extra of [{ file: {} }, { fileSelection: { messageId: "../other" } }, {
+    file: { filename: "飞书文字快照-A.txt", mediaType: "text/plain", contentBase64: "c3ludGhldGlj" },
+    fileSelection: { messageId: "file_input_A" },
+  }]) assert.equal(readLibraryIntent(JSON.stringify({ ...intent, ...extra })), undefined);
 });

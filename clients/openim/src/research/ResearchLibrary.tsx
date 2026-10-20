@@ -101,6 +101,7 @@ function SourceDetail({ id, collection, onVersion, onChanged, onClose }: { id: s
 
 function LibraryBody() {
   const [feishuOpen, setFeishuOpen] = useState(false);
+  const [chatFocus, setChatFocus] = useState(0);
   const [zoteroId, setZoteroId] = useState<string>();
   const [scope, setScope] = useState<"mine" | "visible">("visible"), [collectionSearch, setCollectionSearch] = useState(""), [selectedId, setSelectedId] = useState<string>(), [sourceId, setSourceId] = useState<string>(), [search, setSearch] = useState(""), [query, setQuery] = useState("");
   const [editing, setEditing] = useState<ResearchCollection | "new">(), [importing, setImporting] = useState<{ collection: ResearchCollection; source?: ResearchFile }>();
@@ -143,8 +144,8 @@ function LibraryBody() {
       </section>
       {sourceId && collection && <SourceDetail key={sourceId} id={sourceId} collection={collection} onClose={() => setSourceId(undefined)} onChanged={refresh} onVersion={source => setImporting({ collection, source })} />}
     </div>
-    <LibraryAgent />
-    {feishuOpen && <FeishuImport collectionId={collection?.owned && collection.scope === "owner_private" ? collection.id : undefined} onClose={() => setFeishuOpen(false)} onSaved={refreshAfterImport} />}
+    <LibraryAgent onConnectFeishu={() => setFeishuOpen(true)} focusRequest={chatFocus} />
+    {feishuOpen && <FeishuImport collectionId={collection?.owned && collection.scope === "owner_private" ? collection.id : undefined} onClose={() => setFeishuOpen(false)} onSaved={refreshAfterImport} onChat={() => { setFeishuOpen(false); setChatFocus(n => n + 1); }} />}
     {zoteroId && collection?.id === zoteroId && collection.owned && collection.scope === "owner_private" && <ZoteroImport key={zoteroId} collection={collection} onClose={() => setZoteroId(undefined)} onSaved={refresh} />}
     {editing && <CollectionEditor key={editing === "new" ? "new" : editing.id} collection={editing === "new" ? undefined : editing} onClose={() => setEditing(undefined)} onSaved={refresh} />}
     {importing && <FileImport key={`${importing.collection.id}:${importing.source?.id || "new"}`} {...importing} onClose={() => setImporting(undefined)} onSaved={refreshAfterImport} />}

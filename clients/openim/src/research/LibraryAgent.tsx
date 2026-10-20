@@ -13,7 +13,10 @@ import type {
   Contact,
   ResponseFor,
 } from "@research-agent-platform/contracts";
-import { researchApi } from "./api";
+import { researchApi, ResearchApiError } from "./api";
+import { feishuChatFile, findFeishuDocumentLink } from "./feishu-chat";
+import { AgentFileReadSummary } from "./AgentFileReadSummary";
+import type { TextAreaRef } from "antd/es/input/TextArea";
 import { findOwnedStarter, libraryAgentStarter } from "./agentStarterProfiles";
 import type { LibraryAgentBindings } from "./library-agent";
 import {
@@ -33,7 +36,13 @@ import "./library-agent.scss";
 
 const inProgress = (turn?: AgentTurn) =>
   !!turn && ["queued", "running"].includes(turn.status);
-export function LibraryAgent() {
+export function LibraryAgent({
+  onConnectFeishu,
+  focusRequest,
+}: {
+  onConnectFeishu: () => void;
+  focusRequest: number;
+}) {
   const actor = useResearchStore((s) => s.actor),
     generation = useResearchStore((s) => s.generation);
   const [service, setService] = useState<{ generation: number; origin: string }>();
@@ -59,11 +68,23 @@ export function LibraryAgent() {
       key={`${generation}:${storageKey}`}
       actorId={actor.member.id}
       storageKey={storageKey}
+      onConnectFeishu={onConnectFeishu}
+      focusRequest={focusRequest}
     />
   );
 }
 
-function LibraryChat({ actorId, storageKey }: { actorId: string; storageKey: string }) {
+function LibraryChat({
+  actorId,
+  storageKey,
+  onConnectFeishu,
+  focusRequest,
+}: {
+  actorId: string;
+  storageKey: string;
+  onConnectFeishu: () => void;
+  focusRequest: number;
+}) {
   const { links, remember } = useAgentStarterLinks(actorId),
     remembered = useRef(links[libraryAgentStarter.id]);
   const capture = useAgentChatOperation(),
@@ -90,6 +111,18 @@ function LibraryChat({ actorId, storageKey }: { actorId: string; storageKey: str
     }
   });
   const [sent, setSent] = useState<AgentTurn>();
+  const [readingFeishu, setReadingFeishu] = useState(false),
+    [needsFeishu, setNeedsFeishu] = useState(false),
+    [ignoredFile, setIgnoredFile] = useState("");
+  const input = useRef<TextAreaRef>(null);
+  useEffect(() => {
+    if (focusRequest) {
+      setExpanded(true);
+      setFailure("");
+      setNeedsFeishu(false);
+      input.current?.focus();
+    }
+  }, [focusRequest]);
   const lock = useRef(false),
     bottom = useRef<HTMLDivElement>(null);
   const checkpoint = (intent: LibrarySendIntent) => {
@@ -200,6 +233,10 @@ function LibraryChat({ actorId, storageKey }: { actorId: string; storageKey: str
   const reply = useLibraryReply(latest, conversationId, history.refresh),
     activeTurn = reply.turn || latest;
   const generating = inProgress(activeTurn);
+  const recentFile = [...(history.data?.messages || [])]
+    .reverse()
+    .find((m) => m.origin === "human" && m.files?.length)?.files?.[0];
+  const followupFile = recentFile?.messageId !== ignoredFile ? recentFile : undefined;
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "nearest" });
   }, [history.data?.messages.length, reply.text, expanded]);
@@ -209,16 +246,32 @@ function LibraryChat({ actorId, storageKey }: { actorId: string; storageKey: str
     lock.current = true;
     setBusy(true);
     setFailure("");
+    setNeedsFeishu(false);
     setExpanded(true);
     const operation = capture();
-    const intent = retry || {
+    let intent: LibrarySendIntent = retry || {
       key: crypto.randomUUID(),
       text: draft.trim(),
       collectionIds: [...selected],
       ...(agent ? { agentId: agent.id, bindingVersion: bindings?.version } : {}),
     };
     try {
+      if (!retry) {
+        const url = findFeishuDocumentLink(intent.text);
+        if (url) {
+          setReadingFeishu(true);
+          const document = await researchApi("previewFeishuDocument", {
+            body: { url },
+            signal: operation.signal,
+          });
+          if (!operation.isCurrent()) return;
+          intent = { ...intent, file: feishuChatFile(document.data) };
+        } else if (followupFile) {
+          intent = { ...intent, fileSelection: { messageId: followupFile.messageId } };
+        }
+      }
       checkpoint(intent);
+      setReadingFeishu(false);
       const result = await sendLibraryMessage({
         api: researchApi,
         actorId,
@@ -247,12 +300,21 @@ function LibraryChat({ actorId, storageKey }: { actorId: string; storageKey: str
       setSent(result.turn || undefined);
       await history.refresh();
     } catch (error) {
-      if (operation.isCurrent())
+      if (operation.isCurrent()) {
+        if (
+          error instanceof ResearchApiError &&
+          ["FEISHU_REAUTHORIZE", "FEISHU_UNAVAILABLE"].includes(error.code)
+        )
+          setNeedsFeishu(true);
         setFailure(
           error instanceof Error ? error.message : "消息未确认，请核对原消息。",
         );
+      }
     } finally {
-      if (operation.isCurrent()) setBusy(false);
+      if (operation.isCurrent()) {
+        setBusy(false);
+        setReadingFeishu(false);
+      }
       lock.current = false;
       operation.dispose();
     }
@@ -303,7 +365,13 @@ function LibraryChat({ actorId, storageKey }: { actorId: string; storageKey: str
         <div>
           <ReadOutlined />
           <strong>资料 Agent</strong>
-          <span>{generating ? "正在结合资料回复…" : "围绕资料，直接聊"}</span>
+          <span>
+            {readingFeishu
+              ? "正在读取飞书文档…"
+              : generating
+              ? "正在结合资料回复…"
+              : "围绕资料，直接聊"}
+          </span>
         </div>
         <nav>
           <Popover
@@ -375,7 +443,7 @@ function LibraryChat({ actorId, storageKey }: { actorId: string; storageKey: str
             <div className="library-agent-welcome">
               <strong>想从资料里找到什么？</strong>
               <p>
-                可以问一份申请书的写法，也可以比较论文中的方法。回答会说明实际读取的片段。
+                直接发飞书文档链接，说“总结这份申请书”或“分析论文方法”，不用先导入集合。首次需要文档链接，暂不按名称搜索整个飞书。
               </p>
               <button
                 onClick={() => setDraft("查找项目申请书中关于研究基础的内容，标明出处")}
@@ -388,11 +456,21 @@ function LibraryChat({ actorId, storageKey }: { actorId: string; storageKey: str
             <article className={`library-chat-message role-${m.origin}`} key={m.id}>
               <span>{m.origin === "human" ? "我" : "资料 Agent"}</span>
               {m.text && <SafeMessageMarkdown text={m.text} />}
+              {m.files?.map((file) => (
+                <small key={file.messageId}>
+                  {file.filename} · {file.characterCount} 字符
+                </small>
+              ))}
               {m.turnId && m.origin !== "human" && (
                 <LibraryMessageFacts turnId={m.turnId} messageId={m.id} />
               )}
             </article>
           ))}
+          {readingFeishu && (
+            <div role="status">
+              <Spin size="small" /> 正在用你的飞书授权读取这份文档…
+            </div>
+          )}
           {generating && (
             <div className="library-chat-message role-model">
               {reply.text ? (
@@ -401,9 +479,9 @@ function LibraryChat({ actorId, storageKey }: { actorId: string; storageKey: str
                   <small>正在生成，最终回答与来源以完成后的回执为准。</small>
                 </>
               ) : (
-                <p role="status">
+                <div role="status">
                   <Spin size="small" /> 正在读取获准片段并准备回复…
-                </p>
+                </div>
               )}
             </div>
           )}
@@ -413,6 +491,14 @@ function LibraryChat({ actorId, storageKey }: { actorId: string; storageKey: str
               (m) => m.id === activeTurn.outputMessageId,
             ) && <ResearchTurnStatus turn={activeTurn} compact onRetried={setSent} />}
           <div ref={bottom} />
+        </div>
+      )}
+      {needsFeishu && (
+        <div className="library-chat-recovery">
+          <span>先连接你的飞书账号，回来后可继续发送原问题。</span>
+          <Button size="small" onClick={onConnectFeishu}>
+            连接飞书
+          </Button>
         </div>
       )}
       {(failure || history.error || reply.error) && (
@@ -464,8 +550,9 @@ function LibraryChat({ actorId, storageKey }: { actorId: string; storageKey: str
       )}
       <div className="library-agent-composer">
         <Input.TextArea
+          ref={input}
           aria-label="与资料 Agent 对话"
-          placeholder="问问资料 Agent：查找申请书、比较论文方法，或接着追问…"
+          placeholder="发飞书文档链接，说说你想了解什么；也可以问资料集合或继续追问…"
           value={draft}
           maxLength={8000}
           autoSize={{ minRows: 1, maxRows: 3 }}
@@ -478,6 +565,22 @@ function LibraryChat({ actorId, storageKey }: { actorId: string; storageKey: str
             }
           }}
         />
+        {followupFile && (
+          <div className="library-chat-source">
+            <span>继续围绕：{followupFile.filename}</span>
+            <Button
+              type="text"
+              size="small"
+              disabled={busy || !!pending}
+              onClick={() => setIgnoredFile(followupFile.messageId)}
+            >
+              取消指定文档
+            </Button>
+          </div>
+        )}
+        <p className="library-chat-note">
+          发送飞书链接会读取纯文本，交给当前模型并随本人对话保存；不会自动加入资料集合或共享。
+        </p>
         <footer>
           <span>
             {!ready
@@ -616,6 +719,9 @@ function LibraryMessageFacts({
         <>
           {turn.outputMessageId === messageId && turn.libraryRead && (
             <ResearchReadSummary read={turn.libraryRead} />
+          )}
+          {turn.outputMessageId === messageId && turn.fileRead && (
+            <AgentFileReadSummary read={turn.fileRead} status={turn.status} />
           )}
           <ResearchTurnStatus turn={turn} compact />
         </>

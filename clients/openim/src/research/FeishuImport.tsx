@@ -13,10 +13,12 @@ export function FeishuImport({
   collectionId,
   onClose,
   onSaved,
+  onChat,
 }: {
   collectionId?: string;
   onClose: () => void;
   onSaved: () => Promise<void>;
+  onChat?: () => void;
 }) {
   const navigate = useNavigate();
   const operation = usePersonalOperation(true, "feishu-import");
@@ -221,7 +223,7 @@ export function FeishuImport({
     >
       <div className="feishu-import">
         <p className="research-library-muted">
-          资料在飞书继续维护。选择一份文档，核对实际读取的文字，再保存本次副本。
+          授权后可直接和资料 Agent 聊文档；需要归档时，也可保存一份资料集合副本。
         </p>
         {(error || status.error) && (
           <Alert
@@ -377,35 +379,43 @@ export function FeishuImport({
           <>
             <Alert
               type="success"
-              message="飞书已连接，可以选择资料了"
-              description="复制一份飞书文档或知识库文档的链接，粘贴到下面，再点击“读取并预览”。"
+              message="飞书已连接，直接和资料 Agent 说吧"
+              description="在底部聊天框发文档链接和问题，就能阅读、总结并继续追问，无需先导入集合。"
             />
-            <label>
-              飞书文档链接
-              <Input
-                aria-label="飞书文档链接"
-                placeholder="https://你的团队.feishu.cn/docx/… 或 /wiki/…"
-                value={url}
-                maxLength={2048}
-                disabled={busy || uncertain}
-                onChange={(e) => {
-                  setUrl(e.target.value);
-                  setPreview(undefined);
-                  setConfirmed(false);
-                }}
-              />
-            </label>
-            <p className="research-library-muted">
-              支持新版文档，以及知识库中的新版文档。仅纯文本，暂不读取图片、附件、评论或表格的视觉结构。
-            </p>
-            <Button
-              type="primary"
-              disabled={!url.trim() || uncertain}
-              loading={busy}
-              onClick={() => void run(read)}
-            >
-              读取并预览
-            </Button>
+            {onChat && (
+              <Button type="primary" disabled={busy || uncertain} onClick={onChat}>
+                去和资料 Agent 聊
+              </Button>
+            )}
+            <details className="feishu-manual-import">
+              <summary>保存为资料集合副本（可选）</summary>
+              <label>
+                飞书文档链接
+                <Input
+                  aria-label="飞书文档链接"
+                  placeholder="https://你的团队.feishu.cn/docx/… 或 /wiki/…"
+                  value={url}
+                  maxLength={2048}
+                  disabled={busy || uncertain}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    setPreview(undefined);
+                    setConfirmed(false);
+                  }}
+                />
+              </label>
+              <p className="research-library-muted">
+                支持新版文档，以及知识库中的新版文档。仅纯文本，暂不读取图片、附件、评论或表格的视觉结构。
+              </p>
+              <Button
+                type="primary"
+                disabled={!url.trim() || uncertain}
+                loading={busy}
+                onClick={() => void run(read)}
+              >
+                读取并预览
+              </Button>
+            </details>
           </>
         )}
         {preview && (
