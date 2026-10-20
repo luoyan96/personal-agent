@@ -95,9 +95,26 @@ const legacyAgentStarters: readonly AgentStarter[] = [
   },
 ];
 
+export const libraryAgentStarter: AgentStarter = {
+  id: "research-library",
+  summary: "围绕选定的资料集合，查找文字证据、对比内容、整理写作与研究参考。",
+  input: "先选择获准集合，再用聊天说明问题，例如查找项目申请书中的研究基础。",
+  boundary:
+    "仅使用实际检索到的文字片段并标注来源；原件素材需自行打开，不自动同步飞书或执行代码。",
+  profile: {
+    displayName: "资料 Agent",
+    introduction:
+      "帮助查找和理解获准资料中的文字证据，整理论文、专利、项目申请与写作参考。",
+    capabilityDescription:
+      "输入：用户的问题、明确绑定且当前获准的资料集合，以及主动提供的文字或附件。输出：基于本次实际提供片段的回答、对比与整理建议；引用服务提供的 [R1]、[R2] 等来源标签，区分原文事实与推断，说明缺失资料和读取范围。没有匹配片段时明确说明，建议具体关键词，不凭记忆补造课题组文件。仅保存原件的 PPT、图片、代码不代表已理解其内容；不声称读完整库，不自动读取或同步飞书原文，不执行代码、不修改原文件、不自动分类搬移资料。使用用户自己的模型；绑定资料不授予其他成员权限。",
+    personality:
+      "简明、严谨、重视来源；先回答用户的问题，再给出可核对的出处与必要的资料缺口。",
+  },
+};
+
 // Keep exact legacy profiles as a reuse option; never overwrite an edited Agent.
-export const agentStarters: readonly AgentStarter[] = legacyAgentStarters.map(
-  (starter) => ({
+export const agentStarters: readonly AgentStarter[] = [
+  ...legacyAgentStarters.map((starter) => ({
     ...starter,
     input:
       starter.id === "literature-reading"
@@ -119,8 +136,9 @@ export const agentStarters: readonly AgentStarter[] = legacyAgentStarters.map(
         "不联网检索；附件仅使用本次实际读取的文字范围",
       )}\n可阅读用户主动上传的含文字 PDF、TXT、Markdown、CSV（至多 10 MiB）；依据服务实际提供的页码与片段回答，不声称已读完整文件，不做扫描 OCR、联网检索或工具执行。`,
     },
-  }),
-);
+  })),
+  libraryAgentStarter,
+];
 
 export function findOwnedStarter(
   contacts: readonly Contact[],

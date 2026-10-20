@@ -14,6 +14,7 @@ import "./research-library.scss";
 import { ZoteroImport } from "./ZoteroImport";
 import { FeishuImport } from "./FeishuImport";
 import { ResearchFileImport as FileImport } from "./ResearchFileImport";
+import { LibraryAgent } from "./LibraryAgent";
 type ResearchCollection = ResponseFor<"researchCollections">["data"][number];
 type ResearchFile = ResponseFor<"researchFiles">["data"][number];
 
@@ -117,7 +118,8 @@ function LibraryBody() {
     catch (error) { if (isCurrent()) { setFailure(failureText(error)); await collections.refresh(); } }
   };
   return <div className="research-library">
-    <header className="research-library-heading"><div><h2>资料与素材库</h2><p>只使用当前账号获准的资料，公开 Agent 不会公开私人资料。</p></div><div className="research-library-actions"><Button onClick={() => setFeishuOpen(true)}>连接飞书资料</Button><Button type="primary" onClick={() => setEditing("new")}>新建集合</Button></div></header>
+    <header className="research-library-heading"><div><h2>课题组资料</h2><p>汇集论文、专利、项目申请与模板，按集合范围与课题组共享；私人集合仅自己可见。</p></div><div className="research-library-actions"><Button onClick={() => setFeishuOpen(true)}>连接飞书资料</Button><Button type="primary" onClick={() => setEditing("new")}>新建集合</Button></div></header>
+    <LibraryAgent />
     {failure && <Alert type="warning" message={failure} />}
     <div className={`research-library-body ${sourceId ? "has-source" : ""}`}>
       <aside className="research-collection-rail" aria-label="资料集合">
@@ -153,7 +155,7 @@ function LibraryGate() {
   const read = useResearchRead(libraryAvailability, "research-library-availability");
   const supported = useRef(false);
   if (read.data) supported.current = read.data.available;
-  if (!supported.current) return <section className="research-library-empty" role="status"><h2>{!read.data && !read.error ? "正在检查资料服务…" : read.error ? "资料服务暂不可用" : "资料服务待升级"}</h2><p>{read.error || "资料与素材库需要服务契约 0.24 或以上。"}</p><Button onClick={read.refresh}>重新检查</Button></section>;
+  if (!supported.current) return <section className="research-library-empty" role="status"><h2>{!read.data && !read.error ? "正在检查资料服务…" : read.error ? "资料服务暂不可用" : "资料服务待升级"}</h2><p>{read.error || "课题组资料需要服务契约 0.24 或以上。"}</p><Button onClick={read.refresh}>重新检查</Button></section>;
   return <div className="research-library-gate">{read.error && <Alert type="warning" message={read.error} action={<Button onClick={read.refresh}>重新检查</Button>} />}<LibraryBody /></div>;
 }
 export function ResearchLibrary() {

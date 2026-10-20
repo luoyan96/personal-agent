@@ -291,7 +291,7 @@ export function DesktopWorkbench() {
           options={[
             { label: "课题组任务", value: "team" },
             { label: "我的任务", value: "tasks" },
-            { label: "资料与素材库", value: "library" },
+            { label: "课题组资料", value: "library" },
           ]}
         />
       </div>

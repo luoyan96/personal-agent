@@ -1180,3 +1180,17 @@ Browser插件未列出，用已有CUA内置浏览器及Playwright。1280×720真
 本批无后台、迁移、密钥/飞书权限或公开Release/更新源变更。后台仍47c42ac+key-preview.4bc8d1f+feishu.2bbcfbc / image4ee12e77 / 0.26.0 / schema023，飞书0.1.0仅罗岩；真实OAuth、私人选定文档及用户覆盖安装后的长期稳定性继续验证。更新交付/状态/README/产品说明/路线图，并修正飞书实现文档遗留的“本批不部署”措辞，保留历史部署事实。
 
 收尾：文档67963eaf80ce754964c650c645e55a18d182ea7c已推送，创建并附[草稿PR74](https://github.com/luoyan96/personal-agent/pull/74)，base feat/feishu-readonly-pilot，未合并。226份Markdown/10份Skill及diff检查通过；该head远端Foundation三项首读IN_PROGRESS，不称已通过。桌面包哈希和安装说明已读回，完整交付收据留Git外。合成浏览器页、4930/4931服务及本批独立Electron helper已停止，现装0.10.20、旧包及用户数据保留；真实公开latest核对仍v0.6.0，无发布操作。产品543dc9c及最终安装器保持。
+
+## 2026-10-20：课题组资料、资料 Agent 与 Windows0.10.22
+
+用户要求将“资料与素材库”改为“课题组资料”，并设置资料Agent。先重读AGENTS/状态/最新日志/README/路线图，核对实际干净fix/desktop-network-0.10.21 / 3d5270cdfb11623952c2a869c345598944499ff8，创建feat/library-agent-0.10.22；没有切main或覆盖修改。沿React性能/前端验收流程，复用现有本人Agent、集合绑定、检索/来源回执和普通聊天接口，产品源码固定df184820f44f023dc8cb0363298b13a41df39e2f。
+
+栏目/标题统一改名，资料页增加资料Agent卡片：选定获准集合、明确创建/复用本人助手、保存绑定、打开已有聊天。保持课题组共享集合与私人集合权限；每人模型/私聊独立，不自动发消息或共享原文。增加第七份私人助手配置，限定实际片段查找、归纳/对比与来源核对；不是飞书全量同步、原件自动整理或代码执行。绑定限20、选择器最近100并保留已绑定项。失败后重读本人联系人避免重复创建；相同范围可恢复，另一处的新范围拒绝被旧表单覆盖，账号/路径/会话变化隔离迟到结果。
+
+渲染及主进程类型、34项客户端定向、16项/2文件既有真实HTTP/SQLite/worker合成模型资料聊天检查全部通过。没有API/契约/核心/Skill变更，不重复前批根693项CI。Browser插件未列出，用CUA内置浏览器/AX/Playwright，1280×720实际组件+HTTP/SQLite，IM是明确的合成传输夹具：空库不创建、选择共享集合、创建/绑定/聊天导航、再入复用、并发修改范围拒绝覆盖/重新读取、A/B私人资料隔离及B不继承A助手、A再次进入复用均通过。独立HTTP核对一个本人资料Agent、精确绑定和来源、无匹配、共享/私人ACL、零条自动消息。没有真实供应商回复、生产私人资料、真实飞书OAuth或其他窗口尺寸验收，不计真实科研质量。初始合成IM回执字段与夹具缺少登录门禁的取消失败保留；修正测试夹具后重载，最终仅既有Router/AntD弃用提示，无新增运行异常。
+
+Windows0.10.22 NSIS87,432,807字节，SHA256 e696d8ad798ca36df5a27fa35375d33dc315d160ca22a9e76ad1184d2219a179，已复制C:/Users/luo/Desktop/AcceptCat_0.10.22.exe。18JS/8CSS逐字节、52运行包/55装配包、旧联网/飞书/规划/模型/任务与品牌/无QA内容通过；实际NSIS内ASAR d4a93fb9799170742822d27edd06b0ac9dc7412b9884379ac381e706b5de956c、EXE 5569e09310601bebdf348c1c6b4e098de2808440582a3c3618c5f76efebb425c与受测目录一致，隐藏隔离原生启动OPENIM_ELECTRON_READY。旧electron-log initialize提示保留。未代安装、关闭用户客户端或删除旧包/用户数据。
+
+公开ready实读200/0.26.0，harness仍not_verified；本批未新inspect镜像，后台沿前批image4ee12e77 / 47c42ac+key-preview.4bc8d1f+feishu.2bbcfbc / schema023，飞书0.1.0仅罗岩。无后台部署/迁移/密钥/飞书权限、公开Release或更新源变更，公开latest核对仍v0.6.0。代码/包/用户安装/后台/公开发布分别记录。[交付详情](deployment/acceptcat-0.10.22.md)，Git外.runtime/library-agent-20261020保留截图、合成HTTP收据、日志、首次失败与最终安装载荷证据。下一步围绕获准真实资料评价检索/出处与中文回答，再按样本讨论分类和增量同步。
+
+收尾：文档cb729ae已推送，创建并附[草稿PR75](https://github.com/luoyan96/personal-agent/pull/75)，base fix/desktop-network-0.10.21，未合并。227份Markdown/10份Skill及diff检查通过；该head远端Foundation首读一项QUEUED、两项IN_PROGRESS，未声称通过。安装说明在桌面；本批合成页面和4934/4935服务收尾停止，未触碰Edge用户维护页、现装进程或私人数据。

@@ -28,7 +28,7 @@ export function WorkbenchLibrary() {
     <div className="workspace-group-panel">
       <div className="workspace-subnavigation">
         <Segmented
-          aria-label="资料与素材栏目"
+          aria-label="课题组资料栏目"
           value={reports ? "reports" : "collections"}
           options={[
             { label: "资料集合", value: "collections" },

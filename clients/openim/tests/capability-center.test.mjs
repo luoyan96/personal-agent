@@ -29,8 +29,8 @@ test("input extraction uses a configured input and does not invent one from outp
   assert.equal(helpers.capabilityInput({ profile: { capabilityDescription: "输入：论文摘要。输出：讨论提纲。" } }), "论文摘要。");
   assert.match(helpers.capabilityInput({ profile: { capabilityDescription: "输出：详细报告" } }), /尚未说明/);
 });
-test("six research starter configurations stay valid editable text profiles with explicit execution limits", () => {
-  assert.equal(profiles.agentStarters.length, 6);
+test("research starter configurations stay valid editable text profiles with explicit execution limits", () => {
+  assert.equal(profiles.agentStarters.length, 7);
   for (const starter of profiles.agentStarters) assert.equal(ContactProfileInput.safeParse(starter.profile).success, true);
   for (const id of ["figure-planning", "data-reproduction", "lab-meeting"]) {
     const starter = profiles.agentStarters.find(item => item.id === id);
