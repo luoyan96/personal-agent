@@ -19,6 +19,7 @@ export async function prepareLibraryAgent(options: {
   signal: AbortSignal;
   isCurrent: () => boolean;
   onPrepared: (agent: Contact, bindings: LibraryAgentBindings) => void;
+  creationKey?: string;
 }) {
   const { api, actorId, signal, isCurrent, onPrepared, collectionIds } = options;
   if (!isCurrent()) return;
@@ -37,7 +38,11 @@ export async function prepareLibraryAgent(options: {
     throw new Error("资料 Agent 状态已变化，请重新读取后核对。");
   if (!agent) {
     agent = (
-      await api("createPersonalAgent", { body: libraryAgentStarter.profile, signal })
+      await api("createPersonalAgent", {
+        body: libraryAgentStarter.profile,
+        signal,
+        idempotencyKey: options.creationKey,
+      })
     ).data;
     if (!isCurrent()) return;
   }

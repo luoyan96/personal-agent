@@ -119,7 +119,6 @@ function LibraryBody() {
   };
   return <div className="research-library">
     <header className="research-library-heading"><div><h2>课题组资料</h2><p>汇集论文、专利、项目申请与模板，按集合范围与课题组共享；私人集合仅自己可见。</p></div><div className="research-library-actions"><Button onClick={() => setFeishuOpen(true)}>连接飞书资料</Button><Button type="primary" onClick={() => setEditing("new")}>新建集合</Button></div></header>
-    <LibraryAgent />
     {failure && <Alert type="warning" message={failure} />}
     <div className={`research-library-body ${sourceId ? "has-source" : ""}`}>
       <aside className="research-collection-rail" aria-label="资料集合">
@@ -144,6 +143,7 @@ function LibraryBody() {
       </section>
       {sourceId && collection && <SourceDetail key={sourceId} id={sourceId} collection={collection} onClose={() => setSourceId(undefined)} onChanged={refresh} onVersion={source => setImporting({ collection, source })} />}
     </div>
+    <LibraryAgent />
     {feishuOpen && <FeishuImport collectionId={collection?.owned && collection.scope === "owner_private" ? collection.id : undefined} onClose={() => setFeishuOpen(false)} onSaved={refreshAfterImport} />}
     {zoteroId && collection?.id === zoteroId && collection.owned && collection.scope === "owner_private" && <ZoteroImport key={zoteroId} collection={collection} onClose={() => setZoteroId(undefined)} onSaved={refresh} />}
     {editing && <CollectionEditor key={editing === "new" ? "new" : editing.id} collection={editing === "new" ? undefined : editing} onClose={() => setEditing(undefined)} onSaved={refresh} />}

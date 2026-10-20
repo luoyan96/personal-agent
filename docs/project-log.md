@@ -1194,3 +1194,19 @@ Windows0.10.22 NSIS87,432,807字节，SHA256 e696d8ad798ca36df5a27fa35375d33dc31
 公开ready实读200/0.26.0，harness仍not_verified；本批未新inspect镜像，后台沿前批image4ee12e77 / 47c42ac+key-preview.4bc8d1f+feishu.2bbcfbc / schema023，飞书0.1.0仅罗岩。无后台部署/迁移/密钥/飞书权限、公开Release或更新源变更，公开latest核对仍v0.6.0。代码/包/用户安装/后台/公开发布分别记录。[交付详情](deployment/acceptcat-0.10.22.md)，Git外.runtime/library-agent-20261020保留截图、合成HTTP收据、日志、首次失败与最终安装载荷证据。下一步围绕获准真实资料评价检索/出处与中文回答，再按样本讨论分类和增量同步。
 
 收尾：文档cb729ae已推送，创建并附[草稿PR75](https://github.com/luoyan96/personal-agent/pull/75)，base fix/desktop-network-0.10.21，未合并。227份Markdown/10份Skill及diff检查通过；该head远端Foundation首读一项QUEUED、两项IN_PROGRESS，未声称通过。安装说明在桌面；本批合成页面和4934/4935服务收尾停止，未触碰Edge用户维护页、现装进程或私人数据。
+
+## 2026-10-20：资料 Agent 底部聊天与 Windows0.10.23
+
+用户指出资料Agent应沿用任务规划Agent底部直接聊天，而不是中部跳转卡片。先核对实际干净feat/library-agent-0.10.22 / 5f1becc并重读交接文件，新建fix/library-agent-dock-0.10.23；没有切main或覆盖修改。按React性能与前端验收流程修改，产品固定316768dc5707c4c43677f046165d590da194f9b1。
+
+资料页底部常驻输入，原地提问/连续追问/流式进度/停止/历史恢复/来源核对；移除中部卡片和跳转弹窗。范围选择收进聊天区，发送时明确保存，复用本人Agent和既有私聊，首次发送才创建。旧资料/模型/共享权限保持，不因界面变化同步整库或授予他人访问。发送原文、范围和Key在本机按服务/账号/课题组隔离，逐阶段保存待确认记录；丢回执、重启后核对原消息不重复写，不重绑已派发请求。尚未进入会话派发阶段可返回修改。最近80个消息序号在底部显示，完整私聊记录保持。
+
+渲染/主进程类型、33项客户端定向及26项/3文件资料库、资料聊天、连续聊天HTTP/SQLite/worker检查通过；仅合成模型，没有真实供应商或生产私人材料。API/契约/核心/Skill未改，不重复根693项CI。Browser插件缺席，用CUA内置浏览器/AX/Playwright，1280×720实际组件、HTTP/SQLite/worker配合合成模型/IM：底部输入与上方资料同页，选集合→问题→回答→追问→展开实际48字符原文、进度/停止/清除临时输出、服务已落库但丢回执→刷新→核对原消息、收起/展开与A/B/A隔离/历史恢复均通过。独立数据库/API收据核对一份本人资料Agent、选定共享集合、丢回执输入仅1条、取消回执；四条合成输入、一条停止、三条合成回答。没有其他窗口尺寸或真实科研质量验收。
+
+早期HMR的测试桌面桥缺少ipcSendSync，补齐夹具并新页重验，最终仅既有Router未来警告；保留ui-fixture-hmr-console.json。首次包检查把通讯录正常“创建并开始聊天”误判为旧资料入口，修正为页面按钮0/底部文本框1及旧CSS缺席，不改变正常通讯录。Git外.runtime/library-dock-20261020保留测试、注入丢回执、实际片段、取消、重复计数、截图、首败和最终包证据。
+
+Windows0.10.23 NSIS87,431,664字节，SHA256 11f46da4811d5ce68e489bcaf5fd9888ff8885db5b4765ad1e2ccf62a63a10c3，已复制C:/Users/luo/Desktop/AcceptCat_0.10.23.exe。18JS/8CSS字节、52运行包/55装配包、新聊天样式/旧卡片CSS移除、旧联网/飞书/规划/模型/任务/品牌和无QA内容通过；实际NSIS内ASAR db0ca1eb327abe4cedb8512bf4a92798e51ac7b4c126bd76a373e0cc747a3eed、EXE 6d5ecfe1780b87cfbec9ef7351f6a8e0e2656797063ab61c1804fe532186c25f与受测目录一致。隐藏隔离数据目录原生启动OPENIM_ELECTRON_READY，旧electron-log重复初始化提示保留。未代安装、关闭用户客户端、删除旧包或用户数据。
+
+无后台部署/迁移/密钥/飞书权限、公开Release或更新源变更；后台沿前批记录contract0.26/schema023、image4ee12e77 / 47c42ac+key-preview.4bc8d1f+feishu.2bbcfbc，飞书0.1.0仅罗岩，本批不新inspect镜像。公开latest实际核对仍v0.6.0。代码、包制作、用户安装、后台部署、公开发布分别记录。[交付详情](deployment/acceptcat-0.10.23.md)。下一步以本人获准真实资料验证中文提问、检索及出处质量。
+
+收尾：文档0862a04已推送，创建并附[草稿PR76](https://github.com/luoyan96/personal-agent/pull/76)，base feat/library-agent-0.10.22，未合并。228份Markdown/10份Skill及diff检查通过；该head远端Foundation三项首读IN_PROGRESS，不称已通过。桌面安装说明已保存，最终收据留Git外；本批浏览器页、4936/4937合成服务已停止，旧安装包、用户进程、Edge维护页和私人数据保留。
