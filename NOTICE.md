@@ -19,7 +19,7 @@ GitHub首页展示既有蜷睡橘猫图标和实际开发界面的合成科研�
 
 用户指定原 `Catnap Desktop` 快捷方式中蜷睡橘猫作为当前应用图标。读取该快捷方式确定来源为本机 `D:/0cat/Catnap Desktop/Catnap Desktop.exe` 的图标组1；仅提取已有图标像素（16–256px共七档），没有复制旧应用源码或运行时。完整ICO及最大尺寸透明PNG用于AcceptCat 0.8.3的安装图标、原生窗口和标题栏/关于页。原素材生成过程及独立原图未追溯，本次不补写未核实的第三方许可或作者。来源校验和、迁移范围见[图标交接](docs/development/acceptcat-cat-icon.md)。
 
-B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `dsh-llm-deepseek-api-key` 0.2.0-rc.1 和 Cordis 4.0.4（MIT）；经公开接口使用，不复制上游实现。具体依赖与校验值见 pnpm-lock.yaml。
+B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `dsh-llm-deepseek-api-key` 0.2.1-rc.2 和 Cordis 4.0.5（MIT）；经公开接口使用，不复制上游实现。2026-10-20由0.2.0-rc.1 / 4.0.4升级，具体依赖与校验值见 pnpm-lock.yaml，历史测试保留其受测版本。
 
 ## 2026-10-04 OpenIM 客户端源码采用
 

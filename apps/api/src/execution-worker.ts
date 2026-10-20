@@ -7,7 +7,7 @@ import type { DatabaseSync } from 'node:sqlite'
 import { z } from 'zod'
 import { PlanInput, PlanningRequest, RunRecord, EvidenceChecklist, AdaptiveReply } from '@research-agent-platform/contracts'
 import { Collaboration } from './collaboration.js'
-import { AiService, instant } from './ai.js'
+import { AiService, instant, executionHarnessVersion } from './ai.js'
 import type { Run, Planning, PlanningInput } from './ai.js'
 import type { Config } from './config.js'
 import { transaction } from './database.js'
@@ -147,7 +147,7 @@ export class ExecutionWorker {
       }catch(error){doc.status='failed';doc.failure=error instanceof Error && /^[A-Z_]+$/.test(error.message)?error.message:'PRECONDITION_FAILED';service.save(String(row.id),doc);return null}
       if(row.kind==='capability'){
         const r=doc as Run,task=service.c.task(r.taskId)
-        r.attempt=attempt;r.startedAt??=instant()
+        r.attempt=attempt;r.startedAt??=instant();r.harnessVersion=executionHarnessVersion
         if(task.status!=='in_progress'){task.status='in_progress';task.blocker=null;task.version++;task.updatedAt=instant();service.c.saveTask(task);service.c.event(task,'execution_updated','Public execution started.');r.taskVersion=task.version}
       }
       const fence=Number(row.fence)+1

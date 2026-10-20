@@ -2,6 +2,18 @@
 
 更新日期：2026-10-20（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新后台批次：DSH0.2.1-rc.2已部署
+
+评审入口：[草稿PR78](https://github.com/luoyan96/personal-agent/pull/78)，base `fix/chat-sidebar-resize-0.10.24`，已推送并附任务、未合并；b64b4f3远端Foundation三项首读IN_PROGRESS，不称已通过。
+
+用户要求更新后台。从实际干净`fix/chat-sidebar-resize-0.10.24` / `46b531f`新建`chore/harness-0.2.1-rc.2`，产品固定 **47ec4969ec83c751053f229daac6b20f3271cb39**。[部署与回退](deployment/harness-0.2.1-rc.2-20261020.md)。官方LLM/provider精确**0.2.1-rc.2**，Cordis**4.0.5**；空工具/原模型选择、业务权限及contract0.26/schema023保持，无迁移。Windows0.10.24包未变，无需重装；无公开Release/飞书权限或密钥修改。
+
+生产API/worker已配对更新，镜像 **research-openim-api:harness-0.2.1-rc.2-20261020** / **sha256:34bba4d03a5d714d731c248302f1484d47382c52e833d004dda68c88e01c5130**；组合revision `47c42ac+key-preview.4bc8d1f+feishu.2bbcfbc+harness.0.2.1-rc.2`，仅五源文件覆盖旧feishu镜像，未整体部署桌面分支。实际running/restart0、API healthy；其他6服务ID/镜像/状态保持。
+
+**694项/55文件全量CI、2项生产CLI、Linux候选29项及飞书HTTP隔离检查通过**。上线后本人既有DeepSeek默认模型真实合成短句返回OK、流式2字符、23输入/1输出tokens、1016ms；无私人材料/历史/业务任务。公网ready200/0.26，Harness health仍not_verified；真人工探针与健康标记分开，不称真实科研质量完成或千问/豆包真厂商已验。
+
+停写备份/恢复与上线前核对94表/6原件逐项一致，模型凭据/默认选择整表哈希保持，schema023未迁移；备份`/srv/research-openim-backups/harness-20261020-20261020T094007Z`。首轮审计对象prototype误判触发自动恢复旧服务，未还原覆盖数据；修正后原恢复副本通过并重新备份切换，第二轮17:40:05—17:40:18，不含首轮窗口。旧镜像和两轮备份保留，可回退。失败与最终证据Git外`.runtime/harness-upgrade-20261020`。
+
 ## 最新批次0.10.24：聊天列表拖动宽度，安装包已制作
 
 评审入口：[草稿PR77](https://github.com/luoyan96/personal-agent/pull/77)，base `fix/library-agent-dock-0.10.23`，已推送并附任务，未合并。文档16abb76远端Foundation首读两项IN_PROGRESS、一项QUEUED，不称已通过。

@@ -90,6 +90,7 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 | --- | --- |
 | **最新桌面试用版：0.10.24** | 聊天列表可拖动调整并记住宽度，双击恢复默认；保留底部资料对话、规划和联网修复。安装包已制作供覆盖安装，尚未上传公开Release。[查看交付说明](docs/deployment/acceptcat-0.10.24.md) |
 | **飞书本人试点版：0.10.20** | 已制作安装包，配套后台已部署、飞书应用仅本人上线；支持选定文档预览、私人副本和规划片段，真实账号授权与选定材料试读待本人验证。[查看试点范围](docs/development/feishu-readonly-pilot.md) |
+| **后台模型运行层：DSH 0.2.1-rc.2** | 已部署并验证现有模型的真实短句回复，保留现有账号、资料与模型设置；已有客户端无需重装。[部署说明](docs/deployment/harness-0.2.1-rc.2-20261020.md) |
 | **GitHub 公开下载：v0.6.0** | 可从 [Releases](https://github.com/luoyan96/personal-agent/releases/latest) 下载；安装文件仍叫 `ResearchWeChat_0.6.0.exe`，属于早期版本，未包含这里展示的全部体验 |
 | **产品源码** | 最新桌面改进在 [fix/chat-sidebar-resize-0.10.24](https://github.com/luoyan96/personal-agent/tree/fix/chat-sidebar-resize-0.10.24)，保留 [fix/desktop-network-0.10.21](https://github.com/luoyan96/personal-agent/tree/fix/desktop-network-0.10.21) 联网修复和飞书试点；默认分支仍是较早基线，源码与发布分别维护 |
 

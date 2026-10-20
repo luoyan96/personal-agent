@@ -1,5 +1,7 @@
 import { createServer as createHttpServer } from 'node:http'
 import { ExecutionWorker, reconcile } from '../src/execution-worker.js'
+import { executionHarnessVersion } from '../src/ai.js'
+import { harnessVersion } from '../../../integrations/deepseek-harness/runtime/dist/index.js'
 import type { ModelCall, ModelResult } from '../src/execution-worker.js'
 import { readConfig } from '../src/config.js'
 import { createHash, randomBytes } from 'node:crypto'
@@ -159,9 +161,15 @@ describe('B3 durable service with explicit deterministic model doubles (not G3 l
   })
   it('A11 two workers lease once, success is only candidate, explicit submit and exact review complete the task',async()=>{
     const q=await queue();let calls=0
+    expect(executionHarnessVersion).toBe(harnessVersion)
+    // A job queued by the previous release must report the runtime that
+    // actually dispatches it, without rewriting completed historical jobs.
+    const queued=JSON.parse(String(db.prepare('SELECT document FROM execution_jobs WHERE id=?').get(q.run.id)!.document))
+    queued.harnessVersion='0.2.0-rc.1'
+    db.prepare('UPDATE execution_jobs SET document=? WHERE id=?').run(JSON.stringify(queued),q.run.id)
     const w=worker(async req=>{calls++;expect(req.prompt).toContain(q.artifact);expect(req.system).toContain('untrusted');return result(checklist(q.artifact))})
     await Promise.all([w.tick(),worker(async()=>{throw new Error('Duplicate dispatch')}).tick()]);expect(calls).toBe(1)
-    let r=await runDetail(q.run.id);expect(r.status).toBe('succeeded');expect((await detail(q.id)).task.status).toBe('in_progress');expect(r.candidate).not.toBeNull()
+    let r=await runDetail(q.run.id);expect(r.status).toBe('succeeded');expect(r.harnessVersion).toBe(harnessVersion);expect((await detail(q.id)).task.status).toBe('in_progress');expect(r.candidate).not.toBeNull()
     const overview=await request('overview',{client:clients.A,params:{id:'lab_synthetic'},query:{scope:'mine'}})
     const attention=await request('actionItems',{client:clients.A,params:{id:'lab_synthetic'},query:{kind:'execution_attention',snapshot:overview.value.snapshot.token,limit:1}})
     expect(overview.value.data.pendingActions.executionAttention).toBeGreaterThan(0);expect(attention.value.data[0]!.kind).toBe('execution_attention')

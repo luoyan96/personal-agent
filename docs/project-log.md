@@ -1219,3 +1219,17 @@ Windows0.10.23 NSIS87,431,664字节，SHA256 11f46da4811d5ce68e489bcaf5fd9888ff8
 Windows包87431310字节，SHA256 6512d67a1508d0ea9417e6e05be3b98c48c85e3f296e1b17066de5a6cfa38e54，桌面AcceptCat_0.10.24.exe；实际NSIS的EXE/ASAR、18JS/8CSS、52运行包/55装配及隐藏隔离启动通过，旧electron-log提示保留。未代安装/退出用户客户端/删数据；无后台、迁移、密钥、飞书或公开发布，公开latest实读v0.6.0。后台沿0.26/schema023、image4ee12e77及飞书本人试点，未重新inspect。共享代码未改，不重复693项CI；继续真实科研材料验证。
 
 交付说明16abb76已推送，229份Markdown/10份Skill与diff检查通过。[草稿PR77](https://github.com/luoyan96/personal-agent/pull/77)基于fix/library-agent-dock-0.10.23，已附任务、未合并；该head远端Foundation首读两项IN_PROGRESS、一项QUEUED，不称已通过。临时QA浏览器与4938/4939服务已关闭。
+
+## 2026-10-20 — 后台DSH0.2.1-rc.2配对升级
+
+用户明确要求更新后台，接续干净46b531f，新分支chore/harness-0.2.1-rc.2，产品47ec4969ec83c751053f229daac6b20f3271cb39。[部署与回退记录](deployment/harness-0.2.1-rc.2-20261020.md)。LLM/provider固定0.2.1-rc.2、Cordis4.0.5，依锁文件使用官方包，不引入上游源码或开放工具；新/恢复排队任务按实际派发记录版本，已完成历史保持。contract0.26/schema023不变，无迁移，桌面0.10.24包不变。
+
+本地55文件/694项完整CI、2项生产CLI/HTTP与进程/生产无夹具通过。首轮新增测试误引runtime/src越过rootDir，改用构建dist后重跑通过，未放宽类型检查。服务器真实候选Linux4文件/29项通过，Messages/千问/豆包是合成服务；无生产挂载的飞书真实HTTP/SQLite通过OAuth/PKCE/重放/匿名/隔离/加密/预览/私人导入/幂等/旧Key预览。
+
+实际核对旧镜像4ee12e77和DSH0.2.0-rc.1/Cordis4.0.4后，基于旧feishu镜像只覆盖五源文件并冻结安装/构建；新镜像sha256:34bba4d03a5d714d731c248302f1484d47382c52e833d004dda68c88e01c5130，revision 47c42ac+key-preview.4bc8d1f+feishu.2bbcfbc+harness.0.2.1-rc.2，源47ec496。受保护业务源码/原迁移哈希保持。API/worker实际同一新镜像running/restart0、API healthy，另外6服务ID/镜像/状态不变，所有环境哈希/挂载/命令/资源/网络保持。
+
+停接收并排空后备份、恢复副本和上线前94表/6原件逐项一致，原Key密文/默认设置整表哈希保持。首轮审计deepStrictEqual误判SQLite null prototype和JSON对象，自动恢复旧服务，没有还原覆盖数据；原错误/脚本/备份在ops/attempt1。修正审计后原恢复副本验证通过，第二轮重新备份切换17:40:05—17:40:18；这13秒不含首轮回退维护。最终备份/srv/research-openim-backups/harness-20261020-20261020T094007Z，包SHA256 1cb070f6652899670d9dca92dfa302255b45d3efbf37113e26a44c8ab31ad3ad。
+
+公网实读ready200/0.26，DB/storage/auth ok，harness仍not_verified；人工真实探针单独记录：复用本人现有默认deepseek-flash，仅合成短句，DSH0.2.1-rc.2返回OK/流式2字符，23输入/1输出tokens、1016ms、费用未知。无私人历史、资料、真实飞书文档或正式任务；千问/豆包未真厂商验收。没有修改/输出Key、飞书范围或公开Release，客户端不用重装。旧镜像及两轮备份留存可回退；服务器ops/harness-0.2.1-rc.2-20261020和Git外.runtime/harness-upgrade-20261020保留失败及最终证据，继续真实科研质量验证。
+
+部署记录b64b4f3已推送，230份Markdown/10份Skill及diff检查通过。[草稿PR78](https://github.com/luoyan96/personal-agent/pull/78)已创建并附任务，基于fix/chat-sidebar-resize-0.10.24、未合并；该head远端三项Foundation首读IN_PROGRESS。现有Edge Workbench保持连接，无遗留本机测试服务，未关闭用户客户端。

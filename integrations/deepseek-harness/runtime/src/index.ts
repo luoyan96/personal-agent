@@ -4,7 +4,7 @@ import * as DeepSeek from '@deepseek-ai/dsh-llm-deepseek-api-key'
 import { normalizeUsage } from './usage.js'
 import { CompatibleChatAdapter } from './compatible-provider.js'
 
-export const harnessVersion = '0.2.0-rc.1'
+export const harnessVersion = '0.2.1-rc.2'
 export interface ModelInput { system: string; prompt: string; model: string; maxTokens: number; timeoutMs: number; provider?: 'deepseek' | 'qwen' | 'doubao'; reasoningEffort?: 'off' }
 export interface ModelResult { text: string; failure: string | null; inputTokens: number | null; outputTokens: number | null; elapsedMs: number; finishReason?:string }
 

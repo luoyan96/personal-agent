@@ -15,6 +15,7 @@ export type Run = z.infer<typeof RunRecord>
 export type Planning = z.infer<typeof PlanningRequest>
 export const capabilityId='text-evidence-checklist'
 export const capabilityVersion=1
+export const executionHarnessVersion='0.2.1-rc.2'
 export const instant=()=>new Date().toISOString()
 export const terminal=['failed','interrupted','cancelled','succeeded','draft','ready']
 const encode=JSON.stringify
@@ -149,7 +150,7 @@ export class AiService {
       const b=req.body as RequestFor<'run'>['body'],{task:t,inputs}=this.validateNewRun(id,b)
       const reuse=new ReuseService(this.c)
       if(b.inputArtifactIds.length||(b.conclusionRefs??[]).length)this.c.coordination.runnable(t,true)
-      const r:Run={methodVersion:Number(this.db.prepare('SELECT active_version FROM public_method_state WHERE lab_id=?').get(this.c.actor.labId)!.active_version),configurationGeneration:b.capability.version,methodTrial:false,conclusionRefs:b.conclusionRefs??[],id:randomUUID(),taskId:id,capability:b.capability,status:b.inputArtifactIds.length||(b.conclusionRefs??[]).length?'queued':'waiting_input',attempt:0,usage:null,failure:b.inputArtifactIds.length||(b.conclusionRefs??[]).length?null:'Authorized text input required.',resultRefs:[],createdAt:instant(),startedAt:null,endedAt:null,version:1,requestedBy:this.c.actor.id,taskVersion:t.version,plan:{id:t.planId,version:t.planVersion},permissionVersion:this.permission(t.id),inputs,budget:b.budget,maxAttempts:3,nextAttemptAt:null,candidate:null,candidateDeliverableId:null,allowedActions:[],provider:'deepseek-official',model:this.model,harnessVersion:'0.2.0-rc.1',updatedAt:instant(),usageDetail:null}
+      const r:Run={methodVersion:Number(this.db.prepare('SELECT active_version FROM public_method_state WHERE lab_id=?').get(this.c.actor.labId)!.active_version),configurationGeneration:b.capability.version,methodTrial:false,conclusionRefs:b.conclusionRefs??[],id:randomUUID(),taskId:id,capability:b.capability,status:b.inputArtifactIds.length||(b.conclusionRefs??[]).length?'queued':'waiting_input',attempt:0,usage:null,failure:b.inputArtifactIds.length||(b.conclusionRefs??[]).length?null:'Authorized text input required.',resultRefs:[],createdAt:instant(),startedAt:null,endedAt:null,version:1,requestedBy:this.c.actor.id,taskVersion:t.version,plan:{id:t.planId,version:t.planVersion},permissionVersion:this.permission(t.id),inputs,budget:b.budget,maxAttempts:3,nextAttemptAt:null,candidate:null,candidateDeliverableId:null,allowedActions:[],provider:'deepseek-official',model:this.model,harnessVersion:executionHarnessVersion,updatedAt:instant(),usageDetail:null}
       this.insert('capability',r,b);reuse.bind('job',r.id,r.conclusionRefs??[]);reuse.bind('task',id,r.conclusionRefs??[]);this.c.event(t,'execution_updated','Public capability execution authorized.');return {data:this.projectedRun(r.id)}
     }
     const {r,t}=this.runAccess(id,true),b=req.body as RequestFor<'retryRun'>['body'];this.c.checkVersion(r.version,b.expectedVersion)

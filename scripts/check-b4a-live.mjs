@@ -3,8 +3,9 @@ import {once} from 'node:events'
 import {writeFile} from 'node:fs/promises'
 import {resolve} from 'node:path'
 import {call,as,input,item,seed} from './b4a-demo-client.mjs'
+import {harnessVersion} from '../integrations/deepseek-harness/runtime/dist/index.js'
 if(!process.env.DEEPSEEK_API_KEY||process.env.B3_AI_ENABLED!=='1')throw new Error('Real Harness credentials and explicit AI configuration required')
-const budget={maxTokens:100000,maxSeconds:120},evidence={synthetic:true,at:new Date().toISOString(),harnessVersion:'0.2.0-rc.1',contractVersion:'0.6.1'}
+const budget={maxTokens:100000,maxSeconds:120},evidence={synthetic:true,at:new Date().toISOString(),harnessVersion,contractVersion:'0.6.1'}
 let worker
 async function stop(){if(worker&&worker.exitCode===null){const done=once(worker,'exit');worker.kill('SIGKILL');await done}worker=null}
 async function wait(id){for(let i=0;i<150;i++){const r=await call('getRun',null,id);if(r.status==='succeeded')return r;if(['failed','cancelled','interrupted'].includes(r.status))throw new Error(`Run ${r.status}: ${r.failure}`);await new Promise(r=>setTimeout(r,1000))}throw new Error('Live timeout; inspect persisted run')}

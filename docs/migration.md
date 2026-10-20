@@ -115,3 +115,5 @@ paper-framework-figure-studio-pro 固定修订仅在 Git 外测试完整包往�
 同日普通资料导入提取独立ResearchFileImport组件，沿用现有importResearchFile幂等/权限/版本服务，共用客户端读取Hook新增可选失败传递；未知请求固定快照，范围改变不继续上传，实际保存后列表读取失败只重读。没有迁移数据、修改API/worker/契约/依赖或引入第三方代码/素材，既有许可与agents/skills单一来源保持；七组合成UI/HTTP/SQLite和649项完整检查通过，未打包/部署。见development/research-file-import-recovery.md。
 
 同日科研Skill连续调用仅补齐现有API分流与持久输入守卫，旧混合Skill/助理状态取消并需新消息，不改写历史记录或撤销历史动作。canonical SLR原件与引用直接来自现有单一来源，仅用于合成验证；没有引入上游代码、改变Skill正文、契约/数据库/依赖或工具权限，无部署/安装包。见development/skill-continuous-routing.md。
+
+2026-10-20按用户要求将受限Harness组合从官方dsh-llm / dsh-llm-deepseek-api-key 0.2.0-rc.1及Cordis4.0.4升级为精确0.2.1-rc.2及4.0.5。来源为官方npm包，GitHub候选发布dsh-v0.2.1-rc.2；完整性随根锁文件固定，保留minimumReleaseAge/strictDepBuilds，不迁入上游源码或改变agents/skills单一来源。沿公开LlmRuntime/LlmAdapter接口，工具列表保持空，默认模型、权限、契约和schema023不变；任务运行元数据在实际派发时使用新版，已完成历史不重写。后台实际部署与验证按当前状态/项目日志分别记录，桌面0.10.24安装包保持。

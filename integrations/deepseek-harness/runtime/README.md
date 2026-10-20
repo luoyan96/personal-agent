@@ -1,6 +1,8 @@
 # 受限 Harness 服务端运行组合
 
-固定 `@deepseek-ai/dsh-llm` / `@deepseek-ai/dsh-llm-deepseek-api-key` **0.2.0-rc.1**，Cordis **4.0.4**；锁文件记录完整依赖与 integrity。这里属于根 workspace，构建、真实类型检查和无凭据边界测试默认执行。
+固定 `@deepseek-ai/dsh-llm` / `@deepseek-ai/dsh-llm-deepseek-api-key` **0.2.1-rc.2**，Cordis **4.0.5**；锁文件记录完整依赖与 integrity。这里属于根 workspace，构建、真实类型检查和无凭据边界测试默认执行。
+
+2026-10-20按用户要求升级官方候选版，使用精确版本，不依赖各子包不一致的latest标签。模型/端点选择、空工具列表、权限、预算和取消语义保持；运行记录在实际派发时标记当前Harness版本，已完成历史不重写。代码升级、服务器候选验证与实际切换分别记录于项目状态和部署日志；下面的B3真实调用记录保留其原受测版本，不作为新版真实调用证明。
 
 使用官方 [LlmRuntime 公开接口](https://github.com/deepseek-ai/deepseek-harness/tree/master/packages/llm/llm)：Cordis 挂载模型服务及官方 API-key provider，每个任务执行一次有输出/时间上限的流式调用。团队持久队列、授权、重试和验收由 apps/api 管理。这是 Harness 的受限一次调用组合，不是默认 SDK 编程代理，也不宣称启用了完整 agent-loop、十项 Skills 或任意工具循环。
 
