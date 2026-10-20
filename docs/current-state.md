@@ -2,6 +2,18 @@
 
 更新日期：2026-10-20（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 最新桌面批次0.10.25：飞书授权可操作入口，安装包已制作
+
+评审入口：[草稿PR79](https://github.com/luoyan96/personal-agent/pull/79)，base `chore/harness-0.2.1-rc.2`，已推送并附任务、未合并；文档97e4651远端三项Foundation首读IN_PROGRESS，不称已通过。
+
+从实际干净 `chore/harness-0.2.1-rc.2` / `60a6afd` 接续，新分支 `fix/feishu-authorization-entry-0.10.25`，产品固定 **d74a18768e329c70dffa28febd9e8931a621210a**。[交付与验收](deployment/acceptcat-0.10.25.md)。原提示卡只有一行链接可点、通用外开没有失败反馈；改成打开授权按钮、复制备用链接、两步指引、真实检查结果和过期重连。桌面使用等待回执的专用IPC，仅当前主窗口可打开固定飞书只读OAuth入口，并校验当前后台回调。没有证明用户机器的系统浏览器故障根因，不能声称已在用户当前会话完成真实授权。
+
+Windows x64 **C:/Users/luo/Desktop/AcceptCat_0.10.25.exe**，**87,433,132字节**，SHA256 **5f33fee28739a4282a819d717ab1791371f1837403d6047cf3903c9592a5a015**。生产构建、实际NSIS载荷、18JS/8CSS逐字节、52运行包/55装配包和隐藏隔离原生启动通过；包已制作，未代安装或公开发布。
+
+渲染/主进程类型与30项定向通过。1280×720实际React、真实HTTP/SQLite配合合成飞书身份，验证打开失败/复制入口、重复打开不新建state、未授权提示、过期恢复、真实回调后文档预览及账号切换迟到回复不外开。Electron22实际完整preload/IPC等待回执及错误拒绝通过，OS shell为合成替身，未实际打开系统浏览器。CUA虚拟剪贴板与页面剪贴板不互通，未记为系统剪贴板字节验收；其他真实窗口尺寸未验。既有Router/AntD弃用提示保留，Git外 `.runtime/feishu-entry-20261020` 保留失败与最终证据。Browser插件缺席，采用CUA/Playwright；共享代码未改，不重复根694项CI。
+
+纯客户端改动，无后台部署、迁移、密钥或飞书范围变化。后台沿下述已部署DSH0.2.1-rc.2、image34bba4d0、contract0.26/schema023；飞书0.1.0仅罗岩。公开latest实际核对仍v0.6.0，真实飞书授权与本人选定资料试读继续由本人操作验证。
+
 ## 最新后台批次：DSH0.2.1-rc.2已部署
 
 评审入口：[草稿PR78](https://github.com/luoyan96/personal-agent/pull/78)，base `fix/chat-sidebar-resize-0.10.24`，已推送并附任务、未合并；b64b4f3远端Foundation三项首读IN_PROGRESS，不称已通过。

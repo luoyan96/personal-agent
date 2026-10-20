@@ -20,6 +20,7 @@ import { registerLocalFolderBridge } from "./localFolderManage";
 import { registerImageClipboardBridge } from "./imageClipboardManage";
 import { registerDesktopWorkBridge } from "./desktopWorkManage";
 import { registerDesktopUpdateBridge } from "./updateManage";
+import { registerFeishuAuthorizationBridge } from "./feishuManage";
 
 const store = getStore();
 const assertLocalConnectionPage = (event: Electron.IpcMainInvokeEvent) => {
@@ -43,6 +44,7 @@ export const setIpcMainListener = () => {
   registerZoteroBridge();
   registerDesktopWorkBridge();
   registerDesktopUpdateBridge();
+  registerFeishuAuthorizationBridge();
   ipcMain.handle("research-service-status", (event) => {
     assertLocalConnectionPage(event);
     return getResearchServiceStatus();

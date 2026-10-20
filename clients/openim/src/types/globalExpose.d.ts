@@ -11,6 +11,7 @@ import type {
 export type DataPath = "public" | "emojiData" | "sdkResources" | "logsPath";
 
 export interface IElectronAPI {
+  openFeishuAuthorization: (url: string) => Promise<void>;
   connectLocalZotero: () => Promise<import("./zotero").ZoteroGrant | null>;
   readLocalZotero: (grantId: string, request: import("./zotero").ZoteroReadRequest) => Promise<import("./zotero").ZoteroPage<import("./zotero").ZoteroCollection | import("./zotero").ZoteroItem>>;
   releaseLocalZotero: (grantId: string) => Promise<void>;

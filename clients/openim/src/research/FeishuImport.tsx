@@ -7,6 +7,7 @@ import { usePersonalOperation } from "./usePersonalOperation";
 import { useResearchRead } from "./useResearchRead";
 import { useResearchStore } from "./store";
 import { feishuPlanningDraft, stageFeishuPlanning } from "./feishu-planning";
+import { openFeishuAuthorization } from "./feishu-authorization";
 
 export function FeishuImport({
   collectionId,
@@ -35,6 +36,12 @@ export function FeishuImport({
   const [target, setTarget] = useState(collectionId);
   const [url, setUrl] = useState(""),
     [authorizationUrl, setAuthorizationUrl] = useState("");
+  const [authorizationExpires, setAuthorizationExpires] = useState("");
+  const [authorizationExpired, setAuthorizationExpired] = useState(false);
+  const [browserRequested, setBrowserRequested] = useState(false);
+  const [copiedAuthorization, setCopiedAuthorization] = useState(false);
+  const [showAuthorizationLink, setShowAuthorizationLink] = useState(false);
+  const [authorizationHint, setAuthorizationHint] = useState("");
   const [preview, setPreview] = useState<FeishuPreview>();
   const [confirmed, setConfirmed] = useState(false),
     [busy, setBusy] = useState(false),
@@ -50,12 +57,31 @@ export function FeishuImport({
   const privateCollections =
     collections.data?.data.filter((c) => c.owned && c.scope === "owner_private") || [];
   const currentTarget = privateCollections.find((c) => c.id === target);
+  const connection = status.data?.data;
+  useEffect(() => {
+    if (!authorizationUrl || !authorizationExpires) return;
+    const remaining = new Date(authorizationExpires).getTime() - Date.now();
+    setAuthorizationExpired(remaining <= 0);
+    const timer = setTimeout(
+      () => setAuthorizationExpired(true),
+      Math.max(0, remaining),
+    );
+    return () => clearTimeout(timer);
+  }, [authorizationUrl, authorizationExpires]);
+  useEffect(() => {
+    if (connection?.state === "connected") {
+      setAuthorizationUrl("");
+      setAuthorizationHint("");
+      setError("");
+    }
+  }, [connection?.state]);
   useEffect(() => {
     if (initialScope.current !== operation.scope) onClose();
   }, [operation.scope]);
   async function run(action: (current: () => boolean) => Promise<void>) {
     if (locked.current) return;
     const { isCurrent } = operation.capture();
+    if (!isCurrent()) return;
     locked.current = true;
     setBusy(true);
     setError("");
@@ -71,7 +97,38 @@ export function FeishuImport({
   }
   async function connect(current: () => boolean) {
     const value = await researchApi("connectFeishu", { body: {} });
-    if (current()) setAuthorizationUrl(value.data.authorizationUrl);
+    if (!current()) return;
+    setAuthorizationUrl(value.data.authorizationUrl);
+    setAuthorizationExpires(value.data.expiresAt);
+    setAuthorizationExpired(false);
+    setBrowserRequested(false);
+    setCopiedAuthorization(false);
+    setShowAuthorizationLink(false);
+    setAuthorizationHint("");
+    // Desktop IPC does not depend on a browser popup gesture surviving fetch.
+    if (window.electronAPI) {
+      await openFeishuAuthorization(value.data.authorizationUrl);
+      if (current()) setBrowserRequested(true);
+    }
+  }
+  async function openAuthorization(current: () => boolean) {
+    if (authorizationExpired || Date.now() >= new Date(authorizationExpires).getTime())
+      throw new Error("本次链接已过期，请点击“重新连接”获取新链接。");
+    await openFeishuAuthorization(authorizationUrl);
+    if (current()) setBrowserRequested(true);
+  }
+  async function checkAuthorization(current: () => boolean) {
+    const value = await researchApi("feishuStatus");
+    if (!current()) return;
+    if (value.data.state === "connected") {
+      setAuthorizationUrl("");
+      setAuthorizationHint("");
+    } else {
+      setAuthorizationHint(
+        "还未检测到授权完成。请在浏览器中完成飞书授权，看到“飞书授权已完成”后，再返回这里检查。",
+      );
+    }
+    await status.refresh();
   }
   async function read(current: () => boolean) {
     setPreview(undefined);
@@ -148,7 +205,6 @@ export function FeishuImport({
     navigate("/workbench?view=planning", { state: { feishuMaterialNonce: nonce } });
     onClose();
   }
-  const connection = status.data?.data;
   return (
     <Modal
       open
@@ -204,39 +260,100 @@ export function FeishuImport({
                   : "使用你的飞书账号授权，只读取你选定且有权阅读的文档。"}
               </p>
             </div>
-            {!savedId && (
-              <Button disabled={busy || uncertain} onClick={() => void run(connect)}>
+            {!savedId && !authorizationUrl && (
+              <Button
+                type={connection.state === "connected" ? "default" : "primary"}
+                disabled={busy || uncertain}
+                onClick={() => void run(connect)}
+              >
                 {connection.state === "connected" ? "重新授权" : "连接飞书"}
               </Button>
             )}
           </section>
         )}
         {authorizationUrl && (
-          <Alert
-            type="info"
-            message={
-              <a href={authorizationUrl} target="_blank" rel="noreferrer">
-                前往飞书授权 ↗
-              </a>
-            }
-            description="授权完成后返回此处，点击“检查授权结果”。"
-          />
+          <section className="feishu-authorization" aria-label="飞书授权步骤">
+            <div className="feishu-authorization-step">
+              <span className="feishu-step-number">1</span>
+              <div>
+                <h3>在浏览器中完成飞书授权</h3>
+                <p>登录你自己的飞书账号，在授权页点击同意授权。</p>
+                <div className="research-library-actions">
+                  <Button
+                    type="primary"
+                    disabled={busy || authorizationExpired}
+                    onClick={() => void run(openAuthorization)}
+                  >
+                    {browserRequested ? "再次打开飞书授权" : "打开飞书授权"}
+                  </Button>
+                  <Button
+                    disabled={busy || authorizationExpired}
+                    onClick={() =>
+                      void run(async (current) => {
+                        setShowAuthorizationLink(true);
+                        try {
+                          await navigator.clipboard.writeText(authorizationUrl);
+                        } catch {
+                          throw new Error(
+                            "未能自动复制，请选中下面的授权链接，按 Ctrl+C 复制到浏览器地址栏。",
+                          );
+                        }
+                        if (current()) setCopiedAuthorization(true);
+                      })
+                    }
+                  >
+                    {copiedAuthorization ? "已复制授权链接" : "复制授权链接"}
+                  </Button>
+                </div>
+                <p role="status">
+                  {browserRequested
+                    ? "已请求系统浏览器打开。若没有看到授权页，可复制链接到 Edge 地址栏。"
+                    : "点击上方按钮打开授权页；浏览器未打开时可复制链接。"}
+                </p>
+                {showAuthorizationLink && (
+                  <Input.TextArea
+                    aria-label="本次飞书授权链接"
+                    value={authorizationUrl}
+                    readOnly
+                    autoSize={{ minRows: 2, maxRows: 4 }}
+                    onFocus={(event) => event.target.select()}
+                  />
+                )}
+                {authorizationExpired ? (
+                  <p role="alert">本次链接已过期，点击“重新连接”获取新链接。</p>
+                ) : (
+                  <small>
+                    本次链接 10 分钟内有效。授权未完成前，可再次打开同一个链接。
+                  </small>
+                )}
+                <Button type="link" disabled={busy} onClick={() => void run(connect)}>
+                  重新连接
+                </Button>
+              </div>
+            </div>
+            <div className="feishu-authorization-step">
+              <span className="feishu-step-number">2</span>
+              <div>
+                <h3>返回 AcceptCat 检查结果</h3>
+                <p>浏览器显示“飞书授权已完成”后，回到此处点击“检查授权结果”。</p>
+                <Button
+                  type="primary"
+                  disabled={busy}
+                  onClick={() => void run(checkAuthorization)}
+                >
+                  检查授权结果
+                </Button>
+              </div>
+            </div>
+          </section>
         )}
+        {authorizationHint && <Alert type="info" message={authorizationHint} />}
         <div className="research-library-actions">
-          <Button
-            disabled={busy}
-            onClick={() =>
-              void run(async (current) => {
-                const value = await researchApi("feishuStatus");
-                if (current()) {
-                  if (value.data.state === "connected") setAuthorizationUrl("");
-                  await status.refresh();
-                }
-              })
-            }
-          >
-            检查授权结果
-          </Button>
+          {!authorizationUrl && (
+            <Button disabled={busy} onClick={() => void run(checkAuthorization)}>
+              检查授权结果
+            </Button>
+          )}
           {connection?.state === "connected" && !savedId && (
             <Button
               disabled={busy || uncertain}
@@ -258,6 +375,11 @@ export function FeishuImport({
         </div>
         {connection?.state === "connected" && !savedId && (
           <>
+            <Alert
+              type="success"
+              message="飞书已连接，可以选择资料了"
+              description="复制一份飞书文档或知识库文档的链接，粘贴到下面，再点击“读取并预览”。"
+            />
             <label>
               飞书文档链接
               <Input

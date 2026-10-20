@@ -67,4 +67,31 @@
       margin-bottom: 0;
     }
   }
+  .feishu-authorization {
+    padding: 20px;
+    border: 1px solid #c3def0;
+    border-radius: 14px;
+    background: #f3f9fd;
+    display: grid;
+    gap: 22px;
+  }
+  .feishu-authorization-step {
+    display: flex;
+    gap: 12px;
+    > div { min-width: 0; flex: 1; }
+    h3 { margin: 0 0 8px; font-size: 16px; }
+    p { margin: 6px 0; color: #617387; line-height: 1.7; }
+    small { display: block; color: #718097; line-height: 1.7; }
+    .research-library-actions { margin: 12px 0; flex-wrap: wrap; }
+  }
+  .feishu-step-number {
+    flex: 0 0 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: #dceefb;
+    color: #226692;
+    font-weight: 600;
+  }
 }

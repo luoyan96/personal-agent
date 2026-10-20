@@ -104,6 +104,7 @@ const saveFileToDisk = async ({
 };
 
 const Api: IElectronAPI = {
+  openFeishuAuthorization: (url) => ipcRenderer.invoke("open-feishu-authorization", url),
   connectLocalZotero: () => ipcRenderer.invoke("connect-local-zotero"),
   readLocalZotero: (id, request) => ipcRenderer.invoke("read-local-zotero", id, request),
   releaseLocalZotero: (id) => ipcRenderer.invoke("release-local-zotero", id),

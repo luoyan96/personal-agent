@@ -68,6 +68,8 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 
 资料集合保留来源和版本，Agent 使用当前授权的材料；本机 Zotero 可选入个人库的元数据与摘要。你可以从文件夹、ZIP 或固定 GitHub 来源预览 Skill，再安装到自己的私人空间，选择本次要用的参考。**公开一个 Agent，不等于公开它背后的私人材料。**
 
+已有飞书资料时，可在“课题组资料 → 连接飞书资料”用自己的账号授权；在浏览器完成后返回检查，再粘贴文档链接预览、确认保存私人文字副本。授权页打不开时，可复制链接到浏览器继续。
+
 ## 找到适合当前研究的能力
 
 广场只展示 GitHub 社区来源，支持推荐、Star 热门、代码最新，以及文献、写作、研究设计、图表、数据与课题协作等方向。先看它能交付什么、你需要准备什么，再决定是否使用。
@@ -88,11 +90,11 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 
 | 版本入口 | 当前状态 |
 | --- | --- |
-| **最新桌面试用版：0.10.24** | 聊天列表可拖动调整并记住宽度，双击恢复默认；保留底部资料对话、规划和联网修复。安装包已制作供覆盖安装，尚未上传公开Release。[查看交付说明](docs/deployment/acceptcat-0.10.24.md) |
+| **最新桌面试用版：0.10.25** | 飞书授权改为明确的打开按钮和两步指引，支持失败提示、复制备用链接及过期重连；保留聊天列表拖动与底部资料对话。安装包已制作供覆盖安装，尚未上传公开Release。[查看交付说明](docs/deployment/acceptcat-0.10.25.md) |
 | **飞书本人试点版：0.10.20** | 已制作安装包，配套后台已部署、飞书应用仅本人上线；支持选定文档预览、私人副本和规划片段，真实账号授权与选定材料试读待本人验证。[查看试点范围](docs/development/feishu-readonly-pilot.md) |
 | **后台模型运行层：DSH 0.2.1-rc.2** | 已部署并验证现有模型的真实短句回复，保留现有账号、资料与模型设置；已有客户端无需重装。[部署说明](docs/deployment/harness-0.2.1-rc.2-20261020.md) |
 | **GitHub 公开下载：v0.6.0** | 可从 [Releases](https://github.com/luoyan96/personal-agent/releases/latest) 下载；安装文件仍叫 `ResearchWeChat_0.6.0.exe`，属于早期版本，未包含这里展示的全部体验 |
-| **产品源码** | 最新桌面改进在 [fix/chat-sidebar-resize-0.10.24](https://github.com/luoyan96/personal-agent/tree/fix/chat-sidebar-resize-0.10.24)，保留 [fix/desktop-network-0.10.21](https://github.com/luoyan96/personal-agent/tree/fix/desktop-network-0.10.21) 联网修复和飞书试点；默认分支仍是较早基线，源码与发布分别维护 |
+| **产品源码** | 最新桌面改进在 [fix/feishu-authorization-entry-0.10.25](https://github.com/luoyan96/personal-agent/tree/fix/feishu-authorization-entry-0.10.25)，保留 [fix/desktop-network-0.10.21](https://github.com/luoyan96/personal-agent/tree/fix/desktop-network-0.10.21) 联网修复和飞书试点；默认分支仍是较早基线，源码与发布分别维护 |
 
 已有试用版的团队：登录后在“我的 → 模型设置”配置自己的模型，从一个真实课题的小任务开始。新团队如希望参与试用，可以在 [Issues](https://github.com/luoyan96/personal-agent/issues) 留下使用场景和试用意向；请不要提交账号密钥、未公开论文或学生的私人材料。
 

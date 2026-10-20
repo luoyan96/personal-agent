@@ -1233,3 +1233,17 @@ Windows包87431310字节，SHA256 6512d67a1508d0ea9417e6e05be3b98c48c85e3f296e1b
 公网实读ready200/0.26，DB/storage/auth ok，harness仍not_verified；人工真实探针单独记录：复用本人现有默认deepseek-flash，仅合成短句，DSH0.2.1-rc.2返回OK/流式2字符，23输入/1输出tokens、1016ms、费用未知。无私人历史、资料、真实飞书文档或正式任务；千问/豆包未真厂商验收。没有修改/输出Key、飞书范围或公开Release，客户端不用重装。旧镜像及两轮备份留存可回退；服务器ops/harness-0.2.1-rc.2-20261020和Git外.runtime/harness-upgrade-20261020保留失败及最终证据，继续真实科研质量验证。
 
 部署记录b64b4f3已推送，230份Markdown/10份Skill及diff检查通过。[草稿PR78](https://github.com/luoyan96/personal-agent/pull/78)已创建并附任务，基于fix/chat-sidebar-resize-0.10.24、未合并；该head远端三项Foundation首读IN_PROGRESS。现有Edge Workbench保持连接，无遗留本机测试服务，未关闭用户客户端。
+
+## 2026-10-20 — Windows0.10.25：飞书授权可操作入口
+
+用户指出蓝色授权提示“不能点、看不出该怎么做”。核对实际干净chore/harness-0.2.1-rc.2 / 60a6afd，接续新分支fix/feishu-authorization-entry-0.10.25，产品d74a18768e329c70dffa28febd9e8931a621210a。[交付详情](deployment/acceptcat-0.10.25.md)。原卡只有文字链接可点，通用外开未反馈失败；改为打开授权按钮、复制/手动复制备用链接、浏览器授权与返回检查的两步指引、未授权说明、连接后文档操作和过期重连。重复打开不重建state，账号/页面切换后迟到响应不能外开。主进程专用IPC校验当前主窗口、固定飞书OAuth、只读scope/S256及当前后台callback，等待shell回执且五秒截止。没有确定用户系统浏览器故障根因，不声称已完成本人真实授权。
+
+渲染/主进程类型、30项客户端定向通过。Browser插件缺席，CUA/AX/Playwright在1280×720实际React与HTTP/SQLite配合合成飞书身份，走通失败提示、复制入口、重复打开2/连接创建1、未授权检查、缩短返回有效期后的过期重连、真实callback与合成文档预览、账号切换迟到回复opens保持5/connects4→5。页面复制API成功，但CUA虚拟剪贴板为空且粘贴工具拒绝，未记为系统剪贴板字节验收；其他真实窗口尺寸未验。既有Router/AntD弃用提示保留，无新运行异常。Electron22.3.27实际完整preload/IPC的等待回执、失败和替换callback拒绝通过，OS shell为合成替身，未实际拉起系统浏览器。
+
+首轮类型检查跨TS项目引用失败后将完整验证留在主进程，渲染仅校验固定跳转地址，未放宽tsconfig。夹具编码/语法与Electron工具路径首败、虚拟剪贴板限制、最终界面、HTTP计数、native-ipc-proof与所有构建/安装载荷/启动证据保留Git外.runtime/feishu-entry-20261020。API/契约/核心/Skill未改，不重复根694项CI。
+
+Windows0.10.25已制作并复制C:/Users/luo/Desktop/AcceptCat_0.10.25.exe，87,433,132字节，SHA256 5f33fee28739a4282a819d717ab1791371f1837403d6047cf3903c9592a5a015。实际NSIS内ASAR 615490cc68cd3a853d75895cac34b1d0299bf4c39fe542990927c88602803857、EXE d22884d3bab2ec0f3c76504deceb1cb0c9dfaf2240582088c92d085bf9a262f4与受测目录一致，18JS/8CSS逐字节、52运行包/55装配包、新IPC/校验模块、旧功能与品牌及无QA内容通过；隐藏隔离原生启动OPENIM_ELECTRON_READY，旧electron-log初始化提示保留。未代安装、关闭用户客户端或删除旧包/数据。
+
+纯客户端，无后台部署/迁移/密钥/飞书权限变更；后台沿已部署DSH0.2.1-rc.2、image34bba4d0、contract0.26/schema023，飞书0.1.0仅罗岩，本批未新inspect。GitHub latest实读仍v0.6.0，--publish never，无公开Release或更新源变更。下一步由本人覆盖安装后完成飞书授权与选定真实资料试读，继续资料/规划科研质量验证。
+
+交付记录97e4651已推送，231份Markdown/10份Skill与diff检查通过。[草稿PR79](https://github.com/luoyan96/personal-agent/pull/79)已创建并附任务，base chore/harness-0.2.1-rc.2、未合并；该head远端三项Foundation首读IN_PROGRESS，不称已通过。桌面安装说明已保存，本批创建的两个浏览器页与4948/4949合成服务已关闭，4946原生测试服务已退出；用户Edge维护页、现装进程和私人资料保持。
