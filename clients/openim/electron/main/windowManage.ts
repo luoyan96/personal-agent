@@ -10,6 +10,7 @@ import { smokeResult, smokeProgress } from "../utils/smoke";
 import { getStore } from "./storeManage";
 import { validateResearchServiceUrl } from "../utils/researchService";
 import { desktopSessionCookie, startDesktopServer } from "../utils/desktopServer";
+import { desktopTransport } from "../utils/desktopTransport";
 import { getLogger } from "../utils/log";
 import { APP_NAME } from "../utils/brand";
 
@@ -172,6 +173,7 @@ export async function connectResearchService(address: unknown) {
       global.pathConfig.distPath,
       target,
       (failure) => logger.warn("desktop-api-transport", failure),
+      desktopTransport,
     );
     rendererOrigin = desktopServer.origin;
     await mainWindow.loadURL(rendererOrigin);

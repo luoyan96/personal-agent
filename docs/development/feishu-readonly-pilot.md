@@ -16,7 +16,7 @@
 
 - contract `0.26.0`，新增五条会话 API：status、connect、disconnect、preview、import。connect/preview/disconnect 不缓存 OAuth 或外部读取响应；保存使用稳定 Idempotency-Key，未知回执可核对同一请求，避免重复文件。
 - 另有公开 OAuth callback，只接受一次性 state 与授权码。state 绑定发起者、所属空间、仍有效的 AcceptCat 会话和应用；十分钟过期，重新发起和断开均失效，兑换期间断开/退出也拒绝落库。PKCE S256，App Secret 仅服务端密钥文件；用户 access token、PKCE verifier 和预览正文 AES-256-GCM 加密，AAD 含应用/空间/账号。授权码、token、密钥和飞书错误正文不进入响应或日志。
-- schema023 只新增 `feishu_oauth_states`、`feishu_connections`、`feishu_previews` 及索引，不改已有业务表。服务启动不会自动迁移。部署前需备份并显式迁移，旧 schema022 镜像不能直接启动在新库上；本批不部署。
+- schema023 只新增 `feishu_oauth_states`、`feishu_connections`、`feishu_previews` 及索引，不改已有业务表。服务启动不会自动迁移。旧schema022镜像不能直接启动新库；已获批完成的备份/显式迁移与配对部署见[独立记录](../deployment/feishu-pilot-20261020.md)。
 - 外部 HTTP 独立在 `apps/api/src/integrations/feishu-client.ts`。只调用固定官方主机的用户身份 OAuth/user_info、wiki 节点和 docx 元数据/纯文本接口，不使用 tenant token，不抓取用户链接，不接受自定义接口地址，不跟随重定向。单次 HTTP 八秒、整体文档请求二十五秒；单个响应 1 MiB、正文十万字符，最多五份十分钟预览。超限报错，不静默截断整篇读取范围。
 - 首批不申请 `offline_access`，不保存 refresh token；授权按返回的 expires_in 到期后要求重新授权。连接状态表示最近成功授权及本地有效期，单文档读取由飞书实时决定；拒绝/失效不会回退为应用高权限身份。
 - 纯文本不包含图片、附件、评论或页面/表格视觉结构，不进行 OCR、代码执行或下载附件。暂不支持 PDF/PPT、旧版 doc、表格、多维表格、知识库目录遍历、检索整库、自动更新副本、写回文档或群消息。飞书保留原始资料和编辑协作。

@@ -88,10 +88,10 @@ AcceptCat 把这些事情放在同一个工作空间里：用聊天说清需求�
 
 | 版本入口 | 当前状态 |
 | --- | --- |
-| **最新桌面试用版：0.10.19** | 已制作并交付小范围试用，尚未上传公开 Release；保留聊天式任务规划，模型设置显示具体型号和默认配置，已有 Key 首尾预览的配套后台已部署。[查看试用与版本说明](docs/product-status.md) |
+| **最新桌面试用版：0.10.21** | 修复系统代理环境下资料库、工作台等请求间歇连接失败；安装包已制作供覆盖安装，保留规划、模型设置与已有资料，尚未上传公开Release。[查看交付说明](docs/deployment/acceptcat-0.10.21.md) |
 | **飞书本人试点版：0.10.20** | 已制作安装包，配套后台已部署、飞书应用仅本人上线；支持选定文档预览、私人副本和规划片段，真实账号授权与选定材料试读待本人验证。[查看试点范围](docs/development/feishu-readonly-pilot.md) |
 | **GitHub 公开下载：v0.6.0** | 可从 [Releases](https://github.com/luoyan96/personal-agent/releases/latest) 下载；安装文件仍叫 `ResearchWeChat_0.6.0.exe`，属于早期版本，未包含这里展示的全部体验 |
-| **产品源码** | 已交付版本在 [release/acceptcat-0.10.19](https://github.com/luoyan96/personal-agent/tree/release/acceptcat-0.10.19)，飞书候选在 [feat/feishu-readonly-pilot](https://github.com/luoyan96/personal-agent/tree/feat/feishu-readonly-pilot)；默认分支仍是较早基线，源码与软件发布分别维护 |
+| **产品源码** | 最新联网修复在 [fix/desktop-network-0.10.21](https://github.com/luoyan96/personal-agent/tree/fix/desktop-network-0.10.21)，飞书试点在 [feat/feishu-readonly-pilot](https://github.com/luoyan96/personal-agent/tree/feat/feishu-readonly-pilot)；默认分支仍是较早基线，源码与发布分别维护 |
 
 已有试用版的团队：登录后在“我的 → 模型设置”配置自己的模型，从一个真实课题的小任务开始。新团队如希望参与试用，可以在 [Issues](https://github.com/luoyan96/personal-agent/issues) 留下使用场景和试用意向；请不要提交账号密钥、未公开论文或学生的私人材料。
 

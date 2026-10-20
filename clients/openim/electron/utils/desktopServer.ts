@@ -1,5 +1,11 @@
-import { createServer, request as requestHttp, type IncomingMessage, type Server } from "node:http";
+import {
+  createServer,
+  request as requestHttp,
+  type IncomingHttpHeaders,
+  type Server,
+} from "node:http";
 import { request as requestHttps } from "node:https";
+import type { Readable, Writable } from "node:stream";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
@@ -12,6 +18,16 @@ export type DesktopProxyFailure = {
   status?: number;
   code?: string;
 };
+
+export type DesktopResponse = Readable & {
+  statusCode?: number;
+  headers: IncomingHttpHeaders;
+};
+export type DesktopTransport = (
+  url: URL,
+  options: { method?: string; headers: IncomingHttpHeaders; timeout: number },
+  response: (reply: DesktopResponse) => void,
+) => Writable;
 
 export const desktopSessionCookie = (service: string) =>
   `desktop_rap_${createHash("sha256")
@@ -37,6 +53,7 @@ export async function startDesktopServer(
   dist: string,
   service: string,
   onFailure?: (failure: DesktopProxyFailure) => void,
+  transport?: DesktopTransport,
 ): Promise<{
   origin: string;
   close: () => Promise<void>;
@@ -45,7 +62,11 @@ export async function startDesktopServer(
     remote = new URL(service);
   const cookieName = desktopSessionCookie(service);
   const local = ["127.0.0.1", "localhost", "[::1]"].includes(remote.hostname);
-  if ((remote.protocol !== "https:" && !(remote.protocol === "http:" && local)) || remote.username || remote.password)
+  if (
+    (remote.protocol !== "https:" && !(remote.protocol === "http:" && local)) ||
+    remote.username ||
+    remote.password
+  )
     throw new Error("桌面服务需要 HTTPS 地址；本机开发允许 localhost 或 127.0.0.1");
   let origin = "";
   const server: Server = createServer(async (req, res) => {
@@ -84,7 +105,9 @@ export async function startDesktopServer(
         const started = Date.now(),
           requestId = randomUUID();
         let finished = false,
-          response: IncomingMessage | undefined;
+          response: DesktopResponse | undefined;
+        let upstream: Writable | undefined;
+        let deadline: ReturnType<typeof setTimeout> | undefined;
         const report = (
           reason: DesktopProxyFailure["reason"],
           error?: Error,
@@ -111,7 +134,7 @@ export async function startDesktopServer(
           finished = true;
           clearTimeout(deadline);
           report(reason, error);
-          upstream.destroy();
+          upstream?.destroy();
           response?.destroy();
           if (res.headersSent) res.destroy();
           else {
@@ -127,38 +150,45 @@ export async function startDesktopServer(
             );
           }
         };
-        const upstream = (remote.protocol === "https:" ? requestHttps : requestHttp)(
-          new URL(url.pathname + url.search, remote.origin),
-          {
-            method: req.method,
-            headers,
-            timeout: 120000,
-          },
-          (reply) => {
-            response = reply;
-            reply.on("aborted", () => fail("response"));
-            reply.on("error", (error) => fail("response", error));
-            if ((reply.statusCode || 0) >= 500)
-              report("remote_status", undefined, reply.statusCode);
-            const responseHeaders = { ...reply.headers };
-            delete responseHeaders["connection"];
-            if (reply.headers["set-cookie"])
-              responseHeaders["set-cookie"] = reply.headers["set-cookie"]
-                .filter((cookie) => cookie.startsWith("rap_session="))
-                .map((cookie) =>
-                  cookie
-                    .replace(/^rap_session=/, cookieName + "=")
-                    .replace(/;\s*Domain=[^;]+/gi, "")
-                    .replace(/;\s*Secure\b/gi, ""),
-                );
-            // Remote CSP is intended for its own web build; bundled UI has local assets.
-            delete responseHeaders["content-security-policy"];
-            res.writeHead(reply.statusCode || 502, responseHeaders);
-            reply.pipe(res);
-          },
-        );
+        try {
+          upstream = (
+            transport ?? (remote.protocol === "https:" ? requestHttps : requestHttp)
+          )(
+            new URL(url.pathname + url.search, remote.origin),
+            {
+              method: req.method,
+              headers,
+              timeout: 120000,
+            },
+            (reply) => {
+              response = reply;
+              reply.on("aborted", () => fail("response"));
+              reply.on("error", (error) => fail("response", error));
+              if ((reply.statusCode || 0) >= 500)
+                report("remote_status", undefined, reply.statusCode);
+              const responseHeaders = { ...reply.headers };
+              delete responseHeaders["connection"];
+              if (reply.headers["set-cookie"])
+                responseHeaders["set-cookie"] = reply.headers["set-cookie"]
+                  .filter((cookie) => cookie.startsWith("rap_session="))
+                  .map((cookie) =>
+                    cookie
+                      .replace(/^rap_session=/, cookieName + "=")
+                      .replace(/;\s*Domain=[^;]+/gi, "")
+                      .replace(/;\s*Secure\b/gi, ""),
+                  );
+              // Remote CSP is intended for its own web build; bundled UI has local assets.
+              delete responseHeaders["content-security-policy"];
+              res.writeHead(reply.statusCode || 502, responseHeaders);
+              reply.pipe(res);
+            },
+          );
+        } catch (error) {
+          fail("connection", error instanceof Error ? error : undefined);
+          return;
+        }
         // Node's socket timeout alone does not bound DNS, upload or a trickling body.
-        const deadline = setTimeout(() => fail("timeout"), 120000);
+        deadline = setTimeout(() => fail("timeout"), 120000);
         upstream.on("timeout", () => fail("timeout"));
         upstream.on("error", (error) => fail("connection", error));
         const cleanup = () => {

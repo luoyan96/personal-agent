@@ -1164,3 +1164,19 @@ App Secret从飞书可见凭证控件读入内存、立即恢复掩码，终端r
 远端ba6dc89首轮Ubuntu22/24成功，Windows既有execution A12测试5000ms超时；失败日志github-windows-failed.log保留，仅重跑失败Windows节点，未改超时或产品实现。最终远端状态在收尾补记；本批仅部署/文档，无新共享代码，不重复已过本地693项全量CI。
 
 收尾：部署文档提交6fde7a74501e84c734d388ff144d8fb7a1d608c8已推送、PR73正文已更新，工作区干净。225份Markdown/10份Skill与diff检查通过；桌面说明读回为已部署/仅本人应用已发布，安装器再次校验原完整哈希。ba6dc89的run39360378751失败Windows节点重跑5分56秒成功，三平台最终均通过；6fde7a7的新文档head远端检查首读三项运行中，不把前一head的通过写成新head已过。产品2bbcfbc、安装器字节及已部署镜像均保持。
+
+## 2026-10-20：桌面0.10.21系统代理联网修复与安装包
+
+用户反馈刚进入资料库/工作台频繁服务不可用。从实际干净94aca6b/feat/feishu-readonly-pilot创建fix/desktop-network-0.10.21，读取AGENTS/状态/日志/README/路线图，未切main或覆盖修改。现装D:/0chat/ResearchWeChat/AcceptCat/AcceptCat.exe为0.10.20，配置地址正确；只提取本机日志的连接元数据，无cookie/私人材料。近期11:17:32的GET约21秒ETIMEDOUT，历史反复ECONNRESET。公网ready正常0.26.0；系统代理存在、DNS为代理虚拟地址。同机真实Electron22比较Node8次1次超7秒，Chromium8次均200，定位桌面Node转发的系统代理兼容缺口。
+
+产品先提交ee330bb，原生联调发现并修正事件/压缩/空POST兼容，最终源码固定543dc9cb4716da413fd23afa5ceb2a5154ed4dcb。主进程转发用Chromium net，固定目标与Origin/CSRF、服务隔离手工cookie、取消/总截止保持，独立非持久session不自动用其cookie；拒绝重定向，协商解压后修正头，慢读缓存有界，不新增写请求自动重发。502/504提示明确连接问题。Electron22上传close可先于响应；空分块上传会原生TypeError，首次非空写入只设置一次模式，空POST保持默认；真实集成发现后修复，不交付中间包。新增独立主进程类型检查，避免composite遗漏和Web引用冲突。
+
+最终渲染/主进程类型、36项联网/会话/发送恢复/下载/飞书规划helper全部通过。真实Electron22验证上传、空POST、查询、cookie隔离、300KB压缩二进制字节一致、外站重定向0次、截断拒绝与取消；最终链路线上公开health16/16为200/0.26.0，约54–192ms。API/契约/核心/Skill未改，不重复原根693项CI。早期原生事件、gzip、空POST、类型首败/中间构建日志保留在Git外.runtime/desktop-network-20261020。
+
+Browser插件未列出，用已有CUA内置浏览器及Playwright。1280×720真实React/HTTP/SQLite经真实Electron22转发：合成资料列表502→恢复→点击重试→错误消失→新建私人集合实际落库→切换我的任务/课题组任务/资料库，均正常。控制台仅既有Router与AntD弃用提示，无新运行异常；UI/JSON/计数收据保留。测试用隔离账号/库、额外helper，未读取生产会话或私人资料、调用模型或创建正式科研任务。
+
+最终Windows0.10.21 NSIS87,425,242字节，SHA256 061a5e162c74c877dd65b95d19222aa9b65e0084a65548c317fe3f9b437ee8f7，已复制C:/Users/luo/Desktop/AcceptCat_0.10.21.exe。17JS/8CSS字节、52运行包/55装配包、transport调用点、旧功能/品牌与无QA内容核对通过；真实NSIS的ASAR/EXE与受测目录相同，分别7461a96f31dea858b17c422b4b89c34ce73bd87b60377c50faba67994d7d5eda / a39f6d9576c4ac430f4a34c7bca99386692539adfe17eb7b7ff2d18d2df355d8。隐藏独立数据目录原生启动通过，旧electron-log initialize警告保留。未代安装、退出现装或删除旧包/用户数据，用户覆盖安装后生效。
+
+本批无后台、迁移、密钥/飞书权限或公开Release/更新源变更。后台仍47c42ac+key-preview.4bc8d1f+feishu.2bbcfbc / image4ee12e77 / 0.26.0 / schema023，飞书0.1.0仅罗岩；真实OAuth、私人选定文档及用户覆盖安装后的长期稳定性继续验证。更新交付/状态/README/产品说明/路线图，并修正飞书实现文档遗留的“本批不部署”措辞，保留历史部署事实。
+
+收尾：文档67963eaf80ce754964c650c645e55a18d182ea7c已推送，创建并附[草稿PR74](https://github.com/luoyan96/personal-agent/pull/74)，base feat/feishu-readonly-pilot，未合并。226份Markdown/10份Skill及diff检查通过；该head远端Foundation三项首读IN_PROGRESS，不称已通过。桌面包哈希和安装说明已读回，完整交付收据留Git外。合成浏览器页、4930/4931服务及本批独立Electron helper已停止，现装0.10.20、旧包及用户数据保留；真实公开latest核对仍v0.6.0，无发布操作。产品543dc9c及最终安装器保持。
