@@ -1,7 +1,8 @@
-import { Alert, Button, Input, Popover, Select, Spin } from "antd";
+import { Button, Input, Popover, Select, Spin } from "antd";
 import {
   ArrowUpOutlined,
   DownOutlined,
+  InfoCircleOutlined,
   ReadOutlined,
   StopOutlined,
   UpOutlined,
@@ -111,6 +112,7 @@ function LibraryChat({
     [busy, setBusy] = useState(false),
     [expanded, setExpanded] = useState(false);
   const [failure, setFailure] = useState(""),
+    [failureCode, setFailureCode] = useState(""),
     [reload, setReload] = useState(0),
     [scopeOpen, setScopeOpen] = useState(false),
     [draft, setDraft] = useState("");
@@ -133,6 +135,7 @@ function LibraryChat({
     if (focusRequest) {
       setExpanded(true);
       setFailure("");
+      setFailureCode("");
       setNeedsFeishu(false);
       if(queryCollectionId)setSelected([queryCollectionId]);
       input.current?.focus();
@@ -154,6 +157,7 @@ function LibraryChat({
     const operation = capture();
     setReady(false);
     setFailure("");
+    setFailureCode("");
     void (async () => {
       try {
         const [owned, visible] = await Promise.all([
@@ -254,14 +258,16 @@ function LibraryChat({
   const followupFile = recentFile?.messageId !== ignoredFile ? recentFile : undefined;
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "nearest" });
-  }, [history.data?.messages.length, reply.text, expanded]);
+  }, [history.data?.messages.length, reply.text, expanded, pending?.key]);
   const dispatch = async (retry?: LibrarySendIntent) => {
     if (lock.current || !ready || generating || (!retry && (pending || !draft.trim())))
       return;
     lock.current = true;
     setBusy(true);
     setFailure("");
+    setFailureCode("");
     setNeedsFeishu(false);
+    setLibraryReceipt("");
     setExpanded(true);
     const operation = capture();
     let intent: LibrarySendIntent = retry || {
@@ -300,7 +306,7 @@ function LibraryChat({
         if(action.kind==='bind'){
           const response=await researchApi('bindFeishuLibrary',{body:{url:action.url,instruction:action.instruction,...(action.tableId?{tableId:action.tableId}:{})},idempotencyKey:`bind-${intent.key}`,signal:operation.signal});
           if(!operation.isCurrent())return;
-          if(response.data.state==='choose_table'){setTableChoices(response.data.tables);setFailure('这个飞书库有多张表，请选择要绑定的一张。');return;}
+          if(response.data.state==='choose_table'){setTableChoices(response.data.tables);return;}
           const library=response.data.library;
           const visible=await researchApi('researchCollections',{query:{scope:'visible',limit:100},signal:operation.signal});
           if(!operation.isCurrent())return;
@@ -355,9 +361,10 @@ function LibraryChat({
       if (operation.isCurrent()) {
         if (
           error instanceof ResearchApiError &&
-          ["FEISHU_REAUTHORIZE", "FEISHU_UNAVAILABLE", "FEISHU_ACCESS_DENIED"].includes(error.code)
+          error.code === "FEISHU_REAUTHORIZE"
         )
           setNeedsFeishu(true);
+        setFailureCode(error instanceof ResearchApiError ? error.code : "");
         setFailure(
           error instanceof Error ? error.message : "消息未确认，请核对原消息。",
         );
@@ -377,6 +384,7 @@ function LibraryChat({
     lock.current = true;
     setBusy(true);
     setFailure("");
+    setFailureCode("");
     try {
       const current = (
         await researchApi("chatTurn", {
@@ -408,6 +416,47 @@ function LibraryChat({
       operation.dispose();
     }
   };
+  const displayError = failure || history.error || reply.error;
+  const choosingTable = !!tableChoices.length && pending?.externalAction?.kind === "bind";
+  const editablePending = pending && !pending.conversationId && !pending.file ? pending : undefined;
+  const editPending = () => {
+    if (!editablePending) return;
+    try {
+      localStorage.removeItem(storageKey);
+      setDraft(editablePending.text);
+      setPending(undefined);
+      setTableChoices([]);
+      setNeedsFeishu(false);
+      setFailure("");
+      setFailureCode("");
+      setLibraryReceipt("");
+      input.current?.focus();
+    } catch {
+      setNeedsFeishu(false);
+      setFailureCode("");
+      setFailure("本机待确认记录无法更新，请重试。");
+    }
+  };
+  let notice: { message: string; detail?: string; actionLabel?: string; onAction?: () => void; allowUnready?: boolean } | undefined;
+  if (!busy) {
+    if (!ready && displayError) {
+      notice = { message: "资料配置暂未读到。", detail: displayError, actionLabel: "重试", allowUnready: true, onAction: () => setReload((n) => n + 1) };
+    } else if (choosingTable) {
+      notice = { message: "这个库有多张表，请选择需要连接的一张。", detail: displayError };
+    } else if (needsFeishu) {
+      notice = { message: "需要重新连接飞书，原消息已保留。", detail: "授权后回来继续原请求；仍需你对原表有读取权限。", actionLabel: "连接飞书", onAction: onConnectFeishu };
+    } else if (failureCode === "FEISHU_ACCESS_DENIED") {
+      notice = { message: "飞书未允许读取这份资料，请检查原表权限。", detail: displayError, actionLabel: "连接设置", onAction: onConnectFeishu };
+    } else if (failureCode === "FEISHU_UNAVAILABLE") {
+      notice = { message: "飞书暂时未能读取，原消息已保留。", detail: displayError, actionLabel: "重试原请求", onAction: () => void dispatch(pending) };
+    } else if (pending) {
+      notice = { message: failure && !failureCode ? failure : "原消息结果尚未确认，请继续核对。", detail: displayError || "会沿用原消息核对结果，不会另发一条新消息。", actionLabel: "核对原消息", onAction: () => void dispatch(pending) };
+    } else if (displayError) {
+      notice = { message: displayError, actionLabel: "重新读取", onAction: () => { setFailure(""); setFailureCode(""); void history.refresh(); } };
+    } else if (libraryReceipt) {
+      notice = { message: libraryReceipt };
+    }
+  }
   return (
     <section
       className={`library-agent-dock ${expanded ? "is-expanded" : ""}`}
@@ -491,7 +540,7 @@ function LibraryChat({
               这里显示最近的对话，完整记录仍保留在该 Agent 私聊中。
             </p>
           )}
-          {!history.data?.messages.length && !history.loading && (
+          {!history.data?.messages.length && !history.loading && !pending && !displayError && !readingFeishu && (
             <div className="library-agent-welcome">
               <strong>想从资料里找到什么？</strong>
               <p>
@@ -518,6 +567,12 @@ function LibraryChat({
               )}
             </article>
           ))}
+          {pending && (!pending.conversationId || !history.data?.messages.some((m) => m.origin === "human" && m.text === pending.text)) && (
+            <article className="library-chat-message role-human" aria-label="待确认的原消息">
+              <SafeMessageMarkdown text={pending.text} />
+              <small>原消息 · 结果待确认</small>
+            </article>
+          )}
           {readingFeishu && (
             <div role="status">
               <Spin size="small" /> 正在用你的飞书授权读取选定资料…
@@ -545,70 +600,30 @@ function LibraryChat({
           <div ref={bottom} />
         </div>
       )}
-      {needsFeishu && (
-        <div className="library-chat-recovery">
-          <span>连接飞书并授权多维表格只读访问，回来后可继续核对原请求；仍需你对原表有权限。</span>
-          <Button size="small" onClick={onConnectFeishu}>
-            连接飞书
-          </Button>
-        </div>
-      )}
-      {libraryReceipt&&<p className="library-chat-note" role="status">{libraryReceipt}</p>}
-      {!!tableChoices.length&&pending?.externalAction?.kind==='bind'&&<div className="library-chat-recovery"><span>选择需要绑定的数据表</span><Select aria-label="选择飞书数据表" placeholder="请选择一张表" options={tableChoices.map(t=>({value:t.id,label:t.name}))} onChange={tableId=>{const action=pending.externalAction;if(action?.kind!=='bind')return;const next={...pending,externalAction:{...action,tableId}};try{checkpoint(next);setTableChoices([]);void dispatch(next);}catch{setFailure('本机未能保存选择，请检查可用存储后重试。');}}} /></div>}
-      {(failure || history.error || reply.error) && (
-        <Alert
-          type="warning"
-          message={failure || history.error || reply.error}
-          action={
-            <Button
-              size="small"
-              disabled={busy}
-              onClick={() => {
-                if (!ready) setReload((n) => n + 1);
-                else void history.refresh();
-              }}
-            >
-              重新读取
-            </Button>
-          }
-        />
-      )}
-      {pending && !busy && (
-        <div className="library-chat-recovery">
-          <span>有一条消息结果尚未确认，先核对原消息。</span>
-          <Button
-            size="small"
-            disabled={!ready || generating}
-            onClick={() => void dispatch(pending)}
-          >
-            核对原消息
-          </Button>
-          {!pending.conversationId && !pending.file && (
-            <Button
-              size="small"
-              onClick={() => {
-                try {
-                  localStorage.removeItem(storageKey);
-                  setDraft(pending.text);
-                  setPending(undefined);
-                  setTableChoices([]);
-                  setFailure("");
-                } catch {
-                  setFailure("本机待确认记录无法更新，请重试。");
-                }
-              }}
-            >
-              返回修改
-            </Button>
-          )}
+      {notice && (
+        <div className={`library-chat-status ${displayError || pending ? "needs-action" : ""}`} role={displayError || pending ? "alert" : "status"} aria-label="资料对话状态">
+          <InfoCircleOutlined aria-hidden />
+          <span>{notice.message}</span>
+          <div className="library-chat-status-actions">
+            {choosingTable && pending && <Select aria-label="选择飞书数据表" placeholder="选择数据表" options={tableChoices.map(t => ({ value: t.id, label: t.name }))} onChange={tableId => {
+              const action = pending.externalAction;
+              if (action?.kind !== "bind") return;
+              const next = { ...pending, externalAction: { ...action, tableId } };
+              try { checkpoint(next); setTableChoices([]); void dispatch(next); }
+              catch { setTableChoices([]); setFailure("本机未能保存选择，请检查可用存储后重试。"); }
+            }} />}
+            {notice.onAction && <Button type="link" size="small" disabled={generating || (!ready && !notice.allowUnready)} onClick={notice.onAction}>{notice.actionLabel}</Button>}
+            {editablePending && <Button type="text" size="small" onClick={editPending}>返回修改</Button>}
+            {notice.detail && notice.detail !== notice.message && <Popover trigger="click" placement="topRight" content={<p className="library-chat-status-detail">{notice.detail}</p>}><Button type="text" size="small" aria-label="查看资料对话状态详情">详情</Button></Popover>}
+          </div>
         </div>
       )}
       <div className="library-agent-composer">
         <Input.TextArea
           ref={input}
           aria-label="与资料 Agent 对话"
-          placeholder="说“这是我的论文库”并附飞书链接；或直接说“找论文库里今年的 CCF A 论文”…"
-          value={draft}
+          placeholder={pending ? "原消息已保留，完成上方操作后继续对话" : "说“这是我的论文库”并附飞书链接；或直接说“找论文库里今年的 CCF A 论文”…"}
+          value={pending ? "" : draft}
           maxLength={8000}
           autoSize={{ minRows: 1, maxRows: 3 }}
           disabled={busy || !!pending}

@@ -1320,3 +1320,19 @@ Windows桌面 AcceptCat_0.10.27.exe，87,434,027字节，SHA256 a95b176b6ab4be1a
 经既有免密Workbench只读检查，API/worker均running/restart0，其他6服务运行；磁盘85%但仍7.3GiB可用，内存充足。生产数据库只读统计近30分钟注册回执0、有效registration_work为0、超限注册键0；合成密码KDF单次161毫秒，未输出哈希、用户身份、IP或请求正文。注册源代码仅本地密码处理/事务，不调用IM、DSH或飞书。科研入口access_log已off，错误日志有界尾部没有上游超时/拒连；尾部两项TLS握手错误尚无时间关联，不作为本次根因。不能以无访问日志推断请求未到达。
 
 已向用户询问对方同机浏览器ready结果和安装版本，仍待具体失败证据。当前尚未确定原因，未重启/部署、改网络/证书/权限、创建生产账号或更换包，无新全量测试声明；当前线上沿6597f58d/schema024/contract0.27。Git外本机 .runtime/connection-timeout-20261021 保存公开请求与原生转发回执，服务器 /opt/research-openim/ops/connection-timeout-20261021 保留脱敏聚合诊断，原资料及运行服务保持。
+
+## 2026-10-21 — Windows0.10.28：资料 Agent 当前提示只保留一处
+
+用户截图中同一失败同时出现授权条、错误框和待确认消息条，要求减少框。接续实际干净0a0bc00，新分支fix/library-agent-notices-0.10.28，产品43448f057c8cc42cf49ee9cc6f838a3aabf9ded5。[交付详情](deployment/acceptcat-0.10.28.md)。当前操作合并为一个轻量状态区、一个主要操作，返回修改/详情按需使用；仅鉴权失效要求重连，临时失败直接沿原请求重试，权限拒绝明确核对原表。待确认本机预览不冒充已发送；保持原Key/快照恢复与本人的资料范围。展开区最小300像素并滚到当前待确认消息，防短窗口裁切。
+
+渲染/主进程类型、20项定向及生产构建通过。实际React/HTTP/SQLite/worker以合成Feishu/模型验证授权与回到原请求、临时失败/权限各仅1条状态、选表、返回修改全文恢复、配置未ready时重试可用及A/B隔离；原消息回执丢失、刷新、核对后，真实隔离库原human消息1、原合成模型调用1。1280×720及820容器实拍，最终输入可见、状态1；不是私人真实科研质量验收。Browser插件缺席使用CUA/Playwright。首轮聊天区域裁切、合成入口HMR重复createRoot/NaN、已消失旧按钮的选择器失败与路径暂存命令未写入均保留；修正布局/刷新新页后再核对，不放宽业务恢复或权限。未改共享层，不重复根715项。
+
+Windows桌面AcceptCat_0.10.28.exe，87,434,677字节，SHA256 e5937c3506d75af415ede2567ff6671168514155b5f6002808c63a5581a8f79e；ASAR 202bfb7ed7e9127b4ea11d31603a199ec0bced36c2e3bd87cb8355b7b6e36d24。实际18JS/8CSS逐字节、52运行包/55装配包、NSIS实际EXE/ASAR、旧功能/品牌/无QA内容及隐藏隔离启动通过，既有electron-log重复initialize保留。未代安装、退出现装、删旧包或公开Release，--publish never。
+
+Git外.runtime/library-notices-20261021保存原证据、隔离库、调用/恢复计数、构建/载荷/启动及实拍；未读取本次截图中的私人链接或生产会话。纯客户端，不部署/迁移、不改scope/Key/模型或飞书仅本人范围，后台沿6597f58d/contract0.27/schema024/DSH0.2.1-rc.2。本次减少提示不代表注册超时已解决；注册排查继续等对方版本与同机检测。状态、路线图及日志随交付更新，PR与最终内容检查于收尾记录。
+
+收尾补修43448f057c8cc42cf49ee9cc6f838a3aabf9ded5：读取阶段重复提问不再被旧同文记录吞掉本次本机预览。新页实验仍仅一条状态，无HMR Root/NaN，仅原Router/AntD弃用提示。首包10deb52a保留Git外first-candidate，最终包已按上述新源码、哈希重新构建/核对载荷；原human/模型各1的恢复证据保持。
+
+最终新包隔离启动通过OPENIM_ELECTRON_READY；235份Markdown/10份Skill及diff检查通过。4970/4971合成助手按命令行核对后关闭，端口无监听，验收页关闭且视口恢复；现装用户客户端、原Edge页面与注册诊断维护页保留。
+
+交付c2564cf已推送，[草稿PR83](https://github.com/luoyan96/personal-agent/pull/83)已创建并附任务，base feat/feishu-paper-library-0.10.27、未合并；没有新增仓库权限。远端检查尚待实际结果，不将本地通过称为远端已通过。

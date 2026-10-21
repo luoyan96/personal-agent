@@ -6,7 +6,15 @@
 
 本人反馈他人注册阶段超时。公网ready连续200/0.27，固定实际服务器IP且绕过本机显式代理的4次检查约122—176毫秒；API/worker运行且restart0，其他6服务运行。生产只读核对近30分钟注册回执0、活动注册工作0、触发注册限流的键0，合成密码KDF161毫秒；注册代码不等待IM/DSH/飞书。实际Electron22/当前桌面转发链路的公开health通过，两次故意不合法、不会创建账号的注册校验分别79/43毫秒返回400/VALIDATION_ERROR；这不是新真人账号完整注册验收。科研入口access_log为off，不能用缺访问日志证明请求未到达。根因尚未确认，等待对方同机浏览器ready结果、安装版本及具体错误，不能直接归因对方网络或宣布修复。本轮无产品源码、安装包、部署、权限或账号变更，Git外证据 .runtime/connection-timeout-20261021，服务器 /opt/research-openim/ops/connection-timeout-20261021。
 
-## 最新批次0.10.27：对话绑定飞书论文库，包及本人试点后台已更新
+## 最新桌面批次0.10.28：资料 Agent 状态收敛，安装包已制作
+
+评审入口：[草稿PR83](https://github.com/luoyan96/personal-agent/pull/83)，base feat/feishu-paper-library-0.10.27，已推送并附任务、未合并；远端CI状态以实际运行结果为准。
+
+从干净0a0bc00接续，分支 `fix/library-agent-notices-0.10.28`，产品 **43448f057c8cc42cf49ee9cc6f838a3aabf9ded5**。[交付与边界](deployment/acceptcat-0.10.28.md)。同一操作不再叠加授权、读取错误和消息恢复框，只显示一行当前状态及主要操作，详情按需展开；临时失败不再误引导重新授权。原消息预览、原Key/字节恢复、返回修改与权限保持，展开区至少300像素。
+
+桌面 **C:/Users/luo/Desktop/AcceptCat_0.10.28.exe**，87,434,677字节，SHA256 **e5937c3506d75af415ede2567ff6671168514155b5f6002808c63a5581a8f79e**。18JS/8CSS、52运行/55装配包、实际NSIS载荷和隐藏隔离启动通过；未代安装或公开发布。渲染/主进程类型、20项及实际React/HTTP/SQLite/worker合成流程通过，含授权、临时错误/权限、选表、配置重试、A/B隔离和丢回执刷新后原消息/模型均仅1次。1280×720与820容器验证单一提示和聊天空间；首轮裁切/HMR夹具警告保留Git外 .runtime/library-notices-20261021。纯客户端，无后台/迁移/新权限或Key变化，沿前批0.27/schema024/image6597f58d；不重复根715项，也不将此界面改动当注册超时已解决。
+
+## 上一批次0.10.27：对话绑定飞书论文库，包及本人试点后台已更新
 
 从实际干净 docs/feishu-paper-library-investigation / 27aa8b4 接续，分支 feat/feishu-paper-library-0.10.27，产品 **583068035abc9928997c90cb0d5c453376ae082f**。[交付、部署与边界](deployment/acceptcat-0.10.27.md)。底部资料Agent接收命名多维表格链接，保存私人外部资料集合；按保存库名、年度/CCF等级/关键词实时重读，回执含实际条件、完整性和原记录来源，再走原DSH本人对话回答。缺发表日期先澄清最近一年；不复制PDF、共享个人权限或写回飞书。
 
