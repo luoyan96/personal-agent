@@ -3,6 +3,7 @@ import * as m from './models.js'
 import {skillRoutes} from './skills.js'
 import {researchLibraryRoutes} from './research-library.js'
 import {feishuRoutes} from './feishu.js'
+import {feishuLibraryRoutes} from './feishu-library.js'
 import { chatRoutes } from './chat.js'
 import { openImRoutes } from './openim.js'
 import { AccountUsername, AccountPassword, RegistrationCode } from './authentication.js'
@@ -31,18 +32,7 @@ function route<P extends z.ZodType, Q extends z.ZodType, B extends z.ZodType, R 
   return { method, path: `/api/v1${path}`, stage, status, access, rule, implemented: stage === 'B0' || stage === 'B1' || stage === 'B2a' || stage === 'B2b' || stage === 'B3' || stage === 'B4a' || stage === 'B5b', request: z.strictObject({ params, query, headers: keyed ? headers : empty, body }), response,
     errors: m.ErrorResponse, errorStatuses: m.errorStatus, idempotent: keyed }
 }
-export const routes = {
-  ...communityRoutes,
-  ...researchLibraryRoutes,
-  ...feishuRoutes,
-  ...skillRoutes,
-  ...personalAssistantRoutes,
-  ...workspaceRoutes,
-  ...researchTeamRoutes,
-  ...agentIntegrationRoutes,
-  ...personalModelRoutes,
-  ...openImRoutes,
-  ...chatRoutes,
+const foundationRoutes = {
   live: route('GET', '/health/live', 'B0', empty, empty, z.null(), m.data(m.Health), 200, 'Process liveness only.', 'public'),
   ready: route('GET', '/health/ready', 'B0', empty, empty, z.null(), m.data(m.Health), 200, '503 with same health schema if database migration/write probe or blob read/write probe fails.', 'public'),
   login: route('POST', '/auth/login', 'B1', empty, empty, z.strictObject({ username: AccountUsername, password: AccountPassword }), m.data(m.Member), 200, 'Trim surrounding username whitespace only; case-sensitive ASCII account identity. Password at least 8 characters, preserved exactly, no complexity or field-length cap; HTTP body limit applies. Verify provisioned hash, rotate session and issue HttpOnly cookie.', 'public', false),
@@ -119,6 +109,7 @@ export const routes = {
   knowledge: route('GET', '/tasks/{id}/knowledge', 'B4', id, pagination, z.null(), m.page(m.Knowledge), 200, 'Task ACL and explicit authorized conclusions only.'),
   feedback: route('POST', '/tasks/{id}/feedback-sharing', 'B4', id, empty, version.extend({ deliverableId: m.Id, revision: m.Version, decision: z.enum(['share_selected', 'decline', 'revoke']), selectedText: m.Text.nullable(), purpose: z.literal('public_capability_improvement') }), m.data(m.Sharing), 200, 'Rights holder only; separate from review; only selected text; revoke stops future reuse, cannot erase prior copies. Detailed revision policy gated at B4.'),
 } as const
+export const routes: typeof foundationRoutes & typeof communityRoutes & typeof researchLibraryRoutes & typeof feishuRoutes & typeof skillRoutes & typeof personalAssistantRoutes & typeof workspaceRoutes & typeof researchTeamRoutes & typeof agentIntegrationRoutes & typeof personalModelRoutes & typeof openImRoutes & typeof chatRoutes & typeof feishuLibraryRoutes = { ...communityRoutes, ...researchLibraryRoutes, ...feishuRoutes, ...skillRoutes, ...personalAssistantRoutes, ...workspaceRoutes, ...researchTeamRoutes, ...agentIntegrationRoutes, ...personalModelRoutes, ...openImRoutes, ...chatRoutes, ...foundationRoutes, ...feishuLibraryRoutes }
 export type RouteName = keyof typeof routes
 export type RequestFor<K extends RouteName> = z.input<(typeof routes)[K]['request']>
 export type ResponseFor<K extends RouteName> = z.output<(typeof routes)[K]['response']>

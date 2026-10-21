@@ -49,7 +49,7 @@ export class ResearchLibraryService {
   }
   private owned(id:string,expected?:number,withdrawn=false){const r=this.collection(id,withdrawn);if(r.owner_id!==this.actor.id)fail('NOT_FOUND');if(expected!==undefined&&r.version!==expected)fail('VERSION_CONFLICT');return r}
   private view(r:Row):ResearchCollection {
-    return ResearchCollection.parse({id:r.id,ownerId:r.owner_id,labId:r.lab_id,name:r.name,description:r.description,scope:r.scope,taskIds:decode(r.task_ids),version:r.version,status:r.status,owned:r.owner_id===this.actor.id,fileCount:this.db.prepare("SELECT count(*) n FROM research_files WHERE collection_id=? AND status='available'").get(r.id!)!.n,createdAt:r.created_at,updatedAt:r.updated_at})
+    return ResearchCollection.parse({id:r.id,ownerId:r.owner_id,labId:r.lab_id,name:r.name,description:r.description,scope:r.scope,taskIds:decode(r.task_ids),version:r.version,status:r.status,owned:r.owner_id===this.actor.id,...(this.db.prepare('SELECT 1 FROM feishu_library_sources WHERE collection_id=?').get(r.id!)?{externalSource:'feishu_bitable'}:{}),fileCount:this.db.prepare("SELECT count(*) n FROM research_files WHERE collection_id=? AND status='available'").get(r.id!)!.n,createdAt:r.created_at,updatedAt:r.updated_at})
   }
   private validateSettings(settings:z.infer<typeof ResearchCollectionSettings>){
     for(const taskId of settings.taskIds)if(!this.db.prepare("SELECT t.id FROM tasks t JOIN task_access a ON a.task_id=t.id WHERE t.id=? AND t.lab_id=? AND a.member_id=? AND a.access='full' AND t.status!='cancelled'").get(taskId,this.actor.labId,this.actor.id))fail('NOT_FOUND')
@@ -66,7 +66,7 @@ export class ResearchLibraryService {
     return {row:v,model:ResearchFileVersion.parse(decode(v.document))}
   }
   private fileView(r:Row):ResearchFile {const c=this.collection(String(r.collection_id),true);return ResearchFile.parse({...this.fileVersion(r).model,id:r.id,collectionId:r.collection_id,status:r.status,owned:c.owner_id===this.actor.id})}
-  authorizeImport(collectionId:string,raw:z.input<typeof ResearchFileImport>){const input=ResearchFileImport.parse(raw),c=this.owned(collectionId,input.expectedCollectionVersion);if(input.fileId){const f=this.file(input.fileId);if(f.collection_id!==c.id)fail('NOT_FOUND');if(f.version!==input.expectedVersion)fail('VERSION_CONFLICT')}return c}
+  authorizeImport(collectionId:string,raw:z.input<typeof ResearchFileImport>){const input=ResearchFileImport.parse(raw),c=this.owned(collectionId,input.expectedCollectionVersion);if(this.db.prepare('SELECT 1 FROM feishu_library_sources WHERE collection_id=?').get(c.id!))fail('INVALID_STATE');if(input.fileId){const f=this.file(input.fileId);if(f.collection_id!==c.id)fail('NOT_FOUND');if(f.version!==input.expectedVersion)fail('VERSION_CONFLICT')}return c}
   private agent(id:string){if(!this.db.prepare("SELECT id FROM chat_contacts WHERE id=? AND kind='personal_agent' AND owner_id=?").get(id,this.actor.id))fail('NOT_FOUND')}
   bindings(agentId:string){
     this.agent(agentId)
@@ -157,7 +157,7 @@ export class ResearchLibraryService {
       const settings=ResearchCollectionSettings.parse(body);this.validateSettings(settings);const created=randomUUID(),at=now()
       this.db.prepare('INSERT INTO research_collections VALUES (?,?,?,?,?,?,?,1,?,?,?)').run(created,this.actor.id,this.actor.labId,settings.name,settings.description,settings.scope,JSON.stringify(settings.taskIds),'available',at,at);result={data:this.view(this.collection(created))}
     }else if(name==='updateResearchCollection'){
-      this.owned(id!,body.expectedVersion);const settings=ResearchCollectionSettings.parse(body.settings);this.validateSettings(settings)
+      this.owned(id!,body.expectedVersion);const settings=ResearchCollectionSettings.parse(body.settings);this.validateSettings(settings);if(settings.scope!=='owner_private'&&this.db.prepare('SELECT 1 FROM feishu_library_sources WHERE collection_id=?').get(id!))fail('FORBIDDEN')
       this.db.prepare('UPDATE research_collections SET name=?,description=?,scope=?,task_ids=?,version=version+1,updated_at=? WHERE id=?').run(settings.name,settings.description,settings.scope,JSON.stringify(settings.taskIds),now(),id!);result={data:this.view(this.collection(id!))}
     }else if(name==='withdrawResearchCollection'){
       this.owned(id!,body.expectedVersion);this.db.prepare("UPDATE research_collections SET status='withdrawn',version=version+1,updated_at=? WHERE id=?").run(now(),id!);result={data:this.view(this.collection(id!,true))}

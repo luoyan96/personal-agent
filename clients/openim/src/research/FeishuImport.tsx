@@ -14,11 +14,13 @@ export function FeishuImport({
   onClose,
   onSaved,
   onChat,
+  libraryRead = false,
 }: {
   collectionId?: string;
   onClose: () => void;
   onSaved: () => Promise<void>;
   onChat?: () => void;
+  libraryRead?: boolean;
 }) {
   const navigate = useNavigate();
   const operation = usePersonalOperation(true, "feishu-import");
@@ -57,7 +59,7 @@ export function FeishuImport({
   const locked = useRef(false);
   const [uncertain, setUncertain] = useState(false);
   const privateCollections =
-    collections.data?.data.filter((c) => c.owned && c.scope === "owner_private") || [];
+    collections.data?.data.filter((c) => c.owned && c.scope === "owner_private" && !c.externalSource) || [];
   const currentTarget = privateCollections.find((c) => c.id === target);
   const connection = status.data?.data;
   useEffect(() => {
@@ -98,7 +100,7 @@ export function FeishuImport({
     }
   }
   async function connect(current: () => boolean) {
-    const value = await researchApi("connectFeishu", { body: {} });
+    const value = await researchApi("connectFeishu", { body: libraryRead ? {libraryRead:true} : {} });
     if (!current()) return;
     setAuthorizationUrl(value.data.authorizationUrl);
     setAuthorizationExpires(value.data.expiresAt);
@@ -237,6 +239,7 @@ export function FeishuImport({
           />
         )}
         {!connection && !status.error && <p role="status">正在检查飞书连接…</p>}
+        {libraryRead && <Alert type="info" message="连接飞书多维表格资料库" description="本次重新授权会增加多维表格只读访问，用于读取你指定的数据表字段和记录；不会修改原表或给其他成员开放你的权限。授权后返回下方资料 Agent，核对原请求即可继续。" />}
         {connection?.state === "unconfigured" && (
           <Alert
             type="info"

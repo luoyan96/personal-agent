@@ -26,6 +26,11 @@ test("only the fixed read-only OAuth entry and current service callback can open
     assert.throws(() => validation.validateFeishuAuthorizationUrl(candidate.href));
   }
 });
+test("library authorization adds exactly the Bitable read-only scope, never write or messages",()=>{
+  const url=authorization();url.searchParams.set('scope',url.searchParams.get('scope')+' bitable:app:readonly');
+  assert.equal(validation.validateFeishuAuthorizationUrl(url.href,'https://lab.example.test'),url.href);
+  for(const extra of ['bitable:app','im:message','base:record:create']){const bad=new URL(url);bad.searchParams.set('scope',bad.searchParams.get('scope')+' '+extra);assert.throws(()=>validation.validateFeishuAuthorizationUrl(bad.href));}
+});
 async function opener(window) {
   return (await load("src/research/feishu-authorization.ts", {}, { window })).openFeishuAuthorization;
 }

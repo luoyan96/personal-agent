@@ -54,7 +54,7 @@ export function readLibraryFile(value: unknown): LibraryFile | undefined {
   const v = value as Record<string, unknown>;
   if (
     typeof v.filename !== "string" ||
-    !v.filename.startsWith("飞书文字快照-") ||
+    !["飞书文字快照-", "飞书资料查询-"].some(prefix => (v.filename as string).startsWith(prefix)) ||
     v.filename.length > 200 ||
     !/^[^\\/\x00-\x1f]+\.txt$/.test(v.filename) ||
     v.mediaType !== "text/plain" ||

@@ -11,7 +11,7 @@ describe('B0 executable contract', () => {
     expect(route.implemented).toBe(['B0','B1','B2a','B2b','B3','B4a','B5b','CHAT1','IM1','SKILL1','LIBRARY1','FEISHU1'].includes(route.stage))
     // Token issuance must never cache an IM credential in a canonical receipt.
     // Remote reconciliation is repeated and reauthorized against current state.
-    const immediateTransport=['imSession','imSync','imSyncConversation','connectFeishu','disconnectFeishu','previewFeishuDocument']
+    const immediateTransport=['imSession','imSync','imSyncConversation','connectFeishu','disconnectFeishu','previewFeishuDocument','queryFeishuLibrary']
     if (route.method !== 'GET' && !['login', 'logout',...immediateTransport].includes(name)) expect(route.idempotent).toBe(true)
     if(immediateTransport.includes(name))expect(route.idempotent).toBe(false)
   })

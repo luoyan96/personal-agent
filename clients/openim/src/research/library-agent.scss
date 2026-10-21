@@ -11,12 +11,24 @@
   flex-direction: column;
   overflow: hidden;
   &.is-expanded {
-    height: min(420px, 56%);
+    height: min(420px, 50%);
   }
   > .ant-alert {
     flex-shrink: 0;
     margin: 0 14px 6px;
     font-size: 12px;
+  }
+}
+@media (max-height: 800px) {
+  .research-library:has(.library-agent-dock.is-expanded) {
+    .research-library-heading {
+      padding-top: 10px;
+      padding-bottom: 10px;
+      h2 { font-size: 20px; }
+      p { display: none; }
+    }
+    .research-library-body { padding-bottom: 12px; }
+    .library-agent-composer { padding-bottom: 7px; }
   }
 }
 .library-agent-heading {

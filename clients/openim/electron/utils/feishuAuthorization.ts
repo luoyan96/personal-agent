@@ -33,8 +33,10 @@ export function validateFeishuAuthorizationUrl(value: unknown, service?: string)
       query.get("code_challenge_method") !== "S256" ||
       !/^[A-Za-z0-9_-]{43}$/.test(query.get("state") || "") ||
       !/^[A-Za-z0-9_-]{43}$/.test(query.get("code_challenge") || "") ||
-      scopes !==
-        "contact:user.base:readonly docx:document:readonly wiki:wiki:readonly" ||
+      ![
+        "contact:user.base:readonly docx:document:readonly wiki:wiki:readonly",
+        "bitable:app:readonly contact:user.base:readonly docx:document:readonly wiki:wiki:readonly",
+      ].includes(scopes) ||
       callback.username ||
       callback.password ||
       callback.search ||

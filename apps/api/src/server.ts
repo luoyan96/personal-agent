@@ -7,6 +7,8 @@ import Fastify from 'fastify'
 import {runSkills,type SkillCommand} from './skills.js'
 import { ResearchLibraryService, parseResearchImport, type ResearchLibraryCommand, type LibraryRequest } from './research-library.js'
 import { FeishuService } from './feishu.js'
+import { FeishuLibraryService } from './feishu-library.js'
+import { FeishuBitableClient } from './integrations/feishu-bitable.js'
 import { FeishuClient, type FeishuTransport } from './integrations/feishu-client.js'
 import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
@@ -128,9 +130,12 @@ export function createServer(config: Config, options:{imClient?:OpenImClient;ext
         const signal=AbortSignal.any([controller.signal,AbortSignal.timeout(25000)])
         let result:unknown
         if(name==='feishuStatus')result=transaction(connection,()=>service.status(actor))
-        else if(name==='connectFeishu')result=transaction(connection,()=>service.connect(actor,token))
+        else if(name==='connectFeishu')result=transaction(connection,()=>service.connect(actor,token,(parsed.data as RequestFor<'connectFeishu'>).body.libraryRead))
         else if(name==='disconnectFeishu')result=transaction(connection,()=>service.disconnect(actor))
         else if(name==='previewFeishuDocument')result=await service.preview(actor,(parsed.data as RequestFor<'previewFeishuDocument'>).body.url,authorized,signal)
+        else if(name==='feishuLibraries')result=new FeishuLibraryService(connection,config,new FeishuBitableClient(options.feishuTransport)).list(actor)
+        else if(name==='bindFeishuLibrary')result=await new FeishuLibraryService(connection,config,new FeishuBitableClient(options.feishuTransport)).bind(actor,(parsed.data as RequestFor<'bindFeishuLibrary'>).body,(parsed.data as RequestFor<'bindFeishuLibrary'>).headers['Idempotency-Key']!,authorized,signal)
+        else if(name==='queryFeishuLibrary')result=await new FeishuLibraryService(connection,config,new FeishuBitableClient(options.feishuTransport)).query(actor,(parsed.data as RequestFor<'queryFeishuLibrary'>).body,authorized,signal)
         else result=await service.import(actor,(parsed.data as RequestFor<'importFeishuSnapshot'>).body,(parsed.data as RequestFor<'importFeishuSnapshot'>).headers['Idempotency-Key']!,authorized,signal)
         authorized();return route.response.parse(result)
       }

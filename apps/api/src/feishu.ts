@@ -9,7 +9,7 @@ import { encrypt, decrypt, masterAvailable } from './lab-ai-settings.js'
 import { fail } from './errors.js'
 import { ResearchLibraryService } from './research-library.js'
 import { cleanBlobs } from './coordination.js'
-import { FeishuClient, feishuLink, feishuScopes } from './integrations/feishu-client.js'
+import { FeishuClient, feishuLink, feishuScopes, feishuLibraryScope } from './integrations/feishu-client.js'
 
 const now = () => new Date().toISOString(),
   later = (ms: number) => new Date(Date.now() + ms).toISOString()
@@ -78,9 +78,11 @@ export class FeishuService {
       }
     }
   }
-  connect(actor: Actor, sessionToken: string): ResponseFor<'connectFeishu'> {
+  connect(actor: Actor, sessionToken: string, libraryRead = false): ResponseFor<'connectFeishu'> {
     this.secret()
     this.cleanup()
+    // Reconnecting an already-bound library must not silently drop its read scope.
+    const savedLibrary = this.db.prepare("SELECT 1 FROM feishu_library_sources f JOIN research_collections c ON c.id=f.collection_id WHERE f.member_id=? AND f.lab_id=? AND f.app_id=? AND c.owner_id=? AND c.lab_id=? AND c.scope='owner_private' AND c.status='available' LIMIT 1").get(actor.id,actor.labId,this.config.feishu.appId!,actor.id,actor.labId)
     const state = randomBytes(32).toString('base64url'),
       verifier = randomBytes(48).toString('base64url'),
       expiresAt = later(600000)
@@ -102,7 +104,7 @@ export class FeishuService {
       response_type: 'code',
       redirect_uri: this.callbackUrl(),
       state,
-      scope: feishuScopes,
+      scope: feishuScopes + (libraryRead || savedLibrary ? ` ${feishuLibraryScope}` : ''),
       code_challenge: createHash('sha256').update(verifier).digest('base64url'),
       code_challenge_method: 'S256'
     }).toString()

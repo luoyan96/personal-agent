@@ -1,6 +1,22 @@
 # 新 AI 接手：当前项目状态
 
-更新日期：2026-10-20（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+更新日期：2026-10-21（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+
+## 进行中：他人注册新账号时连接超时
+
+本人反馈他人注册阶段超时。公网ready连续200/0.27，固定实际服务器IP且绕过本机显式代理的4次检查约122—176毫秒；API/worker运行且restart0，其他6服务运行。生产只读核对近30分钟注册回执0、活动注册工作0、触发注册限流的键0，合成密码KDF161毫秒；注册代码不等待IM/DSH/飞书。实际Electron22/当前桌面转发链路的公开health通过，两次故意不合法、不会创建账号的注册校验分别79/43毫秒返回400/VALIDATION_ERROR；这不是新真人账号完整注册验收。科研入口access_log为off，不能用缺访问日志证明请求未到达。根因尚未确认，等待对方同机浏览器ready结果、安装版本及具体错误，不能直接归因对方网络或宣布修复。本轮无产品源码、安装包、部署、权限或账号变更，Git外证据 .runtime/connection-timeout-20261021，服务器 /opt/research-openim/ops/connection-timeout-20261021。
+
+## 最新批次0.10.27：对话绑定飞书论文库，包及本人试点后台已更新
+
+从实际干净 docs/feishu-paper-library-investigation / 27aa8b4 接续，分支 feat/feishu-paper-library-0.10.27，产品 **583068035abc9928997c90cb0d5c453376ae082f**。[交付、部署与边界](deployment/acceptcat-0.10.27.md)。底部资料Agent接收命名多维表格链接，保存私人外部资料集合；按保存库名、年度/CCF等级/关键词实时重读，回执含实际条件、完整性和原记录来源，再走原DSH本人对话回答。缺发表日期先澄清最近一年；不复制PDF、共享个人权限或写回飞书。
+
+Windows **C:/Users/luo/Desktop/AcceptCat_0.10.27.exe**，**87,434,027字节**，SHA256 **a95b176b6ab4be1afbceee0a192c2ba6893573d857a18767f1768badf19f1d7b**。最终生产资源、NSIS实际载荷、隐藏隔离启动通过；本人已确认安装，无公开发布。最终根715项/57文件完整CI、2项生产CLI与客户端20项定向/类型通过；Linux主候选25项、补修候选26项通过。实际React/HTTP/SQLite/worker验证绑定/重复与丢回执、实时变化、多轮条件、日期澄清、403和账号隔离；该界面流程的飞书与模型均为合成替身，失败轮次保留，不能称私人科研端到端验收。
+
+用户单独授权后，飞书 **0.2.0** 已发布，仅罗岩可用，新增用户身份 **bitable:app:readonly**，原三项权限保持。API/worker配对部署 **research-openim-api:bitable-20261021-final** / **sha256:75aed5b940f57e2570c130336b16d8534ea9a102533dcb536600f0f82dad1e0c**，running/restart0/API healthy，公网ready200/**0.27.0**，schema **024**；DSH仍0.2.1-rc.2/Cordis4.0.5。原94表/6原件备份恢复、023→024与空表回退演练通过，正式仅增至95表；凭据/默认模型及其他6服务保持。维护10:21:56—10:22:13，备份 /srv/research-openim-backups/bitable-20261021-20261021T022159Z，完整证据 /opt/research-openim/ops/bitable-20261021-final 与Git外 .runtime/feishu-library-20261021。
+
+**真实本人试点已验：** 本人确认安装并从资料Agent入口再授权后，实际API读取9字段、100＋2页/102条，2026年度严格CCF A匹配4条，来源逐项对应。运维流程核对本人非合成身份及有效密码会话，调用生产域服务保存私人“论文库”（1个源），最近一年因无日期返回澄清。仅4条实际记录交给本人现有DeepSeek Flash，经DSH0.2.1-rc.2返回1029字符、4个来源编号，1698/450tokens、2984ms、failure=null。正文/记录仅在服务器受限文件，未复制入Git/本机或插入聊天消息。真实检查是服务层与实际模型试读，桌面签名HTTP完整真人流程未独立见证；勿把此区别抹掉，也不据此声称科研质量已认证。
+
+**现场补修已部署：** 首次新授权仍缺多维表格scope，飞书HTTP400/99991679被旧处理误报为服务不可用；本人换用Agent入口后真实读取成功。后台 **19a5c3316359f082993ab68fe64f79c4ef817361** 修正错误分型，并让已有私人库的重连保留原只读scope。API/worker当前均为 **research-openim-api:bitable-http400-final-20261021** / **sha256:6597f58de71c6208b8ccbf86ae1002230c0b95fd059ca4d0cacfc8cbb72cd7ac**，running/restart0、API healthy、公网ready0.27。11:50:02—11:50:16配对切换前，95表/6原件备份及独立恢复核对通过；私人源仍1且整表哈希保持，两个实际源文件匹配、凭据/默认/其他6服务保持。无新Key/scope/迁移，现包无需再装。备份 /srv/research-openim-backups/bitable-http400-20261021-20261021T035004Z，证据 /opt/research-openim/ops/bitable-http400-final-20261021。[草稿PR82](https://github.com/luoyan96/personal-agent/pull/82)已创建并附任务，base docs/feishu-paper-library-investigation、未合并；先前CLI TLS/连接器403失败保留，恢复后使用原CLI权限创建，无新增仓库授权。不要重复原024迁移或用空表回退删除已有绑定。
 
 ## 最新调研：飞书多维表格论文库（未实现整库接入）
 

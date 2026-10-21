@@ -56,7 +56,7 @@ export const feishuRoutes = {
   connectFeishu: route(
     'POST',
     '/connect',
-    empty,
+    z.strictObject({ libraryRead: z.boolean().optional() }),
     data(z.strictObject({ authorizationUrl: z.string().url(), expiresAt: Instant }))
   ),
   disconnectFeishu: route(

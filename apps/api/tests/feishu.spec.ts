@@ -17,6 +17,14 @@ afterEach(async () => {
 const sourceUrl = 'https://synthetic.feishu.cn/docx/SyntheticDocument123'
 const json = (data: unknown) =>
   new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } })
+it('classifies real HTTP400 scope and token errors without exposing upstream text',async()=>{
+  for(const code of [99991679,99991663]){
+    const client=new FeishuClient(async()=>new Response(JSON.stringify({code,msg:'synthetic-secret-must-not-escape'}),{status:400}))
+    await expect(client.document(sourceUrl,'synthetic_token')).rejects.toThrow(/^FEISHU_REAUTHORIZE$/)
+  }
+  const unavailable=new FeishuClient(async()=>new Response(JSON.stringify({code:0,data:{}}),{status:400}))
+  await expect(unavailable.document(sourceUrl,'synthetic_token')).rejects.toThrow(/^FEISHU_UNAVAILABLE$/)
+})
 async function setup(configured = true) {
   const dir = mkdtempSync(join(tmpdir(), 'acceptcat-feishu-'))
   cleanup.push(() => rmSync(dir, { recursive: true, force: true }))

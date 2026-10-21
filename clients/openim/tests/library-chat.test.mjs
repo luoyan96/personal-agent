@@ -24,7 +24,7 @@ async function load(file, imports = {}) {
       Map,
       Error,
       Number,
-      JSON,
+      JSON, URL, TextEncoder, btoa,
     },
   );
   return module.exports;
@@ -34,6 +34,7 @@ const profiles = await load("agentStarterProfiles.ts"),
 const { sendLibraryMessage, readLibraryIntent } = await load("library-chat.ts", {
   "./library-agent": helpers,
   "./feishu-chat": await load("feishu-chat.ts"),
+  "./feishu-library-chat": await load("feishu-library-chat.ts"),
 });
 const agent = {
   id: "agent_library",

@@ -11,6 +11,7 @@ export const ResearchCollection = z.strictObject({
   scope: z.enum(['owner_private', 'task_scoped', 'lab_shared', 'public']), taskIds: z.array(Id),
   version: Version, status: z.enum(['available', 'withdrawn']), owned: z.boolean(),
   fileCount: z.number().int().nonnegative(), createdAt: Instant, updatedAt: Instant,
+  externalSource: z.literal('feishu_bitable').optional(),
 })
 export type ResearchCollection = z.infer<typeof ResearchCollection>
 export const ResearchFileMetadata = z.strictObject({ title: z.string().max(500).default(''), authors: z.array(z.string().max(200)).max(30).default([]), year: z.number().int().min(1000).max(9999).nullable().default(null), doi: z.string().max(300).nullable().default(null), tags: z.array(z.string().max(100)).max(30).default([]), note: z.string().max(4000).default('') })

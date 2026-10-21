@@ -15,6 +15,7 @@ import type {
 } from "@research-agent-platform/contracts";
 import { researchApi, ResearchApiError } from "./api";
 import { feishuChatFile, findFeishuDocumentLink } from "./feishu-chat";
+import { findFeishuBaseLink, chooseFeishuLibrary, libraryBindingFile, libraryQueryFile, readLibraryQueryContext } from "./feishu-library-chat";
 import { AgentFileReadSummary } from "./AgentFileReadSummary";
 import type { TextAreaRef } from "antd/es/input/TextArea";
 import { findOwnedStarter, libraryAgentStarter } from "./agentStarterProfiles";
@@ -39,9 +40,13 @@ const inProgress = (turn?: AgentTurn) =>
 export function LibraryAgent({
   onConnectFeishu,
   focusRequest,
+  onLibraryBound,
+  queryCollectionId,
 }: {
   onConnectFeishu: () => void;
   focusRequest: number;
+  onLibraryBound?: (id:string) => Promise<void>;
+  queryCollectionId?: string;
 }) {
   const actor = useResearchStore((s) => s.actor),
     generation = useResearchStore((s) => s.generation);
@@ -70,6 +75,8 @@ export function LibraryAgent({
       storageKey={storageKey}
       onConnectFeishu={onConnectFeishu}
       focusRequest={focusRequest}
+      onLibraryBound={onLibraryBound}
+      queryCollectionId={queryCollectionId}
     />
   );
 }
@@ -79,11 +86,15 @@ function LibraryChat({
   storageKey,
   onConnectFeishu,
   focusRequest,
+  onLibraryBound,
+  queryCollectionId,
 }: {
   actorId: string;
   storageKey: string;
   onConnectFeishu: () => void;
   focusRequest: number;
+  onLibraryBound?: (id:string) => Promise<void>;
+  queryCollectionId?: string;
 }) {
   const { links, remember } = useAgentStarterLinks(actorId),
     remembered = useRef(links[libraryAgentStarter.id]);
@@ -114,15 +125,19 @@ function LibraryChat({
   const [readingFeishu, setReadingFeishu] = useState(false),
     [needsFeishu, setNeedsFeishu] = useState(false),
     [ignoredFile, setIgnoredFile] = useState("");
+  const [tableChoices,setTableChoices]=useState<{id:string;name:string}[]>([]);
+  const [lastQuery,setLastQuery]=useState(()=>{try{return readLibraryQueryContext(localStorage.getItem(storageKey+':query'));}catch{return undefined;}});
+  const [libraryReceipt,setLibraryReceipt]=useState("");
   const input = useRef<TextAreaRef>(null);
   useEffect(() => {
     if (focusRequest) {
       setExpanded(true);
       setFailure("");
       setNeedsFeishu(false);
+      if(queryCollectionId)setSelected([queryCollectionId]);
       input.current?.focus();
     }
-  }, [focusRequest]);
+  }, [focusRequest,queryCollectionId]);
   const lock = useRef(false),
     bottom = useRef<HTMLDivElement>(null);
   const checkpoint = (intent: LibrarySendIntent) => {
@@ -257,8 +272,17 @@ function LibraryChat({
     };
     try {
       if (!retry) {
-        const url = findFeishuDocumentLink(intent.text);
-        if (url) {
+        const baseUrl=findFeishuBaseLink(intent.text);
+        const url = baseUrl ? undefined : findFeishuDocumentLink(intent.text);
+        const documentFollowup=followupFile?.filename.startsWith('飞书文字快照-')&&/这份|这篇|这段|该文档|文中/.test(intent.text);
+        const source=!url&&!baseUrl&&!documentFollowup?chooseFeishuLibrary(intent.text,collections,selected):undefined;
+        if(baseUrl){
+          intent={...intent,externalAction:{kind:'bind',url:baseUrl,instruction:intent.text}};
+          checkpoint(intent);
+        }else if(source){
+          intent={...intent,externalAction:{kind:'query',collectionId:source.id,question:intent.text,...(lastQuery?.collectionId===source.id?{previousQuestion:lastQuery.question}:{})}};
+          checkpoint(intent);
+        }else if (url) {
           setReadingFeishu(true);
           const document = await researchApi("previewFeishuDocument", {
             body: { url },
@@ -268,6 +292,34 @@ function LibraryChat({
           intent = { ...intent, file: feishuChatFile(document.data) };
         } else if (followupFile) {
           intent = { ...intent, fileSelection: { messageId: followupFile.messageId } };
+        }
+      }
+      if(intent.externalAction&&!intent.file){
+        setReadingFeishu(true);
+        const action=intent.externalAction;
+        if(action.kind==='bind'){
+          const response=await researchApi('bindFeishuLibrary',{body:{url:action.url,instruction:action.instruction,...(action.tableId?{tableId:action.tableId}:{})},idempotencyKey:`bind-${intent.key}`,signal:operation.signal});
+          if(!operation.isCurrent())return;
+          if(response.data.state==='choose_table'){setTableChoices(response.data.tables);setFailure('这个飞书库有多张表，请选择要绑定的一张。');return;}
+          const library=response.data.library;
+          const visible=await researchApi('researchCollections',{query:{scope:'visible',limit:100},signal:operation.signal});
+          if(!operation.isCurrent())return;
+          const current=visible.data.find(c=>c.id===library.collectionId);
+          if(!current)throw new Error('资料库已绑定，但集合列表尚未读回，请核对原请求。');
+          const ids=[library.collectionId];
+          intent={...intent,collectionIds:ids,file:libraryBindingFile(library)};
+          checkpoint(intent);
+          setSelected(ids);setCollections(visible.data);setTableChoices([]);
+          setLibraryReceipt(`已保存“${library.name}”，仅自己可见；以后可以直接说库名查询。`);
+          try{await onLibraryBound?.(library.collectionId);}catch{setLibraryReceipt(`“${library.name}”已保存；上方列表刷新未完成，可重新进入查看。`);}
+        }else{
+          const response=await researchApi('queryFeishuLibrary',{body:{collectionId:action.collectionId,question:action.question,...(action.previousQuestion?{previousQuestion:action.previousQuestion}:{})},signal:operation.signal});
+          if(!operation.isCurrent())return;
+          intent={...intent,file:libraryQueryFile(response.data)};
+          checkpoint(intent);
+          const context={collectionId:action.collectionId,question:response.data.contextQuestion};
+          localStorage.setItem(storageKey+':query',JSON.stringify(context));setLastQuery(context);
+          setLibraryReceipt(response.data.state==='clarification'?response.data.clarification||'请补充查询条件。':`“${response.data.library.name}”：本次读取 ${response.data.scanned} 条，匹配 ${response.data.matched} 条${response.data.complete?'':'（仅已读部分）'}。结果依据库中标注，未读取附件全文。`);
         }
       }
       checkpoint(intent);
@@ -303,7 +355,7 @@ function LibraryChat({
       if (operation.isCurrent()) {
         if (
           error instanceof ResearchApiError &&
-          ["FEISHU_REAUTHORIZE", "FEISHU_UNAVAILABLE"].includes(error.code)
+          ["FEISHU_REAUTHORIZE", "FEISHU_UNAVAILABLE", "FEISHU_ACCESS_DENIED"].includes(error.code)
         )
           setNeedsFeishu(true);
         setFailure(
@@ -367,7 +419,7 @@ function LibraryChat({
           <strong>资料 Agent</strong>
           <span>
             {readingFeishu
-              ? "正在读取飞书文档…"
+              ? "正在读取飞书资料…"
               : generating
               ? "正在结合资料回复…"
               : "围绕资料，直接聊"}
@@ -443,7 +495,7 @@ function LibraryChat({
             <div className="library-agent-welcome">
               <strong>想从资料里找到什么？</strong>
               <p>
-                直接发飞书文档链接，说“总结这份申请书”或“分析论文方法”，不用先导入集合。首次需要文档链接，暂不按名称搜索整个飞书。
+                说“这是我的论文库”并附飞书多维表格链接，保存后直接按库名、年份、CCF等级或关键词查找。单篇飞书文档也可以直接发来阅读。
               </p>
               <button
                 onClick={() => setDraft("查找项目申请书中关于研究基础的内容，标明出处")}
@@ -468,7 +520,7 @@ function LibraryChat({
           ))}
           {readingFeishu && (
             <div role="status">
-              <Spin size="small" /> 正在用你的飞书授权读取这份文档…
+              <Spin size="small" /> 正在用你的飞书授权读取选定资料…
             </div>
           )}
           {generating && (
@@ -495,12 +547,14 @@ function LibraryChat({
       )}
       {needsFeishu && (
         <div className="library-chat-recovery">
-          <span>先连接你的飞书账号，回来后可继续发送原问题。</span>
+          <span>连接飞书并授权多维表格只读访问，回来后可继续核对原请求；仍需你对原表有权限。</span>
           <Button size="small" onClick={onConnectFeishu}>
             连接飞书
           </Button>
         </div>
       )}
+      {libraryReceipt&&<p className="library-chat-note" role="status">{libraryReceipt}</p>}
+      {!!tableChoices.length&&pending?.externalAction?.kind==='bind'&&<div className="library-chat-recovery"><span>选择需要绑定的数据表</span><Select aria-label="选择飞书数据表" placeholder="请选择一张表" options={tableChoices.map(t=>({value:t.id,label:t.name}))} onChange={tableId=>{const action=pending.externalAction;if(action?.kind!=='bind')return;const next={...pending,externalAction:{...action,tableId}};try{checkpoint(next);setTableChoices([]);void dispatch(next);}catch{setFailure('本机未能保存选择，请检查可用存储后重试。');}}} /></div>}
       {(failure || history.error || reply.error) && (
         <Alert
           type="warning"
@@ -529,7 +583,7 @@ function LibraryChat({
           >
             核对原消息
           </Button>
-          {!pending.conversationId && (
+          {!pending.conversationId && !pending.file && (
             <Button
               size="small"
               onClick={() => {
@@ -537,6 +591,7 @@ function LibraryChat({
                   localStorage.removeItem(storageKey);
                   setDraft(pending.text);
                   setPending(undefined);
+                  setTableChoices([]);
                   setFailure("");
                 } catch {
                   setFailure("本机待确认记录无法更新，请重试。");
@@ -552,7 +607,7 @@ function LibraryChat({
         <Input.TextArea
           ref={input}
           aria-label="与资料 Agent 对话"
-          placeholder="发飞书文档链接，说说你想了解什么；也可以问资料集合或继续追问…"
+          placeholder="说“这是我的论文库”并附飞书链接；或直接说“找论文库里今年的 CCF A 论文”…"
           value={draft}
           maxLength={8000}
           autoSize={{ minRows: 1, maxRows: 3 }}
@@ -579,7 +634,7 @@ function LibraryChat({
           </div>
         )}
         <p className="library-chat-note">
-          发送飞书链接会读取纯文本，交给当前模型并随本人对话保存；不会自动加入资料集合或共享。
+          多维表格链接保存为私人资料库；查询记录交给当前模型并随本人对话保存。单篇文档仍为文字快照；不会自动共享或写回飞书。
         </p>
         <footer>
           <span>

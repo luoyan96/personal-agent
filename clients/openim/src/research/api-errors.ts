@@ -19,7 +19,10 @@ export function validationMessage(issues: readonly ValidationIssue[]): string {
 }
 
 const messages: Record<string, string> = {
-  FEISHU_LINK_INVALID: "请粘贴飞书新版文档或其中为新版文档的知识库链接；暂不支持表格、PDF、PPT 或文件夹链接。",
+  FEISHU_LIBRARY_SCHEMA: "资料库字段不再匹配。请在飞书提供题目、年份、CCF等级等字段，再把链接发给资料 Agent 重新绑定。",
+  FEISHU_LIBRARY_LIMIT: "这次资料表或字段超出可读取范围，请提供具体数据表链接或缩小资料范围。",
+  FEISHU_LIBRARY_NAME_CONFLICT: "已经有一个同名资料集合，请给这个库换一个名字后再发链接。",
+  FEISHU_LINK_INVALID: "请提供飞书新版文档、其中为新版文档的知识库链接，或在资料 Agent 中发送 /base/ 多维表格链接。",
   FEISHU_REAUTHORIZE: "飞书授权已失效或过期，请重新连接飞书后再试。",
   FEISHU_ACCESS_DENIED: "飞书拒绝读取，请核对当前飞书账号、文档阅读权限和应用的只读权限。",
   FEISHU_UNAVAILABLE: "飞书读取暂未完成，请稍后重试；尚未保存资料。",

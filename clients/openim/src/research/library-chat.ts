@@ -2,6 +2,7 @@ import type { Contact } from "@research-agent-platform/contracts";
 import type { researchApi } from "./api";
 import { prepareLibraryAgent, type LibraryAgentBindings } from "./library-agent";
 import { readLibraryFile, type LibraryFile } from "./feishu-chat";
+import { findFeishuBaseLink, type FeishuLibraryAction } from "./feishu-library-chat";
 
 export type LibrarySendIntent = {
   key: string;
@@ -12,6 +13,7 @@ export type LibrarySendIntent = {
   conversationId?: string;
   file?: LibraryFile;
   fileSelection?: { messageId: string };
+  externalAction?: FeishuLibraryAction;
 };
 
 export function readLibraryIntent(raw: string | null): LibrarySendIntent | undefined {
@@ -42,6 +44,12 @@ export function readLibraryIntent(raw: string | null): LibrarySendIntent | undef
       (v.file !== undefined && v.fileSelection !== undefined)
     )
       return;
+    if(v.externalAction!==undefined){
+      const a=v.externalAction;
+      if(!a||typeof a!=='object'||!['bind','query'].includes(a.kind))return;
+      if(a.kind==='bind'&&(typeof a.url!=='string'||findFeishuBaseLink(a.url)!==a.url||typeof a.instruction!=='string'||a.instruction.length>8000||(a.tableId!==undefined&&!/^tbl[A-Za-z0-9]{4,100}$/.test(a.tableId))))return;
+      if(a.kind==='query'&&(!id(a.collectionId)||typeof a.question!=='string'||!a.question.trim()||a.question.length>8000||(a.previousQuestion!==undefined&&(typeof a.previousQuestion!=='string'||a.previousQuestion.length>8000))))return;
+    }
     return {
       key: v.key,
       text: v.text,
@@ -53,6 +61,7 @@ export function readLibraryIntent(raw: string | null): LibrarySendIntent | undef
       ...(v.fileSelection
         ? { fileSelection: { messageId: v.fileSelection.messageId } }
         : {}),
+      ...(v.externalAction ? {externalAction:v.externalAction} : {}),
     };
   } catch {
     return;
