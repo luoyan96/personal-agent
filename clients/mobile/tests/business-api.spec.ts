@@ -23,7 +23,7 @@ function memoryStorage() {
 async function setup(enabled = true) {
   const dir = mkdtempSync(join(tmpdir(), 'acceptcat-mobile-'));
   cleanup.push(() => rmSync(dir, { recursive: true, force: true }));
-  const credential = join(dir, 'synthetic.key'); writeFileSync(credential, randomBytes(32).toString('hex'));
+  const credential = join(dir, 'synthetic.key'); writeFileSync(credential, randomBytes(32).toString('hex'), { mode: 0o600 });
   const config = readConfig({ NODE_ENV: 'test', DATABASE_PATH: join(dir, 'api.sqlite'), BLOB_ROOT: join(dir, 'blobs'),
     APP_ORIGIN: origin, B3_AI_ENABLED: enabled ? '1' : '0', LAB_CREDENTIAL_KEY_FILE: credential, PORT: '0' });
   mkdirSync(config.blobRoot);
@@ -66,9 +66,22 @@ describe('mobile adapter against real AcceptCat HTTP handlers (synthetic account
     expect(request.headers.Origin).toBe(origin);
     expect(request.headers['X-CSRF-Token']).toMatch(/^[a-f0-9]{64}$/);
     expect(request.headers.Authorization).toBeUndefined();
+    const retiredStorage = memoryStorage(); await retiredStorage.write((await t.storage.read())!);
+    const retired = new MobileApi(origin, t.transport, retiredStorage, randomUUID);
     expect(await t.api.logout()).toBe(true);
     expect(await t.storage.read()).toBeNull();
-    expect(await restored.restore()).toBeNull();
+    expect(await retired.restore()).toBeNull();
+    expect(await retiredStorage.read()).toBeNull();
+  });
+  it('rotates the previous mobile cookie on another login without affecting other sessions', async () => {
+    const t = await setup(), retiredStorage = memoryStorage(); await retiredStorage.write((await t.storage.read())!);
+    const separateStorage = memoryStorage(), separate = new MobileApi(origin, t.transport, separateStorage, randomUUID);
+    await separate.login('mobile_A', password);
+    await t.api.login('mobile_B', password);
+    const retired = new MobileApi(origin, t.transport, retiredStorage, randomUUID);
+    expect(await retired.restore()).toBeNull();
+    expect((await separate.call('session')).data.member.id).toBe('member_A');
+    expect((await t.api.call('session')).data.member.id).toBe('member_B');
   });
   it('persists a send before a lost response and exact retry does not duplicate message or model turn', async () => {
     const t = await setup(); t.drop();

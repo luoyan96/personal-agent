@@ -1534,3 +1534,5 @@ README、product-status、current-state、0.10.34交付、路线图和交接/PR8
 官方SDK和实际服务端源码核对：OpenIM RN3.8.3-patch.12.4支持Expo development build，核心patch12+1声明16KB页；但AcceptCat token/回调仅支持平台3/5，安卓为2，不冒用桌面平台触发同平台force_logout。首批不嵌入OpenIM RN，沿既有授权HTTP与服务端DSH/worker；移动平台兼容/推送独立后续。选型/官方来源/命令/权限与限制见development/mobile-android-mvp.md，路线图补用户明确覆盖历史手机暂缓。
 
 根frozen install和完整ci749项/58文件、2项生产CLI/HTTP、B0/无夹具通过；手机类型、版本检查、prebuild/自动链接、Hermes JS导出及11项本地真实HTTP/socket/SQLite/合成模型检查通过。测试只用临时合成账号/材料/密钥，不代表真实模型通过。首次成熟期依赖拒绝、并行换依赖的Metro失败、跨账号404隐藏语义断言修正等日志全部保留Git外D:/deepseek-agent/.runtime/acceptcat-mobile-20261023。APK原生构建进行中，尚未确认生成；PR与最终产物另追加。未操作用户运行中客户端，未代安装或做真机/真实账号/真实聊天验收，未合并、发布或部署。
+
+补充：增加移动Cookie再次登录时的服务端轮换，保留其他独立会话，并用旧Cookie副本验证注销确实被后台拒绝；本机移动12项检查通过。PR90已创建并附当前聊天，先标草稿等待原生编译。GitHub连接器创建PR返回403，使用已有CLI身份创建成功。首轮Linux移动CI因合成密钥文件默认644被既有权限校验拒绝（503），修正测试夹具写入为0600，不修改生产检查；失败日志保留。公网只读ready确认status=ok/contract0.29.0/harness=not_verified，不视为真实模型验证。

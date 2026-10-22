@@ -11,6 +11,7 @@ export type Actor = ResponseFor<'session'>['data'];
 type Options<K extends RouteName> = {
   params?: RequestFor<K>['params']; query?: Partial<RequestFor<K>['query']>;
   body?: RequestFor<K>['body']; key?: string;
+  priorCookie?: string;
 };
 const messages: Record<string, string> = {
   UNAUTHENTICATED: '登录已过期，请重新登录。', INVALID_CREDENTIALS: '账号或密码不正确。',
@@ -67,9 +68,10 @@ export class MobileApi {
     catch (error) { if (error instanceof ApiError && error.status === 401) return null; throw error; }
   }
   async login(username: string, password: string): Promise<Actor> {
+    const priorCookie = this.cookie;
     const clearing = this.reset(), epoch = this.epoch;
     await clearing; this.check(epoch);
-    await this.call('login', { body: { username: username.trim(), password } });
+    await this.call('login', { body: { username: username.trim(), password }, priorCookie });
     this.check(epoch);
     return (await this.call('session')).data;
   }
@@ -96,7 +98,8 @@ export class MobileApi {
     for (const [key, value] of Object.entries(params)) path = path.replace(`{${key}}`, encodeURIComponent(String(value)));
     const queryString = Object.entries(query).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`).join('&');
     const headers: Record<string, string> = { Accept: 'application/json', Origin: this.origin };
-    if (this.cookie) headers.Cookie = this.cookie;
+    const cookie = name === 'login' ? options.priorCookie : this.cookie;
+    if (cookie) headers.Cookie = cookie;
     if (route.method !== 'GET') headers['Content-Type'] = 'application/json';
     if (route.method !== 'GET' && route.access === 'session') headers['X-CSRF-Token'] = this.csrf;
     if (route.idempotent && route.method !== 'GET') {
