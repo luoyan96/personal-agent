@@ -1,6 +1,14 @@
 # 新 AI 接手：当前项目状态
 
-更新日期：2026-10-22（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+更新日期：2026-10-23（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+
+## 安卓首批试做：登录/个人助手文字聊天已实现，内测APK已生成
+
+用户明确开始手机试做，覆盖旧“手机暂缓”，Windows主线继续。独立克隆 `D:/deepseek-agent/acceptcat-mobile` 从fetch后的main/e393247建立 `feat/mobile-android-mvp`，原桌面目录保持。新增 `clients/mobile`，独立0.1.0与pnpm11锁，Expo54.0.37/RN0.81.5/React19.1/TypeScript5.9.3；实现Cookie/CSRF账号登录/恢复/退出、本人助手文字聊天/追问、规范消息与真实生成状态、幂等发送和明确模型重试。任务、资料Agent、附件、推送和iOS后置。[移动开发说明](development/mobile-android-mvp.md)。
+
+现有OpenIM后台仅接受平台3/5，Android2需另批兼容token租约与回调；首批不冒用桌面平台，走既有授权HTTP聊天与DSH/worker轮询。无后台、共享契约、数据库或Windows更新源变化；原生无全局CookieJar模块与安全存储承接会话，没有另建Bearer/模型密钥。
+
+Android源码 **5dfe7156d61070803a7e392767eaa6ee8b619506** 的本机类型/版本/prebuild/自动链接/Hermes与12项隔离HTTP/SQLite/合成模型检查通过；根完整CI749项/58文件与生产边界通过，GitHub三平台根CI及[安卓原生构建](https://github.com/luoyan96/personal-agent/actions/runs/39818126200)也已通过。**内测APK已生成**：`D:/deepseek-agent/AcceptCat-Android/0.1.0/AcceptCat-mobile-0.1.0-preview-arm64.apk`，35,851,139字节，SHA256 **04175d99eaefc7759b258c49d8c225e57af381ed61926f7447f599dcda71ce8d**，调试签名v2核对通过，内嵌JS、仅arm64/API24+，无需Metro。Windows本机原生编译被pnpm/CMake/Ninja长路径阻碍，LinuxCI产包，不称本机原生编译通过；失败与复检保留Git外 `.runtime/acceptcat-mobile-20261023`。[PR90](https://github.com/luoyan96/personal-agent/pull/90)供负责人审阅，未合并。真机安装、真实账号恢复和真实模型聊天均未验收，由用户检查；没有操作运行中客户端、公开Release、后台部署或Windows通道变更。
 
 ## main已按用户指令合并PR89，双方功能与提交记录保留
 

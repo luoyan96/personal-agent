@@ -1524,3 +1524,25 @@ README、product-status、current-state、0.10.34交付、路线图和交接/PR8
 合并前3项CI回执、原失败/诊断/默认时限复检及preservation.json存Git外 **D:/deepseek-agent/.runtime/merge-pr89-20261022**，用户资料、凭据、数据库和产物不入Git。current-state、README、0.10.34交付、产品状态、路线图与新聊天交接补主线已合并事实，后续新功能仍从主仓库最新main另开分支。合并后自动main CI与本地文档检查分别记录，未完成的自动任务不算新通过。
 
 本批没有重打或代安装、公开新Release或部署后台：Latest仍v0.10.34，标签e4bdbe6与四附件及桌面包保持；生产仍0.29/schema025、0212513c镜像与GITHUB_CATALOG_SYNC=0，模型配置/私人资料/飞书本人试点保持。注册超时未定因、负责人交接/解散限制继续保留。
+
+## 2026-10-23 — 启动安卓独立试做，既有Cookie/CSRF与助手文字接口已实现
+
+用户明确手机试做与Windows并行、由功能分支/PR交付，合并/安装包/公开发布/部署分别处理。开始读取AGENTS/协作文档，原桌面目录干净main/e393247，origin为luoyan96/personal-agent；目标目录不存在。使用独立clone，fetch后最新main仍e393247538825d3cb04512f3c7a90ebdbb09a006，创建feat/mobile-android-mvp，未修改原目录或全局Git安全设置。
+
+新增clients/mobile独立0.1.0、pnpm11.21锁，Expo54.0.37/RN0.81.5/React19.1/TS5.9.3。复用共享契约构建产物、现有Cookie/CSRF账号/会话/个人助手/文字消息/turn与剩余预算重试；本地Expo原生HTTP不使用全局CookieJar，SecureStore存来源绑定会话，不存密码或模型密钥。前台轮询、105条分页/更早记录、跨账号与迟到响应隔离，真实发送/等待/失败/重试状态。没有模拟回答产品入口，没有后台、共享契约、数据库、Windows客户端锁或发布源改动。
+
+官方SDK和实际服务端源码核对：OpenIM RN3.8.3-patch.12.4支持Expo development build，核心patch12+1声明16KB页；但AcceptCat token/回调仅支持平台3/5，安卓为2，不冒用桌面平台触发同平台force_logout。首批不嵌入OpenIM RN，沿既有授权HTTP与服务端DSH/worker；移动平台兼容/推送独立后续。选型/官方来源/命令/权限与限制见development/mobile-android-mvp.md，路线图补用户明确覆盖历史手机暂缓。
+
+根frozen install和完整ci749项/58文件、2项生产CLI/HTTP、B0/无夹具通过；手机类型、版本检查、prebuild/自动链接、Hermes JS导出及11项本地真实HTTP/socket/SQLite/合成模型检查通过。测试只用临时合成账号/材料/密钥，不代表真实模型通过。首次成熟期依赖拒绝、并行换依赖的Metro失败、跨账号404隐藏语义断言修正等日志全部保留Git外D:/deepseek-agent/.runtime/acceptcat-mobile-20261023。APK原生构建进行中，尚未确认生成；PR与最终产物另追加。未操作用户运行中客户端，未代安装或做真机/真实账号/真实聊天验收，未合并、发布或部署。
+
+补充：增加移动Cookie再次登录时的服务端轮换，保留其他独立会话，并用旧Cookie副本验证注销确实被后台拒绝；本机移动12项检查通过。PR90已创建并附当前聊天，先标草稿等待原生编译。GitHub连接器创建PR返回403，使用已有CLI身份创建成功。首轮Linux移动CI因合成密钥文件默认644被既有权限校验拒绝（503），修正测试夹具写入为0600，不修改生产检查；失败日志保留。公网只读ready确认status=ok/contract0.29.0/harness=not_verified，不视为真实模型验证。
+
+## 2026-10-23 — 安卓0.1.0内测APK生成，PR90交付审阅
+
+Android产品固定5dfe7156d61070803a7e392767eaa6ee8b619506。GitHub Mobile Android preview运行39818126200已success：类型/12项隔离HTTP/合成模型、版本检查、Hermes导出、Linux原生assembleRelease、artifact上传通过；同head根运行39818126289的Linux22.19/24及Windows24三项success。PR90已ready for review并附当前聊天，由负责人决定合并，没有合并/发布/部署。后续文档及Swift显式Foundation导入不改该Android运行源码，最终头提交自动检查单独记录。
+
+APK从CI原artifact下载，SHA256与随附SHA256SUMS逐字核对；本机apksigner确认v2/Android Debug签名有效，aapt核对com.acceptcat.mobile/versionCode1/version0.1.0/min24/target36/仅arm64-v8a。已交付D:/deepseek-agent/AcceptCat-Android/0.1.0/AcceptCat-mobile-0.1.0-preview-arm64.apk，35,851,139字节，SHA256 04175d99eaefc7759b258c49d8c225e57af381ed61926f7447f599dcda71ce8d；同目录校验文件。内嵌JS，不需Metro；模板调试签名仅内测，不冒称正式发布。未安装、启动设备、使用私人账号/材料/模型密钥验收；真机可运行和真实聊天仍由用户检查。
+
+Windows本机安装了独立JDK17/SDK36/NDK27.1工具链；首次Gradle网络读取等待保留后停止，以现有系统代理做仅本批Gradle缓存的命令级重试，未改系统代理或禁用TLS。下载越过后确认pnpm路径触发Ninja Filename longer than 260 characters及Expo CMake build.ninja still dirty，本机原生构建失败，不写成通过；LinuxCI成功产包作为交付路线。Git外D:/deepseek-agent/.runtime/acceptcat-mobile-20261023保留完整失败与成功、签名/包信息和原artifact。设备/平台实时IM/推送/附件/iOS及Windows本地长路径适配独立后续。
+
+交付复查恢复一次测试计数替换误触及的历史current-state段落，最终diff只新增本批手机状态，旧记录保持。核对原桌面目录已由其他窗口进入feat/peer-local-library并产生共享代码修改，本批没有覆盖或调整这些工作。current-state、路线图、来源/迁移和移动说明已更新；Windows0.10.34发布通道与现网后台保持。
