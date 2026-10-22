@@ -1,0 +1,42 @@
+{
+  "name": "acceptcat-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "packageManager": "pnpm@11.21.0",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "prebuild:android": "expo prebuild --platform android --no-install",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "export:android": "expo export --platform android --max-workers 2",
+    "build:apk": "node scripts/build-android.mjs",
+    "ios": "expo run:ios"
+  },
+  "dependencies": {
+    "@research-agent-platform/contracts": "file:../../packages/contracts",
+    "expo": "54.0.37",
+    "expo-crypto": "15.0.9",
+    "expo-dev-client": "6.0.21",
+    "expo-secure-store": "15.0.8",
+    "expo-status-bar": "3.0.9",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "5.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.0",
+    "@types/react": "19.1.17",
+    "typescript": "5.9.3",
+    "vitest": "4.1.8"
+  },
+  "expo": {
+    "autolinking": {
+      "nativeModulesDir": "./modules"
+    }
+  }
+}

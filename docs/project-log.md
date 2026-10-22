@@ -1524,3 +1524,13 @@ README、product-status、current-state、0.10.34交付、路线图和交接/PR8
 合并前3项CI回执、原失败/诊断/默认时限复检及preservation.json存Git外 **D:/deepseek-agent/.runtime/merge-pr89-20261022**，用户资料、凭据、数据库和产物不入Git。current-state、README、0.10.34交付、产品状态、路线图与新聊天交接补主线已合并事实，后续新功能仍从主仓库最新main另开分支。合并后自动main CI与本地文档检查分别记录，未完成的自动任务不算新通过。
 
 本批没有重打或代安装、公开新Release或部署后台：Latest仍v0.10.34，标签e4bdbe6与四附件及桌面包保持；生产仍0.29/schema025、0212513c镜像与GITHUB_CATALOG_SYNC=0，模型配置/私人资料/飞书本人试点保持。注册超时未定因、负责人交接/解散限制继续保留。
+
+## 2026-10-23 — 启动安卓独立试做，既有Cookie/CSRF与助手文字接口已实现
+
+用户明确手机试做与Windows并行、由功能分支/PR交付，合并/安装包/公开发布/部署分别处理。开始读取AGENTS/协作文档，原桌面目录干净main/e393247，origin为luoyan96/personal-agent；目标目录不存在。使用独立clone，fetch后最新main仍e393247538825d3cb04512f3c7a90ebdbb09a006，创建feat/mobile-android-mvp，未修改原目录或全局Git安全设置。
+
+新增clients/mobile独立0.1.0、pnpm11.21锁，Expo54.0.37/RN0.81.5/React19.1/TS5.9.3。复用共享契约构建产物、现有Cookie/CSRF账号/会话/个人助手/文字消息/turn与剩余预算重试；本地Expo原生HTTP不使用全局CookieJar，SecureStore存来源绑定会话，不存密码或模型密钥。前台轮询、105条分页/更早记录、跨账号与迟到响应隔离，真实发送/等待/失败/重试状态。没有模拟回答产品入口，没有后台、共享契约、数据库、Windows客户端锁或发布源改动。
+
+官方SDK和实际服务端源码核对：OpenIM RN3.8.3-patch.12.4支持Expo development build，核心patch12+1声明16KB页；但AcceptCat token/回调仅支持平台3/5，安卓为2，不冒用桌面平台触发同平台force_logout。首批不嵌入OpenIM RN，沿既有授权HTTP与服务端DSH/worker；移动平台兼容/推送独立后续。选型/官方来源/命令/权限与限制见development/mobile-android-mvp.md，路线图补用户明确覆盖历史手机暂缓。
+
+根frozen install和完整ci749项/58文件、2项生产CLI/HTTP、B0/无夹具通过；手机类型、版本检查、prebuild/自动链接、Hermes JS导出及11项本地真实HTTP/socket/SQLite/合成模型检查通过。测试只用临时合成账号/材料/密钥，不代表真实模型通过。首次成熟期依赖拒绝、并行换依赖的Metro失败、跨账号404隐藏语义断言修正等日志全部保留Git外D:/deepseek-agent/.runtime/acceptcat-mobile-20261023。APK原生构建进行中，尚未确认生成；PR与最终产物另追加。未操作用户运行中客户端，未代安装或做真机/真实账号/真实聊天验收，未合并、发布或部署。

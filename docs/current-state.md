@@ -1,6 +1,14 @@
 # 新 AI 接手：当前项目状态
 
-更新日期：2026-10-22（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+更新日期：2026-10-23（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+
+## 安卓首批试做：独立工程已接业务接口，原生包构建中
+
+用户明确开始手机试做，覆盖旧“手机暂缓”，Windows主线继续。独立克隆 `D:/deepseek-agent/acceptcat-mobile` 从fetch后的main/e393247建立 `feat/mobile-android-mvp`，原桌面目录保持。新增 `clients/mobile`，独立0.1.0与pnpm11锁，Expo54.0.37/RN0.81.5/React19.1/TypeScript5.9.3；实现Cookie/CSRF账号登录/恢复/退出、本人助手文字聊天/追问、规范消息与真实生成状态、幂等发送和明确模型重试。任务、资料Agent、附件、推送和iOS后置。[移动开发说明](development/mobile-android-mvp.md)。
+
+现有OpenIM后台仅接受平台3/5，Android2需另批兼容token租约与回调；首批不冒用桌面平台，走既有授权HTTP聊天与DSH/worker轮询。无后台、共享契约、数据库或Windows更新源变化；原生无全局CookieJar模块与安全存储承接会话，没有另建Bearer/模型密钥。
+
+本机类型、Expo版本、prebuild/模块自动链接、Hermes JS导出、11项隔离HTTP/SQLite/合成模型检查通过，根完整CI749项/58文件与生产边界通过。APK原生构建中，尚不称已生成；真机/真实账号/真实模型聊天由用户检查，未操作其运行中客户端。Git外 `.runtime/acceptcat-mobile-20261023` 保留失败/复检；PR及原生产物结果本批完成后追加，没有合并、公开发布或部署。
 
 ## main已按用户指令合并PR89，双方功能与提交记录保留
 

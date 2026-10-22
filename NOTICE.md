@@ -1,5 +1,9 @@
 # 来源与许可说明
 
+## 2026-10-23：独立安卓手机试做
+
+`clients/mobile` 为本仓库新增React Native/TypeScript/Expo工程，自编无CookieJar原生适配，不复制nanoMuse账号、工具或客户端源码。依赖由独立锁文件安装并适用各自许可，未引入OpenIM RN SDK/UI。选型、实际版本、平台兼容限制及官方来源见[移动说明](docs/development/mobile-android-mvp.md)。本模块未另行声明整体MIT/AGPL，不改变仓库既有部分许可。
+
 ## 2026-10-16：AcceptCat产品介绍资产
 
 GitHub首页展示既有蜷睡橘猫图标和实际开发界面的合成科研流程截图，来源、受测版本及原件核对见[展示素材说明](docs/assets/README.md)。截图为产品示例，不包含用户真实研究资料；图标沿用用户此前指定的Catnap Desktop已有像素，其独立许可尚未追溯，不新增未核实的作者或MIT声明。较新集成版的OpenMuse主题/布局及其许可见展示素材说明中的固定来源；本次文档发布不迁入应用实现或改变OpenIM派生部分许可。

@@ -1,0 +1,47 @@
+name: Mobile Android preview
+
+on:
+  pull_request:
+    paths:
+      - 'clients/mobile/**'
+      - 'packages/contracts/**'
+      - 'apps/api/**'
+      - '.github/workflows/mobile-android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            clients/mobile/pnpm-lock.yaml
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm install --frozen-lockfile
+        working-directory: clients/mobile
+      - run: pnpm typecheck && pnpm test && pnpm exec expo install --check && pnpm export:android
+        working-directory: clients/mobile
+      - run: pnpm build:apk "$RUNNER_TEMP/acceptcat-mobile-apk"
+        working-directory: clients/mobile
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acceptcat-mobile-0.1.0-preview-arm64
+          path: ${{ runner.temp }}/acceptcat-mobile-apk/
+          retention-days: 14
+          if-no-files-found: error

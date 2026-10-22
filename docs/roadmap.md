@@ -1,5 +1,7 @@
 # 开发路线图
 
+2026-10-23：用户明确启动[安卓手机首批试做](development/mobile-android-mvp.md)，覆盖下文历史“手机暂缓/后置”，Windows主线继续。手机作为同账号移动入口，首批登录/恢复/退出与个人助手文字聊天，后续再接任务、资料Agent和课题组；独立React Native/Expo development build及版本/产物，沿既有Cookie/CSRF和后台DSH。工程、APK、真机、真实聊天分别验收，不把本批试做扩大为已上线手机产品。
+
 2026-10-22：按用户选择，[0.10.34](deployment/acceptcat-0.10.34.md)整合同事PR86聊天交互与PR88资料/课题组功能，保留作者与提交；修正免打扰、DEV路由及迟到操作边界，类型/18项定向检查与Windows包通过。PR89已按用户指令以merge commit合入main（2498a48），[v0.10.34](https://github.com/luoyan96/personal-agent/releases/tag/v0.10.34)已公开为Latest，四附件/公开更新清单核对通过；后台沿已部署0.29/schema025，无再次部署，实际功能和安装体验由用户检查。
 
 2026-10-22：[课题组自助创建与成员邀请](development/lab-membership.md)已交付本机Windows0.10.33，并经用户单独授权于12:16:24—12:16:44部署配套0.29/schema025：同账号创建、已有账号接受、邀请码加入、成员查看/移除/退出及多组切换，私人home和授权保留。停写备份/独立恢复与025迁移保全通过，广场同步仍关闭；负责人交接/解散仍由维护者处理。实际检查与限制见[交付](deployment/acceptcat-0.10.33.md)，安装后体验由用户检查，未合并或公开发布。
