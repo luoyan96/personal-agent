@@ -2,13 +2,13 @@
 
 更新日期：2026-10-23（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
-## 安卓首批试做：独立工程已接业务接口，原生包构建中
+## 安卓首批试做：登录/个人助手文字聊天已实现，内测APK已生成
 
 用户明确开始手机试做，覆盖旧“手机暂缓”，Windows主线继续。独立克隆 `D:/deepseek-agent/acceptcat-mobile` 从fetch后的main/e393247建立 `feat/mobile-android-mvp`，原桌面目录保持。新增 `clients/mobile`，独立0.1.0与pnpm11锁，Expo54.0.37/RN0.81.5/React19.1/TypeScript5.9.3；实现Cookie/CSRF账号登录/恢复/退出、本人助手文字聊天/追问、规范消息与真实生成状态、幂等发送和明确模型重试。任务、资料Agent、附件、推送和iOS后置。[移动开发说明](development/mobile-android-mvp.md)。
 
 现有OpenIM后台仅接受平台3/5，Android2需另批兼容token租约与回调；首批不冒用桌面平台，走既有授权HTTP聊天与DSH/worker轮询。无后台、共享契约、数据库或Windows更新源变化；原生无全局CookieJar模块与安全存储承接会话，没有另建Bearer/模型密钥。
 
-本机类型、Expo版本、prebuild/模块自动链接、Hermes JS导出、12项隔离HTTP/SQLite/合成模型检查通过，根完整CI749项/58文件与生产边界通过。APK原生构建中，尚不称已生成；真机/真实账号/真实模型聊天由用户检查，未操作其运行中客户端。Git外 `.runtime/acceptcat-mobile-20261023` 保留失败/复检；PR及原生产物结果本批完成后追加，没有合并、公开发布或部署。
+Android源码 **5dfe7156d61070803a7e392767eaa6ee8b619506** 的本机类型/版本/prebuild/自动链接/Hermes与12项隔离HTTP/SQLite/合成模型检查通过；根完整CI749项/58文件与生产边界通过，GitHub三平台根CI及[安卓原生构建](https://github.com/luoyan96/personal-agent/actions/runs/39818126200)也已通过。**内测APK已生成**：`D:/deepseek-agent/AcceptCat-Android/0.1.0/AcceptCat-mobile-0.1.0-preview-arm64.apk`，35,851,139字节，SHA256 **04175d99eaefc7759b258c49d8c225e57af381ed61926f7447f599dcda71ce8d**，调试签名v2核对通过，内嵌JS、仅arm64/API24+，无需Metro。Windows本机原生编译被pnpm/CMake/Ninja长路径阻碍，LinuxCI产包，不称本机原生编译通过；失败与复检保留Git外 `.runtime/acceptcat-mobile-20261023`。[PR90](https://github.com/luoyan96/personal-agent/pull/90)供负责人审阅，未合并。真机安装、真实账号恢复和真实模型聊天均未验收，由用户检查；没有操作运行中客户端、公开Release、后台部署或Windows通道变更。
 
 ## main已按用户指令合并PR89，双方功能与提交记录保留
 
@@ -32,7 +32,7 @@
 
 账号home ID与新成员关系分离，私人会话/联系人、模型密文与默认值、飞书连接及资料归属保持。加入不自动共享私库/Key/飞书账号；组任务和共享库按真实成员授权。移除结束分工/收回旧任务ACL、本人共享库改私人，其余共享版本失效以阻止读取中撤权的迟到结果；重加不恢复旧任务授权。退出原home课题组也停止其旧模型兼容使用。契约 **0.29.0**，新增12接口/5错误；schema **025**新增5表和1兼容视图，旧001—024不变，无依赖/锁文件变化。维护开通与邀请码新注册继续兼容，好友/聊天群不授予成员权限。
 
-最终根完整CI **749项/58文件**、2项生产CLI/HTTP、B0与生产无夹具通过；12项成员HTTP/SQLite检查及20项合成Feishu检查包括跨home共享/读取中移除，模拟024升级及密文/会话/原行保持通过。客户端渲染/主进程类型、2 service/3 auth、最终生产Web/4 SDK资源和55运行包装配的NSIS打包通过；首次失败与首包保留Git外 `.runtime/lab-membership-20261022`。按用户安排，未追加浏览器、真实账号/资料/模型、安装载荷、原生启动或安装后体验验收，不以自动检查代替其实际使用判断。
+最终根完整CI **749项/58文件**、2项生产CLI/HTTP、B0与生产无夹具通过；11项成员HTTP/SQLite检查及20项合成Feishu检查包括跨home共享/读取中移除，模拟024升级及密文/会话/原行保持通过。客户端渲染/主进程类型、2 service/3 auth、最终生产Web/4 SDK资源和55运行包装配的NSIS打包通过；首次失败与首包保留Git外 `.runtime/lab-membership-20261022`。按用户安排，未追加浏览器、真实账号/资料/模型、安装载荷、原生启动或安装后体验验收，不以自动检查代替其实际使用判断。
 
 桌面 **C:/Users/luo/Desktop/AcceptCat_0.10.33.exe**，**87,433,858字节**，SHA256 **e3bdde49eeef858469b49528bbd66b123ac9bea8bcb2e14e1ae62df71e1028e3**，已制作、未代安装，旧包保留。用户随后明确授权“阿里云页面已经打开了，你升级吧”，后台已于北京时间 **2026-10-22 12:16:24—12:16:44** 配对升级API/worker至 **research-openim-api:lab-membership-20261022-v2** / **sha256:0212513c5e9d4109cba892462c4953f9c440e96dc13007178635aca6c58395fb**，实际running/restart0/API healthy、公网ready200/contract0.29.0，数据库迁移至025。DSH0.2.1-rc.2/Cordis4.0.5保持、Harness仍not_verified；未新增真实模型探测或用户体验验收。
 
@@ -44,7 +44,7 @@
 
 ## 后续运维：广场每日GitHub同步已关闭
 
-用户追问隐藏广场后每日更新是否已关。上一批仅隐藏客户端，线上实际仍为GITHUB_CATALOG_SYNC=1，2026-10-22零点完成过一轮、原定23日零点再跑。现已在北京时间 **10:07:12—10:07:27** 配对重建原API/worker，使两容器和持久配置均为 **GITHUB_CATALOG_SYNC=0**；实际目录状态 **enabled=false/state=disabled/nextCheckAt=null**，现有12项收录/19候选及其原始缓存整行哈希保持。只改 `/srv/research-openim/compose.env` 的单个开关及community-47c42ac覆盖文件的两项同名环境配置，其他环境/挂载/端口/内存/命令/网络/重启策略及6服务保持。
+用户追问隐藏广场后每日更新是否已关。上一批仅隐藏客户端，线上实际仍为GITHUB_CATALOG_SYNC=1，2026-10-22零点完成过一轮、原定23日零点再跑。现已在北京时间 **10:07:12—10:07:27** 配对重建原API/worker，使两容器和持久配置均为 **GITHUB_CATALOG_SYNC=0**；实际目录状态 **enabled=false/state=disabled/nextCheckAt=null**，现有11项收录/19候选及其原始缓存整行哈希保持。只改 `/srv/research-openim/compose.env` 的单个开关及community-47c42ac覆盖文件的两项同名环境配置，其他环境/挂载/端口/内存/命令/网络/重启策略及6服务保持。
 
 镜像仍595bed13/contract0.28/schema024，无重建镜像或迁移，两服务running/restart0/API healthy/公网ready200；DSH未改或新增实际探测。停写95表/**7份当时原件**的备份/独立恢复全行及文件/权限哈希、integrity/外键/024迁移校验通过，凭据/默认模型、飞书连接/源及集合范围不变。备份 `/srv/research-openim-backups/square-sync-off-20261022-20261022T020715Z`；证据 `/opt/research-openim/ops/square-sync-off-20261022` 与Git外 `.runtime/square-sync-off-20261022`。日常提醒、研究计划/任务调度没有停用，目录和历史记录没有删除。未找到本机Codex的对应automation.toml，不把此结果扩大为其他服务的自动化状态。0.10.32安装包保持，不需重装；PR87只补运维事实，不合并main或公开发布。
 
@@ -270,7 +270,7 @@ contract **0.26.0** / schema **023**，新增三张飞书表，不改旧业务�
 
 **Windows x64 NSIS0.10.17已交付桌面** `C:/Users/luo/Desktop/AcceptCat_0.10.17.exe`与说明，**87,417,662字节 / SHA256 a5369f56cdc51b5b063a79dfbe05241acf2191455332247048bfba725d5d2156**。17生产JS/8CSS逐字节、NSIS实际载荷与最终隐藏隔离原生启动通过，旧日志警告保留；检查器补齐JSON回执写入竞态容错，仍保留启动期限。包内产品固定12c100d，后续仓库检查脚本/文档不改变载荷。未代安装、关现装或删旧数据。[交付](deployment/acceptcat-0.10.17.md)。证据在Git外 `.runtime/lab-progress-20261019`；前一候选包/首败另留证，桌面为最终hash。
 
-无新API/迁移/后台部署或目录/公开Release/更新源变更；本次公网ready200/0.25，harness仍not_verified，生产47c42ac/b78613b5沿前批inspect。actual latest仍v0.6.0已核对。独立共享方向编辑/跨计划OKR、自助开组/已有账号加入/多组仍待后续；PR50/PR68及真实科研质量独立。目录12项/7仓库沿PR66记录，本批未发布。保留服务器85%磁盘和代理链路长期稳定性风险，未将短时探针称根治。
+无新API/迁移/后台部署或目录/公开Release/更新源变更；本次公网ready200/0.25，harness仍not_verified，生产47c42ac/b78613b5沿前批inspect。actual latest仍v0.6.0已核对。独立共享方向编辑/跨计划OKR、自助开组/已有账号加入/多组仍待后续；PR50/PR68及真实科研质量独立。目录11项/7仓库沿PR66记录，本批未发布。保留服务器85%磁盘和代理链路长期稳定性风险，未将短时探针称根治。
 
 [草稿PR70](https://github.com/luoyan96/personal-agent/pull/70)已创建、推送并附任务，base release/acceptcat-0.10.16。首读16c6b97三项Foundation均IN_PROGRESS，pr-final.json留证，不称远端全过。216份Markdown/10份Skill及diff检查通过；main客户端0.3.0再次按远端包manifest核对。保留4936/4937合成预览供用户查看（26488/28896，完整Node命令见preview-retained.json），不是正式后台；viewport已reset、预览页标记交付。用户现装四进程未动，最终包与说明hash读回一致。
 
@@ -282,7 +282,7 @@ contract **0.26.0** / schema **023**，新增三张飞书表，不改旧业务�
 
 **桌面Windows x64 NSIS0.10.16已交付** `C:/Users/luo/Desktop/AcceptCat_0.10.16.exe`与说明，**87,416,748字节 / SHA256 d9ee235500f8fafdf8c6c28a434e0f6eb5a28238ed94d33049a1c3a27f52222f**。55运行依赖、17生产JS/全部CSS逐字节、新层级/原品牌/无QA、实际NSIS载荷一致、隔离原生桥/renderer稳定启动通过，旧日志初始化警告保留。[交付](deployment/acceptcat-0.10.16.md)。未代安装、关闭用户现装或删旧包/数据；Git外证据 `.runtime/workbench-home-20261019`。
 
-本批无API/迁移/后台部署、目录运营或公开Release/更新源变更；本次公网ready200/0.25，harness仍not_verified；生产47c42ac/b78613b5沿上批inspect，本次不新inspect。actual latest仍v0.6.0已核对。独立[目录运营PR66](https://github.com/luoyan96/personal-agent/pull/66)已报告三项上线，目录12项/7仓库，本批读回其交接，旧三项待发不再作为当前阻碍；本次没有自行发布目录。PR50后台正文边界、自助开组/已有账号加入/多组、通用工具执行与真实科研质量仍待后续；服务器85%磁盘/代理链路长期稳定性沿前批风险。
+本批无API/迁移/后台部署、目录运营或公开Release/更新源变更；本次公网ready200/0.25，harness仍not_verified；生产47c42ac/b78613b5沿上批inspect，本次不新inspect。actual latest仍v0.6.0已核对。独立[目录运营PR66](https://github.com/luoyan96/personal-agent/pull/66)已报告三项上线，目录11项/7仓库，本批读回其交接，旧三项待发不再作为当前阻碍；本次没有自行发布目录。PR50后台正文边界、自助开组/已有账号加入/多组、通用工具执行与真实科研质量仍待后续；服务器85%磁盘/代理链路长期稳定性沿前批风险。
 
 [草稿PR69](https://github.com/luoyan96/personal-agent/pull/69)已推送、创建并附任务，base release/acceptcat-0.10.15。首读5e445e0三项Foundation均in_progress，pr-final.json留证；前批PR65/04dd9ba三项SUCCESS已实际读回，不套用本支。214份Markdown/10份Skill及diff通过。只按完整Node命令核对关闭本批4926/4927的31580/33580，无监听；用户现装4进程保持，viewport已reset、QA页关闭，cleanup.json留证。桌面包最终hash与说明读回一致；产品/包始终固定6c50ea9。
 
@@ -388,9 +388,9 @@ contract **0.26.0** / schema **023**，新增三张飞书表，不改旧业务�
 
 ## 最新社区来源：统计报告与图注自查（待维护登录发布）
 
-`acceptcat-3`，`feature/statistics-reporting-catalog` 接续PR56/47060af，目录源码 **03e4d6fa035e651afe8f257283f6cd45deaea0b9**，[草稿PR57](https://github.com/luoyan96/personal-agent/pull/57)已附任务。新增Boom5426/Nature-Paper-Skills固定6f8eaa0的统计报告/独立重复/图注自查；独立Skill未标版本，仓库0.2.0，本模块Apache-2.0、根原创MIT分别说明。中文输入/交付/费用/材料完整；明确不重算统计值，提示上游“No data were excluded”骨架不能无依据使用，不冒充期刊背书或Word工具接通。本地12项/7仓库，没有重复内置Skill或改前端组件。
+`acceptcat-3`，`feature/statistics-reporting-catalog` 接续PR56/47060af，目录源码 **03e4d6fa035e651afe8f257283f6cd45deaea0b9**，[草稿PR57](https://github.com/luoyan96/personal-agent/pull/57)已附任务。新增Boom5426/Nature-Paper-Skills固定6f8eaa0的统计报告/独立重复/图注自查；独立Skill未标版本，仓库0.2.0，本模块Apache-2.0、根原创MIT分别说明。中文输入/交付/费用/材料完整；明确不重算统计值，提示上游“No data were excluded”骨架不能无依据使用，不冒充期刊背书或Word工具接通。本地11项/7仓库，没有重复内置Skill或改前端组件。
 
-15份固定原文经Git blob/原ZIP核对；实际0.10.8 ASAR解析器与新解析器输出一致，8选中原件/5参考/完整原ZIP私人往返、异账号拒绝通过。真实HTTP/SQLite/ChatWorker三组合成调用及停用/跨账号拒绝，真实React/原生预览/取消和确认私人安装三组、1536/1024实拍通过，pageerror0，既有警告/夹具首败保留。目录12项与根CI54文件/676项、生产2项/B0/隔离通过；[来源、限制与QA](development/statistics-reporting-catalog.md)，证据Git外 `.runtime/community-stats-20261018`。合成模型不计真实科研质量。
+15份固定原文经Git blob/原ZIP核对；实际0.10.8 ASAR解析器与新解析器输出一致，8选中原件/5参考/完整原ZIP私人往返、异账号拒绝通过。真实HTTP/SQLite/ChatWorker三组合成调用及停用/跨账号拒绝，真实React/原生预览/取消和确认私人安装三组、1536/1024实拍通过，pageerror0，既有警告/夹具首败保留。目录11项与根CI54文件/676项、生产2项/B0/隔离通过；[来源、限制与QA](development/statistics-reporting-catalog.md)，证据Git外 `.runtime/community-stats-20261018`。合成模型不计真实科研质量。
 
 **尚未生产发布。** 本轮阿里云Workbench实际重新导航仍跳登录页，保留旧登录请求，不重复询问。前批两项与本项合并三项公共目录材料已准备，尚未上传/运行；沿既有运营CLI、固定主机/镜像、SQLite一致性备份、旧项/并发保护和发布读回，不部署或迁移。线上八项/五仓库仍仅沿用旧记录，未新inspect生产。现有Windows0.10.8已验证兼容，无需为目录新增做新安装包；没有代安装、公开Release或更新源。PR50配套部署独立待办保持；PR56三平台CI本轮读回SUCCESS。
 
@@ -460,7 +460,7 @@ PR57首读两平台运行/一排队，未称三平台通过；4836/4837自建服
 
 `acceptcat-2`，`fix/skill-import-text-limits` 接续a6f877e / PR49，修复源码 **db87e7906db719688f1f8837b91204617a7da28f**，[草稿PR50](https://github.com/luoyan96/personal-agent/pull/50)已附任务。普通参考此前可通过本机预览却被保存API拒绝；正文恰好120,000字符又因YAML被误报缺少SKILL.md。现在普通参考、链接模板及正文统一按既有API字符上限校验，超限/空字符/原生UTF-8损坏均指出路径，保留全文、不静默截断；400KB单份、900KB总量、原件和权限边界保持。
 
-实际本地根CI **54文件/675项**、生产2项/B0/生产隔离通过；随后追加真实HTTP/SQLite/ChatWorker边界并定向 **14项** 通过，不冒称全套676项。原生 **12项**、客户端类型与关闭composite的独立原生类型检查通过；直接composite检查的已有imageClipboard TS6307和夹具首次失败保留。三份已核对科研包 **66份原件/41份参考** 的package/manifest/digest及原ZIP与前次完全一致，原件存储往返、其他账号拒绝通过；固定绘图原包原件回归也通过。无真实供应商调用或科研质量验收。
+实际本地根CI **54文件/675项**、生产2项/B0/生产隔离通过；随后追加真实HTTP/SQLite/ChatWorker边界并定向 **14项** 通过，不冒称全套676项。原生 **11项**、客户端类型与关闭composite的独立原生类型检查通过；直接composite检查的已有imageClipboard TS6307和夹具首次失败保留。三份已核对科研包 **66份原件/41份参考** 的package/manifest/digest及原ZIP与前次完全一致，原件存储往返、其他账号拒绝通过；固定绘图原包原件回归也通过。无真实供应商调用或科研质量验收。
 
 本轮交付可审阅修复，不生成新安装包、不部署/重启后台、不迁移或发布公共Release；前后端同版解析器需一起进入下次配套发版，不能只换桌面就声称该长度边界在线修复。此前桌面0.10.6、后台47c42ac / contract0.25 / chat1.12 / schema022沿用上批记录，未重新inspect或读取用户资料。内置十项Skill正文、公共目录及私人/团队权限未改。详情见[文字导入边界](development/skill-import-text-limits.md)，证据Git外 `.runtime/skill-import-limits-20261017`。
 
@@ -713,7 +713,7 @@ Git外证据 `.runtime/cat-icon-20261009`。初版提取断言因打包程序图
 
 NSIS **publish never**，最终安装包和更新资产校验通过，app.asar版本/自动识字/恢复/原生OCR模块检查通过；实际打包登录启动pageerror0。安装包 **D:/deepseek-agent/AcceptCat-Windows/0.8.2/AcceptCat_0.8.2.exe**，**86415069字节**，SHA256 **e78438ef4b1d54fdfe7e7d99c5a4ff055a8aaffae5766003a1061b08cf29aa9a**，同目录有安装说明与更新资产。未公开Release、部署云端或安装/重启用户窗口；旧软件的更新源不会自动获取本地候选。后台/contract/schema沿用下方最后部署记录11cd20a / 0.22 / chat1.11 / 021，本批未重新核验云端。
 
-证据Git外 `.runtime/agent-image-replies-20261009`，构建日志 `.runtime/agent-image-replies-build.log`。夹具布局/等待判据和隐藏窗口截图失败未计通过，修正测试方法后最终12项通过。后续文档提交不改变安装包源码；自有测试API/worker/TLS/Vite/Electron交付前关闭。
+证据Git外 `.runtime/agent-image-replies-20261009`，构建日志 `.runtime/agent-image-replies-build.log`。夹具布局/等待判据和隐藏窗口截图失败未计通过，修正测试方法后最终11项通过。后续文档提交不改变安装包源码；自有测试API/worker/TLS/Vite/Electron交付前关闭。
 
 ## 上一本地候选：AcceptCat 0.8.1，图片粘贴与本机识字
 
