@@ -1658,3 +1658,33 @@ Compose链末尾追加agent-conversation-20261024-v2/images.yaml，旧2677f693�
 随后从最新main另开docs/agent-conversation-merge-status，只同步current-state、roadmap、交接prompt、0.10.39交付及部署记录并追加本日志；实际256 Markdown/11 Skill内容检查及diff检查通过，不重复已通过的代码检查或追加产品/安装后体验验收。合并后自动main检查及文档分支CI按各自实际回执另记，不称尚未完成的运行已通过。
 
 本次仅合并与状态同步：桌面0.10.39产品e48852e、大小/哈希和后台7fa2e86e保持，无重打、代安装、重新部署或数据库操作。GitHub实际重新读取公开Latest仍 **v0.10.37 / Release422478602**，没有公开新Release或重指旧tag。原注册超时、飞书试点及资料在线/10MiB/无TURN等边界保持。下一项功能重新fetch主仓库最新main另开分支。
+
+## 2026-10-24 — 修复连续规划模型边界与原消息重试，交付本机0.10.40，后台等待重连
+
+负责人反馈第二轮正常补充后出现“规划未能完成/继续说明后重新规划”，要求修复并解释。先只读核对最近规划状态：16:55草案成功、16:57 INVALID_MODEL_OUTPUT；旧执行记录有意不存模型正文，却也没有错误形状诊断，不能还原这次具体字段。随后核对干净main/89c987c、主仓库origin并fetch，从最新main另开fix/planning-reply-validation，保留同事及PR97/96全部功能和历史。
+
+产品 **b232296fb10e3484959b628aa47c087d5fbf35e6**：旧上下文给完整Plan但直接strict PlanInput解析、空日程提示却要求对象，两处可用合成输入复现。新增内容专用模型schema及明确元数据投影，身份/课题组/日期/材料读取由服务器决定；旧明确日程保留，研究字段/成员/依赖/版本/权限和正式确认仍校验。规划savepoint在晚期写入失败时回滚本轮草案，用量不丢；结果仍不存正文，仅新增有界阶段/字符数/白名单路径，未知字段名及错误原值不入记录。公共API/contract0.30/schema026、依赖及锁保持。
+
+客户端“安排记录”改为“系统提示”，故障不再要求用户重新补背景；显式点击“重试这条”才重用原消息与前文，保留未发送草稿，不重复当前输入、增加后台自动重试或重放确认创建。新失败回执绑定请求，兼容旧缓存，旧错误不能覆盖后续建立任务的真实回执。版本0.10.40，合成评价新增planning-reply-recovery。
+
+完整根CI **769项/60文件**、2生产CLI/HTTP、B0及生产边界通过；API13项定向、客户端28项规划/依赖与renderer/Electron双类型通过。首轮新增HTTP夹具把只读conclusionRefs传进editPlan被原接口拒绝，12通过/1失败；修正夹具投影后13通过，原失败保留，未放宽原校验。测试覆盖复制Plan/空日程、同一草案/明确日期保持、无任务创建、错误结构/写入失败回滚与隐私诊断，以及旧失败缓存、原话单次上下文、草稿与创建回执归属。
+
+根desktop:win按冻结准备、两共享包先构建再客户端安装执行，生产Web/4SDK、55运行包、NSIS/成品4入口和更新清单核对通过。桌面 **C:/Users/luo/Desktop/AcceptCat_0.10.40.exe**，**87,408,408字节**，SHA256 **7bfdc1d4f3b248d379dbdaeea2828851a4ba41b47142929646c869c98ebfc8c7**；复制后核对，旧包保留，未代安装/启动。Git外 **D:/deepseek-agent/.runtime/planning-reply-validation-20261024**保存检查、原失败、构建、更新/交付及后台准备包。[PR99](https://github.com/luoyan96/personal-agent/pull/99)已提交/挂接，未合并或公开Release；远端检查按具体head记录，不把进行中运行算通过。
+
+后台修复包基于现有7fa2e86e，仅覆盖2个API源文件，127基线/编译哈希及离线检查、备份/恢复/回退脚本已准备，本机路径/语法/LF检查通过。但原Workbench出现WebSocket失败并断开，返回连接页无法恢复，原ECS控制台标签两次访问超时，已异步请求负责人重新打开并登录。**没有上传修复包、构建服务器镜像、运行服务器隔离检查或停服切换，线上仍7fa2e86e。** 无本批数据库操作/迁移/新健康探测，不能说真实第二轮故障已经在线修好。
+
+更新current-state及[0.10.40交付记录](deployment/acceptcat-0.10.40.md)，代码、安装包、后台和公开状态分别记载。按既有安排不主动追加产品界面、真实账号/材料/模型、安装后或双机验收；原注册超时、飞书试点、原件直连和广场关闭边界保持。恢复后台连接后先核对实际镜像/Compose链，再做候选隔离与备份切换，不重复索取用户已提供的研究背景。
+
+收尾实际读取产品head b232296：Foundation40081514626三平台与Windows package40081514648四项全部success。内容258 Markdown/11 Skill及diff检查通过；后续文档推送触发的新CI另记，不将产品head成功移算给新运行。后台重连问题仍待用户恢复，未因检查通过而跳过部署前隔离或宣称线上完成。
+
+## 2026-10-24 — Workbench恢复后完成连续规划修复的配套后台部署
+
+负责人回复“已连接”后接续既有部署授权，核对新Workbench、生产旧镜像7fa2e86e、Compose链与健康状态；保留此前WebSocket/控制台超时记录。修复包45,404字节、SHA256 `0cb8aaafaaf7e9ce440772cf3b7a9cb20c1387a01a1ca148c12ae7c9939640d1`上传后摘要一致，离线候选仅叠加2个API源文件，127基线/127编译、32个Skill文件/11方法、运营种子及contract/schema守卫通过。候选29项/3文件（输出解析5、个人规划8、执行16）全通过，没有调用真实模型或用私人材料评价模型。
+
+北京时间 **17:41:50—17:42:10**排空配对API/worker，停写备份、独立恢复核对并切换成功，deployment.exit=0。产品 **b232296fb10e3484959b628aa47c087d5fbf35e6**，新镜像 **research-openim-api:planning-reply-20261024 / sha256:620bc0254aef1ea1b5339c7826d360d07119a89b4ae053686d4f9a00d1e47aec**；contract0.30.0/schema026不变，未运行迁移。备份 **/srv/research-openim-backups/planning-reply-20261024-20261024T094152Z/research.tar.gz**，SHA256 **48a60650914fc3268ba1c099a431bbb0887b7a189af0ae8c8d93a1a0ff23d802**，私密备份/配置副本只留服务器。103表全行/结构、7原件内容/权限、迁移历史、integrity/外键及18配置/密钥输入哈希/权限保持；个人模型/默认值、飞书连接/私库范围和目录缓存不变。
+
+恢复副本HTTP ready200/保护接口401，未创建账号或会话；切换后API和worker均running/restart0，API healthy，公网ready200/contract0.30，四受保护路由有效合成参数匿名401，其他6服务/静态站点和运行配置保持。广场实际enabled=false/state=disabled/nextCheckAt=null，GITHUB_CATALOG_SYNC=0，11条目/19候选保持；DSH0.2.1-rc.2/Cordis4.0.5不变，Harness仍not_verified。原失败请求未自动重放，旧方案和原消息保留；原真实返回形状未知，不宣称已还原确切历史字段。
+
+运维目录 **/opt/research-openim/ops/planning-reply-20261024**，仅在原Compose链末尾添加本批images.yaml；旧7fa2e86e镜像保留。同schema回退只撤末尾覆盖并恢复配对镜像，保留当前数据库和后续写入，不回灌旧备份或退回025；本次未触发回退。[完整回执](deployment/acceptcat-0.10.40.md)，Git外证据 **D:/deepseek-agent/.runtime/planning-reply-validation-20261024**新增deployment-summary.json和deployment-proof.png。
+
+本批只完成后台部署及文档同步，没有重打或代安装客户端，桌面0.10.40原大小/摘要保持；PR99仍OPEN，未合并main或公开Release，重新读取公开Latest仍v0.10.37/422478602。部署前文档head a541649的Foundation40082175060三平台与Windows package40082175063四项全部success；后续文档head检查按实际回执另记，未重复已通过完整CI/客户端构建或追加界面/真实模型/用户体验验收。注册超时未定因、飞书本人试点和原件在线/10MiB/无TURN等边界保持。

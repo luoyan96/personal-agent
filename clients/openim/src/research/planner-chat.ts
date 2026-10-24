@@ -8,6 +8,7 @@ export type PlannerMessage = {
   role: "user" | "assistant" | "service";
   text: string;
   plan?: { id: string; version: number };
+  requestId?: string;
 };
 export type SendIntent = { key: string; body: RequestFor<"planRequest">["body"] };
 export type CreateIntent = { key: string; plan: ChatPlan; deadline?: DeadlineChoice };
@@ -27,6 +28,32 @@ export type PlannerThread = {
   updatedAt: string;
 };
 export type PlannerHistory = { active: string; threads: PlannerThread[] };
+type PlanningResult = ResponseFor<"getPlanRequest">["data"];
+export function plannerFailureText(result: Pick<PlanningResult, "status" | "failure">) {
+  if (result.failure === "MODEL_UNAVAILABLE") return "规划模型暂不可用，请在“我的 → 模型设置”选择可用的默认模型。刚才的消息和已有方案都保留了。";
+  if (result.failure === "BUDGET_EXCEEDED") return "这轮规划达到了预算上限，已有方案保留。可以先集中讨论一个小目标。";
+  if (result.failure === "INVALID_MODEL_OUTPUT") return "这轮回复没能正确处理，是系统处理出了问题。刚才的消息和已有方案都还在，可以直接重试这条。";
+  if (result.failure === "PLANNING_SAVE_FAILED") return "这轮结果暂时没能保存，已有方案保持原样。可以直接重试这条。";
+  if (result.status === "cancelled") return "这轮生成已停止，刚才的消息和已有方案保留。";
+  if (result.status === "interrupted") return "这轮回复中断了，刚才的消息和已有方案保留。";
+  if (result.status === "waiting_input") return "这轮还没有完成，刚才的消息和已有方案保留。";
+  return "这轮回复暂时未能完成，刚才的消息和已有方案都保留了。";
+}
+export const canRetryPlannerReply = (result: Pick<PlanningResult, "status" | "failure">) =>
+  result.status === "failed" && ["INVALID_MODEL_OUTPUT", "PLANNING_SAVE_FAILED", "MODEL_FAILED", "MODEL_TRANSPORT_FAILED", "HARNESS_START_FAILED", "HARNESS_PROCESS_FAILED", "TIMEOUT", "TIME_BUDGET_EXCEEDED", "RATE_LIMIT", "SERVICE_UNAVAILABLE"].includes(result.failure || "");
+export function isPlannerFailureReceipt(message: PlannerMessage | undefined, result: Pick<PlanningResult, "id" | "status">) {
+  return !!message && message.role === "service" && ["failed", "cancelled", "interrupted", "waiting_input"].includes(result.status) &&
+    (message.requestId ? message.requestId === result.id : /^(?:这次规划|这次生成已停止|规划模型暂不可用)/.test(message.text));
+}
+export function plannerRetryInput(messages: PlannerMessage[]) {
+  if (messages.at(-1)?.role !== "service") return;
+  for (let index = messages.length - 2; index >= 0; index--) {
+    const message = messages[index];
+    if (message.role !== "user") continue;
+    if (isPlannerCreateCommand(message.text)) return;
+    return { text: message.text, messages: messages.slice(0, index) };
+  }
+}
 export const newPlannerThread = (): PlannerThread => ({
   id: crypto.randomUUID(),
   title: "新的任务规划",
@@ -69,6 +96,7 @@ export function readPlannerHistory(raw: string | null): PlannerHistory | undefin
             ["user", "assistant", "service"].includes(m.role) &&
             typeof m.text === "string" &&
             m.text.length <= 8000 &&
+            (!m.requestId || Id.safeParse(m.requestId).success) &&
             (!m.plan ||
               (Id.safeParse(m.plan.id).success &&
                 Number.isSafeInteger(m.plan.version))),
