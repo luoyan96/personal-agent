@@ -60,3 +60,7 @@ B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `
 2026-10-15增收[K-Dense scientific-critical-thinking](https://github.com/K-Dense-AI/claude-scientific-writer/tree/529b9f73ab4b48925027145800d7b49e96ccfd3c/skills/scientific-critical-thinking)，固定529b9f73 / Skill1.3，Copyright (c) 2025–2026 K-Dense Inc.，MIT；[Research Toolkit](https://github.com/rrrrrredy/research-toolkit/tree/09e9a8c6e74e8a7075d96fc0a2dbdabb6a43925c)，固定09e9a8c / 1.1.0，Copyright (c) 2026 rrrrrredy，MIT。只收录自写中文介绍、接入条件与验证记录，上游正文/脚本/样例保存在Git外。私人导入保留适用许可；不把示例作者自检当作独立评审，不重新分发 Toolkit 运行时。[审阅与实际发布](docs/development/community-evidence-review.md)。
 
 2026-10-17增收[K-Dense research-grants](https://github.com/K-Dense-AI/claude-scientific-writer/tree/529b9f73ab4b48925027145800d7b49e96ccfd3c/skills/research-grants)，固定529b9f73 / Skill1.3，MIT；以及[exploratory-data-analysis](https://github.com/K-Dense-AI/scientific-agent-skills/tree/a1043ef544e3a100c28e70a736b6cf32554d0677/skills/exploratory-data-analysis)，固定a1043ef / Skill1.4，技能声明MIT、根LICENSE.md为Copyright (c) 2025 K-Dense Inc.。只维护中文目录/适配元数据，不复制正文、脚本或模板进本仓库；原始审阅资料和合成输出在Git外，私人安装保留原件与适用许可。数据体检仍待接入，不重新分发整个运行环境；申请书仅结构讨论，明确上游预算错误及不含当年中国申报指南。[验证与发布状态](docs/development/research-data-grant-catalog.md)。
+
+## 2026-10-24 科研同伴角色设计参考
+
+参考 [titanwings/Distilly](https://github.com/titanwings/distilly/tree/0afc45c29c360ba7bc8260f1bb0bf34e9155f4fa)（原colleague-skill，MIT）的人格场景、对话示例和可修订纠正设计。只借鉴组织思路，AcceptCat的角色文字、示例、明确指令识别及私人记忆接入均独立编写；未复制上游模板、脚本、采集器、人物素材或运行环境，没有安装/执行上游项目。既有OpenIM/OpenMuse等来源许可保持。范围见 [科研同伴设计](docs/development/research-colleague.md)。

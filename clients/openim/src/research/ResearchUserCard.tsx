@@ -192,10 +192,12 @@ export const ResearchUserCard = forwardRef<
                         : 2000
                     }
                     rows={key === "displayName" ? 1 : 3}
+                    placeholder={key === "personality" && contact.identity.kind !== "human" ? "例如：讨论方案时先给自己的判断；我卡住时先帮一个小步骤。可补一段希望它怎样接话的示例。" : undefined}
                     onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                   />
                 </label>
               ))}
+              {contact.identity.kind !== "human" && <p className="text-xs text-slate-500">这里是角色档案。只想让它记住与你的相处偏好，可以使用私人记忆。</p>}
               <Space>
                 <Button
                   type="primary"
@@ -289,7 +291,7 @@ export const ResearchUserCard = forwardRef<
                   <Button onClick={edit}>编辑资料</Button>
                 )}
                 {contact.allowedActions.includes("manage_private_memory") && (
-                  <Button onClick={() => setMemories(!memories)}>记忆</Button>
+                  <Button onClick={() => setMemories(!memories)}>私人记忆</Button>
                 )}
                 {contact.identity.kind === "personal_agent" && contact.profile.role === "specialist" && contact.identity.ownerMemberId === actor?.member.id && <>
                   <Button onClick={() => setConnection(!connection)}>外部服务</Button>
@@ -311,6 +313,7 @@ export const ResearchUserCard = forwardRef<
               scope="private_agent"
               scopeId={contact.id}
               canManage
+              styleChatAvailable={!contact.agentRuntime}
             />
           )}
           {connection && contact.identity.kind === "personal_agent" && contact.profile.role === "specialist" && contact.identity.ownerMemberId === actor?.member.id && <AgentConnectionPanel key={`${contact.id}:${generation}`} active={isOverlayOpen} contactId={contact.id} onChanged={refresh} />}

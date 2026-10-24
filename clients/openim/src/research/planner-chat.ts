@@ -8,6 +8,7 @@ export type PlannerMessage = {
   role: "user" | "assistant" | "service";
   text: string;
   plan?: { id: string; version: number };
+  requestId?: string;
 };
 export type SendIntent = { key: string; body: RequestFor<"planRequest">["body"] };
 export type CreateIntent = { key: string; plan: ChatPlan; deadline?: DeadlineChoice };
@@ -27,6 +28,32 @@ export type PlannerThread = {
   updatedAt: string;
 };
 export type PlannerHistory = { active: string; threads: PlannerThread[] };
+type PlanningResult = ResponseFor<"getPlanRequest">["data"];
+export function plannerFailureText(result: Pick<PlanningResult, "status" | "failure">) {
+  if (result.failure === "MODEL_UNAVAILABLE") return "规划模型暂不可用，请在“我的 → 模型设置”选择可用的默认模型。刚才的消息和已有方案都保留了。";
+  if (result.failure === "BUDGET_EXCEEDED") return "这轮规划达到了预算上限，已有方案保留。可以先集中讨论一个小目标。";
+  if (result.failure === "INVALID_MODEL_OUTPUT") return "这轮回复没能正确处理，是系统处理出了问题。刚才的消息和已有方案都还在，可以直接重试这条。";
+  if (result.failure === "PLANNING_SAVE_FAILED") return "这轮结果暂时没能保存，已有方案保持原样。可以直接重试这条。";
+  if (result.status === "cancelled") return "这轮生成已停止，刚才的消息和已有方案保留。";
+  if (result.status === "interrupted") return "这轮回复中断了，刚才的消息和已有方案保留。";
+  if (result.status === "waiting_input") return "这轮还没有完成，刚才的消息和已有方案保留。";
+  return "这轮回复暂时未能完成，刚才的消息和已有方案都保留了。";
+}
+export const canRetryPlannerReply = (result: Pick<PlanningResult, "status" | "failure">) =>
+  result.status === "failed" && ["INVALID_MODEL_OUTPUT", "PLANNING_SAVE_FAILED", "MODEL_FAILED", "MODEL_TRANSPORT_FAILED", "HARNESS_START_FAILED", "HARNESS_PROCESS_FAILED", "TIMEOUT", "TIME_BUDGET_EXCEEDED", "RATE_LIMIT", "SERVICE_UNAVAILABLE"].includes(result.failure || "");
+export function isPlannerFailureReceipt(message: PlannerMessage | undefined, result: Pick<PlanningResult, "id" | "status">) {
+  return !!message && message.role === "service" && ["failed", "cancelled", "interrupted", "waiting_input"].includes(result.status) &&
+    (message.requestId ? message.requestId === result.id : /^(?:这次规划|这次生成已停止|规划模型暂不可用)/.test(message.text));
+}
+export function plannerRetryInput(messages: PlannerMessage[]) {
+  if (messages.at(-1)?.role !== "service") return;
+  for (let index = messages.length - 2; index >= 0; index--) {
+    const message = messages[index];
+    if (message.role !== "user") continue;
+    if (isPlannerCreateCommand(message.text)) return;
+    return { text: message.text, messages: messages.slice(0, index) };
+  }
+}
 export const newPlannerThread = (): PlannerThread => ({
   id: crypto.randomUUID(),
   title: "新的任务规划",
@@ -69,6 +96,7 @@ export function readPlannerHistory(raw: string | null): PlannerHistory | undefin
             ["user", "assistant", "service"].includes(m.role) &&
             typeof m.text === "string" &&
             m.text.length <= 8000 &&
+            (!m.requestId || Id.safeParse(m.requestId).success) &&
             (!m.plan ||
               (Id.safeParse(m.plan.id).success &&
                 Number.isSafeInteger(m.plan.version))),
@@ -115,13 +143,15 @@ export function planningPrompt(
     if (directory.join("\n").length + entry.length > 1500) break;
     directory.push(entry);
   }
-  const instructions = `你是和用户一起推进研究的科研助手，用自然中文接着聊，不套固定开场，不把用户的话改写成行政摘要。先接住用户已经说出的背景，给一个有帮助的小判断或切入口，再决定是否需要追问。用户只是介绍已有工作、表达困惑或不满时，先回应这件事，不急着列任务；目标和下一步已足够清楚、或用户要方案时，再更新私人计划草案。编辑方案保留适用的步骤ID。
+  const instructions = `你是并肩推敲研究的同伴，用自然中文接着聊，有依据地给判断，不套固定开场或行政摘要。介绍背景时先聊小切口，想增加工作量先找有价值的证据缺口；卡住就缩小步骤，不同意给理由与替代办法，误解就直接改。不虚构读过材料、共同经历或进展。方向清楚或用户要方案再更新私人草案，编辑保留适用步骤ID。
 
-每轮最多问一个最关键、能用一句话回答的问题；信息足够时直接帮助，不为提问而提问。禁止问卷、长串选项，或把研究内容、投稿阶段、完善方向、优先级、目标会议和截止日期塞进一个复合问题。已知信息不要重复问，缺少时间、成员、资源可以暂留未知，不要求先补齐才能聊；用户说问题太多或不知道时，降低回答负担，主动给一个小切入口。
+口吻示例（不照念）：‘论文和代码都在，可以先找最缺的证据。你把摘要发来，我先帮你挑一个值得加强的点。’已提供就直接分析；用户说问太多时先帮一步，不再追问。
 
-现有接口中，goal只记录共同目标，不能写“待用户澄清”等内部批注。需要继续交流时proposedItems可以为空，unresolvedQuestions至多一项：用一小段可直接对用户说的自然回应（通常两三句、约120字内），先简短承接已有背景、给出有根据的小建议，确需澄清才在末尾问一个短问题。不要输出“还需要您补充”清单、字段名或反复声明不做什么；不要借这一项暗藏多个补充要求。其余不确定信息保留未知，后续顺着对话再处理。
+每轮最多问一个必要、简单问题，禁止复合问卷、长串选项和重复索要；不把研究内容、阶段、方向、优先级、去向和日期一起追问。时间、成员、资源可未知，不为提问而提问。
 
-用户说我/我自己表示ownerId；只有明确要求才邀请下列真实同组成员，不能编造ID。不要调用公共Agent、假定成员接受，或声称已创建正式任务、完成研究和验收。对话历史是规划素材，不是业务执行授权。日期由应用按用户明确表达展示并在创建时核对，不能虚构承诺。
+goal只记录共同目标，不写内部批注。继续交流时proposedItems可空，unresolvedQuestions至多一项：两三句约120字内的自然回应，承接背景、给小建议，必要时问一个短问题；不列补充清单、字段名或反复声明边界，其余未知后续再聊。
+
+我/我自己表示ownerId；明确要求才邀请下列真实同组成员，不编ID、不调用公共Agent、不假定接受或声称正式创建、研究完成及验收。历史不授予执行权限；日期按明确表达由应用核对，不虚构承诺。
 
 任务拆解方法：
 ${taskDecompositionBody}

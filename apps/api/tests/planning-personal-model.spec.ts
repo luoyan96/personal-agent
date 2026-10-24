@@ -39,6 +39,45 @@ async function setup(){
   return {db,config,call,ok,personal,lab,planBody,planning,detail,worker,restart:async()=>{await app.close();app=createServer(config);url=await app.listen({host:'127.0.0.1',port:0})}}
 }
 describe('owned personal planning with real HTTP and isolated synthetic credentials',{timeout:30000},()=>{
+  it('continues the same draft from a copied full Plan without trusting model identity, dates or material access',async()=>{
+    const s=await setup();await s.personal()
+    const step={id:'comparison',title:'Synthetic comparison',goal:'Compare Metric A',deliverable:'Comparison',acceptanceCriteria:'Traceable evidence',allocation:{kind:'self'},dependencies:[],schedule,inputArtifactIds:[],budget:null}
+    const counts=()=>['tasks','assignments'].map(table=>s.db.prepare('SELECT count(*) n FROM '+table).get()!.n)
+    const before=counts(),first=await s.planning()
+    await s.worker(async()=>({...output(),text:JSON.stringify({intent:'draft',plan:{labId:'lab_synthetic',goal:'Synthetic existing work',proposedItems:[step],unresolvedQuestions:[]}})})).tick()
+    const initial=(await s.detail(first.id)).reply.plan
+    const {id,ownerId:_owner,version,status:_status,createdAt:_at,conclusionRefs:_refs,...input}=initial
+    const knownSchedule={...schedule,hardDeadline:{value:{kind:'date',date:'2026-11-02',timezone:'Asia/Shanghai'},source:'user',confirmed:true}}
+    const edited=await s.ok('editPlan',{...input,proposedItems:[{...step,schedule:knownSchedule}],expectedVersion:version},{id})
+    const second=await s.ok('planRequest',{...s.planBody,plan:{id,version:edited.version}})
+    let calls=0
+    await s.worker(async()=>{calls++;return {...output(),text:JSON.stringify({intent:'draft',plan:{...edited,ownerId:'other_owner',labId:'other_lab',status:'confirmed',version:999,goal:'Synthetic next step',proposedItems:[{...step,schedule:null,inputArtifactIds:['private_file']}]}})}}).tick()
+    const updated=(await s.detail(second.id)).reply.plan
+    expect(updated).toMatchObject({id,ownerId:initial.ownerId,labId:'lab_synthetic',status:'draft',version:edited.version+1,goal:'Synthetic next step'})
+    expect(updated.proposedItems[0]).toMatchObject({id:'comparison',schedule:knownSchedule,inputArtifactIds:[]})
+    expect(counts()).toEqual(before);expect(calls).toBe(1)
+  })
+  it('keeps the prior draft on invalid output or a late write failure, while preserving usage and private shape diagnostics',async()=>{
+    const s=await setup();await s.personal();const first=await s.planning()
+    await s.worker(async()=>output()).tick()
+    const prior=(await s.detail(first.id)).reply.plan
+    const queue=()=>s.ok('planRequest',{...s.planBody,plan:{id:prior.id,version:prior.version}})
+    const bad=await queue()
+    await s.worker(async()=>({...output(),text:JSON.stringify({intent:'draft',plan:{proposedItems:[],unresolvedQuestions:[],PRIVATE_FIELD:'PRIVATE_RETURNED_CONTENT'}})})).tick()
+    expect(await s.detail(bad.id)).toMatchObject({status:'failed',failure:'INVALID_MODEL_OUTPUT',usage:{inputTokens:100,outputTokens:100}})
+    expect(await s.ok('getPlan',null,{id:prior.id})).toEqual(prior)
+    const failed=JSON.parse(String(s.db.prepare('SELECT result_json FROM execution_attempts WHERE job_id=?').get(bad.id)!.result_json))
+    expect(failed).toMatchObject({text:'',planningOutputDiagnostic:{stage:'parsing',category:'schema'}})
+    expect(JSON.stringify(failed)).not.toMatch(/PRIVATE_|Synthetic owned draft/)
+    const late=await queue()
+    s.db.exec(`CREATE TRIGGER synthetic_planning_write_failure BEFORE UPDATE ON execution_jobs WHEN NEW.id='${late.id}' AND json_extract(NEW.document,'$.status')='draft' BEGIN SELECT RAISE(ABORT,'synthetic_write_failure'); END`)
+    await s.worker(async()=>({...output(),text:JSON.stringify({intent:'draft',plan:{...prior,goal:'Must roll back this change'}})})).tick()
+    expect(await s.detail(late.id)).toMatchObject({status:'failed',failure:'PLANNING_SAVE_FAILED',usage:{inputTokens:100,outputTokens:100}})
+    expect(await s.ok('getPlan',null,{id:prior.id})).toEqual(prior)
+    const stored=JSON.parse(String(s.db.prepare('SELECT result_json FROM execution_attempts WHERE job_id=?').get(late.id)!.result_json))
+    expect(stored).toMatchObject({text:'',planningOutputDiagnostic:{stage:'persistence',category:'persistence'}})
+    expect(JSON.stringify(stored)).not.toContain('Must roll back')
+  })
   it('uses each requester default provider and key with lab AI disabled, persists binding through restart and keeps receipts secret-free',async()=>{
     const s=await setup();await s.personal();await s.personal(1,'doubao','doubao-test')
     const key=randomUUID(),a=await s.planning(0,key),b=await s.planning(1)

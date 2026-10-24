@@ -36,6 +36,10 @@ import {
   planReplyText,
   readPlannerHistory,
   stopPlannerRequest,
+  plannerFailureText,
+  canRetryPlannerReply,
+  plannerRetryInput,
+  isPlannerFailureReceipt,
 } from "./planner-chat";
 import type {
   ChatPlan,
@@ -264,6 +268,7 @@ function PlanningAgentSession({
     !!request.data &&
     ["queued", "running"].includes(request.data.data.status);
   const result = request.data?.data;
+  const latestFailure = !!result && thread.handledRequest === result.id && isPlannerFailureReceipt(thread.messages.at(-1), result);
   useEffect(() => {
     if (
       !result ||
@@ -302,20 +307,8 @@ function PlanningAgentSession({
           {
             id: crypto.randomUUID(),
             role: "service",
-            text:
-              result.status === "cancelled"
-                ? "这次生成已停止。已有方案保留，您可以继续补充。"
-                : result.failure === "MODEL_UNAVAILABLE"
-                ? "规划模型暂不可用，请在“我的 → 模型设置”配置默认模型后重新发送。没有创建正式任务。"
-                : result.failure === "BUDGET_EXCEEDED"
-                ? "这次规划超出预算，请缩小需求后再发送。已有方案没有确认成任务。"
-                : `这次规划${
-                    result.status === "waiting_input"
-                      ? "需要补充信息"
-                      : result.status === "interrupted"
-                      ? "已中断"
-                      : "未能完成"
-                  }。您可以继续说明后重新规划，已有任务没有因此改变。`,
+            text: plannerFailureText(result),
+            requestId: result.id,
           },
         ],
       }));
@@ -451,8 +444,10 @@ function PlanningAgentSession({
       if (isCurrent()) onCreated();
     });
   };
-  const send = () => {
-    const text = thread.draft.trim();
+  const send = (retrying = false) => {
+    const retry = retrying && result && canRetryPlannerReply(result) ? plannerRetryInput(thread.messages) : undefined;
+    if (retrying && !retry) return;
+    const text = retry ? retry.text : thread.draft.trim();
     if (!text || busy || frozen || !available) return;
     if (thread.messages.length >= 56) {
       setFailure("这段对话已较长，请新建对话继续；原有方案仍保留。");
@@ -488,7 +483,7 @@ function PlanningAgentSession({
       : needsDeadlineClarification(text) || !!thread.deadlineQuestion;
     try {
       const context = planningPrompt(
-        thread.messages,
+        retry ? retry.messages : thread.messages,
         text,
         members.data?.data || [],
         deadline,
@@ -511,11 +506,11 @@ function PlanningAgentSession({
       update((t) => ({
         ...t,
         title: t.messages.some((m) => m.role === "user") ? t.title : text.slice(0, 38),
-        draft: "",
+        draft: retry ? t.draft : "",
         sending: intent,
         deadline,
         deadlineQuestion,
-        messages: [...t.messages, { id: crypto.randomUUID(), role: "user", text }],
+        messages: retry ? t.messages.slice(0, -1) : [...t.messages, { id: crypto.randomUUID(), role: "user", text }],
       }));
       setExpanded(true);
       dispatch(intent);
@@ -646,9 +641,12 @@ function PlanningAgentSession({
                   ? "我"
                   : message.role === "assistant"
                   ? "任务规划 Agent"
-                  : "安排记录"}
+                  : "系统提示"}
               </span>
-              <SafeMessageMarkdown text={message.text} />
+              <SafeMessageMarkdown text={index === thread.messages.length - 1 && latestFailure && result ? plannerFailureText(result) : message.text} />
+              {index === thread.messages.length - 1 && latestFailure && result && !thread.taskIds?.length && canRetryPlannerReply(result) && plannerRetryInput(thread.messages) && (
+                <Button size="small" loading={busy} disabled={frozen || !available} onClick={() => send(true)}>重试这条</Button>
+              )}
               {message.plan && index < thread.messages.length - 1 && (
                 <small>
                   方案版本 {message.plan.version} · 当前方案以下方实际读取为准
@@ -901,7 +899,7 @@ function PlanningAgentSession({
             disabled={
               !available || busy || (!inProgress && (!thread.draft.trim() || frozen))
             }
-            onClick={inProgress ? stop : send}
+            onClick={inProgress ? stop : () => send()}
           />
         </div>
       </div>

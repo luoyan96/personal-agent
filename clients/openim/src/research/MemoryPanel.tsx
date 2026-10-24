@@ -8,10 +8,12 @@ export function MemoryPanel({
   scope,
   scopeId,
   canManage,
+  styleChatAvailable = false,
 }: {
   scope: "private_agent" | "conversation";
   scopeId: string;
   canManage: boolean;
+  styleChatAvailable?: boolean;
 }) {
   const { data, error, refresh } = useResearchRead(
     () => researchApi("chatMemories", { query: { scope, scopeId, limit: 100 } }),
@@ -55,6 +57,11 @@ export function MemoryPanel({
           : "当前会话的共享记忆；已加入的真人成员可查看，负责人管理。"}{" "}
         内容仅在获准的范围内用于后续 AI 请求。
       </p>
+      {scope === "private_agent" && canManage && styleChatAvailable && (
+        <p className="text-xs text-slate-600">
+          希望它记住你的交流习惯，可以直接在私聊里说：“以后和我聊天，先给你的判断，别每次列清单。”保存后会在这里显示，可随时修改或撤回。
+        </p>
+      )}
       {(error || failure) && <Alert type="error" showIcon message={error || failure} />}
       {data?.data.map((memory) => (
         <article key={memory.id} className="rounded border p-3">

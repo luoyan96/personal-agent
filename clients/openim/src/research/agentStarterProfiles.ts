@@ -163,9 +163,29 @@ function conversationalStarter(starter: AgentStarter): AgentStarter {
     },
   };
 }
-export const libraryAgentStarter = conversationalStarter(previousLibraryAgentStarter);
-export const agentStarters: readonly AgentStarter[] = previousAgentStarters.map(
-  (starter) => starter.id === libraryAgentStarter.id ? libraryAgentStarter : conversationalStarter(starter),
+// Preserve exact 0.10.39/40 profiles for reuse without silently editing them.
+const conversationalAgentStarters = previousAgentStarters.map(conversationalStarter);
+const colleaguePersonas: Record<string, string> = {
+  "literature-reading": "你是一起读论文的科研同伴。先判断这篇工作对用户当前问题有何用处，把作者的论据和你的推断分开；有疑点就具体指出证据哪里没接上。用户说‘没看懂’时，先用一个贴近上下文的例子解释，不让他先列阅读目标。示例：‘这里关键是把两件事分开看：模型学到了什么，以及实验实际测到了什么。我们先看这段实验。’仅在相应材料已经提供时使用具体判断。",
+  "paper-revision": "你是与作者并肩改稿的科研同伴。先给能用的改稿，再解释影响最大的改动；有逻辑问题时坦诚指出，尊重作者原意，不把整篇改成统一腔调。用户不满意时先定位并改当前稿，不要求重填写作需求。示例：‘这句的意思我理解了，不过结论比前面的证据走得远。我先把措辞收回来，你看看还贴不贴合原意。’判断须对应实际原文。",
+  "research-planning": "你是一起推敲研究的同伴，先形成有理由的判断，愿意温和地不同意。用户想‘增加工作量’时，先找值得补的证据，不用堆实验替代研究贡献；条件不全也先帮一个小步骤。示例：‘论文和代码都在的话，我们可以先找现有结论最缺哪块证据。你把摘要发来，我先帮你挑一个值得加强的点。’材料已给过就直接分析，不再索要。",
+  "figure-planning": "你是一起讲清研究的图表同伴。先判断读者应看懂的核心关系，再讨论布局和样式；信息太多时提出取舍并说明理由。示例：‘这张图同时在讲流程和实验结果，读者可能抓不住重点。我建议主图先讲流程，把结果留给旁边的小图。’没有看到图或相应描述时，不假装已经看过。",
+  "data-reproduction": "你是一起排查问题的研究同伴。根据现有报错提出最值得验证的解释和最小检查，区分猜测、建议与已运行结果；连续失败时缩小问题，不把一串环境问题抛给用户。示例：‘先别重装整个环境。这个报错更值得先查输入形状，我给你一小段检查代码。’只有报错支持时才作该判断，检查结果由实际执行确定。",
+  "lab-meeting": "你是熟悉科研汇报节奏的同伴。帮用户找这周最值得讨论的发现、困难或决策；没有正结果时也能讲清排除了什么，不用完成清单粉饰进展。示例：‘这周虽然没跑出提升，但这个对照已经排除了一个解释。我们就把它和下一步的选择讲清楚。’只有用户确实提供该结果时才能这样说。",
+  "research-library": "你是帮助团队用好资料的科研同伴。先回答实际问题，再给最相关出处；发现不同材料冲突时解释差异与判断依据。查不到时主动换一个可行切入口，少讲配置术语。示例：‘这次提供的片段里还没找到那份实验记录。可以先用项目名加实验日期缩小范围。’不得虚构检索命中或把别人的私人资料当作可读。",
+};
+function colleagueStarter(starter: AgentStarter): AgentStarter {
+  return {
+    ...starter,
+    profile: {
+      ...starter.profile,
+      personality: `${colleaguePersonas[starter.id]}\n平等、坦诚地合作，先用已有背景帮忙；需要时只问一个简单问题。短问题自然回应，复杂工作按需展开。对话示例只示范判断与口吻，不是每轮照念的台词；不虚构共同经历。本人明确保存的交流偏好优先于默认口吻，能力与资料权限仍按实际配置。`,
+    },
+  };
+}
+export const libraryAgentStarter = colleagueStarter(conversationalStarter(previousLibraryAgentStarter));
+export const agentStarters: readonly AgentStarter[] = conversationalAgentStarters.map(
+  (starter) => starter.id === libraryAgentStarter.id ? libraryAgentStarter : colleagueStarter(starter),
 );
 
 export function findOwnedStarter(
@@ -191,6 +211,7 @@ export function findOwnedStarter(
       contact.relationship.status === "own" &&
       [
         starter.profile,
+        conversationalAgentStarters.find((item) => item.id === starter.id)?.profile,
         previousAgentStarters.find((item) => item.id === starter.id)?.profile,
         legacyAgentStarters.find((item) => item.id === starter.id)?.profile,
       ].some(

@@ -13,6 +13,10 @@ import {
   isPlannerCreateCommand,
   createPlannerTasks,
   stopPlannerRequest,
+  plannerFailureText,
+  canRetryPlannerReply,
+  plannerRetryInput,
+  isPlannerFailureReceipt,
 } from "../src/research/planner-chat.ts";
 const schedule = () => ({
   suggested: null,
@@ -42,6 +46,42 @@ const makePlan = () => ({
     inputArtifactIds: [],
     budget: null,
   })),
+});
+test("a failed model reply explains the system failure and offers only a deliberate safe retry", () => {
+  const result = { status: "failed", failure: "INVALID_MODEL_OUTPUT" };
+  assert.match(plannerFailureText(result), /系统处理/);
+  assert.doesNotMatch(plannerFailureText(result), /继续说明|补充信息|缩小需求/);
+  assert.equal(canRetryPlannerReply(result), true);
+  assert.equal(canRetryPlannerReply({ ...result, failure: "PLANNING_SAVE_FAILED" }), true);
+  for (const value of [{ status: "running", failure: null }, { status: "cancelled", failure: "INVALID_MODEL_OUTPUT" }, { status: "failed", failure: "BUDGET_EXCEEDED" }, { status: "failed", failure: "MODEL_UNAVAILABLE" }]) assert.equal(canRetryPlannerReply(value), false);
+});
+test("retry keeps the earlier conversation and the original follow-up exactly once, including old cached failures", () => {
+  const messages = [
+    { id: "one", role: "user", text: "Synthetic existing work" },
+    { id: "two", role: "assistant", text: "Synthetic first response" },
+    { id: "three", role: "user", text: "SYNTHETIC_FOLLOWUP" },
+    { id: "four", role: "service", text: "这次规划未能完成。您可以继续说明后重新规划，已有任务没有因此改变。" },
+  ];
+  const restored = readPlannerHistory(JSON.stringify({ active: "thread", threads: [{ ...newPlannerThread(), id: "thread", messages, draft: "Unsent independent draft" }] })).threads[0];
+  const retry = plannerRetryInput(restored.messages);
+  assert.equal(retry.text, "SYNTHETIC_FOLLOWUP");
+  assert.deepEqual(retry.messages, messages.slice(0, 2));
+  const prompt = planningPrompt(retry.messages, retry.text, []).prompt;
+  assert.equal(prompt.split("SYNTHETIC_FOLLOWUP").length - 1, 1);
+  assert.match(prompt, /Synthetic first response/);
+  assert.equal(restored.draft, "Unsent independent draft");
+  assert.deepEqual(restored.messages, messages);
+});
+test("retry cannot resubmit a creation command or a message still waiting for an assistant response", () => {
+  assert.equal(plannerRetryInput([{ id: "one", role: "user", text: "确认创建任务" }, { id: "two", role: "service", text: "failed" }]), undefined);
+  assert.equal(plannerRetryInput([{ id: "one", role: "user", text: "Synthetic follow-up" }]), undefined);
+});
+test("an old failed request never relabels a later task creation receipt or another request", () => {
+  const result = { id: "failed_job", status: "failed" };
+  assert.equal(isPlannerFailureReceipt({ id: "one", role: "service", text: "这份计划已建立 2 项任务。" }, result), false);
+  assert.equal(isPlannerFailureReceipt({ id: "one", role: "service", text: "这次规划未能完成。" }, result), true);
+  assert.equal(isPlannerFailureReceipt({ id: "one", role: "service", text: "System issue", requestId: "other_job" }, result), false);
+  assert.equal(isPlannerFailureReceipt({ id: "one", role: "service", text: "System issue", requestId: result.id }, result), true);
 });
 function fake(initial = makePlan(), failure) {
   let value = structuredClone(initial),

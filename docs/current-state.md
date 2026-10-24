@@ -2,6 +2,22 @@
 
 更新日期：2026-10-24（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
+## 本机0.10.41：科研同伴的判断与接话，配套后台已上线
+
+负责人要求参考同事.skill后实际改进。从fetch后的main/89c987c新建feature/research-colleague，普通merge PR99/05ebf3a保留连续规划修复；产品 **5293eba94d2133f8624628084351ad1f06cd7bfe**，[PR100](https://github.com/luoyan96/personal-agent/pull/100)开放。七个模板补场景判断/合作方式/接话示例，规划、拆解及共用规则先判断证据价值、卡住先帮一步；旧模板和用户自改档案保留。本人明确指令可经配套后台保存该助手的私人交流偏好，复用修订/撤回/幂等，不调用模型、不进入公开档案或跨角色/账号；引用与当前抱怨不自动学习。[完整设计](development/research-colleague.md)。
+
+完整根CI **772项/60文件**与2生产CLI/HTTP/B0/生产边界，客户端 **32项**及双类型、Windows包/更新清单通过。初稿长输入与旧预算失败保留，压缩重复规则后在原上限通过，未裁用户内容；全量后仅收尾回执/真人占位措辞。桌面 **C:/Users/luo/Desktop/AcceptCat_0.10.41.exe**，**87,410,682字节**，SHA256 **ae8f3bc1a60a4dac27b439e25de5ee71202f9b8f19b59b579e304093db618b1e**，旧包保留，未代安装或追加真实体验验收。[交付与生效边界](deployment/acceptcat-0.10.41.md)，证据 **D:/deepseek-agent/.runtime/research-colleague-20261024**。
+
+**配套后台已按负责人本批授权上线。** 北京时间 **2026-10-24 21:02:48—21:03:08**完成排空、停写备份、独立恢复核对与API/worker切换，产品5293eba，镜像 **367367eab2c7990b38b0453bf07d51a6f1cdc22b890732519573146218a99a4c**。离线候选 **73项/4文件**通过；contract0.30/schema026保持，无迁移。103表/7原件、19配置/密钥输入、模型/飞书私库/目录缓存及其他6服务保持，运营种子源/编译摘要相同；两服务running/restart0、API healthy、公网ready200，受保护接口匿名401，广场同步仍关闭，Harness仍not_verified。后台共用规则与明确私人偏好保存现已生效；桌面规划/新模板随0.10.41使用，未重打/代安装或用真实模型验收。head5b414a7四项GitHub检查已全success；其中Windows首轮771通过/1既有用例超时，原时限单独复核后只重跑失败job成功，未改代码/断言或提高时限。完整回执见交付记录。PR100含PR99但未合并main，0.10.41未公开Release，重新读取公开Latest仍v0.10.37；其他原边界保持。
+
+## 本机0.10.40修复连续规划校验与原话重试，配套后台已上线
+
+负责人反馈第二轮正常补充背景后出现失败。后台最近记录为INVALID_MODEL_OUTPUT，旧记录未留返回形状，不能还原具体错误字段。代码可复现完整Plan/strict PlanInput混用及“空日程”提示与校验不一致；现将模型研究内容与服务器身份/日期/资料权限分开，保留正式校验，规划写入失败原子回滚并记无正文的有界诊断。界面显示系统故障与“重试这条”，保留原话/草稿，不自动重发、重复上下文或重放创建命令。[0.10.40交付与边界](deployment/acceptcat-0.10.40.md)。
+
+从fetch后的main/89c987c另开fix/planning-reply-validation，产品 **b232296fb10e3484959b628aa47c087d5fbf35e6**，[PR99](https://github.com/luoyan96/personal-agent/pull/99)开放。完整根CI **769项/60文件**及2生产入口/B0/生产边界、13项API定向、28项客户端与双类型、Windows包和更新清单通过。首轮新增夹具带入只读字段的失败保留，修正夹具后通过，未放宽接口。桌面 **C:/Users/luo/Desktop/AcceptCat_0.10.40.exe**，**87,408,408字节**，SHA256 **7bfdc1d4f3b248d379dbdaeea2828851a4ba41b47142929646c869c98ebfc8c7**；旧包保留，未代安装或追加真实模型/界面/用户体验验收。
+
+**配套后台修复已上线。** 原Workbench断线、控制台超时后，负责人重新连接；核对实际旧镜像7fa2e86e及包摘要，再执行离线候选构建、29项隔离检查、停写备份与独立恢复核对，于北京时间 **2026-10-24 17:41:50—17:42:10**切换API/worker。产品b232296，镜像 **620bc0254aef1ea1b5339c7826d360d07119a89b4ae053686d4f9a00d1e47aec**，contract0.30/schema026保持，无迁移；103表/7原件和18个配置/密钥输入、个人模型/飞书私库/目录缓存、其他6服务保持。两服务running/restart0，API healthy、公网ready200及受保护接口匿名401；广场同步仍关闭，Harness仍not_verified，未重放真实失败请求或调用真实模型。完整备份/回退见[交付记录](deployment/acceptcat-0.10.40.md)，证据 **D:/deepseek-agent/.runtime/planning-reply-validation-20261024**。本次没有重打或代安装客户端；PR99未合并、0.10.40未公开Release，重新读取公开Latest仍v0.10.37。原其他边界保持。
+
 ## PR97已按负责人指令合入main，PR96随之合并
 
 北京时间 **2026-10-24 16:48:58**，[PR97](https://github.com/luoyan96/personal-agent/pull/97)以merge commit **a08a63a87ea3cf2e561c20197259bf2a60cafa08**合入main，固定受审head **6d4df116417c79e3ad64c8139bafe968e4165613**；[PR96](https://github.com/luoyan96/personal-agent/pull/96)于16:49:00自动标记MERGED。合并树与受审head逐文件相同，旧main/fecb98f、PR96及同事PR86/PR92、构建PR93的提交均保持祖先关系，未改写作者或历史。

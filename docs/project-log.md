@@ -1658,3 +1658,63 @@ Compose链末尾追加agent-conversation-20261024-v2/images.yaml，旧2677f693�
 随后从最新main另开docs/agent-conversation-merge-status，只同步current-state、roadmap、交接prompt、0.10.39交付及部署记录并追加本日志；实际256 Markdown/11 Skill内容检查及diff检查通过，不重复已通过的代码检查或追加产品/安装后体验验收。合并后自动main检查及文档分支CI按各自实际回执另记，不称尚未完成的运行已通过。
 
 本次仅合并与状态同步：桌面0.10.39产品e48852e、大小/哈希和后台7fa2e86e保持，无重打、代安装、重新部署或数据库操作。GitHub实际重新读取公开Latest仍 **v0.10.37 / Release422478602**，没有公开新Release或重指旧tag。原注册超时、飞书试点及资料在线/10MiB/无TURN等边界保持。下一项功能重新fetch主仓库最新main另开分支。
+
+## 2026-10-24 — 修复连续规划模型边界与原消息重试，交付本机0.10.40，后台等待重连
+
+负责人反馈第二轮正常补充后出现“规划未能完成/继续说明后重新规划”，要求修复并解释。先只读核对最近规划状态：16:55草案成功、16:57 INVALID_MODEL_OUTPUT；旧执行记录有意不存模型正文，却也没有错误形状诊断，不能还原这次具体字段。随后核对干净main/89c987c、主仓库origin并fetch，从最新main另开fix/planning-reply-validation，保留同事及PR97/96全部功能和历史。
+
+产品 **b232296fb10e3484959b628aa47c087d5fbf35e6**：旧上下文给完整Plan但直接strict PlanInput解析、空日程提示却要求对象，两处可用合成输入复现。新增内容专用模型schema及明确元数据投影，身份/课题组/日期/材料读取由服务器决定；旧明确日程保留，研究字段/成员/依赖/版本/权限和正式确认仍校验。规划savepoint在晚期写入失败时回滚本轮草案，用量不丢；结果仍不存正文，仅新增有界阶段/字符数/白名单路径，未知字段名及错误原值不入记录。公共API/contract0.30/schema026、依赖及锁保持。
+
+客户端“安排记录”改为“系统提示”，故障不再要求用户重新补背景；显式点击“重试这条”才重用原消息与前文，保留未发送草稿，不重复当前输入、增加后台自动重试或重放确认创建。新失败回执绑定请求，兼容旧缓存，旧错误不能覆盖后续建立任务的真实回执。版本0.10.40，合成评价新增planning-reply-recovery。
+
+完整根CI **769项/60文件**、2生产CLI/HTTP、B0及生产边界通过；API13项定向、客户端28项规划/依赖与renderer/Electron双类型通过。首轮新增HTTP夹具把只读conclusionRefs传进editPlan被原接口拒绝，12通过/1失败；修正夹具投影后13通过，原失败保留，未放宽原校验。测试覆盖复制Plan/空日程、同一草案/明确日期保持、无任务创建、错误结构/写入失败回滚与隐私诊断，以及旧失败缓存、原话单次上下文、草稿与创建回执归属。
+
+根desktop:win按冻结准备、两共享包先构建再客户端安装执行，生产Web/4SDK、55运行包、NSIS/成品4入口和更新清单核对通过。桌面 **C:/Users/luo/Desktop/AcceptCat_0.10.40.exe**，**87,408,408字节**，SHA256 **7bfdc1d4f3b248d379dbdaeea2828851a4ba41b47142929646c869c98ebfc8c7**；复制后核对，旧包保留，未代安装/启动。Git外 **D:/deepseek-agent/.runtime/planning-reply-validation-20261024**保存检查、原失败、构建、更新/交付及后台准备包。[PR99](https://github.com/luoyan96/personal-agent/pull/99)已提交/挂接，未合并或公开Release；远端检查按具体head记录，不把进行中运行算通过。
+
+后台修复包基于现有7fa2e86e，仅覆盖2个API源文件，127基线/编译哈希及离线检查、备份/恢复/回退脚本已准备，本机路径/语法/LF检查通过。但原Workbench出现WebSocket失败并断开，返回连接页无法恢复，原ECS控制台标签两次访问超时，已异步请求负责人重新打开并登录。**没有上传修复包、构建服务器镜像、运行服务器隔离检查或停服切换，线上仍7fa2e86e。** 无本批数据库操作/迁移/新健康探测，不能说真实第二轮故障已经在线修好。
+
+更新current-state及[0.10.40交付记录](deployment/acceptcat-0.10.40.md)，代码、安装包、后台和公开状态分别记载。按既有安排不主动追加产品界面、真实账号/材料/模型、安装后或双机验收；原注册超时、飞书试点、原件直连和广场关闭边界保持。恢复后台连接后先核对实际镜像/Compose链，再做候选隔离与备份切换，不重复索取用户已提供的研究背景。
+
+收尾实际读取产品head b232296：Foundation40081514626三平台与Windows package40081514648四项全部success。内容258 Markdown/11 Skill及diff检查通过；后续文档推送触发的新CI另记，不将产品head成功移算给新运行。后台重连问题仍待用户恢复，未因检查通过而跳过部署前隔离或宣称线上完成。
+
+## 2026-10-24 — Workbench恢复后完成连续规划修复的配套后台部署
+
+负责人回复“已连接”后接续既有部署授权，核对新Workbench、生产旧镜像7fa2e86e、Compose链与健康状态；保留此前WebSocket/控制台超时记录。修复包45,404字节、SHA256 `0cb8aaafaaf7e9ce440772cf3b7a9cb20c1387a01a1ca148c12ae7c9939640d1`上传后摘要一致，离线候选仅叠加2个API源文件，127基线/127编译、32个Skill文件/11方法、运营种子及contract/schema守卫通过。候选29项/3文件（输出解析5、个人规划8、执行16）全通过，没有调用真实模型或用私人材料评价模型。
+
+北京时间 **17:41:50—17:42:10**排空配对API/worker，停写备份、独立恢复核对并切换成功，deployment.exit=0。产品 **b232296fb10e3484959b628aa47c087d5fbf35e6**，新镜像 **research-openim-api:planning-reply-20261024 / sha256:620bc0254aef1ea1b5339c7826d360d07119a89b4ae053686d4f9a00d1e47aec**；contract0.30.0/schema026不变，未运行迁移。备份 **/srv/research-openim-backups/planning-reply-20261024-20261024T094152Z/research.tar.gz**，SHA256 **48a60650914fc3268ba1c099a431bbb0887b7a189af0ae8c8d93a1a0ff23d802**，私密备份/配置副本只留服务器。103表全行/结构、7原件内容/权限、迁移历史、integrity/外键及18配置/密钥输入哈希/权限保持；个人模型/默认值、飞书连接/私库范围和目录缓存不变。
+
+恢复副本HTTP ready200/保护接口401，未创建账号或会话；切换后API和worker均running/restart0，API healthy，公网ready200/contract0.30，四受保护路由有效合成参数匿名401，其他6服务/静态站点和运行配置保持。广场实际enabled=false/state=disabled/nextCheckAt=null，GITHUB_CATALOG_SYNC=0，11条目/19候选保持；DSH0.2.1-rc.2/Cordis4.0.5不变，Harness仍not_verified。原失败请求未自动重放，旧方案和原消息保留；原真实返回形状未知，不宣称已还原确切历史字段。
+
+运维目录 **/opt/research-openim/ops/planning-reply-20261024**，仅在原Compose链末尾添加本批images.yaml；旧7fa2e86e镜像保留。同schema回退只撤末尾覆盖并恢复配对镜像，保留当前数据库和后续写入，不回灌旧备份或退回025；本次未触发回退。[完整回执](deployment/acceptcat-0.10.40.md)，Git外证据 **D:/deepseek-agent/.runtime/planning-reply-validation-20261024**新增deployment-summary.json和deployment-proof.png。
+
+本批只完成后台部署及文档同步，没有重打或代安装客户端，桌面0.10.40原大小/摘要保持；PR99仍OPEN，未合并main或公开Release，重新读取公开Latest仍v0.10.37/422478602。部署前文档head a541649的Foundation40082175060三平台与Windows package40082175063四项全部success；后续文档head检查按实际回执另记，未重复已通过完整CI/客户端构建或追加界面/真实模型/用户体验验收。注册超时未定因、飞书本人试点和原件在线/10MiB/无TURN等边界保持。
+
+## 2026-10-24 — 科研同伴的判断/接话与私人偏好，交付本机0.10.41
+
+负责人要求参考同事.skill并实际改进。核对干净旧分支/远端并fetch，main仍89c987c，另开feature/research-colleague，再普通merge PR99固定05ebf3a保留0.10.40解析/回滚/原话重试与已有同事聊天、资料及课题组功能，未提前合并主线。审阅Distilly固定0afc45c的人格分析/生成、纠正与writer代码，只借鉴组织方式，正文、例子和实现独立编写，未复制/运行上游项目，来源记录NOTICE/migration。
+
+产品 **5293eba94d2133f8624628084351ad1f06cd7bfe**：七个模板加入场景下的科研判断、合作方式与接话例子；规划/拆解和共用后台规则遇到增加工作量先判断证据价值、卡住先缩小一步、不同意给理由与替代办法。旧0.10.38及0.10.39/40档案可复用，用户自改内容不自动覆盖。本人在自己的本地Agent私聊明确保存交流偏好时，确定性写入private_agent记忆，沿原版本/修订/撤回/幂等与在途结果失效机制，不调用模型、不跨角色/账号或导出公开；容量不足如实未保存，引用/问题/当前抱怨不持久学习。独立规划不绑定联系人偏好，外部Agent/群聊不获修改权限。API字段/contract0.30/schema026、依赖锁不变，无迁移。
+
+根完整CI **772项/60文件**、2生产CLI/HTTP、B0及生产边界通过；新增3项实际HTTP/SQLite/worker合成检查覆盖重启保存、修订/撤回/重放/容量、导出与账号/角色隔离及晚到结果。初轮定向66通过/2失败，均为新增共用规则挤占旧4k/重试预算；压缩后原32项聊天通过。客户端首轮长输入边界失败，压缩重复规划/方法说明后，完整4000字当前消息/方法与原8000上限保持，最终模板/规划/依赖 **32项**及renderer/Electron双类型通过。原失败保留，无抬预算/删断言；全量后仅收尾撤回回执措辞和真人名片占位提示，业务逻辑不变。
+
+根desktop:win按冻结准备/两共享包先构建/客户端安装完成，生产Web/4SDK、55运行包、NSIS/成品4入口及更新清单核对通过。桌面 **C:/Users/luo/Desktop/AcceptCat_0.10.41.exe**，**87,410,682字节**，SHA256 **ae8f3bc1a60a4dac27b439e25de5ee71202f9b8f19b59b579e304093db618b1e**；复制摘要一致，旧包保留，未代安装/启动。既有Ant Design指令警告保留，未追加产品界面、真实账号/私人材料/模型或双机体验验收；新增14语言情境仅为评价要求，不能当作真实同事感已验收。
+
+[PR100](https://github.com/luoyan96/personal-agent/pull/100)已创建/挂接，含PR99，未合并或公开Release。重新fetch main仍89c987c，公开Latest读取仍v0.10.37/422478602。后台仍沿已部署b232296/620bc025、contract0.30/schema026记录；本批没有停服/迁移/新健康探测，共用规则和明确私人偏好保存尚未上线。Git外backend-source-5293eba.tar.gz为39,114字节的审阅源码，SHA256 d77661ada4a650daf63c3f2da664ed86f16e5ec6a09a3fe7821b7e89b2ee9fef，尚未上传/服务器构建/隔离/切换。后台部署按负责人此前约定单独授权。
+
+更新current-state、roadmap、交接prompt及[0.10.41交付](deployment/acceptcat-0.10.41.md)/[设计与边界](development/research-colleague.md)，证据 **D:/deepseek-agent/.runtime/research-colleague-20261024**。远端自动CI按新head实际结果另记，未完成不算通过；注册超时未定因、飞书本人试点、原件在线/10MiB/无TURN及广场同步关闭边界保持。
+
+## 2026-10-24 — 按本批明确授权部署科研同伴规则与私人交流偏好
+
+负责人回复“现在部署”后接续0.10.41配套后台。核对干净feature/research-colleague/5b414a7、origin主仓库并fetch，生产实际仍620bc025且API/worker健康，剩余空间约7.2GiB。准备并上传 **research-colleague-5293eba-20261024.tar.gz**，90,412字节，SHA256 **7afa2e7c9a6b15251bd4c73f75f882a445d7f9760f9e46e6671125c206082b2e**；安全路径、两个bash语法及服务端摘要检查通过。旧审阅包和原检查记录保留，不把审阅源码包与实际运维包混称。
+
+部署前读到head5b414a7的GitHub两个Linux Foundation和Windows package成功，Windows Foundation首轮771通过/1失败：既有邀请/执行权限用例超过原15000ms。保存原失败日志，在本机按原时限单独复核1通过/31跳过，只重跑失败的Windows job；21:04:00成功，与另三项组成最终四项success。没有改代码、断言、提高时限或认定唯一超时根因；服务器候选还覆盖了该用例。Foundation40095005045/Windows package40095005063的原失败与重跑回执均留Git外。
+
+基于原生产镜像离线构建，仅叠加4个API源文件、canonical拆解方法的源/打包副本（共6份）；180份基线源/方法、129份编译和32方法文件/11方法守卫通过。候选 **73项/4文件**全通过：规划输出5、个人规划8、聊天32、个人助理28，覆盖私人偏好重启/修订/撤回/容量/幂等/导出与账号角色隔离、晚到结果以及旧规划和执行授权。不使用生产私密数据运行模型或调用真实模型。
+
+北京时间 **2026-10-24 21:02:48—21:03:08**完成排空、停写备份、独立恢复核对与API/worker切换，deployment.exit=0。产品 **5293eba94d2133f8624628084351ad1f06cd7bfe**，新镜像 **research-openim-api:research-colleague-20261024 / sha256:367367eab2c7990b38b0453bf07d51a6f1cdc22b890732519573146218a99a4c**，contract0.30/schema026保持，未运行迁移。备份 **/srv/research-openim-backups/research-colleague-20261024-20261024T130251Z/research.tar.gz**，SHA256 **7715e5dca2f2fef44e60e355a83907c54ff687cec0bf5985261db04d07bf6df4**，私密备份/配置副本只留服务器。103表全行/结构、7原件内容/权限、迁移历史、integrity/外键和19配置/密钥输入摘要/权限保持；个人模型/默认值、飞书连接/资料源/私库范围与目录缓存不变。
+
+独立恢复库HTTP ready200/受保护接口401，未创建账号/会话或连接外部服务。正式API/worker均running/restart0，API healthy，公网ready200/contract0.30和四受保护路由有效合成参数匿名401；运行配置/挂载/网络和其他6服务保持，未改静态站点。运营目录种子的源及编译文件另外比对新旧镜像SHA256相同。广场实际enabled=false/state=disabled/nextCheckAt=null，GITHUB_CATALOG_SYNC=0，11条目/19候选保持；DSH0.2.1-rc.2/Cordis4.0.5不变，Harness仍not_verified。
+
+运维目录 **/opt/research-openim/ops/research-colleague-20261024**，原Compose链仅追加本批images.yaml；旧620bc025镜像保留。同schema回退只撤末尾覆盖并恢复配对旧镜像，保留当前数据与上线后写入，不回灌旧快照或退回025；本次未触发回退。后台共用规则与明确私人偏好保存现已上线；桌面规划/新模板仍需0.10.41，已安装的私人Skill与用户自改档案不自动覆盖。没有自动重放用户消息或代验真实口吻/科研质量。
+
+更新current-state、roadmap、交接prompt及[0.10.41交付](deployment/acceptcat-0.10.41.md)，Git外 **D:/deepseek-agent/.runtime/research-colleague-20261024**新增backend-package、实际deployment-summary与deployment-proof；源码审阅包和先前等待授权状态保留。本批只部署/记录，没有重打或代安装客户端，桌面0.10.41原大小/摘要保持；PR100含PR99仍未合并，0.10.41未公开Release，重新读取公开Latest仍v0.10.37/422478602。后续纯文档新head检查单独记录，不重复已通过的完整CI或追加用户体验验收；注册超时未定因、飞书本人试点、原件在线/10MiB/无TURN等边界保持。

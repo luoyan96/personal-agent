@@ -16,6 +16,7 @@ import { personalWorkRequest } from '../src/personal-assistant.js'
 import { agentCreationBoundary } from '../src/agent-creation.js'
 import { chatInputTokenBound } from '../src/chat-model-input.js'
 import { researchConversationPolicy } from '../src/conversation-policy.js'
+import { agentStyleInstruction } from '../src/agent-style.js'
 import { backup,restore } from '../src/recovery.js'
 const profile={displayName:'论文修改助手',introduction:'阅读提供的文字。',capabilityDescription:'讨论论文结构与改写。',personality:'直接、简洁。'}
 const modelResult=(text:string,overrides:Partial<ModelResult>={}):ModelResult=>({text,failure:null,inputTokens:100,outputTokens:100,elapsedMs:10,...overrides})
@@ -54,6 +55,54 @@ export async function setup(models=true){
 }
 
 describe('personal assistant actual HTTP/SQLite; model callbacks are synthetic',{timeout:30000},()=>{
+ it('saves explicit colleague preferences only in this owned Agent, deduplicates replay and preserves corrections across restart without billing',async()=>{
+  const s=await setup(false),agent=(await s.call('createPersonalAgent',profile)).value.data,direct=(await s.call('createDirectConversation',{contactId:agent.id})).value.data,key=randomUUID()
+  const sent=await s.send(direct.id,'以后和我聊天，先给自己的判断，别每次列清单。',0,key)
+  expect(sent.turn).toMatchObject({status:'succeeded',usage:null});expect(sent.turn.memoryReceipt).toBeUndefined()
+  expect((await s.send(direct.id,'以后和我聊天，先给自己的判断，别每次列清单。',0,key)).turn.id).toBe(sent.turn.id)
+  expect(s.count('personal_memories')).toBe(0);expect(s.count('chat_memories')).toBe(1)
+  const query=`?scope=private_agent&scopeId=${agent.id}`
+  let entries=(await s.call('chatMemories',null,{},0,query)).value.data
+  expect(entries[0]).toMatchObject({scope:'private_agent',scopeId:agent.id,version:1});expect(entries[0].content).toContain('先给自己的判断')
+  await s.restart()
+  await s.send(direct.id,'纠正你的交流方式：讨论证据时直接指出薄弱处，并给一个修改建议。')
+  entries=(await s.call('chatMemories',null,{},0,query)).value.data
+  expect(entries).toHaveLength(1);expect(entries[0].version).toBe(2);expect(entries[0].content).toContain('先给自己的判断');expect(entries[0].content).toContain('直接指出薄弱处')
+  expect((await s.call('chatMemoryHistory',null,{id:entries[0].id})).value.data.revisions).toHaveLength(2)
+  expect((await s.call('chatMemories',null,{},1,query)).status).toBe(404)
+  const exported=(await s.call('exportAgentProfile',null,{id:agent.id})).value.data
+  expect(JSON.stringify(exported)).not.toContain('直接指出薄弱处');expect(exported.profile.personality).toBe(profile.personality)
+  let calls=0;await s.tick(async()=>{calls++;return modelResult('不应调用')});expect(calls).toBe(0)
+  await s.send(direct.id,'清除你的交流偏好')
+  expect((await s.call('chatMemories',null,{},0,query)).value.data).toHaveLength(0)
+  expect((await s.call('chatMemoryHistory',null,{id:entries[0].id})).value.data.revisions.at(-1).status).toBe('revoked')
+ })
+ it('uses Agent corrections in subsequent private chat, isolates other roles and friends, and fences an in-flight older preference',async()=>{
+  const s=await setup(),own=await s.own(),agent=(await s.call('createPersonalAgent',profile)).value.data,direct=(await s.call('createDirectConversation',{contactId:agent.id})).value.data
+  await s.send(direct.id,'调整你的交流方式：PRIVATE_STYLE_ONLY_先判断再解释。')
+  await s.send(direct.id,'谈谈这段结论');await s.tick(async input=>{expect(input.prompt).toContain('PRIVATE_STYLE_ONLY');expect(input.system).toContain(researchConversationPolicy);return modelResult('先讨论证据。')})
+  await s.send(own.conversation.id,'你好');await s.tick(async input=>{expect(input.prompt).not.toContain('PRIVATE_STYLE_ONLY');return modelResult('你好。')})
+  await s.own(1)
+  const relationship=(await s.call('requestContact',{}, {id:agent.id},1)).value.data.relationship
+  await s.call('decideContactRequest',{decision:'accept',expectedVersion:relationship.version},{id:relationship.requestId})
+  const other=(await s.call('createDirectConversation',{contactId:agent.id},{},1)).value.data
+  await s.send(other.id,'调整你的交流方式：FOREIGN_STYLE_MUST_NOT_SAVE',1)
+  await s.tick(async input=>{expect(input.prompt).not.toContain('PRIVATE_STYLE_ONLY');return modelResult('只能当前讨论。')})
+  expect(s.db.prepare("SELECT content FROM chat_memories WHERE scope_id=? AND status='active'").all(agent.id)).toHaveLength(1)
+  const late=await s.send(direct.id,'继续分析');let release!:(v:ModelResult)=>void,entered!:()=>void
+  const entering=new Promise<void>(r=>{entered=r}),pending=s.tick(async()=>{entered();return new Promise<ModelResult>(r=>{release=r})});await entering
+  await s.send(direct.id,'清除你的交流偏好')
+  release(modelResult('旧口吻结果不得保存'));await pending
+  expect(await s.turn(late.turn.id)).toMatchObject({status:'cancelled',failure:'INPUT_CHANGED',outputMessageId:null,usage:{inputTokens:100,outputTokens:100}})
+ })
+ it('requires a complete explicit style instruction and keeps existing memories intact at capacity',async()=>{
+  for(const text of ['“以后和我聊天，短一点”','材料：调整你的交流方式：直接一点','调整你的交流方式：直接一点？','调整你的交流方式：直接一点，但不要保存','你问太多了','这次短一点'])expect(agentStyleInstruction(text),text).toBeNull()
+  const s=await setup(false),own=await s.own()
+  for(let i=0;i<10;i++)expect((await s.call('createChatMemory',{scope:'private_agent',scopeId:own.agent.id,content:`保留原记忆${i}`,source:null})).status).toBe(201)
+  const sent=await s.send(own.conversation.id,'调整你的交流方式：直接指出证据不足')
+  expect(sent.turn.status).toBe('succeeded');expect(s.count('chat_memories')).toBe(10);expect(s.count('chat_memory_revisions')).toBe(10)
+  expect(JSON.parse(String(s.db.prepare('SELECT document FROM chat_messages WHERE id=?').get(sent.turn.outputMessageId)!.document)).text).toContain('还没保存')
+ })
  it('keeps independent explicit facts, normalizes a correction topic and clarifies ambiguous corrections without a model',async()=>{
   const s=await setup(false),own=await s.own(),key=randomUUID()
   const coffee=await s.send(own.conversation.id,'记住我喜欢咖啡',0,key),work=await s.send(own.conversation.id,'记住我在 IFRC 工作')
