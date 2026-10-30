@@ -2530,3 +2530,13 @@ typecheck、typecheck:electron、build:web 通过；local-dsh 41 项（含新增
 合并后在 main 重新构建安装包（0.10.74 只在本机、未公开，公开版本直接从 0.10.73 到 0.10.75）。构建时本机批量删除守卫拦截 `research-skills/dist/roles` 与 `.electron-runtime` 的清理，改为移到仓库外 `D:/deepseek-agent/.runtime/trash-20261030/`，仓库脚本未改。安装器 405061949 字节，SHA256 `aac075610ffc89a876dac3db5eebe06de679d6bd5ee6f468ee2d434373004755`，blockmap 416813 字节，成品 FileVersion/ProductVersion 0.10.75。
 
 先建草稿、上传四个附件并核对 digest，再于 10:49:29 公开为稳定 Latest v0.10.75。匿名复查：`/releases/latest` 302 到该标签、`latest.yml` 与本地产物一致、安装器直链 HEAD 200 且 405061949 字节、标签指向 `bb40f76`。未运行安装器、未启动成品、未连真实账号或模型；后台未部署。README、项目总览与简版交接 prompt 同步指向 0.10.75。详见 docs/deployment/acceptcat-0.10.75.md，证据 D:/deepseek-agent/.runtime/release-0.10.75-20261030。
+
+## 2026-10-30 本地聊天历史方案与实施交接文档
+
+负责人要求把类似即时通讯软件的本地缓存问题、解决方案和后台影响写成文档交给其他AI。以实际main/b1fda98和公开0.10.75/tag bb40f76为基线，在独立D:/deepseek-agent/acceptcat-chat-history-docs、docs/chat-history-local-first工作树编写development/chat-local-history-implementation.md，并更新状态和总览入口；原acceptcat-chat-experience及原桌面目录不改动。
+
+文档区分通信本机库与业务正文定位、每条消息轮询与会话同步、已下载历史与当前权限，给出建议存储结构、读取/补缺/撤回/删除/离线身份生命周期、真实代码入口、后台接口复用限制、验收清单和可复制实施prompt。旧WIP5536ffc未合入当前主线；其归档SQLite4项单测通过，但3个新合成顺序反例复现断档跳过、撤回被旧页覆盖和删除行恢复，证据在Git外chat-local-history-audit-20261030。不能直接合旧分支或把单测当作真实离线验收。
+
+本批仅交付说明，不开始产品改造，不改契约/数据库/后台，不打包、合并或公开发布。后台仍contract0.39/schema031，公开Latest仍0.10.75。第一批优先客户端与既有接口；明确afterSequence不覆盖旧消息撤回，必要时再论证最小兼容变更同步接口，部署另行授权。产品CI不因本批文档重复运行。
+
+交付检查：干净文档工作树执行check:content通过（403份Markdown、19份方法定义），git diff --check通过；数量与含生成文档的旧副本不同，未删减仓库文件。只更新文档，不重复产品CI。

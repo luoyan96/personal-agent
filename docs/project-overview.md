@@ -134,6 +134,7 @@ flowchart LR
 | 原三步及各步功能 | [三步计划](development/dsh-team-integration-plan.md)、[任务工作页](development/dsh-task-workspace.md)、[团队协作](development/dsh-team-coordination.md) |
 | 规则、记忆、方法和默认角色 | [规则与记忆](development/dsh-rules-memory.md)、[角色规范](../agents/roles/README.md) |
 | 原生预览和模型菜单 | [原生文件恢复](development/dsh-native-files-workbench.md)、[模型设置](development/workbench-model-settings.md) |
+| 本地优先聊天历史待实施 | [问题、方案、后台边界与实施 prompt](development/chat-local-history-implementation.md)；不是已完成能力 |
 | 新 AI 接手 | [简版交接 prompt](development/project-handoff-prompt.md)、[历史交接记录](development/collaboration-handoff.md) |
 
 开发先读根 `AGENTS.md` 和 [CONTRIBUTING](../CONTRIBUTING.md)，再查事实。使用独立 clone/worktree、最新主线功能分支和 PR；保留其他人的修改。契约、方法、角色分别沿唯一来源修改。共享代码按仓库要求跑 CI；纯文档检查内容与 diff。合并、打包、公开 Release、后台部署分别处理；不以构建或合成验证冒充真实账号与真实科研体验。
