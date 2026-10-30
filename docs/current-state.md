@@ -10,6 +10,10 @@
 
 修法：读取门槛从“连接+同步事件都成功”降为“已登录”（`selfInfo.userID`，未就绪时用科研会话里的 OpenIM 账号顶上），空记录按 0/2/5/12 秒退避重试，恢复联网重置预算，真答过的会话（哪怕是空会话）不再重试；提示语改由纯函数 `historyNotice(source, online)` 决定，只有 `navigator.onLine === false` 才允许说“无法联网”，否则一律“正在连接服务器…”。另：同步完成前读到的页不再让缓存声称“已到顶”。新增 `tests/history-notice.test.mjs` 4 项锁定这条规则。typecheck、typecheck:electron、`test:chat-history` 14、`test:build`、`test:local-dsh` 41、聊天相关 23 项通过。
 
+0.10.77 装上后又出现一次“连接 AcceptCat / 连接失败”，那是启动阶段起本机回环服务失败后退回纯登录页，与聊天读取无关：后台 `/` 与 `/healthz` 均 200，重启应用即连上，且 `chat-history` 里已写入 20 条消息（证明本地优先读取生效）。该分支的 catch 当时把异常整个吞掉，日志里没有任何原因，因此 0.10.78 把它改成最多重试 3 次（间隔 400/800ms）并在每次失败时记录 `research-service-connect`（message/code，不含 header 与 cookie）。用户可见文案不变。
+
+本地打包实测：0.10.78 从启动到 exe 落地约 **11 分钟**（16:58:48 开始，17:03:38 渲染层打包完成，17:09:47 exe、17:09:52 blockmap）。之前报的 25 分钟包含四次被本机安全删除守卫打断后重来，以及冷依赖安装，不是正常水平。只验证界面时可 `npm run build:win -- --dir`，跳过 NSIS 压缩。
+
 ## Windows 0.10.75 已公开为稳定 Latest
 
 负责人要求「合并并发布新的安装包」。四个待合并 PR 以整合 PR [PR147](https://github.com/luoyan96/personal-agent/pull/147) 一次并入 main（2026-10-30 10:12:35，merge commit `bb40f76`），#143/#144/#145/#146 均被标记 MERGED；合并时修正了 #144/#145 里「0.10.73 未公开、Latest 0.10.71、PR143 待合并」等过期事实。
