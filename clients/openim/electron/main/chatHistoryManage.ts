@@ -5,6 +5,7 @@ import { authority } from "./localFolderManage";
 import { getResearchServiceStatus } from "./windowManage";
 import { desktopSessionCookie } from "../utils/desktopServer";
 import { ChatHistoryDatabase } from "../utils/chatHistory";
+import { knownMember, rememberIdentity } from "../utils/chatHistoryIdentity";
 import type { ChatHistoryBridge } from "../../src/types/chatHistory";
 
 type Credentials = { owner: string; service: string; token: string; session: Electron.Session };
@@ -117,14 +118,35 @@ export function registerChatHistoryBridge() {
       return null;
     }
     if (!current) return null;
-    let memberId: string;
-    try {
-      memberId = await sessionMemberId(current);
-    } catch {
-      return null;
+    const identity = path.join(
+      app.getPath("userData"),
+      "chat-history",
+      "identity.json",
+    );
+    // A cookie that was already verified as some member is proof enough to open
+    // that member's file, even with no network. A new login issues a new token,
+    // so a matching hash cannot be a different account.
+    let memberId = knownMember(identity, current.service, current.token);
+    if (memberId) {
+      void sessionMemberId(current)
+        .then((actual) => {
+          if (actual === memberId)
+            rememberIdentity(identity, current!.service, current!.token, actual);
+          // The account behind an unchanged cookie cannot change; a mismatch
+          // only means the stored file was tampered with, so stop trusting it.
+          else reset();
+        })
+        .catch(() => {
+          // Offline: the previously verified identity still stands.
+        });
+    } else {
+      try {
+        memberId = await sessionMemberId(current);
+      } catch {
+        return null;
+      }
+      rememberIdentity(identity, current.service, current.token, memberId);
     }
-    // Verified once per open; page reads then trust only the cookie lease, so a
-    // slow server never blocks an already downloaded page.
     const verified = await credentials(event);
     if (
       !verified ||

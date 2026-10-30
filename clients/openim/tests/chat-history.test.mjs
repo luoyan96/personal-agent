@@ -5,6 +5,10 @@ import os from "node:os";
 import path from "node:path";
 
 import { ChatHistoryDatabase } from "../electron/utils/chatHistory.ts";
+import {
+  knownMember,
+  rememberIdentity,
+} from "../electron/utils/chatHistoryIdentity.ts";
 
 const service = "https://rap.example.org";
 
@@ -158,6 +162,31 @@ test("invalid input is rejected before it reaches the file", async (t) => {
   assert.throws(() => db.revoke("", {}), /无效的消息/);
   assert.throws(() => db.remove([]), /无效的消息选择/);
   assert.throws(() => db.revoke("m1", "nope"), /无效的撤回记录/);
+});
+
+test("an offline launch still knows which account the cookie belongs to", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "acceptcat-identity-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const file = path.join(root, "identity.json");
+
+  assert.equal(knownMember(file, service, "token_a_0123456789"), null);
+  rememberIdentity(file, service, "token_a_0123456789", "member_A");
+
+  // Same cookie: the transcript is readable with no network at all.
+  assert.equal(knownMember(file, service, "token_a_0123456789"), "member_A");
+  // A new login issues a new token, so it must not inherit the old account.
+  assert.equal(knownMember(file, service, "token_b_0123456789"), null);
+  // Another service is a different transcript even with the same token.
+  assert.equal(
+    knownMember(file, "https://other.example.org", "token_a_0123456789"),
+    null,
+  );
+
+  const stored = await fs.readFile(file, "utf8");
+  assert.ok(!stored.includes("token_a_0123456789"), "the cookie itself is never stored");
+
+  await fs.writeFile(file, "not json");
+  assert.equal(knownMember(file, service, "token_a_0123456789"), null);
 });
 
 test("every channel the preload calls has a main-process handler", async () => {
