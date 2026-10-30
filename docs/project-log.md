@@ -1,5 +1,12 @@
 # 项目进展日志
 
+## 2026-10-30：0.10.76 的“无法联网”误报（本地包 0.10.77）
+
+- 负责人装上 0.10.76 后截图：会话区写着“当前无法联网，这段会话本机还没有缓存。”，会话却是空的。先看本机数据再动手：`chat-history/*.sqlite` 存在但四张表全 0 行；OpenIM 核心日志 15:33 仍在 ping/pong；`identity.json` 记录 15:29 已向 `chat.acceptcat.com` 校验成功；SDK 本地库那个会话有 51 条消息。所以是**历史页一次都没落地**，不是断网。
+- 三个成因都是第一批引入的：提示语拿“缓存空 + `sdkReady` 为 false”当断网证据（打开会话头几秒本来就该是 false）；`isCurrent()` 要求响应回来时 `sdkReady` 仍为 true，连接/同步事件在请求途中把它翻回 false 就静默丢弃一页好数据；`verifiedGeneration` 每个 generation 只校验一次，被丢弃的那页永不重试，会话永远空着。这也解释了为什么 0.10.75 会自愈而 0.10.76 不会——旧写法在每次 `sdkReady` 变 true 时都会重新 `loadHistoryMessages`。
+- 修法：读取门槛降为“已登录”（`selfInfo.userID`，未就绪时用科研会话的 OpenIM 账号顶上），不再依赖一次性 SDK 事件；空记录按 0/2/5/12 秒退避重试，`online` 事件重置预算，真答过的会话（含空会话）不再重试；提示语收敛到纯函数 `historyNotice(source, online)`，只有 `navigator.onLine === false` 才说“无法联网”，其余一律“正在连接服务器…”。同步完成前读到的页不让缓存声称“已到顶”。
+- 验证：typecheck、typecheck:electron、`test:chat-history` 14 项（含新增 `tests/history-notice.test.mjs` 4 项）、`test:build`、`test:local-dsh` 41、聊天相关 23 项。仍未做真实账号、断网实机与安装包验证。
+
 ## 2026-10-30：本地优先聊天历史第一批（读缓存 + 断网只读）
 
 - 负责人要求把消息改成微信式本机缓存，先看 PR149 交接文档再直接实施。文档的论断逐条对着代码核过：`useHistoryMessageList` 的历史加载被 `sdkReady`（登录+连接+同步）门控；撤回写独立表 `chat_message_retractions`、在投影时生效（`chat.ts:322`），不产生更大的 sequence，因此 `afterSequence` 永远同步不到旧消息撤回；`chatHistory*` 三个文件只存在于旧分支 `5536ffc`，从未进 main。

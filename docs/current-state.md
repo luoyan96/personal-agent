@@ -1,6 +1,14 @@
 # 新 AI 接手：当前项目状态
 
-更新日期：2026-10-29（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+更新日期：2026-10-30（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+
+## 本地聊天历史：0.10.76 的“无法联网”误报已修（0.10.77 本地包）
+
+负责人装上 0.10.76 后，会话区显示“当前无法联网，这段会话本机还没有缓存。”，而会话本身是有消息的。按本机数据核对：`%APPDATA%\research-wechat-openim\chat-history\*.sqlite` 存在但 `messages`/`meta`/`edges` 全为 0 行；OpenIM 核心日志在 15:33 仍在 `sendPingMessage`/`server Pong Message Received`；`identity.json` 显示 15:29 已向 `https://chat.acceptcat.com` 校验成功；SDK 本地库 `chat_logs_si_u_48c42586…` 有 51 条消息。结论：不是断网，是历史页一次都没落地。
+
+三个成因都在读路径上，全部是第一批引入的：① 提示语是“预测”不是“观察”——缓存为空且 `sdkReady` 恰好为 false 就断言断网，而打开会话的头几秒本来就该是 false；② `isCurrent()` 要求响应回来时 `sdkReady` 仍为 true，连接/同步事件在请求途中把 `sdkReady` 翻回 false 就会**静默丢弃一页好数据**（无消息、无报错、不写缓存）；③ `verifiedGeneration` 每个 generation 只允许校验一次，被丢弃的那页永不重试，会话就一直空着。
+
+修法：读取门槛从“连接+同步事件都成功”降为“已登录”（`selfInfo.userID`，未就绪时用科研会话里的 OpenIM 账号顶上），空记录按 0/2/5/12 秒退避重试，恢复联网重置预算，真答过的会话（哪怕是空会话）不再重试；提示语改由纯函数 `historyNotice(source, online)` 决定，只有 `navigator.onLine === false` 才允许说“无法联网”，否则一律“正在连接服务器…”。另：同步完成前读到的页不再让缓存声称“已到顶”。新增 `tests/history-notice.test.mjs` 4 项锁定这条规则。typecheck、typecheck:electron、`test:chat-history` 14、`test:build`、`test:local-dsh` 41、聊天相关 23 项通过。
 
 ## Windows 0.10.75 已公开为稳定 Latest
 
