@@ -1,6 +1,6 @@
 {
   "name": "research-wechat-openim",
-  "version": "0.10.75",
+  "version": "0.10.78",
   "main": "dist-electron/main/bootstrap.js",
   "description": "AcceptCat · 科研个人助理与课题组协作",
   "author": "blooming",
@@ -36,7 +36,7 @@
     "test:service": "node --test tests/research-service.test.mjs",
     "test:peer-library": "node --test tests/peer-library.test.mjs",
     "test:local-folder": "node --test tests/local-folder.test.mjs",
-    "test:chat-history": "node --test tests/chat-history.test.mjs",
+    "test:chat-history": "node --test tests/chat-history.test.mjs tests/history-notice.test.mjs",
     "test:desktop-work": "node --test tests/desktop-work.test.mjs tests/desktop-flow.test.mjs",
     "test:updates": "node --test tests/desktop-updates.test.mjs",
     "test:planning": "node --test tests/task-planning.test.mjs",

@@ -11,9 +11,12 @@ import { useConversationStore, useUserStore } from "@/store";
 import emitter, { emit } from "@/utils/events";
 
 import { readCachedHistory, saveCachedHistory } from "./chat-history-cache";
+import type { HistorySource } from "./history-notice";
 
 const START_INDEX = 10000;
 const SPLIT_COUNT = 20;
+/** Retry gaps for a read that never landed; the last entry ends the budget. */
+const RETRY_DELAYS = [0, 2000, 5000, 12000];
 const INITIAL_LOAD_STATE = {
   initLoading: true,
   hasMoreOld: true,
@@ -31,7 +34,7 @@ export function useHistoryMessageList() {
   const loadingPage = useRef(false);
   const [historyError, setHistoryError] = useState("");
   /** Where the visible transcript came from: the local cache, or nothing yet. */
-  const [historySource, setHistorySource] = useState<"" | "cache" | "offline">("");
+  const [historySource, setHistorySource] = useState<HistorySource>("");
   const sdkReady = useUserStore(
     (state) =>
       !state.isLogining &&
@@ -40,6 +43,23 @@ export function useHistoryMessageList() {
       Boolean(state.selfInfo.userID),
   );
   const latestSdkReady = useLatest(sdkReady);
+  /**
+   * Logged in, which is all a history page needs. `sdkReady` also waits for
+   * connect and sync to report success through one-shot SDK events; a single
+   * missed event would leave it false forever and the transcript empty with no
+   * way out, so reading is gated on this and the retry below instead. The
+   * research session carries the same OpenIM user, so it can stand in while
+   * `selfInfo` is still being fetched.
+   */
+  const selfUserID = useUserStore((state) => state.selfInfo.userID);
+  const isLogining = useUserStore((state) => state.isLogining);
+  const sessionUserID = useResearchStore((state) => state.session?.user?.userID);
+  const canRead = !isLogining && Boolean(selfUserID || sessionUserID);
+  const latestCanRead = useLatest(canRead);
+  /** Set once a conversation answered for real, so an empty chat is not retried. */
+  const verifiedFor = useRef("");
+  /** Failed read attempts for the conversation on screen. */
+  const retryAttempt = useRef(0);
   const actorGeneration = useResearchStore((state) => state.generation);
 
   useEffect(() => {
@@ -52,7 +72,7 @@ export function useHistoryMessageList() {
 
   const { loading: moreOldLoading, runAsync: getMoreOldMessages } = useRequest(
     async (loadMore = true) => {
-      if (!conversationID || !latestSdkReady.current) return;
+      if (!conversationID || !latestCanRead.current) return;
       if (loadingPage.current) return;
       loadingPage.current = true;
       const reqConversationID = conversationID;
@@ -61,7 +81,7 @@ export function useHistoryMessageList() {
       const userID = useUserStore.getState().selfInfo.userID;
       const isCurrent = () =>
         mounted.current &&
-        latestSdkReady.current &&
+        latestCanRead.current &&
         latestConversationID.current === reqConversationID &&
         historyGeneration === loadGeneration.current &&
         generation === useResearchStore.getState().generation &&
@@ -110,10 +130,13 @@ export function useHistoryMessageList() {
         latestLoadState.current = nextState;
         setLoadState(nextState);
         setHistorySource("");
-        // Only this verified page may teach the cache about continuity.
+        verifiedFor.current = reqConversationID;
+        // Only this verified page may teach the cache about continuity, and
+        // "the beginning was reached" is only trusted after a full sync: a page
+        // read during sync can end early without meaning the history is over.
         void saveCachedHistory(reqConversationID, data.messageList, {
           before: anchor || undefined,
-          reachedStart: data.isEnd,
+          reachedStart: data.isEnd && latestSdkReady.current,
         });
       } catch (error) {
         // A route reload can mount this hook before SDK login. Also consume
@@ -127,6 +150,10 @@ export function useHistoryMessageList() {
             ? ""
             : "历史消息读取失败，可以重试；已加载内容保留。",
         );
+        // Only a machine that is really offline gets to say so; anything else
+        // is a failed read, which the notice above already reports.
+        if (!latestLoadState.current.messageList.length)
+          setHistorySource(navigator.onLine === false ? "offline" : "");
       } finally {
         if (historyGeneration === loadGeneration.current) loadingPage.current = false;
       }
@@ -145,11 +172,11 @@ export function useHistoryMessageList() {
       const cached = await readCachedHistory(conversationID, SPLIT_COUNT);
       if (!mounted.current || generation !== loadGeneration.current) return;
       if (!cached?.messages.length) {
-        // Nothing cached and the SDK is not usable: stop spinning, say so.
-        if (!latestSdkReady.current) {
+        // Nothing cached. A slow login is not an outage, so say only what is
+        // true: offline only when the machine really is, "connecting" otherwise.
+        if (!latestCanRead.current)
           setLoadState((previous) => ({ ...previous, initLoading: false }));
-          setHistorySource("offline");
-        }
+        setHistorySource(navigator.onLine === false ? "offline" : "connecting");
         return;
       }
       const preState = latestLoadState.current;
@@ -182,6 +209,8 @@ export function useHistoryMessageList() {
   const loadHistoryMessages = useCallback(() => {
     loadGeneration.current++;
     loadingPage.current = false;
+    verifiedFor.current = "";
+    retryAttempt.current = 0;
     setHistoryError("");
     setHistorySource("");
     latestLoadState.current = INITIAL_LOAD_STATE;
@@ -189,15 +218,14 @@ export function useHistoryMessageList() {
     void hydrateFromCache(loadGeneration.current);
   }, [hydrateFromCache]);
 
-  // Verification is the one call the cache cannot make: read the newest page
-  // from the server and let it repair the cache. It is claimed once per reset
-  // so the two effects below cannot both fire it for one conversation.
-  const verifiedGeneration = useRef("");
+  /**
+   * Verification is the one call the cache cannot make: read the newest page
+   * from the server and let it repair the cache. It is not claimed once and
+   * forgotten - an attempt that never lands leaves an empty transcript, so the
+   * effect below retries until a page really answers.
+   */
   const verifyHistory = useCallback(() => {
-    if (!conversationID || !latestSdkReady.current) return;
-    const token = `${conversationID}:${loadGeneration.current}`;
-    if (verifiedGeneration.current === token) return;
-    verifiedGeneration.current = token;
+    if (!conversationID || !latestCanRead.current) return;
     void getMoreOldMessages(false);
   }, [conversationID, getMoreOldMessages]);
 
@@ -210,7 +238,42 @@ export function useHistoryMessageList() {
   // Login, connection and sync can finish after the page is already readable.
   useEffect(() => {
     verifyHistory();
-  }, [sdkReady, verifyHistory]);
+  }, [canRead, sdkReady, verifyHistory]);
+
+  /**
+   * A read that never lands must not leave the transcript blank forever. Retry
+   * a few times with a widening gap while nothing is on screen; a conversation
+   * that answered - even with no messages - is never retried.
+   */
+  useEffect(() => {
+    if (!conversationID || !canRead) return;
+    if (loadState.messageList.length || moreOldLoading) return;
+    if (verifiedFor.current === conversationID) return;
+    const delay = RETRY_DELAYS[retryAttempt.current];
+    if (delay === undefined) return;
+    const timer = setTimeout(() => {
+      retryAttempt.current += 1;
+      verifyHistory();
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [
+    conversationID,
+    canRead,
+    loadState.messageList.length,
+    moreOldLoading,
+    verifyHistory,
+  ]);
+
+  // Coming back online is a fresh reason to try, not a continuation of the old
+  // failure budget.
+  useEffect(() => {
+    const onOnline = () => {
+      retryAttempt.current = 0;
+      verifyHistory();
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [verifyHistory]);
 
   useEffect(() => {
     const pushNewMessage = (message: MessageItem) => {
