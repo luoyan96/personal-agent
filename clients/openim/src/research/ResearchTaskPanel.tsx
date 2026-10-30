@@ -39,7 +39,7 @@ export function ResearchTaskPanel({
     [inviteScope, setInviteScope] = useState("");
   const [transferToMemberId, setTransferToMemberId] = useState(""),
     [transferScope, setTransferScope] = useState("");
-  const [depTitles, setDepTitles] = useState<Record<string, string>>({});
+  const [depState, setDepState] = useState<Record<string, { title: string; status?: string }>>({});
   const members = useResearchRead(
     (signal) =>
       researchApi("members", {
@@ -57,15 +57,17 @@ export function ResearchTaskPanel({
   const operation = usePersonalOperation(true, `research-task:${taskId}`);
   const dependencyIds = JSON.stringify(data?.data && 'task' in data.data ? data.data.task.dependencies.map(dep => dep.taskId) : []);
   useEffect(() => {
-    setDepTitles({});
+    setDepState({});
     const controller = new AbortController(), { isCurrent } = operation.capture();
     void Promise.all((JSON.parse(dependencyIds) as string[]).map(async id => {
       try {
         const response = await researchApi('task', { params: { id }, signal: controller.signal });
-        return [id, 'task' in response.data ? response.data.task.title : response.data.title] as const;
-      } catch { return [id, id] as const; }
+        return [id, 'task' in response.data
+          ? { title: response.data.task.title, status: response.data.task.status }
+          : { title: response.data.title }] as const;
+      } catch { return [id, { title: id }] as const; }
     })).then(pairs => {
-      if (!controller.signal.aborted && isCurrent()) setDepTitles(Object.fromEntries(pairs));
+      if (!controller.signal.aborted && isCurrent()) setDepState(Object.fromEntries(pairs));
     });
     return () => controller.abort();
   }, [operation.scope, dependencyIds]);
@@ -96,7 +98,7 @@ export function ResearchTaskPanel({
       }),
     );
   };
-  const command = async (run: () => Promise<unknown>) => {
+  const command = async (run: () => Promise<unknown>, after?: () => void) => {
     if (inFlight.current) return;
     const { isCurrent } = operation.capture();
     if (!isCurrent()) return;
@@ -106,6 +108,8 @@ export function ResearchTaskPanel({
     try {
       await run();
       if (!isCurrent()) return;
+      // 权限已被收回的动作（例如拒绝邀请）不能再刷新本任务，直接交给调用方跳走。
+      if (after) { after(); return; }
       await refresh();
       if (isCurrent()) await onChanged?.();
     } catch (err) {
@@ -159,16 +163,20 @@ export function ResearchTaskPanel({
                     content: value.pendingInvitation?.scope,
                     okText: decision === "accepted" ? "接受任务" : "拒绝邀请",
                     onOk: () =>
-                      command(() =>
-                        researchApi("invitationDecision", {
-                          params: { id: value.pendingInvitation!.id },
-                          body: {
-                            expectedVersion: value.pendingInvitation!.version,
-                            expectedTaskVersion: value.version,
-                            decision,
-                            comment: null,
-                          },
-                        }),
+                      command(
+                        () =>
+                          researchApi("invitationDecision", {
+                            params: { id: value.pendingInvitation!.id },
+                            body: {
+                              expectedVersion: value.pendingInvitation!.version,
+                              expectedTaskVersion: value.version,
+                              decision,
+                              comment: null,
+                            },
+                          }),
+                        decision === "declined"
+                          ? () => navigate("/workbench?view=tasks&taskKind=research")
+                          : undefined,
                       ),
                   })
                 }
@@ -201,6 +209,10 @@ export function ResearchTaskPanel({
     (a, b) => (!a || b.revision > a.revision ? b : a),
     undefined,
   );
+  // 依赖不再是硬阻塞：只提示还有前置没完成，不阻挡先开始自己的人。
+  const pendingPrerequisites = Object.values(depState).filter(
+    (dep) => dep.status && !["completed", "cancelled"].includes(dep.status),
+  ).length;
   return (
     <div className="research-task-detail space-y-3">
       <h3 className="text-base font-bold">{task.title}</h3>
@@ -251,6 +263,11 @@ export function ResearchTaskPanel({
           ? "（待确认）"
           : ""}
       </p>
+      {pendingPrerequisites > 0 && (
+        <p className="research-task-prerequisite-hint">
+          有前置任务尚未完成，你可以先开始自己这部分。
+        </p>
+      )}
       <details>
         <summary>时间与依赖</summary>
         <p>承诺时间：{planDate(task.schedule.committed) || "未提供"}</p>
@@ -259,7 +276,7 @@ export function ResearchTaskPanel({
           {task.dependencies
             .map(
               (d) =>
-                `${depTitles[d.taskId] ?? d.taskId}${
+                `${depState[d.taskId]?.title ?? d.taskId}${
                   d.requiredRevision ? ` · 第${d.requiredRevision}版` : ""
                 }`,
             )

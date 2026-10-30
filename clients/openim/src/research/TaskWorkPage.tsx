@@ -25,6 +25,16 @@ const phases = {
   failed: "本轮未完成",
 };
 
+/** Electron 的 IPC 报错会带 "Error invoking remote method 'x': error." 或 "Error:" 前缀，只留人话。 */
+export function readableTaskError(error: unknown, fallback: string) {
+  const text =
+    typeof error === "string" ? error : error instanceof Error ? error.message : "";
+  const stripped = text
+    .replace(/^Error invoking remote method '[^']*':\s*/i, "")
+    .replace(/^error[.:]\s*/i, "");
+  return stripped.trim() || fallback;
+}
+
 function Section({
   title,
   hint,
@@ -275,7 +285,7 @@ export function TaskWorkPage({
       } catch (e) {
         if (!cancelled) {
           setState(undefined);
-          setConnectionError(e instanceof Error ? e.message : "本地进度暂不可用。");
+          setConnectionError(readableTaskError(e, "本地进度暂不可用。"));
         }
       } finally {
         reading = false;
@@ -309,7 +319,7 @@ export function TaskWorkPage({
       }
     } catch (e) {
       if (isCurrent()) {
-        setError(e instanceof Error ? e.message : "操作未完成，请重试。");
+        setError(readableTaskError(e, "操作未完成，请重试。"));
         await refresh().catch(() => {});
       }
     } finally {

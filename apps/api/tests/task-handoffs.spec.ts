@@ -56,7 +56,8 @@ describe('reviewed handoff integration',{timeout:30000},()=>{
  })
  it('an old declined handoff cannot restore the wrong person during a later handoff',async()=>{
   const s=await setup(),id=await s.create();await s.transfer(id,0,'member_C');await s.decide(id,2,'declined')
-  await s.ok('tasks/'+id+'/invitations',{expectedVersion:(await s.task(id)).version,memberId:'member_B',scope:'B scope',schedule})
+  // 拒绝后任务回到派发人手里，他不能再邀请别人，只能再转交出去。
+  await s.transfer(id,0,'member_B')
   await s.decide(id,1);await s.transfer(id,1,'member_C')
   const result=await s.ok('tasks/'+id+'/invitations/cancel',{expectedVersion:(await s.task(id,1)).version},1)
   expect(result.leadId).toBe('member_B');expect(result.status).toBe('ready')

@@ -515,7 +515,15 @@ export class Collaboration {
           const row=this.db.prepare('SELECT document FROM assignments WHERE id=?').get(handoff.from_assignment_id!)!
           const old=Assignment.parse(JSON.parse(String(row.document)));old.status='transferred';old.version++;this.saveAssignment(old)
         }
-      } else { if(body.committed) fail('VALIDATION_ERROR');task.status = 'unassigned'; this.db.prepare("DELETE FROM task_access WHERE task_id=? AND member_id=? AND access='summary'").run(task.id, this.actor.id) }
+      } else {
+        if (body.committed) fail('VALIDATION_ERROR')
+        // 拒绝即退回派发人：补一条 accepted 承接记录，他才能自己开始或再转交出去。
+        task.leadId = task.initiatorId
+        this.createAssignment(task, 'self', task.initiatorId, offer.scope, task.schedule)
+        this.coordination.acceptedState(task)
+        this.coordination.stopDispatch(task.id)
+        this.db.prepare("DELETE FROM task_access WHERE task_id=? AND member_id=? AND access='summary'").run(task.id, this.actor.id)
+      }
       if(handoff) {
         if(![task.initiatorId,task.reviewerId,...task.participantIds].includes(String(handoff.from_member_id)))this.db.prepare("UPDATE task_access SET access='revoked' WHERE task_id=? AND member_id=?").run(task.id,handoff.from_member_id!)
         this.db.prepare('UPDATE task_handoffs SET status=? WHERE offer_id=?').run(body.decision,assignment.id)

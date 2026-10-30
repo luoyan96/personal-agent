@@ -134,6 +134,12 @@ function PlanningAgentSession({
   const [failure, setFailure] = useState("");
   const [storageFailure, setStorageFailure] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  // 离开规划页（full 变回 false）时收起，别让展开态继续盖住任务/课题组等其他视图。
+  const wasFull = useRef(full);
+  useEffect(() => {
+    if (wasFull.current && !full) setExpanded(false);
+    wasFull.current = full;
+  }, [full]);
   const [busy, setBusy] = useState(false);
   const [omitted, setOmitted] = useState(0);
   const [colleague, setColleague] = useState<ColleagueAgent>();
