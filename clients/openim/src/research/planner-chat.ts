@@ -1,29 +1,15 @@
 import { Id, Plan, PlanInput, routes } from "@research-agent-platform/contracts";
 import type { RequestFor, ResponseFor } from "@research-agent-platform/contracts";
 
-export type PlannerTaskShape = "auto" | "single" | "multiple";
-type TaskDraft = ReturnType<typeof PlanInput.parse>;
+export type PlannerTaskShape = "auto" | "multiple";
 
-// Explicit user corrections override automatic draft sizing; creation still needs confirmation.
-export function plannerTaskShape(
-  text: string,
-  previous: PlannerTaskShape = "auto",
-): PlannerTaskShape {
+// An explicit request to split is the only shape hint; the model still decides
+// the actual content and count. Creation always needs confirmation.
+export function plannerTaskShape(text: string): PlannerTaskShape {
   const value = text.trim();
-  if (/[“”「」『』"<>?？]/.test(value)) return previous;
+  if (/[“”「」『』"<>?？]/.test(value)) return "auto";
   const start =
     "^(?:(?:请|帮我|给我|我想|我需要|我|现在|就|还是|把这个|只需要|只要|只)\\s*)*";
-  if (
-    new RegExp(
-      start +
-        "(?:(?:创建|建立|安排|改为|改成|合并(?:成|为)?|合成|合为|整合成)\\s*)?(?:1|一|单)\\s*(?:个|项)?任务",
-    ).test(value) ||
-    new RegExp(
-      start +
-        "(?:不要|别|不)(?:拆(?:分)?|分开|(?:创建|建立|分成)\\s*(?:多|几|若干)[个项]?任务)",
-    ).test(value)
-  )
-    return "single";
   if (
     new RegExp(
       start +
@@ -31,94 +17,7 @@ export function plannerTaskShape(
     ).test(value)
   )
     return "multiple";
-  return previous;
-}
-
-// Normalize the reviewed draft, not just its label. Preserve all content and
-// refuse changes that would hide invalid dependencies or merge authorizations.
-export function plannerTaskInput(input: TaskDraft, shape: PlannerTaskShape): TaskDraft {
-  if (shape !== "single" || input.proposedItems.length <= 1) return input;
-  const items = input.proposedItems;
-  if (
-    items.some((item) =>
-      [item.title, item.goal, item.deliverable, item.acceptanceCriteria].some(
-        (value) => !value.trim(),
-      ),
-    )
-  )
-    throw new Error("原步骤缺少任务内容，请先补齐后再创建。");
-  const byId = new Map(items.map((item) => [item.id, item]));
-  const visited = new Set<string>(),
-    visiting = new Set<string>();
-  const visit = (id: string) => {
-    if (!byId.has(id) || visiting.has(id))
-      throw new Error("原步骤有无效或循环依赖，请先调整；不会通过合并隐藏问题。");
-    if (visited.has(id)) return;
-    visiting.add(id);
-    for (const dependency of byId.get(id)!.dependencies) visit(dependency);
-    visiting.delete(id);
-    visited.add(id);
-  };
-  if (byId.size !== items.length) throw new Error("原步骤标识重复，请先调整后再创建。");
-  items.forEach((item) => visit(item.id));
-  const first = items[0],
-    last = items[items.length - 1];
-  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-  if (
-    items.some(
-      (item) =>
-        item.allocation.kind === "public_agent" ||
-        item.budget !== null ||
-        !same(item.allocation, first.allocation) ||
-        !same(item.inputArtifactIds, first.inputArtifactIds),
-    )
-  )
-    throw new Error(
-      "这份草案含不同分工或执行授权，不能直接合成一项。可以继续说由谁负责这项任务，或明确选择分开创建。",
-    );
-  const blankSchedule = (item: typeof first) =>
-    Object.values(item.schedule).every((value) => value === null);
-  const schedule = items.every((item) => same(item.schedule, first.schedule))
-    ? first.schedule
-    : items.slice(0, -1).every(blankSchedule)
-    ? last.schedule
-    : undefined;
-  if (!schedule)
-    throw new Error(
-      "这份草案有不同的步骤日程。请先说这项任务的整体安排，或明确选择分开创建；原日期都保留着。",
-    );
-  const join = (field: "deliverable" | "acceptanceCriteria") =>
-    items.map((item, i) => `${i + 1}. ${item.title}\n${item[field]}`).join("\n\n");
-  const steps = items
-    .map((item, i) => {
-      const dependencies = item.dependencies.map(
-        (id) => items.findIndex((step) => step.id === id) + 1,
-      );
-      return `${i + 1}. ${item.title}\n${item.goal}${
-        dependencies.length ? `\n前置步骤：${dependencies.join("、")}` : ""
-      }`;
-    })
-    .join("\n\n");
-  const combined = {
-    ...input,
-    proposedItems: [
-      {
-        ...first,
-        title: input.goal.slice(0, 200),
-        goal: `${input.goal}\n\n执行步骤（同一项任务内）：\n\n${steps}`,
-        deliverable: join("deliverable"),
-        acceptanceCriteria: join("acceptanceCriteria"),
-        dependencies: [],
-        schedule,
-      },
-    ],
-  };
-  const parsed = PlanInput.safeParse(combined);
-  if (!parsed.success)
-    throw new Error(
-      "完整步骤合成一项后超出了任务说明容量。原内容没有删减，请继续精简说明后再创建。",
-    );
-  return parsed.data;
+  return "auto";
 }
 
 export type ChatPlan = ResponseFor<"getPlan">["data"];
@@ -135,7 +34,6 @@ export type CreateIntent = {
   key: string;
   plan: ChatPlan;
   deadline?: DeadlineChoice;
-  taskShape?: PlannerTaskShape;
 };
 export type PlannerThread = {
   id: string;
@@ -149,7 +47,6 @@ export type PlannerThread = {
   creating?: CreateIntent;
   deadline?: DeadlineChoice;
   deadlineQuestion?: boolean;
-  taskShape?: PlannerTaskShape;
   taskIds?: string[];
   updatedAt: string;
 };
@@ -217,7 +114,6 @@ export const newPlannerThread = (): PlannerThread => ({
   title: "新的任务规划",
   messages: [],
   draft: "",
-  taskShape: "auto",
   updatedAt: new Date().toISOString(),
 });
 export const plannerCacheKey = (service: string, actor: string, lab: string) =>
@@ -261,8 +157,6 @@ export function readPlannerHistory(raw: string | null): PlannerHistory | undefin
                 Number.isSafeInteger(m.plan.version))),
         ) &&
         validDeadline(t.deadline) &&
-        (t.taskShape === undefined ||
-          ["auto", "single", "multiple"].includes(t.taskShape)) &&
         (t.deadlineQuestion === undefined || typeof t.deadlineQuestion === "boolean") &&
         (!t.taskIds ||
           (Array.isArray(t.taskIds) &&
@@ -276,19 +170,26 @@ export function readPlannerHistory(raw: string | null): PlannerHistory | undefin
         (!t.creating ||
           (/^[A-Za-z0-9_-]{16,128}$/.test(t.creating.key) &&
             Plan.safeParse(t.creating.plan).success &&
-            (t.creating.taskShape === undefined ||
-              ["auto", "single", "multiple"].includes(t.creating.taskShape)) &&
             validDeadline(t.creating.deadline))),
     );
     if (!threads.length) return;
+    // Older transcripts stored a task shape. The one-task merge it selected no
+    // longer exists, so the shape is dropped, and a pending write reviewed
+    // against merged content is not resumed under a different task count.
+    const restored = threads.map((thread) => {
+      const stored = thread as PlannerThread & {
+        taskShape?: unknown;
+        creating?: CreateIntent & { taskShape?: unknown };
+      };
+      const { taskShape: _shape, creating, ...base } = stored;
+      if (!creating) return base;
+      const { taskShape: reviewed, ...intent } = creating;
+      if (reviewed === "single") return base;
+      return { ...base, creating: intent };
+    });
     return {
       active: threads.some((t) => t.id === value.active) ? value.active : threads[0].id,
-      threads: threads.map((t) => ({
-        ...t,
-        // Keep the previously reviewed preview and any pending write stable.
-        // Every new request starts automatic, with conversation carried in its prompt.
-        taskShape: t.creating?.taskShape ?? t.taskShape ?? "auto",
-      })),
+      threads: restored,
     };
   } catch {
     return;
@@ -315,10 +216,8 @@ export function planningPrompt(
   const instructions = `这里是安排任务的对话。用户说要做的事，默认整理为一项可创建的任务；目标足够就给待确认草案，材料、日期可后续补，不必先走完咨询流程。沿用助手角色与交流偏好，自然中文接着聊，有依据地给判断，不套行政摘要；卡住帮一小步，不同意给理由和替代办法，不虚构读过材料、共同经历或进展。编辑保留适用任务ID。
 
 任务数量规则：${
-    taskShape === "single"
-      ? "本次只创建一项任务，proposedItems必须只有一项。整理、实验、检查、写作等执行步骤写进这项任务的goal，交付与验收写入对应说明；一个目标包含多步不等于多项任务，不为流程阶段另建任务。"
-      : taskShape === "multiple"
-      ? "用户已明确要求分开创建，将独立工作写成多项proposedItems；不强行凑数。"
+    taskShape === "multiple"
+      ? "用户这轮明确要分开安排：按用户说的数量和边界写成多项proposedItems；每项都要有独立交付价值，不强行凑数。"
       : "由你根据实际工作判断任务粒度，不要求用户选择模式。普通目标默认一项proposedItem：完善论文、比较多个模型、准备报告等，准备、实验、检查、写作是内部步骤，不拆成整套待办。只有工作确实需要独立分工、分别交付和跟踪，或是包含多个独立成果与实际前置关系的大项目，才返回多项proposedItems；说明为什么需要分开，不凭‘难’‘重要’或篇数、动作数量拆分，也不为展示依赖图而凑任务。多项中的每项都要有独立交付价值；优先给最少、够用的任务。用户明确说合成一项或分开安排时按其意图重写完整草案。"
   }这是任务结构规则，人设和方法建议不能改变。
 
@@ -445,18 +344,14 @@ export function needsDeadlineClarification(text: string, choice?: DeadlineChoice
     /截止|周[一二三四五六日天]|星期|今天|明天|后天|下周|月|年|\d[-/:]|点|时/.test(text)
   );
 }
-export function plannerPlanInput(
-  plan: ChatPlan,
-  deadline?: DeadlineChoice,
-  taskShape: PlannerTaskShape = "auto",
-) {
+export function plannerPlanInput(plan: ChatPlan, deadline?: DeadlineChoice) {
   const input = PlanInput.parse({
     labId: plan.labId,
     goal: plan.goal,
     proposedItems: plan.proposedItems,
     unresolvedQuestions: plan.unresolvedQuestions,
   });
-  if (!deadline) return plannerTaskInput(input, taskShape);
+  if (!deadline) return input;
   if (typeof deadline.target === "number" && !input.proposedItems[deadline.target])
     throw new Error("截止安排对应的步骤不存在，请继续说明要调整哪一项。");
   input.proposedItems = input.proposedItems.map((item, index) =>
@@ -483,7 +378,7 @@ export function plannerPlanInput(
         }
       : item,
   );
-  return plannerTaskInput(input, taskShape);
+  return input;
 }
 export function planReplyText(plan: ChatPlan) {
   // The model writes one conversational clarification. Older servers/plans may
@@ -572,18 +467,8 @@ export async function createPlannerTasks(
   const current = (await call("getPlan", { params: { id: intent.plan.id } })).data;
   check();
   // Old pending confirmations may already have succeeded. Reconcile them as
-  // originally reviewed, but never resume an unconfirmed multi-task write under
-  // the new one-task default without another review.
-  const legacyMultiple = !intent.taskShape && intent.plan.proposedItems.length > 1;
-  if (legacyMultiple && current.status !== "confirmed")
-    throw new Error(
-      "上次多任务创建尚未确认。请点“读取最新方案”，重新核对任务数量后再创建；原步骤保留。",
-    );
-  const expected = plannerPlanInput(
-    intent.plan,
-    intent.deadline,
-    legacyMultiple ? "multiple" : intent.taskShape || "single",
-  );
+  // originally reviewed; the reviewed draft count is always the written count.
+  const expected = plannerPlanInput(intent.plan, intent.deadline);
   const fingerprint = (p: ChatPlan | typeof expected) =>
     JSON.stringify(
       PlanInput.parse({

@@ -13,15 +13,15 @@ import { createPlannerTasks, plannerPlanInput } from "../src/research/planner-ch
 
 // Real local HTTP and SQLite using the unchanged current API. No model, SDK,
 // personal credentials, live service or user material is involved.
-for (const { lost, shape, count, taskCount } of [
-  { lost: "editPlan", shape: "single", count: 7, taskCount: 1 },
-  { lost: "confirmPlan", shape: "single", count: 7, taskCount: 1 },
-  { lost: "confirmPlan", shape: "auto", count: 1, taskCount: 1 },
-  { lost: "confirmPlan", shape: "auto", count: 3, taskCount: 3 },
+for (const { lost, count } of [
+  { lost: "editPlan", count: 7 },
+  { lost: "confirmPlan", count: 7 },
+  { lost: "confirmPlan", count: 1 },
+  { lost: "confirmPlan", count: 3 },
 ])
-  test(`${shape} draft creates exactly ${taskCount} real task(s) after a lost ${lost} receipt`, async () => {
+  test(`a ${count}-item draft creates exactly ${count} real task(s) after a lost ${lost} receipt`, async () => {
     const testRoot = realpathSync(tmpdir());
-    const directory = mkdtempSync(join(testRoot, "acceptcat-single-task-"));
+    const directory = mkdtempSync(join(testRoot, "acceptcat-planner-task-"));
     const config = readConfig({
       NODE_ENV: "test",
       DATABASE_PATH: join(directory, "platform.sqlite"),
@@ -106,24 +106,20 @@ for (const { lost, shape, count, taskCount } of [
       const intent = {
         key: randomUUID(),
         plan,
-        taskShape: shape,
         deadline: { date: "2026-11-01", target: "final" },
       };
-      const preview = plannerPlanInput(plan, intent.deadline, shape);
+      const preview = plannerPlanInput(plan, intent.deadline);
       failAfterWrite = true;
       await assert.rejects(
         createPlannerTasks(call, intent, () => true),
         /response lost/,
       );
       const result = await createPlannerTasks(call, intent, () => true);
-      assert.equal(result.taskIds.length, taskCount);
-      assert.equal(
-        Number(db.prepare("SELECT count(*) n FROM tasks").get().n),
-        taskCount,
-      );
+      assert.equal(result.taskIds.length, count);
+      assert.equal(Number(db.prepare("SELECT count(*) n FROM tasks").get().n), count);
       assert.equal(
         Number(db.prepare("SELECT count(*) n FROM assignments").get().n),
-        taskCount,
+        count,
       );
       assert.equal(
         calls.filter((name) => name === "editPlan").length,
@@ -134,21 +130,19 @@ for (const { lost, shape, count, taskCount } of [
       const detail = (await call("task", { params: { id: result.taskIds.at(-1) } }))
         .data.task;
       assert.equal(detail.title, preview.proposedItems.at(-1).title);
-      if (shape === "single")
-        for (let i = 1; i <= count; i++) assert(detail.goal.includes(`Purpose ${i}`));
-      else assert.equal(detail.goal, items.at(-1).goal);
+      assert.equal(detail.goal, items.at(-1).goal);
       assert.equal(detail.schedule.hardDeadline.value.date, "2026-11-01");
       assert.equal(result.plan.version, 3);
       assert.equal(
         (await call("getPlan", { params: { id: plan.id } })).data.proposedItems.length,
-        taskCount,
+        count,
       );
     } finally {
       if (app) await app.close();
       db.close();
       // Exact test-owned temporary directory, no user/runtime data.
       assert.equal(dirname(realpathSync(directory)), testRoot);
-      assert(basename(directory).startsWith("acceptcat-single-task-"));
+      assert(basename(directory).startsWith("acceptcat-planner-task-"));
       rmSync(directory, { recursive: true, force: true });
     }
   });
