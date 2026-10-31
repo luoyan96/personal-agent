@@ -274,7 +274,7 @@ export class ChatWorker {
             outputStage='persistence'
             const work=createWork(s,{title:coordinated.title,goal:currentTurnText(s,turn.id),contactIds:coordinated.contactIds,agentContactId:null},{turnId:turn.id,conversationId:group.id,messageId:turn.inputMessageId})
             turn.assistantReceipt={kind:'work_task',taskId:work.id,conversationId:null,status:'proposed'}
-            const message=s.message(group.id,{senderContactId:turn.agentContactId,origin:'service',text:`已保存“${work.title}”协作任务建议。确认后才会创建群和发送邀请；其他参与者仍需自行接受，尚未执行或完成。`,mentions:[],resources:[],actionIds:[],turnId:turn.id})
+            const message=s.message(group.id,{senderContactId:turn.agentContactId,origin:'service',text:`已保存“${work.title}”协作任务建议。确认后才会创建群并直接加入所选成员；任务承接仍需各自接受，尚未执行或完成。`,mentions:[],resources:[],actionIds:[],turnId:turn.id})
             turn.status='succeeded';turn.outputMessageId=message.id;turn.failure=null
           }else if(coordinated?.kind==='delegate'){
             outputStage='persistence'

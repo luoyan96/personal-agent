@@ -165,54 +165,69 @@ export async function connectResearchService(address: unknown) {
   attemptedServiceAddress = target;
   serviceConnected = false;
   if (!mainWindow) throw new Error("桌面窗口尚未就绪");
-  try {
-    await desktopServer?.close();
-    rendererOrigin = "";
-    const logger = getLogger(global.pathConfig.logsPath);
-    desktopServer = await startDesktopServer(
-      global.pathConfig.distPath,
-      target,
-      (failure) => logger.warn("desktop-api-transport", failure),
-      desktopTransport,
-    );
-    rendererOrigin = desktopServer.origin;
-    await mainWindow.loadURL(rendererOrigin);
-    getStore().set("researchServiceUrl", target);
-    serviceConnectionError = "";
-    serviceConnected = true;
-    // Chromium initializes its cookie service with the first navigation. Load
-    // the bundled UI before attempting a migration on an empty new profile.
-    const cookies = mainWindow.webContents.session.cookies;
-    const cookieName = desktopSessionCookie(target);
-    const existing = await cookies.get({ url: rendererOrigin, name: cookieName });
-    if (!existing.length) {
-      // Carry forward this service's own signed session after updating the desktop.
-      // The token stays inside Electron's cookie store and is never sent to the UI.
-      const previous = (await cookies.get({ url: target, name: "rap_session" }))[0];
-      if (previous) {
-        await cookies.set({
-          url: rendererOrigin,
-          name: cookieName,
-          value: previous.value,
-          httpOnly: true,
-          secure: false,
-          path: "/",
-          sameSite: "lax",
-          ...(previous.expirationDate
-            ? { expirationDate: previous.expirationDate }
-            : {}),
-        });
-        mainWindow.reload();
+  const logger = getLogger(global.pathConfig.logsPath);
+  // Starting a loopback listener and loading it can fail once for reasons that
+  // are gone a moment later (a port the OS refuses this instant, a navigation
+  // that gets replaced). Give it three tries and write down why each one lost,
+  // so a report of "连接失败" can be traced instead of guessed at.
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await desktopServer?.close();
+      rendererOrigin = "";
+      desktopServer = await startDesktopServer(
+        global.pathConfig.distPath,
+        target,
+        (failure) => logger.warn("desktop-api-transport", failure),
+        desktopTransport,
+      );
+      rendererOrigin = desktopServer.origin;
+      await mainWindow.loadURL(rendererOrigin);
+      getStore().set("researchServiceUrl", target);
+      serviceConnectionError = "";
+      serviceConnected = true;
+      // Chromium initializes its cookie service with the first navigation. Load
+      // the bundled UI before attempting a migration on an empty new profile.
+      const cookies = mainWindow.webContents.session.cookies;
+      const cookieName = desktopSessionCookie(target);
+      const existing = await cookies.get({ url: rendererOrigin, name: cookieName });
+      if (!existing.length) {
+        // Carry forward this service's own signed session after updating the desktop.
+        // The token stays inside Electron's cookie store and is never sent to the UI.
+        const previous = (await cookies.get({ url: target, name: "rap_session" }))[0];
+        if (previous) {
+          await cookies.set({
+            url: rendererOrigin,
+            name: cookieName,
+            value: previous.value,
+            httpOnly: true,
+            secure: false,
+            path: "/",
+            sameSite: "lax",
+            ...(previous.expirationDate
+              ? { expirationDate: previous.expirationDate }
+              : {}),
+          });
+          mainWindow.reload();
+        }
       }
+      return;
+    } catch (error) {
+      // Transport metadata only: the message and code, never headers or cookies.
+      const detail = error as { message?: string; code?: string };
+      logger.error("research-service-connect", {
+        attempt,
+        message: detail?.message ?? String(error),
+        ...(detail?.code ? { code: detail.code } : {}),
+      });
+      rendererOrigin = "";
+      await desktopServer?.close().catch(() => {});
+      desktopServer = undefined;
+      if (attempt < 3) await new Promise((done) => setTimeout(done, 400 * attempt));
     }
-  } catch {
-    serviceConnectionError = "连接失败，请核对地址和网络，再重新连接。";
-    rendererOrigin = "";
-    await desktopServer?.close();
-    desktopServer = undefined;
-    await mainWindow.loadFile(global.pathConfig.indexHtml);
-    throw new Error("连接失败，请核对服务地址和网络");
   }
+  serviceConnectionError = "连接失败，请核对地址和网络，再重新连接。";
+  await mainWindow.loadFile(global.pathConfig.indexHtml);
+  throw new Error("连接失败，请核对服务地址和网络");
 }
 export function getResearchServiceStatus() {
   return {

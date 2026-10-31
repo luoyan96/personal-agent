@@ -3,7 +3,7 @@ import { resolve, dirname, relative, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
-const ignored = new Set(['.git', 'node_modules', 'dist', 'coverage', '.runtime'])
+const ignored = new Set(['.git', 'node_modules', 'dist', 'coverage', '.runtime', 'release', '.set-aside'])
 const files = []
 async function visit(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {

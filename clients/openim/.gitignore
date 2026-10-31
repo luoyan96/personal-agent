@@ -18,6 +18,8 @@ release
 .dsh-runtime/
 .dsh-download/
 *.local
+# pnpm leaves zero-byte staging files here when an install is interrupted
+_tmp_*
 
 # Editor directories and files
 .vscode/.debug.env

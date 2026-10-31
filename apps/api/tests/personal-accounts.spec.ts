@@ -190,15 +190,15 @@ describe('public accounts and owned models over real local HTTP, synthetic crede
   expect(groupResponse.status,groupResponse.text).toBe(200)
   const group=groupResponse.value.data
   expect(group.taskIds).toEqual([])
-  expect(group.members.find((m:any)=>m.contactId===peer.id).status).toBe('invited')
+  expect(group.members.find((m:any)=>m.contactId===peer.id).status).toBe('joined')
   expect(s.db.prepare('SELECT task_id FROM social_groups WHERE conversation_id=?').get(group.id)!.task_id).toBeNull()
   expect(s.db.prepare('SELECT count(*) n FROM personal_work_tasks').get()!.n).toBe(0)
   expect(s.db.prepare('SELECT count(*) n FROM plans').get()!.n).toBe(1)
   expect(s.db.prepare('SELECT count(*) n FROM tasks').get()!.n).toBe(1)
-  expect((await s.call('chatConversation',null,{id:group.id},1)).status).toBe(404)
-  const invitation=(await s.call('chatInvitations',null,{},1)).value.data.find((i:any)=>i.conversationId===group.id)
-  expect((await s.call('decideChatInvitation',{decision:'accept',expectedVersion:invitation.version},{id:invitation.id},1)).status).toBe(200)
+  // Direct membership: the peer joins at creation, but the private research
+  // material stays outside the social group.
   expect((await s.call('chatConversation',null,{id:group.id},1)).value.data.taskIds).toEqual([])
+  expect((await s.call('chatInvitations',null,{},1)).value.data.filter((i:any)=>i.conversationId===group.id)).toEqual([])
   expect((await s.call('chatMessages',null,{id:group.id},1)).value.data.every((m:any)=>m.resources.length===0)).toBe(true)
   for(const [name,id] of [['getPlan',plan.id],['task',task.id],['artifact',artifact.id],['content',artifact.id]] as const)expect((await s.call(name,null,{id},1)).status).toBe(404)
   expect((await s.call('chatMemories',null,{},1,`?scope=private_agent&scopeId=${personal.agent.id}`)).status).toBe(404)

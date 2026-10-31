@@ -45666,7 +45666,7 @@
     "/api/v1/im/groups": {
       "post": {
         "operationId": "imCreateGroup",
-        "description": "Explicit manual group creation, independent of model availability. Null plan creates a discussion group without tasks. Non-null plan uses the canonical versioned plan confirmation. Selected resources are live-authorized. Human/private Agent members are invitations requiring independent acceptance. Same-origin, CSRF and authorized idempotent replay; network sync is a separate command.",
+        "description": "Explicit manual group creation, independent of model availability. Null plan creates a discussion group without tasks. Non-null plan uses the canonical versioned plan confirmation. Selected resources are live-authorized. Every selected human/private Agent becomes a joined member immediately: the group is complete at creation and no acceptance round exists. Same-origin, CSRF and authorized idempotent replay; network sync is a separate command.",
         "x-stage": "IM1",
         "x-implemented": true,
         "security": [
@@ -46151,7 +46151,7 @@
     "/api/v1/im/conversations/{id}/invite": {
       "post": {
         "operationId": "imInviteContact",
-        "description": "Current research group owner only; exact conversation version. Canonical independent human/private Agent invitation, published public Agent joined. Does not accept contact relationships or task commitment; same-origin, CSRF and authorized idempotent replay.",
+        "description": "Current research group owner only; exact conversation version. Adds a human or private Agent as a joined member directly, with no pending invitation. Does not accept contact relationships or task commitment; same-origin, CSRF and authorized idempotent replay.",
         "x-stage": "IM1",
         "x-implemented": true,
         "security": [

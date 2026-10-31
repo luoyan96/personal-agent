@@ -35,11 +35,11 @@ async function colleagueGroup(s:Awaited<ReturnType<typeof setup>>) {
   const created=await s.call('imCreateGroup',{title:'同事的讨论群',contactIds:[s.human('member_A').id,s.agent('member_B').id,specialist.id],plan:null,sharedContext:{selectedText:null,artifactRefs:[]}}, {},1)
   expect(created.status,created.raw).toBe(200)
   const group=created.value.data as Conversation
-  // Same-lab legacy groups still require the Agent owner's separate acceptance.
-  for (const invite of (await s.call('chatInvitations',null,{},1)).value.data.filter((value:{conversationId:string})=>value.conversationId===group.id))
-    expect((await s.call('decideChatInvitation',{expectedVersion:invite.version,decision:'accept'},{id:invite.id},1)).status).toBe(200)
-  const invitation=(await s.call('chatInvitations')).value.data.find((value:{conversationId:string})=>value.conversationId===group.id)
-  expect((await s.call('decideChatInvitation',{expectedVersion:invitation.version,decision:'accept'},{id:invitation.id})).status).toBe(200)
+  // Group membership is direct: every selected contact is joined at creation,
+  // so no invitation has to be accepted before the group can be used.
+  for(const contactId of [s.human('member_A').id,s.agent('member_B').id,specialist.id])
+    expect(group.members.find(member=>member.contactId===contactId)!.status).toBe('joined')
+  expect((await s.call('chatInvitations',null,{},1)).value.data.filter((value:{conversationId:string})=>value.conversationId===group.id)).toEqual([])
   return {group,agents:[s.agent('member_B'),specialist]}
 }
 function modelMessages(prompt:{messageColumns:string[];senderIds:string[];messages:unknown[][]}) {
@@ -220,7 +220,7 @@ describe('group Agent mentions and shared status',()=>{
 })
 
 describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
-  it('coordinates an accepted lab human through a real proposal and independent group acceptance, without personal memory in group model inputs',async()=>{
+  it('coordinates an accepted lab human through a real proposal and direct group membership, without personal memory in group model inputs',async()=>{
     const s=await setup();await s.connect(s.human('member_B').id)
     await s.call('createPersonalMemory',{topic:'回复方式',content:'OWNER_PERSONAL_PREF_NOT_GROUP',scope:'general'})
     const text='请安排和已添加的同事一起整理材料',sent=(await s.call('agentChatMessage',{text},{id:s.personal.id})).value.data
@@ -231,10 +231,8 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     const action=(await s.call('chatActions',null,{id:s.personal.id})).value.data[0]
     const decided=await s.call('decideChatAction',{expectedVersion:action.version,expectedConversationVersion:s.personal.version,decision:'confirm'},{id:action.id});expect(decided.status,decided.raw).toBe(200)
     const group=(await s.call('chatConversation',null,{id:decided.value.data.conversationId})).value.data
-    expect(group.members.find((m:{contactId:string})=>m.contactId===s.human('member_B').id).status).toBe('invited')
-    expect((await s.call('chatConversation',null,{id:group.id},1)).status).toBe(404)
-    const invitation=(await s.call('chatInvitations',null,{},0)).value.data.find((i:{conversationId:string;invitedContactId:string})=>i.conversationId===group.id&&i.invitedContactId===s.agent('member_A').id)
-    await s.call('decideChatInvitation',{expectedVersion:invitation.version,decision:'accept'},{id:invitation.id})
+    expect(group.members.find((m:{contactId:string})=>m.contactId===s.human('member_B').id).status).toBe('joined')
+    expect((await s.call('chatConversation',null,{id:group.id},1)).status).toBe(200)
     await s.ask(group.id,s.agent('member_A').id,[],'合成群讨论')
     await new ChatWorker(s.db,s.config,async input=>{expect(input.prompt).not.toContain('OWNER_PERSONAL_PREF_NOT_GROUP');return {text:JSON.stringify(reply()),failure:null,inputTokens:100,outputTokens:200,elapsedMs:20}}).tick()
   })
@@ -384,10 +382,10 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     expect((await s.call('chatMemoryHistory',null,{id:active.id})).value.data.revisions.map((memory:{content:string})=>memory.content)).toEqual([active.content,'修订内容'])
     expect((await s.call('chatMemories',null,{},1,query)).status).toBe(404)
     expect((await s.call('chatMemoryHistory',null,{id:active.id},1)).status).toBe(404)
-    const created=await s.groupProposal(),groupId=created.group.id,invite=(await s.call('chatInvitations',null,{},1)).value.data[0]
+    const created=await s.groupProposal(),groupId=created.group.id
     const shared=(await s.call('createChatMemory',{scope:'conversation',scopeId:groupId,content:'群共同记忆',source:null})).value.data
-    expect((await s.call('chatMemories',null,{},1,`?scope=conversation&scopeId=${groupId}`)).status).toBe(404)
-    await s.call('decideChatInvitation',{expectedVersion:invite.version,decision:'accept'},{id:invite.id},1)
+    // Directly added members can read group-scoped memory immediately, but the
+    // owner-only edit authority is unchanged.
     expect((await s.call('chatMemories',null,{},1,`?scope=conversation&scopeId=${groupId}`)).value.data[0].allowedActions).toEqual([])
     expect((await s.call('reviseChatMemory',{expectedVersion:1,content:'非owner修改',source:null},{id:shared.id},1)).status).toBe(403)
     // Requests and contact lists are also live-filtered on saved ID snapshots.
@@ -423,8 +421,7 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     await s.call('createChatMemory',{scope:'conversation',scopeId:otherDirect.id,content:'OTHER_DIRECT_MEMORY_SENTINEL',source:null},{},1)
     await s.ask(otherDirect.id,specialist.id,[],'其他成员问题',1)
     await new ChatWorker(s.db,s.config,async(input,signal,credential)=>{expect(input.prompt).toContain('OTHER_DIRECT_MEMORY_SENTINEL');expect(input.prompt).toContain('PERSONALITY_SENTINEL');expect(input.prompt).not.toContain('OWNER_PRIVATE_MEMORY_SENTINEL');expect(input.prompt).not.toContain('OWNER_DIRECT_MEMORY_SENTINEL');return model(reply())(input,signal,credential)}).tick()
-    const created=await s.groupProposal([specialist.id]),groupId=created.group.id,agentInvite=(await s.call('chatInvitations')).value.data.find((invite:{invitedContactId:string})=>invite.invitedContactId===specialist.id)
-    await s.call('decideChatInvitation',{expectedVersion:agentInvite.version,decision:'accept'},{id:agentInvite.id})
+    const created=await s.groupProposal([specialist.id]),groupId=created.group.id
     await s.call('createChatMemory',{scope:'conversation',scopeId:groupId,content:'GROUP_SHARED_MEMORY_SENTINEL',source:null})
     await s.ask(groupId,specialist.id)
     await new ChatWorker(s.db,s.config,async(input,signal,credential)=>{expect(input.prompt).toContain('GROUP_SHARED_MEMORY_SENTINEL');expect(input.prompt).not.toContain('OWNER_PRIVATE_MEMORY_SENTINEL');expect(input.prompt).not.toContain('OWNER_DIRECT_MEMORY_SENTINEL');expect(input.prompt).not.toContain('OTHER_DIRECT_MEMORY_SENTINEL');return model(reply())(input,signal,credential)}).tick()
@@ -556,9 +553,8 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
 
   it('counts only authorized incoming group messages and hides state/cached receipts immediately after revoke', async () => {
     const s = await setup(), created = await s.groupProposal(), groupId = created.group.id
-    const invitation = (await s.call('chatInvitations', null, {}, 1)).value.data[0]
-    expect((await s.call('markChatRead', { throughSequence: 0 }, { id: groupId }, 1)).status).toBe(404)
-    await s.call('decideChatInvitation', { expectedVersion: invitation.version, decision: 'accept' }, { id: invitation.id }, 1)
+    // Selected members are joined at creation; a non-member stays rejected.
+    expect((await s.call('markChatRead', { throughSequence: 0 }, { id: groupId }, 2)).status).toBe(404)
     const joined = (await s.call('chatConversation', null, { id: groupId }, 1)).value.data as Conversation
     await s.call('markChatRead', { throughSequence: joined.lastSequence }, { id: groupId }, 1)
     await s.call('sendChatMessage', { text: 'B 自己的群消息' }, { id: groupId }, 1)
@@ -631,10 +627,9 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     expect(s.db.prepare("SELECT count(*) n FROM chat_conversations WHERE kind='group'").get()!.n).toBe(1)
     expect((await s.call('chatMessages', null, { id: groupId })).raw).not.toContain('私聊敏感')
     expect((await s.call('chatMessages', null, { id: groupId })).value.data.flatMap((m:{resources:unknown[]})=>m.resources)).toEqual(expect.arrayContaining(created.tasks.map(id=>({kind:'task',ref:{id,version:1}}))))
-    expect((await s.call('chatMessages', null, { id: groupId }, 1)).status).toBe(404)
-    const invite = (await s.call('chatInvitations', null, {}, 1)).value.data[0]
-    expect((await s.call('decideChatInvitation', { expectedVersion: invite.version, decision: 'accept' }, { id: invite.id }, 2)).status).toBe(404)
-    expect((await s.call('decideChatInvitation', { expectedVersion: invite.version, decision: 'accept' }, { id: invite.id }, 1)).status).toBe(200)
+    expect((await s.call('chatMessages', null, { id: groupId }, 1)).status).toBe(200)
+    expect((await s.call('chatMessages', null, { id: groupId }, 2)).status).toBe(404)
+    expect((await s.call('chatInvitations', null, {}, 1)).value.data.filter((i:{conversationId:string})=>i.conversationId===groupId)).toEqual([])
     let group = (await s.call('chatConversation', null, { id: groupId })).value.data as Conversation
     const task = (await s.call('task', null, { id: created.tasks[0]! })).value.data.task
     const mentionText = `@${s.human('member_B').displayName} 请查看`
@@ -696,8 +691,6 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
 
   it('keeps joined members chatting without task/material grants and filters historical resources after task revocation', async () => {
     const s = await setup(), created = await s.groupProposal(), groupId = created.group.id
-    const invitation = (await s.call('chatInvitations', null, {}, 1)).value.data[0]
-    expect((await s.call('decideChatInvitation', { expectedVersion: invitation.version, decision: 'accept' }, { id: invitation.id }, 1)).status).toBe(200)
     const privateTask = (await s.call('task', null, { id: created.tasks[1]! })).value.data.task
     const uploaded = await s.call('upload', { taskId: privateTask.id, expectedVersion: privateTask.version, filename: 'synthetic-private.txt', mediaType: 'text/plain', contentBase64: Buffer.from('PRIVATE_TASK_MATERIAL_SENTINEL').toString('base64') })
     expect(uploaded.status, uploaded.raw).toBe(201)
@@ -742,8 +735,6 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
 
   it('rejects known-invalid invitation/run proposals and rechecks active execution when confirming and publishing late model output', async () => {
     const s = await setup(), created = await s.groupProposal(), groupId = created.group.id
-    const invitation = (await s.call('chatInvitations', null, {}, 1)).value.data[0]
-    await s.call('decideChatInvitation', { expectedVersion: invitation.version, decision: 'accept' }, { id: invitation.id }, 1)
     let group = (await s.call('chatConversation', null, { id: groupId })).value.data as Conversation
     const task = (await s.call('task', null, { id: created.tasks[0]! })).value.data.task
     expect((await s.call('invite', { expectedVersion: task.version, memberId: 'member_B', scope: '合成承接', schedule }, { id: task.id })).status).toBe(201)
@@ -792,22 +783,20 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
     expect(s.db.prepare('SELECT count(*) n FROM dependency_bindings WHERE task_id=?').get(current.id)!.n).toBe(0)
   })
 
-  it('requires agent-owner acceptance, excludes private owner history, and fences revoked agents late output', async () => {
+  it('adds agents directly without leaking their owner private history, and fences revoked agents late output', async () => {
     const s = await setup(), bPersonal = (await s.call('personalConversation', {}, {}, 1)).value.data.conversation
     await s.call('sendChatMessage', { text: 'B_OWNER_PRIVATE_SENTINEL' }, { id: bPersonal.id }, 1)
     expect(s.agent('member_B').availability.reason).toBe('owner_authorization_required')
     const created = await s.groupProposal([s.human('member_B').id, s.agent('member_B').id, s.publicAgent.id]), groupId = created.group.id
-    const before = await s.call('sendChatMessage', { text: '请回答', intent: 'ask_agent', agentContactId: s.agent('member_B').id, budget }, { id: groupId }); expect(before.status).toBe(404)
-    const invitations = (await s.call('chatInvitations', null, {}, 1)).value.data
-    const agentInvite = invitations.find((v: { invitedContactId: string }) => v.invitedContactId === s.agent('member_B').id)
-    expect((await s.call('decideChatInvitation', { expectedVersion: agentInvite.version, decision: 'accept' }, { id: agentInvite.id })).status).toBe(404)
-    expect((await s.call('decideChatInvitation', { expectedVersion: agentInvite.version, decision: 'accept' }, { id: agentInvite.id }, 1)).status).toBe(200)
-    expect((await s.call('chatConversation',null,{id:groupId},1)).status).toBe(404)
-    expect((await s.call('chatMessages',null,{id:groupId},1)).status).toBe(404)
-    expect((await s.call('markChatRead',{throughSequence:0},{id:groupId},1)).status).toBe(404)
-    expect((await s.call('updateChatPreferences',{expectedVersion:1,pinned:true},{id:groupId},1)).status).toBe(404)
-    expect((await s.call('chatConversations',null,{},1)).value.data.some((group:Conversation)=>group.id===groupId)).toBe(false)
-    expect((await s.call('sendChatMessage',{text:'仅agent加入不能真人发送'},{id:groupId},1)).status).toBe(404)
+    // Selecting an Agent joins it immediately; no invitation round is created.
+    const initial = (await s.call('chatConversation', null, { id: groupId })).value.data as Conversation
+    expect(initial.members.find(m => m.contactId === s.agent('member_B').id)!.status).toBe('joined')
+    expect((await s.call('chatInvitations', null, {}, 1)).value.data.filter((i:{conversationId:string})=>i.conversationId===groupId)).toEqual([])
+    // Joining an Agent must not join its owner's browser: an Agent-only group
+    // keeps member_B out of the group itself.
+    const agentOnly = await s.groupProposal([s.agent('member_B').id])
+    expect((await s.call('chatConversation',null,{id:agentOnly.group.id},1)).status).toBe(404)
+    expect((await s.call('sendChatMessage',{text:'仅agent加入不能真人发送'},{id:agentOnly.group.id},1)).status).toBe(404)
     const asked = await s.ask(groupId, s.agent('member_B').id)
     let inspected = false
     await new ChatWorker(s.db, s.config, async (input, signal, credential) => { inspected = true; expect(input.prompt).not.toContain('B_OWNER_PRIVATE_SENTINEL'); expect(input.prompt).not.toContain(bPersonal.id); return model(reply('群内受限回答'))(input, signal, credential) }).tick()
@@ -826,8 +815,6 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
 
   it('binds cursor to account and filter, preserves high water and denies old pages after revocation', async () => {
     const s = await setup(), created = await s.groupProposal(), groupId = created.group.id
-    const invitation = (await s.call('chatInvitations', null, {}, 1)).value.data[0]
-    await s.call('decideChatInvitation', { expectedVersion: invitation.version, decision: 'accept' }, { id: invitation.id }, 1)
     for (let i = 0; i < 3; i++) await s.call('sendChatMessage', { text: `合成消息${i}` }, { id: groupId })
     const first = await s.call('chatMessages', null, { id: groupId }, 1, '?limit=1'), cursor = first.value.nextCursor
     expect(cursor).toBeTruthy()
@@ -855,8 +842,6 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
 
   it('publishes canonical pending invitation references when group creation already proposes a human assignment',async()=>{
     const s=await setup(),created=await s.groupProposal(undefined,true),groupId=created.group.id
-    const invitation=(await s.call('chatInvitations',null,{},1)).value.data[0]
-    await s.call('decideChatInvitation',{expectedVersion:invitation.version,decision:'accept'},{id:invitation.id},1)
     const messages=(await s.call('chatMessages',null,{id:groupId},1)).value.data
     const refs=messages.flatMap((m:{resources:{kind:string;ref:{id:string}}[]})=>m.resources)
     expect(refs.some((r:{kind:string;ref:{id:string}})=>r.kind==='task'&&r.ref.id===created.tasks[0])).toBe(true)
@@ -908,10 +893,6 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
   it('passes stable same-name mention IDs and requested-agent identity without substituting names',async()=>{
     const s=await setup();s.db.prepare("UPDATE members SET display_name='同名成员' WHERE id IN ('member_B','member_C')").run()
     const created=await s.groupProposal([s.human('member_B').id,s.human('member_C').id,s.agent('member_B').id,s.publicAgent.id]),groupId=created.group.id
-    for(const actor of [1,2]){
-      const invitations=(await s.call('chatInvitations',null,{},actor)).value.data
-      for(const invite of invitations)await s.call('decideChatInvitation',{expectedVersion:invite.version,decision:'accept'},{id:invite.id},actor)
-    }
     const text='@同名成员 请核对',mention={contactId:s.human('member_B').id,start:0,end:5}
     const sent=await s.call('sendChatMessage',{text,mentions:[mention],intent:'ask_agent',agentContactId:s.agent('member_B').id,budget},{id:groupId})
     expect(sent.status,sent.raw).toBe(201)
@@ -930,8 +911,6 @@ describe('CHAT1 real service with synthetic ModelCall', {timeout:15000}, () => {
   it('withdraws derived draft and pending assignment projections after source authority changes',async()=>{
     const s=await setup(),source=await s.groupProposal(),sourceTask=(await s.call('task',null,{id:source.tasks[1]!})).value.data.task
     const derived=await s.groupProposal(undefined,true,[{kind:'task',ref:{id:sourceTask.id,version:sourceTask.version}}])
-    const invitation=(await s.call('chatInvitations',null,{},1)).value.data.find((v:{conversationId:string})=>v.conversationId===derived.group.id)
-    await s.call('decideChatInvitation',{expectedVersion:invitation.version,decision:'accept'},{id:invitation.id},1)
     const initial=(await s.call('chatMessages',null,{id:derived.group.id},1)).value.data
     expect(initial.flatMap((m:{resources:{kind:string}[]})=>m.resources).some((r:{kind:string})=>r.kind==='assignment')).toBe(true)
     await s.call('start',{expectedVersion:sourceTask.version},{id:sourceTask.id})

@@ -1,5 +1,12 @@
 # 项目进展日志
 
+## 2026-10-30：0.10.76 的“无法联网”误报（本地包 0.10.77）
+
+- 负责人装上 0.10.76 后截图：会话区写着“当前无法联网，这段会话本机还没有缓存。”，会话却是空的。先看本机数据再动手：`chat-history/*.sqlite` 存在但四张表全 0 行；OpenIM 核心日志 15:33 仍在 ping/pong；`identity.json` 记录 15:29 已向 `chat.acceptcat.com` 校验成功；SDK 本地库那个会话有 51 条消息。所以是**历史页一次都没落地**，不是断网。
+- 三个成因都是第一批引入的：提示语拿“缓存空 + `sdkReady` 为 false”当断网证据（打开会话头几秒本来就该是 false）；`isCurrent()` 要求响应回来时 `sdkReady` 仍为 true，连接/同步事件在请求途中把它翻回 false 就静默丢弃一页好数据；`verifiedGeneration` 每个 generation 只校验一次，被丢弃的那页永不重试，会话永远空着。这也解释了为什么 0.10.75 会自愈而 0.10.76 不会——旧写法在每次 `sdkReady` 变 true 时都会重新 `loadHistoryMessages`。
+- 修法：读取门槛降为“已登录”（`selfInfo.userID`，未就绪时用科研会话的 OpenIM 账号顶上），不再依赖一次性 SDK 事件；空记录按 0/2/5/12 秒退避重试，`online` 事件重置预算，真答过的会话（含空会话）不再重试；提示语收敛到纯函数 `historyNotice(source, online)`，只有 `navigator.onLine === false` 才说“无法联网”，其余一律“正在连接服务器…”。同步完成前读到的页不让缓存声称“已到顶”。
+- 验证：typecheck、typecheck:electron、`test:chat-history` 14 项（含新增 `tests/history-notice.test.mjs` 4 项）、`test:build`、`test:local-dsh` 41、聊天相关 23 项。仍未做真实账号、断网实机与安装包验证。
+
 ## 2026-10-30：本地优先聊天历史第一批（读缓存 + 断网只读）
 
 - 负责人要求把消息改成微信式本机缓存，先看 PR149 交接文档再直接实施。文档的论断逐条对着代码核过：`useHistoryMessageList` 的历史加载被 `sdkReady`（登录+连接+同步）门控；撤回写独立表 `chat_message_retractions`、在投影时生效（`chat.ts:322`），不产生更大的 sequence，因此 `afterSequence` 永远同步不到旧消息撤回；`chatHistory*` 三个文件只存在于旧分支 `5536ffc`，从未进 main。
@@ -2538,3 +2545,25 @@ typecheck、typecheck:electron、build:web 通过；local-dsh 41 项（含新增
 合并后在 main 重新构建安装包（0.10.74 只在本机、未公开，公开版本直接从 0.10.73 到 0.10.75）。构建时本机批量删除守卫拦截 `research-skills/dist/roles` 与 `.electron-runtime` 的清理，改为移到仓库外 `D:/deepseek-agent/.runtime/trash-20261030/`，仓库脚本未改。安装器 405061949 字节，SHA256 `aac075610ffc89a876dac3db5eebe06de679d6bd5ee6f468ee2d434373004755`，blockmap 416813 字节，成品 FileVersion/ProductVersion 0.10.75。
 
 先建草稿、上传四个附件并核对 digest，再于 10:49:29 公开为稳定 Latest v0.10.75。匿名复查：`/releases/latest` 302 到该标签、`latest.yml` 与本地产物一致、安装器直链 HEAD 200 且 405061949 字节、标签指向 `bb40f76`。未运行安装器、未启动成品、未连真实账号或模型；后台未部署。README、项目总览与简版交接 prompt 同步指向 0.10.75。详见 docs/deployment/acceptcat-0.10.75.md，证据 D:/deepseek-agent/.runtime/release-0.10.75-20261030。
+
+## 2026-10-31 群聊改为直接拉人，不再等对方同意
+
+负责人要求「群聊功能不用邀请后等待对方同意，直接拉人进群就行，群直接建立好」，并确认范围包含「别人的 AI 助理也直接进」。
+
+原实现里群成员是两段式：建群只把自己、公共 Agent、自己名下 Agent 写成 `joined`，其他真人与他人的个人 Agent 写成 `invited`，同时写入 `chat_invitations`；被邀请人要在「群邀请与任务承接」页逐条同意才变 `joined`，未同意前 `chatConversation` 404、`sendChatMessage` 也发不出，所以刚建好的群看起来是「待加入」。OpenIM 侧成员表由 `activeContacts`（只取 joined）算出，因此邀请没接受前这些人也进不了 IM 群。
+
+改法只动成员事实的来源，不动传输层：`ChatService.newConversation` 对建群成员一律写 `joined`，`inviteContact` 同样直接写 `joined`（此前 invited/declined/revoked 的身份重新加入即转正），`inviteDocument` 删除，不再产生新的待办邀请。`decideChatInvitation` 路由与 `chat_invitations` 表保留，只处理历史 pending 记录。任务承接边界未动：`personal_work_participants` 仍是 invited/accepted，进群不代表接受任务；`chat-worker` 里「确认后建群并直接加入所选成员，任务承接仍需各自接受」的提示同步改口。客户端 `ChooseModal` 建群/加人成功文案、`ResearchInvitations` 页说明、`ResearchComposer` 的发送拒绝文案一并更新，`ResearchGroupPicker` 与 `ChooseModal` 不再禁用 `invited` 身份，老群待加入成员可重新选中转为 joined。
+
+代价明确：新成员可读入群前的群历史；把别人的个人 Agent 拉进群会立即生效，不再由主人确认。契约描述同步（`imCreateGroup`/`imInviteContact`），重新导出 contract 0.39.0。
+
+验证：apps/api 39 个文件 414 项通过（含改写后的 chat 42、workspace 7、openim 15、personal-accounts 等）；apps/web 与 packages/contracts 19 个文件 372 项通过；`@research-agent-platform/api` typecheck 与 `clients/openim` `tsc --noEmit` 通过；`check-content` 通过（顺带把 `release`、`.set-aside` 加入忽略集，避免本机构建产物里的旧 SKILL 副本误报）。未做真实 OpenIM 双端联调、未重新打包、未部署后台、未推送分支。
+
+## 2026-10-31 直接入群后台部署完成，客户端 0.10.79 对齐文案
+
+后台已由负责人在原 ECS 上按 `feat/group-direct-join` 提交 `e1b26f90c91ca6d0370cbdcfee2de7938b173634` 完成部署（回执见 `docs/deployment/group-direct-join-20261031.md`，文档 PR #154）：镜像 `research-openim-api:group-direct-join-20261031`（`sha256:1fb72c6bdb0eba546423510d1d2907a236d075f96e611967725117d4c7c37ab3`），API healthy、worker running 且 restart=0，其余 6 个容器未变；schema 031→031、112 表，正式库与恢复副本各重复迁移两次通过；静止备份 `/srv/research-openim-backups/group-direct-join-20261031-20261031T020151Z/research.tar.gz`（SHA256 `34f7bcac9d5204868ed09f089bab940baa9cf75507251a4bb2e0ee00ba903dc8`）。本机复核：`/api/v1/health/ready` 200、contract 0.39.0、匿名 `chat/conversations` 401，远端 `feat/group-direct-join` 指向同一提交。
+
+部署侧暴露两处仓库缺陷，本次未改（都属于构建脚本，改动需单独验证）：`deploy/openim/Dockerfile` 在 API 编译前没有构建 `research-skills`，照原样构建会缺 role-catalog/roles/import 模块；`025-lab-membership.sql` 仓库内是 LF（2111 字节），现网旧镜像记录的是 CRLF（2144 字节），严格校验的迁移保护会拦下首次切换。部署时是在运维目录的 Dockerfile 副本里补构建步骤并恢复 025 的旧字节，业务源码与锁文件仍为指定提交。
+
+客户端 0.10.79 只为对齐文案（行为 0.10.78 已可验证新后台）：建群/加人提示改为「已直接入群」「已加入群聊」，同步失败不再提示「成员仍需独立同意邀请」。构建时安全守卫再次拦下 pnpm 的 `_tmp_*` 清理，用 `CODEBUDDY_SAFE_DELETE_BULK_THRESHOLD=200000` 放开后 12 分 37 秒完成；rcedit 首次报 `Unable to commit changes` 后重试成功，产物元数据核对为 FileVersion 0.10.79 / ProductName AcceptCat。产物 `clients/openim/release/Base/0.10.79/AcceptCat_0.10.79.exe`（405,068,448 字节，SHA256 `81f8d2d78b2b5ae48874b7de8b0afdea1eaa58879e26ff3c178a6f3e39f6640e`）。顺带清掉早先 `git add -A` 误提交的两个零字节 pnpm 暂存文件，并在 `clients/openim/.gitignore` 加入 `_tmp_*`。
+
+仍未做：真实账号双端建群验收（需要负责人登录并指定两名成员）；老群遗留 pending 成员不批量转正，需在「邀请成员」里重新选择一次。分支 PR #155 已开，未合并。

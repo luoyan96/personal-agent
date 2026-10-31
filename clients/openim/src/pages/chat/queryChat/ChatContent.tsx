@@ -29,6 +29,7 @@ import { formatMessageTime } from "@/utils/imCommon";
 
 import MessageItem from "./MessageItem";
 import NotificationMessage from "./NotificationMessage";
+import { historyNotice } from "./history-notice";
 import { useHistoryMessageList } from "./useHistoryMessageList";
 
 const ChatContent = () => {
@@ -405,9 +406,7 @@ const ChatContent = () => {
     >
       {historySource && !historyError && (
         <p className="chat-history-source" role="status">
-          {historySource === "cache"
-            ? "正在显示本机缓存，联网后会自动核对。"
-            : "当前无法联网，这段会话本机还没有缓存。"}
+          {historyNotice(historySource, navigator.onLine)}
         </p>
       )}
       {(historyError || navigationError) && (
