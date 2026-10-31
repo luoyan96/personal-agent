@@ -2538,3 +2538,13 @@ typecheck、typecheck:electron、build:web 通过；local-dsh 41 项（含新增
 合并后在 main 重新构建安装包（0.10.74 只在本机、未公开，公开版本直接从 0.10.73 到 0.10.75）。构建时本机批量删除守卫拦截 `research-skills/dist/roles` 与 `.electron-runtime` 的清理，改为移到仓库外 `D:/deepseek-agent/.runtime/trash-20261030/`，仓库脚本未改。安装器 405061949 字节，SHA256 `aac075610ffc89a876dac3db5eebe06de679d6bd5ee6f468ee2d434373004755`，blockmap 416813 字节，成品 FileVersion/ProductVersion 0.10.75。
 
 先建草稿、上传四个附件并核对 digest，再于 10:49:29 公开为稳定 Latest v0.10.75。匿名复查：`/releases/latest` 302 到该标签、`latest.yml` 与本地产物一致、安装器直链 HEAD 200 且 405061949 字节、标签指向 `bb40f76`。未运行安装器、未启动成品、未连真实账号或模型；后台未部署。README、项目总览与简版交接 prompt 同步指向 0.10.75。详见 docs/deployment/acceptcat-0.10.75.md，证据 D:/deepseek-agent/.runtime/release-0.10.75-20261030。
+
+## 2026-10-31 课题组规范后台0.40部署
+
+负责人指定feat/task-page-entry / 3688abb0f4baa7f87accbdea8878334ed489c215，授权部署科研API/worker。实际旧线上为task-invite-cards-20261031 / 24f3b108，指定源码保留该批任务邀请引用。远端分支已前进至227fa718，服务器clone后精确fetch/checkout指定SHA并核对干净，未使用备用源码包（本机SHA256 030b82f3aaf8a30826f232af2b592d48e0ba81760a788534b1c7ae09bd851991）。复用group-direct-join的Dockerfile及025字节断言，完整Compose保留group-direct-join与task-invite-cards层，最后追加lab-standards images覆盖。
+
+新增GET/POST /api/v1/lab/work-rules，scope=lab/kind=rule，contract0.40.0/schema031。同SHA三组GitHub Foundation均success（实际pnpm run ci步骤成功），复用该证据；镜像152输入/编译产物及7文件286项定向隔离检查通过。旧0.39拒绝null来源、新0.40接受，负责人另行明确同意继续部署并在新规范产生后采用兼容前滚；异常恢复增加只读当前/历史空来源守卫，不改数据库校验和。
+
+新镜像research-openim-api:lab-standards-20261031 / sha256:e57ac5913960c4ada9dda704b0be9d1d5092005564a3df27302e82160bcdb3b9。北京时间23:29:45停worker、23:29:46停API、23:30:06可用，API窗口20秒。静止备份 /srv/research-openim-backups/lab-standards-20261031-20261031T152947Z/research.tar.gz，SHA256 546c1b653ccf9b02cfe42db9ac9d990024f051b3c93b6911862779c38636d8ab。恢复副本/正式库各迁移两次，031→031，112表、9原件、34配置输入保全。其他6容器ID/镜像/状态不变，前后证据SHA256均83bddb0a518402f5fbf7ef1d023e0bd8d75493ba30387ffbd4af5332bde50922；API healthy、worker running、均restart=0。ready200/contract0.40.0、database/storage/authentication ok、harness not_verified，匿名规范接口401。
+
+构建和正式切换首轮通过，无真实回退。UI旧绑定/断连、长输入超时、分支前进、匿名探针生成器漏匹配in的断言失败均保留观察或错误摘要，发生在停写前。负责人账号新增规则与任务页同条规则/状态仍待验收，无生产行为请求/返回可报告，未造合成生产数据、未输出私人规范、未操作客户端/发布Release或合并产品分支。详见[完整部署回执](deployment/lab-standards-20261031.md)，服务器运维证据 /opt/research-openim/ops/lab-standards-20261031，本机公开HTTP/CI/脱敏截图 D:/deepseek-agent/.runtime/lab-standards-deploy-20261031。

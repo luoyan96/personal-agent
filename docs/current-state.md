@@ -1,6 +1,14 @@
 # 新 AI 接手：当前项目状态
 
-更新日期：2026-10-29（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+更新日期：2026-10-31（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+
+## 课题组规范后台已部署为0.40，实际两处一致性待验收
+
+2026-10-31北京时间23:30:06，按负责人固定提交 `3688abb0f4baa7f87accbdea8878334ed489c215`上线科研API/worker。新镜像 `research-openim-api:lab-standards-20261031` / `sha256:e57ac5913960c4ada9dda704b0be9d1d5092005564a3df27302e82160bcdb3b9`，新增GET/POST /api/v1/lab/work-rules，contract0.40.0/schema031，112表。实际前一线上是task-invite-cards/24f3b108，保留其功能与完整Compose层，不按过期e1b26f9回退。
+
+复用group-direct-join运维修好的Dockerfile，025迁移严格字节处理保留。同SHA三组Foundation CI均success且执行pnpm run ci，镜像152份输入与成品核验、286项定向隔离检查通过。API停机20秒，静止备份及实际恢复副本/正式库各迁移两次通过，9原件/34配置输入保全；其他6容器ID/镜像/状态完全一致，API healthy、worker running且restart均0，公网ready200/contract0.40、匿名规范接口401。完整SHA256、原始HTTP和所有阻挡见[部署回执](deployment/lab-standards-20261031.md)。
+
+负责人已明确同意：新规范sourceTaskId=null后旧0.39不能直接读取，应采用兼容前滚，不能仅因schema不变就直接退旧镜像；异常恢复加了只读兼容守卫。本批未触发真实回退/前滚、未创建生产合成数据，负责人新增规则及任务内同条规则/状态仍待真实验收，未合并产品分支或发布客户端。
 
 ## Windows 0.10.75 已公开为稳定 Latest
 
