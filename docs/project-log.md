@@ -2591,3 +2591,11 @@ typecheck、typecheck:electron、build:web 通过；local-dsh 41 项（含新增
 边界与代价：`定时` 没有独立标签后，定时卡片仍在待办列表的「定时安排」分组，管理（暂停/恢复/新建提醒）在「我的助理 → 任务与提醒」，`/workbench?view=scheduled` 旧链接改为跳待办（`directory-navigation` 断言同步）；助手建的是课题组研究任务（计划确认后创建），个人任务表单只剩回退路径——如果之后仍要「个人任务」入口需要另加。
 
 验证：客户端 `tsc --noEmit` 通过；新增 `tests/workbench-view.test.mjs`（4 项）并加入 desktop.yml，`directory-navigation` 更新；聊天相关 62 项、规划相关 49 项、桌面工作流 3 项通过；`vite build` 通过（注意 `vite build` 也会被本机安全删除守卫按 dist-electron 的 62 项删除拦下，需 `CODEBUDDY_SAFE_DELETE_BULK_THRESHOLD=200000`）。安装包 0.10.81 构建 9 分 11 秒，`clients/openim/release/Base/0.10.81/AcceptCat_0.10.81.exe`（405,073,432 字节，SHA256 `ff0a35623a7cf42b58449325533cdc73e2d651a9708773fc51c70ee3df0ae4de`，FileVersion 0.10.81），产物内已核对新文案与 `.planning-agent-entry` 样式。未部署后台（本次无后台改动），未做真机双端验收。
+
+## 2026-10-31 补「个人任务」入口：一句话建，不再回到旧表单
+
+负责人看过改版后问「这里的助手是只能添加课题组任务吗？那个人的任务应该怎么办」。核对确认：底部助手是课题组规划助手，`planRequest` 请求里带 `labId`、确认后走 `confirmPlan` 在 `tasks` 里建研究任务，所以它只能建课题组任务；个人任务（`personal_work_tasks`）当时只剩三条来路——聊天里对自己的助理说「帮我分析…」委派给专家 Agent（`recordDelegateWork`）、群聊协调回复（`recordAssistantAnswerWork`）、以及后台不支持助手时才出现的旧表单，任务页上没有直接入口。
+
+负责人选择「加个人任务入口 + 一句话表单」。改法：标题行在「新建任务」左侧加「个人任务」，打开的是精简后的弹窗——只留「要做什么」（一句话，必填）和「一起参与的联系人（可留空）」；任务名由新增的纯函数 `personalTaskTitle` 从第一句生成（去 `- * + ·` 与 `1.`/`1、` 编号、截到第一个 `。！？!?；;`，不足两字则整句保留、最长 60 字），提交体固定 `agentContactId: null`，要请 Agent 处理时在任务详情的「请 Agent 处理」里再选。「新建任务」在后台不支持助手（契约 <0.23/<0.32）时的回退复用同一张表单，标题显示为「新建任务」，说明文案改成「先按个人任务建」。
+
+验证：客户端 `tsc --noEmit` 通过；`tests/workbench-view.test.mjs` 扩到 5 项（新增 `personalTaskTitle` 的取句/去编号/短句/空串/60 字截断，以及页面仍有 `个人任务` 入口、表单不再有「任务名称」字段）；`vite build` 通过。安装包 0.10.82 构建 9 分 40 秒，`clients/openim/release/Base/0.10.82/AcceptCat_0.10.82.exe`（405,074,532 字节，SHA256 `92741f1891b02a1dc35c86b1ec770ba24b67dfb26a0877866b1437134f2d41bf`，FileVersion 0.10.82），已在 asar 内核对「新建个人任务」「只给自己或朋友安排」文案。本次仍无后台改动。

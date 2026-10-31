@@ -34,3 +34,22 @@ export function workbenchView(params: URLSearchParams): WorkbenchView {
     filter: params.get("category") === "completed" ? "completed" : "all",
   };
 }
+
+/**
+ * A personal task is created from one sentence, so its name is the first line,
+ * without a leading bullet or numbering, cut at the first sentence end.
+ */
+export function personalTaskTitle(goal: string) {
+  const first =
+    goal
+      .replace(/\r/g, "")
+      .split("\n")
+      .map((line) => line.trim())
+      .find(Boolean) || "";
+  const plain = first.replace(/^[\s\-*+·]+/, "").replace(/^\d+[.、)]\s*/, "");
+  const end = plain.search(/[。！？!?；;]/);
+  // A one-character head ("好。") is not a name; keep the sentence instead.
+  const cut = end >= 0 ? plain.slice(0, end).trim() : plain;
+  const title = cut.length >= 2 ? cut : plain.replace(/[。！？!?；;]+$/, "");
+  return (title || plain).slice(0, 60);
+}

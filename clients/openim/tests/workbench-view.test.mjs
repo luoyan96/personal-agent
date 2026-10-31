@@ -26,7 +26,9 @@ async function load(file) {
   return module.exports;
 }
 
-const { workbenchView } = await load("../src/research/workbench-view.ts");
+const { workbenchView, personalTaskTitle } = await load(
+  "../src/research/workbench-view.ts",
+);
 
 test("the workbench has two front doors and defaults to the task list", () => {
   const initial = workbenchView(new URLSearchParams());
@@ -84,4 +86,22 @@ test("the page keeps only the two tabs and writes tasks through the assistant", 
   // 新建任务 expands the assistant; the form is only a fallback.
   assert.match(page, /setPlanningLaunch\(\(value\) => value \+ 1\)/);
   assert.match(page, /if \(!assistantReady\)/);
+  // Personal tasks keep their own entry, and it asks for one sentence only.
+  assert.match(page, /onClick=\{startPersonalTask\}/);
+  assert.match(page, /aria-label="任务目标"/);
+  assert.doesNotMatch(page, /aria-label="任务名称"/);
+});
+
+test("a personal task name comes from its first sentence", () => {
+  assert.equal(personalTaskTitle("把上周的实验数据整理成一张表"), "把上周的实验数据整理成一张表");
+  assert.equal(
+    personalTaskTitle("整理实验数据。顺便画两张图。"),
+    "整理实验数据",
+  );
+  assert.equal(personalTaskTitle("- 1. 写一份组会报告\n细节以后再说"), "写一份组会报告");
+  assert.equal(personalTaskTitle("\n\n  先看文献  \n再写综述"), "先看文献");
+  // A short fragment before the full stop stays whole instead of becoming "好".
+  assert.equal(personalTaskTitle("好。"), "好");
+  assert.equal(personalTaskTitle("").length, 0);
+  assert.equal(personalTaskTitle("长".repeat(100)).length, 60);
 });

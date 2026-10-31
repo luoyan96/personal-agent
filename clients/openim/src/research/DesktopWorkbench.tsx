@@ -23,7 +23,7 @@ import { ResearchTeamWorkbench } from "./ResearchTeamWorkbench";
 import { relocatedWorkspace } from "./workspace-navigation";
 import { PlanningHistory } from "./PlanningHistory";
 import { workbenchTaskPath, workbenchTaskTarget } from "./workbench-links";
-import { workbenchView, type WorkbenchTab } from "./workbench-view";
+import { workbenchView, personalTaskTitle, type WorkbenchTab } from "./workbench-view";
 import { PlanningAgent } from "./PlanningAgent";
 function WorkbenchOverview({
   card,
@@ -160,32 +160,29 @@ export function DesktopWorkbench() {
   );
   const [selected, setSelected] = useState<WorkbenchCard>(),
     [details, setDetails] = useState(false);
-  const [creating, setCreating] = useState(false),
+  const [creating, setCreating] = useState<"personal" | "fallback">(),
     [busy, setBusy] = useState(false),
     [failure, setFailure] = useState("");
-  const [form, setForm] = useState({
-    title: "",
-    goal: "",
-    contactIds: [] as string[],
-    agentContactId: null as string | null,
-  });
+  // A personal task needs one sentence, not a form: the name comes from it and
+  // an Agent is chosen later in the task itself.
+  const [form, setForm] = useState({ goal: "", contactIds: [] as string[] });
   const operation = usePersonalOperation(
-      creating && supported,
+      !!creating && supported,
       "create-workspace-task",
     ),
     inFlight = useRef(false);
   useLayoutEffect(() => {
-    if (!supported) setCreating(false);
+    if (!supported) setCreating(undefined);
   }, [supported]);
   useLayoutEffect(() => {
     setSelected(undefined);
     setDetails(false);
-    setCreating(false);
+    setCreating(undefined);
     setPages([undefined]);
     setFailure("");
     setBusy(false);
     inFlight.current = false;
-    setForm({ title: "", goal: "", contactIds: [], agentContactId: null });
+    setForm({ goal: "", contactIds: [] });
   }, [generation]);
   const activeCard =
     selected &&
@@ -229,22 +226,24 @@ export function DesktopWorkbench() {
     setParams(next, { replace: true });
   };
   const create = async () => {
-    if (!supported || inFlight.current || !form.title.trim() || !form.goal.trim())
-      return;
+    if (!supported || inFlight.current || !form.goal.trim()) return;
     const { isCurrent } = operation.capture();
     inFlight.current = true;
     setBusy(true);
     setFailure("");
     try {
-      // A name is optional: the first sentence of the goal is enough to start.
-      const title =
-        form.title.trim() || form.goal.trim().split("\n")[0].trim().slice(0, 60);
+      const goal = form.goal.trim();
       const created = await researchApi("createPersonalWorkTask", {
-        body: { ...form, title, goal: form.goal.trim() },
+        body: {
+          title: personalTaskTitle(goal),
+          goal,
+          contactIds: form.contactIds,
+          agentContactId: null,
+        },
       });
       if (!isCurrent()) return;
-      setCreating(false);
-      setForm({ title: "", goal: "", contactIds: [], agentContactId: null });
+      setCreating(undefined);
+      setForm({ goal: "", contactIds: [] });
       const next = new URLSearchParams(
         workbenchTaskPath(created.data.id).split("?")[1],
       );
@@ -271,7 +270,7 @@ export function DesktopWorkbench() {
     availability.supports(32);
   const startTask = () => {
     if (!assistantReady) {
-      setCreating(true);
+      setCreating("fallback");
       setFailure("");
       setBusy(false);
       return;
@@ -281,6 +280,13 @@ export function DesktopWorkbench() {
       setParams(new URLSearchParams({ view: "tasks" }));
     setTaskLaunch((value) => value + 1);
     setPlanningLaunch((value) => value + 1);
+  };
+  // Personal tasks have no group and no materials: one sentence and, at most,
+  // the people who should see it.
+  const startPersonalTask = () => {
+    setCreating("personal");
+    setFailure("");
+    setBusy(false);
   };
   return (
     <div
@@ -304,9 +310,14 @@ export function DesktopWorkbench() {
           />
           <Button onClick={() => setPlansOpen(true)}>计划记录</Button>
           {tab === "tasks" && (
-            <Button type="primary" disabled={!supported} onClick={startTask}>
-              新建任务
-            </Button>
+            <>
+              <Button disabled={!supported} onClick={startPersonalTask}>
+                个人任务
+              </Button>
+              <Button type="primary" disabled={!supported} onClick={startTask}>
+                新建任务
+              </Button>
+            </>
           )}
         </div>
       </header>
@@ -583,84 +594,48 @@ export function DesktopWorkbench() {
         />
       </Drawer>
       <Modal
-        title="新建一项任务"
-        open={creating}
-        onCancel={() => setCreating(false)}
+        title={creating === "personal" ? "新建个人任务" : "新建任务"}
+        open={Boolean(creating)}
+        onCancel={() => setCreating(undefined)}
         footer={null}
         destroyOnClose
         className="workspace-add-dialog"
       >
         <div className="workspace-task-form">
           <label>
-            任务名称（可留空，默认取第一句）
-            <Input
-              aria-label="任务名称"
-              maxLength={200}
-              value={form.title}
-              disabled={busy}
-              onChange={(e) => setForm((s) => ({ ...s, title: e.target.value }))}
-            />
-          </label>
-          <label>
-            希望完成什么
+            要做什么
             <Input.TextArea
               aria-label="任务目标"
-              rows={4}
+              rows={3}
               maxLength={8000}
+              placeholder="一句话说清，比如：把上周的实验数据整理成一张表"
               value={form.goal}
               disabled={busy}
               onChange={(e) => setForm((s) => ({ ...s, goal: e.target.value }))}
             />
           </label>
           <label>
-            一起参与的联系人
+            一起参与的联系人（可留空）
             <Select
               aria-label="任务成员"
               mode="multiple"
+              allowClear
               value={form.contactIds}
               disabled={busy}
+              placeholder="只给自己做就不用选"
               options={eligible.map((c) => ({
                 value: c.id,
                 label: `${c.displayName}${
                   c.identity.kind === "human" ? "" : " · Agent"
                 }`,
               }))}
-              onChange={(contactIds) =>
-                setForm((s) => ({
-                  ...s,
-                  contactIds,
-                  agentContactId:
-                    s.agentContactId && contactIds.includes(s.agentContactId)
-                      ? s.agentContactId
-                      : null,
-                }))
-              }
+              onChange={(contactIds) => setForm((s) => ({ ...s, contactIds }))}
             />
           </label>
-          <details>
-            <summary>预选一个处理任务的 Agent（可选）</summary>
-            <Select
-              aria-label="任务预选 Agent"
-              allowClear
-              value={form.agentContactId || undefined}
-              disabled={busy}
-              options={eligible
-                .filter((c) => c.identity.kind !== "human" && !c.agentRuntime)
-                .map((c) => ({ value: c.id, label: c.displayName }))}
-              onChange={(id) =>
-                setForm((s) => ({
-                  ...s,
-                  agentContactId: id || null,
-                  contactIds:
-                    id && !s.contactIds.includes(id)
-                      ? [...s.contactIds, id]
-                      : s.contactIds,
-                }))
-              }
-            />
-          </details>
           <p className="workspace-muted">
-            这台服务器还开不了任务助手，先用这个表单：保存后直接建群并把成员拉进来，不会自动开始模型处理。
+            {creating === "personal"
+              ? "只给自己或朋友安排：不建课题组群，也不占课题组资料；要请 Agent 处理时在任务里选。"
+              : "这台服务器还开不了任务助手，先按个人任务建；保存后可直接在任务里请 Agent 处理。"}
           </p>
           {failure && <Alert type="error" message={failure} />}
           <Button
@@ -669,7 +644,7 @@ export function DesktopWorkbench() {
             disabled={!form.goal.trim()}
             onClick={() => void create()}
           >
-            保存任务草案
+            建好任务
           </Button>
         </div>
       </Modal>
