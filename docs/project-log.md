@@ -2557,3 +2557,13 @@ typecheck、typecheck:electron、build:web 通过；local-dsh 41 项（含新增
 代价明确：新成员可读入群前的群历史；把别人的个人 Agent 拉进群会立即生效，不再由主人确认。契约描述同步（`imCreateGroup`/`imInviteContact`），重新导出 contract 0.39.0。
 
 验证：apps/api 39 个文件 414 项通过（含改写后的 chat 42、workspace 7、openim 15、personal-accounts 等）；apps/web 与 packages/contracts 19 个文件 372 项通过；`@research-agent-platform/api` typecheck 与 `clients/openim` `tsc --noEmit` 通过；`check-content` 通过（顺带把 `release`、`.set-aside` 加入忽略集，避免本机构建产物里的旧 SKILL 副本误报）。未做真实 OpenIM 双端联调、未重新打包、未部署后台、未推送分支。
+
+## 2026-10-31 直接入群后台部署完成，客户端 0.10.79 对齐文案
+
+后台已由负责人在原 ECS 上按 `feat/group-direct-join` 提交 `e1b26f90c91ca6d0370cbdcfee2de7938b173634` 完成部署（回执见 `docs/deployment/group-direct-join-20261031.md`，文档 PR #154）：镜像 `research-openim-api:group-direct-join-20261031`（`sha256:1fb72c6bdb0eba546423510d1d2907a236d075f96e611967725117d4c7c37ab3`），API healthy、worker running 且 restart=0，其余 6 个容器未变；schema 031→031、112 表，正式库与恢复副本各重复迁移两次通过；静止备份 `/srv/research-openim-backups/group-direct-join-20261031-20261031T020151Z/research.tar.gz`（SHA256 `34f7bcac9d5204868ed09f089bab940baa9cf75507251a4bb2e0ee00ba903dc8`）。本机复核：`/api/v1/health/ready` 200、contract 0.39.0、匿名 `chat/conversations` 401，远端 `feat/group-direct-join` 指向同一提交。
+
+部署侧暴露两处仓库缺陷，本次未改（都属于构建脚本，改动需单独验证）：`deploy/openim/Dockerfile` 在 API 编译前没有构建 `research-skills`，照原样构建会缺 role-catalog/roles/import 模块；`025-lab-membership.sql` 仓库内是 LF（2111 字节），现网旧镜像记录的是 CRLF（2144 字节），严格校验的迁移保护会拦下首次切换。部署时是在运维目录的 Dockerfile 副本里补构建步骤并恢复 025 的旧字节，业务源码与锁文件仍为指定提交。
+
+客户端 0.10.79 只为对齐文案（行为 0.10.78 已可验证新后台）：建群/加人提示改为「已直接入群」「已加入群聊」，同步失败不再提示「成员仍需独立同意邀请」。构建时安全守卫再次拦下 pnpm 的 `_tmp_*` 清理，用 `CODEBUDDY_SAFE_DELETE_BULK_THRESHOLD=200000` 放开后 12 分 37 秒完成；rcedit 首次报 `Unable to commit changes` 后重试成功，产物元数据核对为 FileVersion 0.10.79 / ProductName AcceptCat。产物 `clients/openim/release/Base/0.10.79/AcceptCat_0.10.79.exe`（405,068,448 字节，SHA256 `81f8d2d78b2b5ae48874b7de8b0afdea1eaa58879e26ff3c178a6f3e39f6640e`）。顺带清掉早先 `git add -A` 误提交的两个零字节 pnpm 暂存文件，并在 `clients/openim/.gitignore` 加入 `_tmp_*`。
+
+仍未做：真实账号双端建群验收（需要负责人登录并指定两名成员）；老群遗留 pending 成员不批量转正，需在「邀请成员」里重新选择一次。分支 PR #155 已开，未合并。
