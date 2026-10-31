@@ -2538,3 +2538,11 @@ typecheck、typecheck:electron、build:web 通过；local-dsh 41 项（含新增
 合并后在 main 重新构建安装包（0.10.74 只在本机、未公开，公开版本直接从 0.10.73 到 0.10.75）。构建时本机批量删除守卫拦截 `research-skills/dist/roles` 与 `.electron-runtime` 的清理，改为移到仓库外 `D:/deepseek-agent/.runtime/trash-20261030/`，仓库脚本未改。安装器 405061949 字节，SHA256 `aac075610ffc89a876dac3db5eebe06de679d6bd5ee6f468ee2d434373004755`，blockmap 416813 字节，成品 FileVersion/ProductVersion 0.10.75。
 
 先建草稿、上传四个附件并核对 digest，再于 10:49:29 公开为稳定 Latest v0.10.75。匿名复查：`/releases/latest` 302 到该标签、`latest.yml` 与本地产物一致、安装器直链 HEAD 200 且 405061949 字节、标签指向 `bb40f76`。未运行安装器、未启动成品、未连真实账号或模型；后台未部署。README、项目总览与简版交接 prompt 同步指向 0.10.75。详见 docs/deployment/acceptcat-0.10.75.md，证据 D:/deepseek-agent/.runtime/release-0.10.75-20261030。
+
+## 2026-10-31 任务邀请引用后台部署
+
+按负责人指定feat/task-invite-cards / d77ad630f2de6a0dc851b25cd000f5cf6a3b2435，通过既有阿里云Workbench原root shell部署。线上原API/worker实际均为group-direct-join-20261031 / 1fb72c6；服务器独立clone核对HEAD且干净。上批运维Dockerfile逐字节复用，保留research-skills构建和025迁移严格换行字节断言；不改指定checkout或schema_migrations。151份构建输入核验通过，后台唯一业务变化为task-invitation.ts给邀请消息增加task引用；锁文件、契约和迁移不变。镜像内及两个正式容器的编译产物都确认包含任务id/version引用；task-handoffs/foundation两文件17项隔离检查通过。
+
+新镜像research-openim-api:task-invite-cards-20261031 / sha256:24f3b108b038b98c2c97dc4f0e8c8160fdc5181417fd67cb79c60b09dee0016a。沿用完整覆盖链，在group-direct-join-20261031/images.yaml之后追加本批images.yaml；05:22:08 UTC停止worker，05:22:09停止API，05:22:28可用，API窗口19秒。静止备份 /srv/research-openim-backups/task-invite-cards-20261031-20261031T052210Z/research.tar.gz，SHA256 ba49228e50cd5815b86c6626b7f6a344ff0dd5a92e39a3f507d74d684b98e2e9。恢复副本/正式库各迁移两次，均031且幂等；112表、9原件、33配置输入保全。其他6容器ID/镜像/状态完全相同，证据文件SHA256 83bddb0a518402f5fbf7ef1d023e0bd8d75493ba30387ffbd4af5332bde50922；API healthy、worker running、均restart=0。公网ready200、contract0.39.0、database/storage/authentication ok，harness not_verified；匿名chat/conversations和auth/session均401。
+
+服务器clone/构建/准备/正式切换均首轮通过，未触发回退。npm registry依赖下载error(23)自动重试后成功，build.log保留；本机原目录Git ownership guard与managed worktree路径拒绝两次准备阻挡均未涉及生产，独立文档worktree继续完成。未创建生产合成数据；负责人尚未发起上线后的真实邀请，因此指定只读SQL未执行、原始返回待验收，不用旧邀请空resources或隔离合成结果代替。本批不合并产品分支、不打包/发布客户端。详见[完整部署回执](deployment/task-invite-cards-20261031.md)，服务器证据 /opt/research-openim/ops/task-invite-cards-20261031，本机公开HTTP及脱敏截图 D:/deepseek-agent/.runtime/task-invite-cards-deploy-20261031。
