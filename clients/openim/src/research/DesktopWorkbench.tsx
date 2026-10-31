@@ -160,7 +160,7 @@ export function DesktopWorkbench() {
   );
   const [selected, setSelected] = useState<WorkbenchCard>(),
     [details, setDetails] = useState(false);
-  const [creating, setCreating] = useState<"personal" | "fallback">(),
+  const [creating, setCreating] = useState(false),
     [busy, setBusy] = useState(false),
     [failure, setFailure] = useState("");
   // A personal task needs one sentence, not a form: the name comes from it and
@@ -172,12 +172,12 @@ export function DesktopWorkbench() {
     ),
     inFlight = useRef(false);
   useLayoutEffect(() => {
-    if (!supported) setCreating(undefined);
+    if (!supported) setCreating(false);
   }, [supported]);
   useLayoutEffect(() => {
     setSelected(undefined);
     setDetails(false);
-    setCreating(undefined);
+    setCreating(false);
     setPages([undefined]);
     setFailure("");
     setBusy(false);
@@ -242,7 +242,7 @@ export function DesktopWorkbench() {
         },
       });
       if (!isCurrent()) return;
-      setCreating(undefined);
+      setCreating(false);
       setForm({ goal: "", contactIds: [] });
       const next = new URLSearchParams(
         workbenchTaskPath(created.data.id).split("?")[1],
@@ -269,12 +269,7 @@ export function DesktopWorkbench() {
     availability.supports(23) &&
     availability.supports(32);
   const startTask = () => {
-    if (!assistantReady) {
-      setCreating("fallback");
-      setFailure("");
-      setBusy(false);
-      return;
-    }
+    if (!assistantReady) return;
     // Drop any plan link so the assistant opens a fresh thread, not the last one.
     if (planId || requestId || params.get("view") === "planning")
       setParams(new URLSearchParams({ view: "tasks" }));
@@ -284,7 +279,7 @@ export function DesktopWorkbench() {
   // Personal tasks have no group and no materials: one sentence and, at most,
   // the people who should see it.
   const startPersonalTask = () => {
-    setCreating("personal");
+    setCreating(true);
     setFailure("");
     setBusy(false);
   };
@@ -314,9 +309,17 @@ export function DesktopWorkbench() {
               <Button disabled={!supported} onClick={startPersonalTask}>
                 个人任务
               </Button>
-              <Button type="primary" disabled={!supported} onClick={startTask}>
-                新建任务
-              </Button>
+              <span
+                title={
+                  assistantReady
+                    ? undefined
+                    : "这台服务器还没有任务助手，暂时只能建个人任务"
+                }
+              >
+                <Button type="primary" disabled={!assistantReady} onClick={startTask}>
+                  课题组任务
+                </Button>
+              </span>
             </>
           )}
         </div>
@@ -447,7 +450,7 @@ export function DesktopWorkbench() {
                       : "暂时没有要推进的任务"}
                   </h2>
                   <p>
-                    聊天中的协作建议会在这里确认；要新建，直接跟下面的任务助手说一句就行。
+                    聊天中的协作建议会在这里确认；新建课题组任务跟下面的助手说一句，只给自己的点「个人任务」。
                   </p>
                 </div>
               )}
@@ -550,7 +553,7 @@ export function DesktopWorkbench() {
                 <div className="workspace-empty">
                   <h2>把事情交代清楚，一起推进</h2>
                   <p>
-                    跟下面的任务助手说一句要做的事，它会整理成任务；也可以选左侧任务看目标、成员和结果。
+                    跟下面的任务助手说一句要做的事，它会整理成课题组任务；只给自己的点上方「个人任务」，也可以选左侧任务看目标、成员和结果。
                   </p>
                 </div>
               )}
@@ -594,9 +597,9 @@ export function DesktopWorkbench() {
         />
       </Drawer>
       <Modal
-        title={creating === "personal" ? "新建个人任务" : "新建任务"}
-        open={Boolean(creating)}
-        onCancel={() => setCreating(undefined)}
+        title="新建个人任务"
+        open={creating}
+        onCancel={() => setCreating(false)}
         footer={null}
         destroyOnClose
         className="workspace-add-dialog"
@@ -633,9 +636,8 @@ export function DesktopWorkbench() {
             />
           </label>
           <p className="workspace-muted">
-            {creating === "personal"
-              ? "只给自己或朋友安排：不建课题组群，也不占课题组资料；要请 Agent 处理时在任务里选。"
-              : "这台服务器还开不了任务助手，先按个人任务建；保存后可直接在任务里请 Agent 处理。"}
+            只给自己或朋友安排：不建课题组群，也不占课题组资料；要请 Agent
+            处理时在任务里选。
           </p>
           {failure && <Alert type="error" message={failure} />}
           <Button

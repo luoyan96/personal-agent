@@ -74,7 +74,7 @@ test("a team view never opens the assistant, and junk ids are ignored", () => {
   assert.equal(junk.planning, false);
 });
 
-test("the page keeps only the two tabs and writes tasks through the assistant", async () => {
+test("the page keeps only the two tabs and names the two kinds of task", async () => {
   const page = await readFile(
     new URL("../src/research/DesktopWorkbench.tsx", import.meta.url),
     "utf8",
@@ -83,10 +83,14 @@ test("the page keeps only the two tabs and writes tasks through the assistant", 
   assert.match(page, /label: "团队"/);
   assert.doesNotMatch(page, /label: "计划"/);
   assert.doesNotMatch(page, /label: "定时"/);
-  // 新建任务 expands the assistant; the form is only a fallback.
+  // The two entries say what they make, so the difference is visible before clicking.
+  assert.match(page, /课题组任务/);
+  assert.match(page, /个人任务/);
+  assert.doesNotMatch(page, />\s*新建任务\s*</);
+  // 课题组任务 expands the assistant instead of opening a form.
   assert.match(page, /setPlanningLaunch\(\(value\) => value \+ 1\)/);
-  assert.match(page, /if \(!assistantReady\)/);
-  // Personal tasks keep their own entry, and it asks for one sentence only.
+  assert.match(page, /disabled=\{!assistantReady\}/);
+  // Personal tasks ask for one sentence only.
   assert.match(page, /onClick=\{startPersonalTask\}/);
   assert.match(page, /aria-label="任务目标"/);
   assert.doesNotMatch(page, /aria-label="任务名称"/);
