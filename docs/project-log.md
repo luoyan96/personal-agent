@@ -2538,3 +2538,13 @@ typecheck、typecheck:electron、build:web 通过；local-dsh 41 项（含新增
 合并后在 main 重新构建安装包（0.10.74 只在本机、未公开，公开版本直接从 0.10.73 到 0.10.75）。构建时本机批量删除守卫拦截 `research-skills/dist/roles` 与 `.electron-runtime` 的清理，改为移到仓库外 `D:/deepseek-agent/.runtime/trash-20261030/`，仓库脚本未改。安装器 405061949 字节，SHA256 `aac075610ffc89a876dac3db5eebe06de679d6bd5ee6f468ee2d434373004755`，blockmap 416813 字节，成品 FileVersion/ProductVersion 0.10.75。
 
 先建草稿、上传四个附件并核对 digest，再于 10:49:29 公开为稳定 Latest v0.10.75。匿名复查：`/releases/latest` 302 到该标签、`latest.yml` 与本地产物一致、安装器直链 HEAD 200 且 405061949 字节、标签指向 `bb40f76`。未运行安装器、未启动成品、未连真实账号或模型；后台未部署。README、项目总览与简版交接 prompt 同步指向 0.10.75。详见 docs/deployment/acceptcat-0.10.75.md，证据 D:/deepseek-agent/.runtime/release-0.10.75-20261030。
+
+## 2026-10-31 群聊直接入群后台部署
+
+负责人明确要求部署feat/group-direct-join固定提交 `e1b26f90c91ca6d0370cbdcfee2de7938b173634`。经已登录Edge阿里云Workbench进入原root shell，服务器clone后核对完整HEAD，未使用本机未提交业务文件。原API/worker均为task-handoff-20261029/c12e3e4；保留完整Compose覆盖链，只追加group-direct-join-20261031/images.yaml，未变更其他6容器、端口、安全组、Nginx、证书或callback校验。
+
+原Dockerfile首轮缺research-skills编译而失败，运维副本补齐。源码守卫两轮正则错误与全量单测中缺根vitest配置的1项失败均保留日志；候选镜像413/414通过，缺配置组只读挂载同提交配置后10/10通过。首次正式切换在025迁移校验和处中止，未执行迁移，01:52:38–01:52:52 UTC成对恢复旧镜像。核对发现仅025旧镜像为CRLF、提交为LF，SQL一致；最终构建严格断言转换前后SHA并保留现网旧字节，未改数据库校验和，其他150份受检文件逐字节匹配。重试准备的两个未执行语法错误也记录在回执。
+
+最终镜像 `research-openim-api:group-direct-join-20261031` / `sha256:1fb72c6bdb0eba546423510d1d2907a236d075f96e611967725117d4c7c37ab3`；最终镜像foundation/lab-membership/chat三文件63/63通过。02:01:48–02:02:10 UTC维护22秒：静止备份到 `/srv/research-openim-backups/group-direct-join-20261031-20261031T020151Z/`，research.tar.gz SHA256 `34f7bcac9d5204868ed09f089bab940baa9cf75507251a4bb2e0ee00ba903dc8`。实际恢复副本和正式库分别迁移两次，031→031，112表与9份原件完整快照不变，33份配置输入不变。API healthy、worker running、均restart=0，其他6容器身份/镜像/状态不变；ready原始contract0.39.0且database/storage/authentication ok，harness not_verified；匿名保护接口401。
+
+真实双端行为尚未验收：Edge登录页等待负责人登录和指定两位真实成员、群名，未造生产合成数据、未代选联系人，没有生产建群请求/返回可报告。本批不合并产品分支、不打客户端包、不发布Release。详见[完整部署回执](deployment/group-direct-join-20261031.md)，服务器运维目录 `/opt/research-openim/ops/group-direct-join-20261031` 保留失败/成功证据；本机仅保存脱敏HTTP与截图到 `D:/deepseek-agent/.runtime/group-direct-join-deploy-20261031/`。
