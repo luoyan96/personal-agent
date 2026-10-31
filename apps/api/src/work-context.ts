@@ -8,6 +8,9 @@ import { hash } from './auth.js'
 
 type Command=keyof typeof workContextRoutes
 export function runWorkContext(s:ChatService,name:Command,req:RequestFor<Command>) {
+ // Lab rules are edited without a task, so they have their own two commands.
+ if(name==='labWorkRules'||name==='saveLabWorkRule')
+  return runLabWorkRule(s,name,req as RequestFor<'labWorkRules'|'saveLabWorkRule'>)
  const {kind,id}=req.params, c=s.c, actor=c.actor.id
  let scopes:WorkContext['scopes']=[], privateMemoryAllowed=false
  if(kind==='research'){
@@ -23,7 +26,8 @@ export function runWorkContext(s:ChatService,name:Command,req:RequestFor<Command
  const scopeFor=(scope:string,scopeId:string)=>scopes.find(x=>x.scope===scope&&x.id===scopeId)
  const visible=(r:WorkRule)=>{
   if(!scopeFor(r.scope,r.scopeId))return false
-  if(r.kind==='memory'){try{c.task(r.sourceTaskId)}catch{return false}}
+  // A memory always cites a task; a lab rule managed outside a task cites none.
+  if(r.kind==='memory'){if(!r.sourceTaskId)return false;try{c.task(r.sourceTaskId)}catch{return false}}
   return true
  }
  const project=(r:WorkRule):WorkRule=>({...r,allowedActions:r.status==='revoked'?[]:scopeFor(r.scope,r.scopeId)?.canPublish?['revise','confirm','revoke']:r.status==='candidate'&&r.authorId===actor?['revise','revoke']:[]})
@@ -66,6 +70,48 @@ export function runWorkContext(s:ChatService,name:Command,req:RequestFor<Command
  const {recordId:_recordId,expectedVersion:_version,action:_action,...clean}=value as WorkRule & typeof b
  const record=WorkRule.parse(clean), document=JSON.stringify(record)
  s.db.prepare('INSERT INTO work_context_records VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET document=excluded.document').run(record.id,c.labId,scope.scope,scope.id,document)
+ s.db.prepare('INSERT INTO work_context_revisions VALUES(?,?,?)').run(record.id,record.version,document)
+ const result={data:project(record)}
+ s.db.prepare('INSERT INTO idempotency_results(actor_id,command,resource_id,key,request_hash,response_json,http_status,created_at) VALUES(?,?,?,?,?,?,?,?)').run(actor,name,resource,commandKey,digest,JSON.stringify(result),200,now)
+ return result
+}
+
+/**
+ * Lab rules live outside any task: members read them, the lab manager publishes
+ * and confirms, everyone else stages a candidate. History stays immutable.
+ */
+function runLabWorkRule(s:ChatService,name:'labWorkRules'|'saveLabWorkRule',req:RequestFor<'labWorkRules'|'saveLabWorkRule'>){
+ const c=s.c, actor=c.actor.id, canPublish=isLabManager(s.db,c.actor)
+ const project=(r:WorkRule):WorkRule=>({...r,allowedActions:r.status==='revoked'?[]:canPublish?['revise','confirm','revoke']:r.status==='candidate'&&r.authorId===actor?['revise','revoke']:[]})
+ const get=(recordId:string)=>{
+  const row=s.db.prepare("SELECT document FROM work_context_records WHERE id=? AND lab_id=? AND scope='lab'").get(recordId,c.labId)
+  if(!row)fail('NOT_FOUND')
+  const r=WorkRule.parse(JSON.parse(String(row.document)))
+  if(r.scopeId!==c.labId)fail('NOT_FOUND')
+  return project(r)
+ }
+ if(name==='labWorkRules')
+  return {data:{platform:PLATFORM_WORK_RULE,canPublish,records:s.db.prepare("SELECT document FROM work_context_records WHERE lab_id=? AND scope='lab' AND scope_id=? ORDER BY id").all(c.labId,c.labId).map(row=>WorkRule.parse(JSON.parse(String(row.document)))).map(project)}}
+ const b=(req as RequestFor<'saveLabWorkRule'>).body
+ // Authorize before replay: a revoked membership must not read a saved response.
+ const commandKey=req.headers['Idempotency-Key']!, digest=hash(JSON.stringify(b)), resource='lab'
+ const cached=s.db.prepare('SELECT request_hash,response_json FROM idempotency_results WHERE actor_id=? AND command=? AND resource_id=? AND key=?').get(actor,name,resource,commandKey)
+ if(cached){if(cached.request_hash!==digest)fail('IDEMPOTENCY_CONFLICT');const response=JSON.parse(String(cached.response_json));get(response.data.id);return response}
+ const old=b.recordId?get(b.recordId):null
+ if(old){
+  c.checkVersion(old.version,b.expectedVersion)
+  if(old.status==='revoked')fail('INVALID_STATE')
+  if(!old.allowedActions.includes(b.action==='save'?'revise':b.action))fail('FORBIDDEN')
+ }else if(b.expectedVersion!==0||b.action!=='save')fail('VALIDATION_ERROR')
+ if(old&&old.version>=100)fail('RATE_LIMITED')
+ if(!old&&Number(s.db.prepare("SELECT count(*) n FROM work_context_records WHERE lab_id=? AND scope='lab' AND scope_id=?").get(c.labId,c.labId)!.n)>=40)fail('RATE_LIMITED')
+ const now=new Date().toISOString()
+ const value:WorkRule={...b,id:old?.id??randomUUID(),scopeId:c.labId,sourceTaskId:old?.sourceTaskId??null,
+  authorId:actor,authorName:c.member(actor).displayName,status:b.action==='revoke'?'revoked':b.action==='confirm'?'active':canPublish?'active':'candidate',version:(old?.version??0)+1,updatedAt:now,allowedActions:[]}
+ if(old&&b.action!=='save'){value.title=old.title;value.content=old.content}
+ const {recordId:_recordId,expectedVersion:_version,action:_action,...clean}=value as WorkRule & typeof b
+ const record=WorkRule.parse(clean), document=JSON.stringify(record)
+ s.db.prepare('INSERT INTO work_context_records VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET document=excluded.document').run(record.id,c.labId,'lab',c.labId,document)
  s.db.prepare('INSERT INTO work_context_revisions VALUES(?,?,?)').run(record.id,record.version,document)
  const result={data:project(record)}
  s.db.prepare('INSERT INTO idempotency_results(actor_id,command,resource_id,key,request_hash,response_json,http_status,created_at) VALUES(?,?,?,?,?,?,?,?)').run(actor,name,resource,commandKey,digest,JSON.stringify(result),200,now)

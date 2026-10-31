@@ -4,7 +4,6 @@ import {
   ArrowLeftOutlined,
   CheckOutlined,
   HistoryOutlined,
-  ExpandOutlined,
   PlusOutlined,
   RobotOutlined,
   StopOutlined,
@@ -61,10 +60,11 @@ import { AgentColleagueSettings } from "./AgentColleagueSettings";
 type Props = {
   available: boolean;
   conversationAvailable: boolean;
-  full: boolean;
   /** Hidden keeps the session and the draft alive while another view is in front. */
   hidden?: boolean;
   focus: number;
+  /** Bumped by "新建任务": open a clean thread instead of the last one. */
+  fresh?: number;
   planId?: string;
   requestId?: string;
   onExpandedChange: (expanded: boolean) => void;
@@ -107,9 +107,9 @@ export function PlanningAgent(props: Props) {
 function PlanningAgentSession({
   available,
   conversationAvailable,
-  full,
   hidden,
   focus,
+  fresh,
   planId: adoptPlan,
   requestId: adoptRequest,
   onExpandedChange,
@@ -222,16 +222,27 @@ function PlanningAgentSession({
     }
   }, [focus]);
   useEffect(() => {
-    if (full) setExpanded(true);
-  }, [full]);
+    if (!fresh) return;
+    setExpanded(true);
+    const active = latest.current.threads.find((t) => t.id === latest.current.active);
+    // An untouched thread stays; anything already said belongs to the old task.
+    if (active?.messages.length || active?.planId || active?.requestId) {
+      const next = newPlannerThread();
+      setHistory((h) => ({
+        active: next.id,
+        threads: [next, ...h.threads].slice(0, 20),
+      }));
+    }
+    window.requestAnimationFrame(() => input.current?.focus());
+  }, [fresh]);
   useEffect(() => {
     // Leaving the bar behind another view closes it, so returning starts from the list.
     if (hidden) setExpanded(false);
   }, [hidden]);
   useLayoutEffect(() => {
-    onExpandedChange(expanded && !full);
+    onExpandedChange(expanded);
     return () => onExpandedChange(false);
-  }, [expanded, full, onExpandedChange]);
+  }, [expanded, onExpandedChange]);
   useEffect(() => {
     messages.current?.scrollTo({
       top: messages.current.scrollHeight,
@@ -669,20 +680,47 @@ function PlanningAgentSession({
     thread.taskIds ||
     linked.data?.data.steps.flatMap((s) => (s.taskId ? [s.taskId] : [])) ||
     [];
+  const name = colleague?.agent.displayName || planningAgentStarter.profile.displayName;
+  // Collapsed the bar is only an entry: the input box would otherwise take a
+  // slice of every list and detail screen it sits under.
+  if (!expanded)
+    return (
+      <section
+        className={`planning-agent is-collapsed ${hidden ? "is-hidden" : ""}`}
+        aria-label="任务助手"
+        aria-hidden={hidden || undefined}
+      >
+        <button
+          type="button"
+          className="planning-agent-entry"
+          aria-expanded={false}
+          onClick={() => {
+            setExpanded(true);
+            window.requestAnimationFrame(() => input.current?.focus());
+          }}
+        >
+          <RobotOutlined />
+          <strong>{name}</strong>
+          <span>
+            {thread.messages.length
+              ? thread.title || "接着上次的对话"
+              : "说一件要做的事，我会整理成任务"}
+          </span>
+          {inProgress && <em role="status">正在回复…</em>}
+          <UpOutlined />
+        </button>
+      </section>
+    );
   return (
     <section
-      className={`planning-agent ${expanded || full ? "is-expanded" : ""} ${
-        full ? "is-full" : ""
-      } ${hidden ? "is-hidden" : ""}`}
+      className={`planning-agent is-expanded ${hidden ? "is-hidden" : ""}`}
       aria-label="任务规划 Agent"
       aria-hidden={hidden || undefined}
     >
       <header className="planning-agent-heading">
         <div>
           <RobotOutlined />
-          <strong>
-            {colleague?.agent.displayName || planningAgentStarter.profile.displayName}
-          </strong>
+          <strong>{name}</strong>
           {inProgress && <span role="status">正在回复…</span>}
         </div>
         <nav>
@@ -720,335 +758,320 @@ function PlanningAgentSession({
           <Button type="text" icon={<PlusOutlined />} onClick={newChat}>
             新对话
           </Button>
-          {!full && expanded && (
-            <Button
-              type="text"
-              icon={<ExpandOutlined />}
-              aria-label="专注任务规划"
-              onClick={() => navigate("/workbench?view=planning")}
-            />
-          )}
-          {!full && (
-            <Button
-              type="default"
-              className="planning-agent-toggle"
-              icon={expanded ? <ArrowLeftOutlined /> : <UpOutlined />}
-              aria-label={expanded ? "返回工作台" : "展开规划对话"}
-              aria-expanded={expanded}
-              title={expanded ? "收起对话，返回工作台" : "展开对话"}
-              onClick={() => setExpanded((v) => !v)}
-            >
-              {expanded ? "返回工作台" : "展开对话"}
-            </Button>
-          )}
+          <Button
+            type="default"
+            className="planning-agent-toggle"
+            icon={<ArrowLeftOutlined />}
+            aria-label="返回工作台"
+            aria-expanded
+            title="收起对话，返回工作台"
+            onClick={() => setExpanded(false)}
+          >
+            返回工作台
+          </Button>
         </nav>
       </header>
-      {(expanded || full) && (
-        <div className="planning-agent-messages" ref={messages} aria-live="polite">
-          {!thread.messages.length && !thread.planId && !thread.requestId && (
-            <div className="planning-agent-welcome">
-              <h2>说说你要安排的任务</h2>
-              <p>说一件要做的事，我会整理成一项任务，执行步骤放在任务里。</p>
-              <div>
-                {[
-                  "完善我现有的论文和实验，安排成一项任务",
-                  "准备一份下次组会要讨论的研究报告",
-                ].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => {
-                      update((t) => ({ ...t, draft: s }));
-                      input.current?.focus();
-                    }}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
+      <div className="planning-agent-messages" ref={messages} aria-live="polite">
+        {!thread.messages.length && !thread.planId && !thread.requestId && (
+          <div className="planning-agent-welcome">
+            <h2>说说你要安排的任务</h2>
+            <p>说一件要做的事，我会整理成一项任务，执行步骤放在任务里。</p>
+            <div>
+              {[
+                "完善我现有的论文和实验，安排成一项任务",
+                "准备一份下次组会要讨论的研究报告",
+              ].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    update((t) => ({ ...t, draft: s }));
+                    input.current?.focus();
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
             </div>
-          )}
-          {thread.messages.map((message, index) => (
-            <div
-              key={message.id}
-              className={`planning-chat-message role-${message.role}`}
-            >
+          </div>
+        )}
+        {thread.messages.map((message, index) => (
+          <div
+            key={message.id}
+            className={`planning-chat-message role-${message.role}`}
+          >
+            <span>
+              {message.role === "user"
+                ? "我"
+                : message.role === "assistant"
+                ? colleague?.agent.displayName ||
+                  planningAgentStarter.profile.displayName
+                : "系统提示"}
+            </span>
+            <SafeMessageMarkdown
+              text={
+                index === thread.messages.length - 1 && latestFailure && result
+                  ? plannerFailureText(result)
+                  : message.text
+              }
+            />
+            {index === thread.messages.length - 1 &&
+              latestFailure &&
+              result &&
+              !thread.taskIds?.length &&
+              canRetryPlannerReply(result) &&
+              plannerRetryInput(thread.messages) && (
+                <Button
+                  size="small"
+                  loading={busy}
+                  disabled={frozen || !available}
+                  onClick={() => send(true)}
+                >
+                  重试这条
+                </Button>
+              )}
+            {message.plan && index < thread.messages.length - 1 && (
+              <small>
+                方案版本 {message.plan.version} · 当前方案以下方实际读取为准
+              </small>
+            )}
+          </div>
+        ))}
+        {request.error && (
+          <Alert
+            type="warning"
+            message={request.error}
+            action={<Button onClick={request.refresh}>重读生成状态</Button>}
+          />
+        )}
+        {inProgress && (
+          <div className="planning-agent-thinking" role="status">
+            <Spin size="small" />
+            <span>
+              {requestStateLabels[result!.status]}，正在结合前面的信息整理任务…
+            </span>
+            <Button size="small" onClick={stop} loading={busy}>
+              停止生成
+            </Button>
+          </div>
+        )}
+        {plan.error && (
+          <Alert
+            type="warning"
+            message={plan.error}
+            action={<Button onClick={plan.refresh}>重新读取方案</Button>}
+          />
+        )}
+        {thread.planId && !current && !plan.error && (
+          <p role="status">正在读取当前方案…</p>
+        )}
+        {current && preview && !!preview.proposedItems.length && (
+          <article className="planning-chat-plan" aria-label="当前任务方案">
+            <header>
               <span>
-                {message.role === "user"
-                  ? "我"
-                  : message.role === "assistant"
-                  ? colleague?.agent.displayName ||
-                    planningAgentStarter.profile.displayName
-                  : "系统提示"}
+                {current.status === "confirmed" ? "已建立任务的计划" : "待创建的任务"}
               </span>
-              <SafeMessageMarkdown
-                text={
-                  index === thread.messages.length - 1 && latestFailure && result
-                    ? plannerFailureText(result)
-                    : message.text
-                }
+              <strong>{current.goal}</strong>
+              <small>
+                版本 {current.version}
+                {current.status === "draft"
+                  ? " · 还可继续用对话调整"
+                  : " · 任务已保存到工作台"}
+              </small>
+            </header>
+            {preview.proposedItems.length > 1 && (
+              <DependencyGraph
+                items={preview.proposedItems.map((step) => ({
+                  id: step.id,
+                  title: step.title,
+                  dependencies: step.dependencies,
+                  needsClaim: step.allocation.kind === "claim",
+                }))}
               />
-              {index === thread.messages.length - 1 &&
-                latestFailure &&
-                result &&
-                !thread.taskIds?.length &&
-                canRetryPlannerReply(result) &&
-                plannerRetryInput(thread.messages) && (
-                  <Button
-                    size="small"
-                    loading={busy}
-                    disabled={frozen || !available}
-                    onClick={() => send(true)}
-                  >
-                    重试这条
-                  </Button>
-                )}
-              {message.plan && index < thread.messages.length - 1 && (
-                <small>
-                  方案版本 {message.plan.version} · 当前方案以下方实际读取为准
-                </small>
+            )}
+            {current.status === "draft" &&
+              thread.taskShape === "single" &&
+              current.proposedItems.length > 1 && (
+                <p className="planning-agent-note">
+                  原草案的 {current.proposedItems.length}{" "}
+                  个步骤会放进同一项任务，内容保留；确认后只创建一项任务。
+                </p>
               )}
-            </div>
-          ))}
-          {request.error && (
-            <Alert
-              type="warning"
-              message={request.error}
-              action={<Button onClick={request.refresh}>重读生成状态</Button>}
-            />
-          )}
-          {inProgress && (
-            <div className="planning-agent-thinking" role="status">
-              <Spin size="small" />
-              <span>
-                {requestStateLabels[result!.status]}，正在结合前面的信息整理任务…
-              </span>
-              <Button size="small" onClick={stop} loading={busy}>
-                停止生成
-              </Button>
-            </div>
-          )}
-          {plan.error && (
-            <Alert
-              type="warning"
-              message={plan.error}
-              action={<Button onClick={plan.refresh}>重新读取方案</Button>}
-            />
-          )}
-          {thread.planId && !current && !plan.error && (
-            <p role="status">正在读取当前方案…</p>
-          )}
-          {current && preview && !!preview.proposedItems.length && (
-            <article className="planning-chat-plan" aria-label="当前任务方案">
-              <header>
-                <span>
-                  {current.status === "confirmed" ? "已建立任务的计划" : "待创建的任务"}
-                </span>
-                <strong>{current.goal}</strong>
-                <small>
-                  版本 {current.version}
-                  {current.status === "draft"
-                    ? " · 还可继续用对话调整"
-                    : " · 任务已保存到工作台"}
-                </small>
-              </header>
-              {preview.proposedItems.length > 1 && (
-                <DependencyGraph
-                  items={preview.proposedItems.map((step) => ({
-                    id: step.id,
-                    title: step.title,
-                    dependencies: step.dependencies,
-                    needsClaim: step.allocation.kind === "claim",
-                  }))}
-                />
-              )}
-              {current.status === "draft" &&
-                thread.taskShape === "single" &&
-                current.proposedItems.length > 1 && (
-                  <p className="planning-agent-note">
-                    原草案的 {current.proposedItems.length}{" "}
-                    个步骤会放进同一项任务，内容保留；确认后只创建一项任务。
-                  </p>
-                )}
-              <ol>
-                {preview.proposedItems.map((step, index) => (
-                  <li key={step.id}>
-                    <div>
-                      <b>{index + 1}</b>
-                      <strong>{step.title}</strong>
-                      <span>
-                        {step.allocation.kind === "self"
-                          ? "我来负责"
-                          : step.allocation.kind === "invitation"
-                          ? `邀请 ${
-                              people[step.allocation.memberId] ||
-                              step.allocation.memberId
-                            }`
-                          : step.allocation.kind === "claim"
-                          ? "课题组成员认领"
-                          : "公共 Agent 安排"}
-                      </span>
-                    </div>
-                    {preview!.proposedItems.length > 1 && (
-                      <p>交付：{step.deliverable}</p>
-                    )}
-                    <details className="planning-step-details">
-                      <summary>查看任务说明与完成要求</summary>
-                      <SafeMessageMarkdown text={step.goal} />
-                      <p>交付要求：</p>
-                      <SafeMessageMarkdown text={step.deliverable} />
-                      <p>验收标准：</p>
-                      <SafeMessageMarkdown text={step.acceptanceCriteria} />
-                      {step.dependencies.length > 0 && (
-                        <small>
-                          前置：
-                          {step.dependencies
-                            .map(
-                              (id) =>
-                                preview!.proposedItems.find((s) => s.id === id)
-                                  ?.title || "待核对步骤",
-                            )
-                            .join("、")}
-                        </small>
-                      )}
-                    </details>
-                    {step.schedule.hardDeadline && (
+            <ol>
+              {preview.proposedItems.map((step, index) => (
+                <li key={step.id}>
+                  <div>
+                    <b>{index + 1}</b>
+                    <strong>{step.title}</strong>
+                    <span>
+                      {step.allocation.kind === "self"
+                        ? "我来负责"
+                        : step.allocation.kind === "invitation"
+                        ? `邀请 ${
+                            people[step.allocation.memberId] || step.allocation.memberId
+                          }`
+                        : step.allocation.kind === "claim"
+                        ? "课题组成员认领"
+                        : "公共 Agent 安排"}
+                    </span>
+                  </div>
+                  {preview!.proposedItems.length > 1 && <p>交付：{step.deliverable}</p>}
+                  <details className="planning-step-details">
+                    <summary>查看任务说明与完成要求</summary>
+                    <SafeMessageMarkdown text={step.goal} />
+                    <p>交付要求：</p>
+                    <SafeMessageMarkdown text={step.deliverable} />
+                    <p>验收标准：</p>
+                    <SafeMessageMarkdown text={step.acceptanceCriteria} />
+                    {step.dependencies.length > 0 && (
                       <small>
-                        截止：{planDate(step.schedule.hardDeadline)} ·{" "}
-                        {step.schedule.hardDeadline.value.kind === "date"
-                          ? step.schedule.hardDeadline.value.timezone
-                          : "北京时间"}
+                        前置：
+                        {step.dependencies
+                          .map(
+                            (id) =>
+                              preview!.proposedItems.find((s) => s.id === id)?.title ||
+                              "待核对步骤",
+                          )
+                          .join("、")}
                       </small>
                     )}
-                  </li>
+                  </details>
+                  {step.schedule.hardDeadline && (
+                    <small>
+                      截止：{planDate(step.schedule.hardDeadline)} ·{" "}
+                      {step.schedule.hardDeadline.value.kind === "date"
+                        ? step.schedule.hardDeadline.value.timezone
+                        : "北京时间"}
+                    </small>
+                  )}
+                </li>
+              ))}
+            </ol>
+            {!preview.proposedItems.length && (
+              <p>我们可以先把思路聊清楚，再决定怎样安排。</p>
+            )}
+            {!!preview.unresolvedQuestions.length && (
+              <details>
+                <summary>方案中暂未确定的信息</summary>
+                {preview.unresolvedQuestions.map((q, i) => (
+                  <p key={i}>{q}</p>
                 ))}
-              </ol>
-              {!preview.proposedItems.length && (
-                <p>我们可以先把思路聊清楚，再决定怎样安排。</p>
-              )}
-              {!!preview.unresolvedQuestions.length && (
-                <details>
-                  <summary>方案中暂未确定的信息</summary>
-                  {preview.unresolvedQuestions.map((q, i) => (
-                    <p key={i}>{q}</p>
-                  ))}
-                </details>
-              )}
-              {current.status === "draft" && !thread.taskIds?.length && (
-                <footer>
-                  <span>核对后可回复“确认创建任务”，或继续说修改意见。</span>
-                  <Button
-                    type="primary"
-                    disabled={
-                      !available ||
-                      busy ||
-                      frozen ||
-                      processing ||
-                      plan.loading ||
-                      !!problems.length
-                    }
-                    onClick={() => confirm()}
-                  >
-                    {preview.proposedItems.length === 1
-                      ? "创建这项任务"
-                      : `创建这 ${preview.proposedItems.length} 项任务`}
-                  </Button>
-                </footer>
-              )}
-              {!!problems.length && (
-                <div className="planning-agent-note">
-                  <p>{problems[0]}</p>
-                  {problems.length > 1 && (
-                    <details>
-                      <summary>其余 {problems.length - 1} 项待核对内容</summary>
-                      {problems.slice(1).map((problem, index) => (
-                        <p key={index}>{problem}</p>
-                      ))}
-                    </details>
-                  )}
-                </div>
-              )}
-              {current.status === "confirmed" && (
-                <div className="planning-created-actions">
-                  <CheckOutlined />
-                  <span>
-                    已建立 {taskIds.length || preview.proposedItems.length} 项任务
-                  </span>
-                  <Button
-                    onClick={() => {
-                      setExpanded(false);
-                      onTeam();
-                    }}
-                  >
-                    查看课题组任务
-                  </Button>
-                  {taskIds.map((id, i) => (
-                    <Button
-                      key={id}
-                      type="link"
-                      onClick={() => {
-                        setExpanded(false);
-                        navigate(workbenchTaskPath(id, "research"));
-                      }}
-                    >
-                      任务 {i + 1}
-                    </Button>
-                  ))}
-                  {linked.error && (
-                    <p>
-                      {linked.error}
-                      <Button onClick={linked.refresh}>重新核对任务链接</Button>
-                    </p>
-                  )}
-                </div>
-              )}
-            </article>
-          )}
-          {current && !preview && !!problems.length && (
-            <Alert
-              type="warning"
-              message={problems[0]}
-              description={
-                problems.length > 1 ? (
+              </details>
+            )}
+            {current.status === "draft" && !thread.taskIds?.length && (
+              <footer>
+                <span>核对后可回复“确认创建任务”，或继续说修改意见。</span>
+                <Button
+                  type="primary"
+                  disabled={
+                    !available ||
+                    busy ||
+                    frozen ||
+                    processing ||
+                    plan.loading ||
+                    !!problems.length
+                  }
+                  onClick={() => confirm()}
+                >
+                  {preview.proposedItems.length === 1
+                    ? "创建这项任务"
+                    : `创建这 ${preview.proposedItems.length} 项任务`}
+                </Button>
+              </footer>
+            )}
+            {!!problems.length && (
+              <div className="planning-agent-note">
+                <p>{problems[0]}</p>
+                {problems.length > 1 && (
                   <details>
-                    <summary>查看其他待核对内容</summary>
+                    <summary>其余 {problems.length - 1} 项待核对内容</summary>
                     {problems.slice(1).map((problem, index) => (
                       <p key={index}>{problem}</p>
                     ))}
                   </details>
-                ) : undefined
-              }
-            />
-          )}
-          {thread.sending && !busy && (
-            <Alert
-              type="warning"
-              message="本条消息的发送结果尚未确认。重试将核对原来的发送，不会另起一份方案。"
-              action={
-                <Button onClick={() => dispatch(thread.sending!)}>核对原消息</Button>
-              }
-            />
-          )}
-          {thread.creating && !busy && (
-            <Alert
-              type="warning"
-              message="创建结果尚未确认。请先核对原操作，避免重复安排。"
-              action={
-                <div>
-                  <Button onClick={() => confirm(thread.creating)}>核对创建结果</Button>
-                  <Button type="link" onClick={reviewLatest}>
-                    读取最新方案
+                )}
+              </div>
+            )}
+            {current.status === "confirmed" && (
+              <div className="planning-created-actions">
+                <CheckOutlined />
+                <span>
+                  已建立 {taskIds.length || preview.proposedItems.length} 项任务
+                </span>
+                <Button
+                  onClick={() => {
+                    setExpanded(false);
+                    onTeam();
+                  }}
+                >
+                  查看课题组任务
+                </Button>
+                {taskIds.map((id, i) => (
+                  <Button
+                    key={id}
+                    type="link"
+                    onClick={() => {
+                      setExpanded(false);
+                      navigate(workbenchTaskPath(id, "research"));
+                    }}
+                  >
+                    任务 {i + 1}
                   </Button>
-                </div>
-              }
-            />
-          )}
-          {!!omitted && (
-            <p className="planning-agent-note">
-              这轮使用当前方案和最近的对话；更早的 {omitted} 条消息仍保留在本机记录中。
-            </p>
-          )}
-        </div>
-      )}
+                ))}
+                {linked.error && (
+                  <p>
+                    {linked.error}
+                    <Button onClick={linked.refresh}>重新核对任务链接</Button>
+                  </p>
+                )}
+              </div>
+            )}
+          </article>
+        )}
+        {current && !preview && !!problems.length && (
+          <Alert
+            type="warning"
+            message={problems[0]}
+            description={
+              problems.length > 1 ? (
+                <details>
+                  <summary>查看其他待核对内容</summary>
+                  {problems.slice(1).map((problem, index) => (
+                    <p key={index}>{problem}</p>
+                  ))}
+                </details>
+              ) : undefined
+            }
+          />
+        )}
+        {thread.sending && !busy && (
+          <Alert
+            type="warning"
+            message="本条消息的发送结果尚未确认。重试将核对原来的发送，不会另起一份方案。"
+            action={
+              <Button onClick={() => dispatch(thread.sending!)}>核对原消息</Button>
+            }
+          />
+        )}
+        {thread.creating && !busy && (
+          <Alert
+            type="warning"
+            message="创建结果尚未确认。请先核对原操作，避免重复安排。"
+            action={
+              <div>
+                <Button onClick={() => confirm(thread.creating)}>核对创建结果</Button>
+                <Button type="link" onClick={reviewLatest}>
+                  读取最新方案
+                </Button>
+              </div>
+            }
+          />
+        )}
+        {!!omitted && (
+          <p className="planning-agent-note">
+            这轮使用当前方案和最近的对话；更早的 {omitted} 条消息仍保留在本机记录中。
+          </p>
+        )}
+      </div>
       {failure && (
         <Alert
           type="warning"

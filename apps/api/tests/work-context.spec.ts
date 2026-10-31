@@ -82,3 +82,32 @@ it('upgrades populated schema028 twice while preserving all pre-existing task ro
  expect(snapshot()).toEqual(before);expect(s.db.prepare('SELECT * FROM schema_migrations WHERE version<=28 ORDER BY version').all()).toEqual(history);
  expect(s.db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);expect(s.db.prepare('SELECT count(*) n FROM work_context_records').get()!.n).toBe(0);
 });
+
+it('manages lab rules without a task: members stage candidates, the manager publishes, history and task context agree',async()=>{
+ const s=await setup(),lab='lab/work-rules',body={scope:'lab',kind:'rule',title:'写作规范',content:'结论先行，引用保留页码。',recordId:null,expectedVersion:0,action:'save'}
+ const created=await s.call(lab,body,1)
+ expect(created.statusCode,created.body).toBe(200)
+ const record=created.json().data
+ expect(record.status).toBe('candidate')
+ expect(record.sourceTaskId).toBe(null)
+ const listed=await s.call(lab,undefined,0)
+ expect(listed.statusCode,listed.body).toBe(200)
+ expect(listed.json().data.canPublish).toBe(true)
+ expect(listed.json().data.records.map((r:any)=>r.id)).toContain(record.id)
+ // A task context carries the same lab rule, so the two surfaces cannot drift.
+ expect((await s.call(s.url,undefined,1)).json().data.records.some((r:any)=>r.id===record.id)).toBe(true)
+ const confirm={...body,recordId:record.id,expectedVersion:1,action:'confirm',content:'篡改内容'}
+ expect((await s.call(lab,confirm,1)).statusCode).toBe(403)
+ const confirmed=await s.call(lab,confirm,0)
+ expect(confirmed.statusCode,confirmed.body).toBe(200)
+ expect(confirmed.json().data.status).toBe('active')
+ expect(confirmed.json().data.content).toBe(body.content)
+ expect((await s.call(lab,{...body,recordId:record.id,expectedVersion:1,action:'save'},0)).statusCode).toBe(409)
+ const revoked=await s.call(lab,{...body,recordId:record.id,expectedVersion:2,action:'revoke'},0)
+ expect(revoked.json().data.status).toBe('revoked')
+ expect((await s.call(lab,{...body,recordId:record.id,expectedVersion:3,action:'save'},0)).statusCode).toBe(409)
+ // Scope and kind are fixed by the route; a project or memory record cannot be smuggled in.
+ expect((await s.call(lab,{...body,scope:'project'})).statusCode).toBe(400)
+ expect((await s.call(lab,{...body,kind:'memory'})).statusCode).toBe(400)
+ expect((await s.app.inject({url:'/api/v1/'+lab})).statusCode).toBe(401)
+})

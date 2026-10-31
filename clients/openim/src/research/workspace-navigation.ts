@@ -31,9 +31,10 @@ export function relocatedWorkspace(params: URLSearchParams): string | undefined 
     return `/me?${next}`;
   }
   if (view === "scheduled" || params.get("tab") === "scheduled") {
+    // Schedules are a group in the task list now, not a separate tab.
     next.delete("tab");
-    next.set("view", "planning");
-    next.set("panel", "scheduled");
+    next.delete("panel");
+    next.set("view", "tasks");
     return `/workbench?${next}`;
   }
 }

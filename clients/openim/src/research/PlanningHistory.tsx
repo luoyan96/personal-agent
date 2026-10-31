@@ -6,7 +6,12 @@ import { useResearchRead } from "./useResearchRead";
 import { useResearchStore } from "./store";
 import { requestStateLabels } from "./task-planning";
 
-export function PlanningHistory() {
+export function PlanningHistory({
+  onOpen,
+}: {
+  /** Callers that show this in a drawer decide what opening a plan means. */
+  onOpen?: (target: { plan?: string; request?: string }) => void;
+} = {}) {
   const [params, setParams] = useSearchParams();
   const actor = useResearchStore((s) => s.actor),
     generation = useResearchStore((s) => s.generation);
@@ -78,7 +83,11 @@ export function PlanningHistory() {
               <button
                 key={p.id}
                 aria-pressed={params.get("plan") === p.id}
-                onClick={() => setParams({ view: "planning", plan: p.id })}
+                onClick={() =>
+                  onOpen
+                    ? onOpen({ plan: p.id })
+                    : setParams({ view: "planning", plan: p.id })
+                }
               >
                 <strong>{p.goal}</strong>
                 <span>{p.status === "draft" ? "继续对话调整" : "查看任务安排"}</span>
@@ -123,7 +132,11 @@ export function PlanningHistory() {
           <button
             key={r.id}
             className="planning-request-link"
-            onClick={() => setParams({ view: "planning", planning: r.id })}
+            onClick={() =>
+              onOpen
+                ? onOpen({ request: r.id })
+                : setParams({ view: "planning", planning: r.id })
+            }
           >
             {requestStateLabels[r.status]} ·{" "}
             {new Date(r.createdAt).toLocaleString("zh-CN")}

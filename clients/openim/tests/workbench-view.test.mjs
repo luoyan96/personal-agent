@@ -1,0 +1,111 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import vm from "node:vm";
+import ts from "typescript";
+
+async function load(file) {
+  const source = await readFile(new URL(file, import.meta.url), "utf8");
+  const module = { exports: {} };
+  vm.runInNewContext(
+    ts.transpileModule(source, {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2022,
+      },
+    }).outputText,
+    {
+      module,
+      exports: module.exports,
+      require: (name) => {
+        throw Error("Unexpected import: " + name);
+      },
+    },
+    { filename: file },
+  );
+  return module.exports;
+}
+
+const { workbenchView, personalTaskTitle } = await load(
+  "../src/research/workbench-view.ts",
+);
+
+test("the workbench has two front doors and defaults to the task list", () => {
+  const initial = workbenchView(new URLSearchParams());
+  // Fields are compared one by one: the module is evaluated in another context,
+  // so its objects do not share this realm's prototype.
+  assert.equal(initial.tab, "tasks");
+  assert.equal(initial.planning, false);
+  assert.equal(initial.planId, undefined);
+  assert.equal(initial.requestId, undefined);
+  assert.equal(initial.filter, "all");
+  assert.equal(workbenchView(new URLSearchParams("view=team")).tab, "team");
+  assert.equal(
+    workbenchView(new URLSearchParams("view=tasks&category=completed")).filter,
+    "completed",
+  );
+});
+
+test("saved planning links open the assistant instead of a third tab", () => {
+  // The old planning tab and its deep links all land on the task list.
+  const planning = workbenchView(new URLSearchParams("view=planning"));
+  assert.equal(planning.tab, "tasks");
+  assert.equal(planning.planning, true);
+
+  const plan = workbenchView(new URLSearchParams("view=tasks&plan=plan_abc123"));
+  assert.equal(plan.planning, true);
+  assert.equal(plan.planId, "plan_abc123");
+
+  const request = workbenchView(
+    new URLSearchParams("view=tasks&planning=request_xyz789"),
+  );
+  assert.equal(request.planning, true);
+  assert.equal(request.requestId, "request_xyz789");
+});
+
+test("a team view never opens the assistant, and junk ids are ignored", () => {
+  const team = workbenchView(new URLSearchParams("view=team&plan=plan_abc123"));
+  assert.equal(team.tab, "team");
+  assert.equal(team.planning, false);
+  assert.equal(team.planId, "plan_abc123");
+
+  const junk = workbenchView(new URLSearchParams("view=tasks&plan=not an id"));
+  assert.equal(junk.planId, undefined);
+  assert.equal(junk.planning, false);
+});
+
+test("the page keeps only the two tabs and names the two kinds of task", async () => {
+  const page = await readFile(
+    new URL("../src/research/DesktopWorkbench.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(page, /label: "待办"/);
+  assert.match(page, /label: "团队"/);
+  assert.doesNotMatch(page, /label: "计划"/);
+  assert.doesNotMatch(page, /label: "定时"/);
+  // The two entries say what they make, so the difference is visible before clicking.
+  assert.match(page, /课题组任务/);
+  assert.match(page, /个人任务/);
+  assert.doesNotMatch(page, />\s*新建任务\s*</);
+  // 课题组任务 expands the assistant instead of opening a form.
+  assert.match(page, /setPlanningLaunch\(\(value\) => value \+ 1\)/);
+  assert.match(page, /disabled=\{!assistantReady\}/);
+  // Personal tasks ask for one sentence only.
+  assert.match(page, /onClick=\{startPersonalTask\}/);
+  assert.match(page, /aria-label="任务目标"/);
+  assert.doesNotMatch(page, /aria-label="任务名称"/);
+});
+
+test("a personal task name comes from its first sentence", () => {
+  assert.equal(personalTaskTitle("把上周的实验数据整理成一张表"), "把上周的实验数据整理成一张表");
+  assert.equal(
+    personalTaskTitle("整理实验数据。顺便画两张图。"),
+    "整理实验数据",
+  );
+  assert.equal(personalTaskTitle("- 1. 写一份组会报告\n细节以后再说"), "写一份组会报告");
+  assert.equal(personalTaskTitle("\n\n  先看文献  \n再写综述"), "先看文献");
+  // A short fragment before the full stop stays whole instead of becoming "好".
+  assert.equal(personalTaskTitle("好。"), "好");
+  assert.equal(personalTaskTitle("").length, 0);
+  assert.equal(personalTaskTitle("长".repeat(100)).length, 60);
+});
