@@ -104,6 +104,13 @@ describe('reviewed handoff integration',{timeout:30000},()=>{
   while(await worker.tick()){};expect(await worker.tick()).toBe(false)
   const notice=s.db.prepare("SELECT count(*) n FROM chat_messages WHERE json_extract(document,'$.origin')='service' AND json_extract(document,'$.text') LIKE '%邀请你承接任务%'").get()!
   expect(notice.n).toBe(1)
+  // The notice carries the task reference so the invitee's client can render one
+  // clickable card; it must not smuggle the goal or materials into the message.
+  const noticeDocument=JSON.parse(String(s.db.prepare("SELECT document FROM chat_messages WHERE json_extract(document,'$.origin')='service' AND json_extract(document,'$.text') LIKE '%邀请你承接任务%'").get()!.document))
+  expect(noticeDocument.resources).toHaveLength(1)
+  expect(noticeDocument.resources[0]).toMatchObject({kind:'task',ref:{id}})
+  expect(noticeDocument.resources[0].ref.version).toBe(1)
+  expect(noticeDocument.text).not.toContain('Compare synthetic materials')
   await s.decide(id,1);await s.transfer(id,1,'member_C');await s.ok('tasks/'+id+'/invitations/cancel',{expectedVersion:(await s.task(id,1)).version},1)
   while(await worker.tick()){}
   expect(s.db.prepare("SELECT count(*) n FROM chat_messages WHERE json_extract(document,'$.origin')='service' AND json_extract(document,'$.text') LIKE '%邀请你承接任务%'").get()!.n).toBe(1)

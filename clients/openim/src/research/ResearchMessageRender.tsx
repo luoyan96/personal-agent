@@ -4,6 +4,12 @@ import { IMessageItemProps } from "@/pages/chat/queryChat/MessageItem";
 import { researchApi } from "./api";
 import { useResearchRead } from "./useResearchRead";
 import { ResearchActionCard } from "./ResearchActionCard";
+import { LegacyTaskInviteCard, ResearchTaskCard } from "./ResearchTaskCard";
+import {
+  isTaskNotice,
+  legacyTaskInvitation,
+  splitTaskResources,
+} from "./task-notice";
 import { ResearchTurnStatus } from "./ResearchTurnStatus";
 import { useResearchStore } from "./store";
 import { useConversationStore } from "@/store";
@@ -86,6 +92,15 @@ export default function ResearchMessageRender({
   );
   const readableActions =
     actions.data?.data.filter((action) => actionIds.includes(action.id)) || [];
+  const { tasks: taskResources, others: otherResources } = splitTaskResources(
+    read.data?.fact.resources || [],
+  );
+  const taskNotice = isTaskNotice(read.data?.fact);
+  // A server that predates task references still sends the invitation as text.
+  const legacyInvite =
+    !taskNotice && read.data?.fact.origin === "service"
+      ? legacyTaskInvitation(read.data.fact.text)
+      : undefined;
   const currentRetry =
     retried?.generation === actorGeneration &&
     retried.imID === imID &&
@@ -216,7 +231,32 @@ export default function ResearchMessageRender({
               <p>{read.data.details.replyTo.text}</p>
             </button>
           )}
-          {read.data.fact.text && <SafeMessageMarkdown text={read.data.fact.text} />}
+          {taskNotice && read.data.fact.resources[0] ? (
+            <ResearchTaskCard
+              resource={read.data.fact.resources[0]}
+              text={read.data.fact.text || undefined}
+            />
+          ) : (
+            <>
+              {legacyInvite && read.data.fact.text ? (
+                <LegacyTaskInviteCard text={read.data.fact.text} />
+              ) : (
+                read.data.fact.text && (
+                  <SafeMessageMarkdown text={read.data.fact.text} />
+                )
+              )}
+              {!!taskResources.length && (
+                <div className="space-y-2">
+                  {taskResources.map((resource) => (
+                    <ResearchTaskCard
+                      key={`${resource.kind}:${resource.ref.id}`}
+                      resource={resource}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
           {currentTurn?.libraryRead &&
             currentTurn.outputMessageId === read.data.fact.id && (
               <ResearchReadSummary read={currentTurn.libraryRead} />
@@ -239,10 +279,10 @@ export default function ResearchMessageRender({
               messageId={fileRead.messageId}
             />
           )}
-          {!!read.data.fact.resources.length && (
+          {!!otherResources.length && (
             <details className="mt-2 text-xs">
               <summary>相关材料</summary>
-              {read.data.fact.resources.map((resource) => (
+              {otherResources.map((resource) => (
                 <p
                   key={`${resource.kind}:${resource.ref.id}`}
                   className="text-xs text-slate-600"

@@ -30,7 +30,10 @@ export class TaskInvitationWorker {
     const {data}=chat.handle('personalConversation',{params:{},query:{},headers:{},body:{}}) as {data:{conversation:Conversation;agent:{id:string}}}
     const inviterId=payload.requestedBy??task.initiatorId
     const inviter=this.db.prepare('SELECT display_name FROM members WHERE id=?').get(inviterId)
-    chat.message(data.conversation.id,{senderContactId:data.agent.id,origin:'service',text:`${inviter?.display_name ?? '有人'}邀请你承接任务「${task.title}」。请在任务待办中查看详情并决定是否接受。`,mentions:[],resources:[],actionIds:[],turnId:null})
+    // Carry the task reference so the invitee's client can offer one clickable
+    // card instead of a bare sentence. The invitee still decides separately;
+    // the reference only links to the inbox entry they are allowed to open.
+    chat.message(data.conversation.id,{senderContactId:data.agent.id,origin:'service',text:`${inviter?.display_name ?? '有人'}邀请你承接任务「${task.title}」。请在任务待办中查看详情并决定是否接受。`,mentions:[],resources:[{kind:'task',ref:{id:task.id,version:task.version}}],actionIds:[],turnId:null})
     this.db.prepare("UPDATE outbox SET status='delivered',attempts=attempts+1 WHERE id=?").run(row.id!)
     return true
   }) }
