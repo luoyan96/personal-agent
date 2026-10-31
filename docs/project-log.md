@@ -2567,3 +2567,13 @@ typecheck、typecheck:electron、build:web 通过；local-dsh 41 项（含新增
 客户端 0.10.79 只为对齐文案（行为 0.10.78 已可验证新后台）：建群/加人提示改为「已直接入群」「已加入群聊」，同步失败不再提示「成员仍需独立同意邀请」。构建时安全守卫再次拦下 pnpm 的 `_tmp_*` 清理，用 `CODEBUDDY_SAFE_DELETE_BULK_THRESHOLD=200000` 放开后 12 分 37 秒完成；rcedit 首次报 `Unable to commit changes` 后重试成功，产物元数据核对为 FileVersion 0.10.79 / ProductName AcceptCat。产物 `clients/openim/release/Base/0.10.79/AcceptCat_0.10.79.exe`（405,068,448 字节，SHA256 `81f8d2d78b2b5ae48874b7de8b0afdea1eaa58879e26ff3c178a6f3e39f6640e`）。顺带清掉早先 `git add -A` 误提交的两个零字节 pnpm 暂存文件，并在 `clients/openim/.gitignore` 加入 `_tmp_*`。
 
 仍未做：真实账号双端建群验收（需要负责人登录并指定两名成员）；老群遗留 pending 成员不批量转正，需在「邀请成员」里重新选择一次。分支 PR #155 已开，未合并。
+
+## 2026-10-31 任务邀请改成可点击卡片
+
+负责人指出「协助工作邀请」在聊天里只是纯文字，看到后无法一键进到对应界面。核对后确认这类消息有两种来源：`TaskInvitationWorker` 发出的「X 邀请你承接任务「…」」服务消息（`resources` 原为空），以及 `team-work` / `personal-followups` 已经带 `task` 引用但客户端只把它们折叠成「相关材料」里的一行原始 id。更早的「X 需要你帮忙」文本是 10-29 之前 `task-support.ts` 留下的历史消息（该文件已改名为 `task-invitation.ts`，support 通知不再产生）。
+
+改法：`TaskInvitationWorker` 的邀请消息附带 `{kind:'task',ref:{id,version}}`，只放引用不放目标、材料或历史，受邀人仍要自己决定。客户端新增 `ResearchTaskCard`：先按 `task` 读取（受邀人拿到的是 claim_summary，用 `visibleStatus` 显示「待承接」等状态），404 再退到 `personalWorkTask`，两者都不可读时按钮改为「去任务待办」，标题如实写「任务详情需在待办中查看」，不猜标题。按钮跳 `/workbench?view=tasks&task=…&taskKind=…`，落点就是 `ResearchTaskPanel`，那里有「接受任务/拒绝」。
+
+消息整条是邀请时（service、无 turnId、只有一个 task 引用）不再先渲染正文再渲染卡片，而是把正文放进卡片里，避免标题重复两遍；其它带 task 引用的消息保留正文并在下面追加卡片，`artifact` 等仍留在「相关材料」折叠区。判断逻辑抽到纯函数 `isTaskNotice` / `splitTaskResources` / `taskStatusLabel` / `legacyTaskInvitation`，后者识别旧服务端的纯文本邀请模板，让尚未部署新后台时也能得到一张卡片（按钮为「去任务待办」）。
+
+验证：`apps/api` 39 文件 414 项通过（`task-handoffs.spec` 新增断言：邀请消息只有一个 task 引用、version=1、不含私有目标文本）；`clients/openim` 新增 `tests/task-notice-card.test.mjs` 5 项通过并加入 desktop.yml；两端 typecheck 通过，新文件 eslint 干净。客户端 0.10.80 已打包（`AcceptCat_0.10.80.exe`，SHA256 `37621dc73a1b2d4eff44dd470668898b84da8b96fdb950affa862cefb01a8460`）。未部署后台，未做真机双端验收。
