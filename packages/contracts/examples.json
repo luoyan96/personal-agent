@@ -1,5 +1,5 @@
 {
-  "contractVersion": "0.39.0",
+  "contractVersion": "0.40.0",
   "synthetic": true,
   "scenarios": {
     "serviceProgressReply": {
@@ -567,7 +567,7 @@
   },
   "endpoints": {
     "teamWork": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/conversations/{id}/team-work",
@@ -586,7 +586,7 @@
       }
     },
     "createTeamWork": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/conversations/{id}/team-work",
@@ -617,7 +617,7 @@
       }
     },
     "workDevice": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/work/devices/heartbeat",
@@ -638,7 +638,7 @@
       }
     },
     "workExecution": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/work-execution/{kind}/{id}",
@@ -661,7 +661,7 @@
       }
     },
     "claimWorkExecution": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/work-execution/{kind}/{id}/claim",
@@ -697,7 +697,7 @@
       }
     },
     "reportWorkExecution": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/work-execution/{kind}/{id}/report",
@@ -733,7 +733,7 @@
       }
     },
     "workContext": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/work-context/{kind}/{id}",
@@ -761,7 +761,7 @@
       }
     },
     "saveWorkRule": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/work-context/{kind}/{id}/records",
@@ -794,7 +794,7 @@
           "content": "synthetic",
           "id": "synthetic",
           "scopeId": "synthetic",
-          "sourceTaskId": "synthetic",
+          "sourceTaskId": null,
           "authorId": "synthetic",
           "authorName": "synthetic",
           "status": "candidate",
@@ -805,7 +805,7 @@
       }
     },
     "workRuleHistory": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/work-context/{kind}/{id}/records/{recordId}",
@@ -825,8 +825,73 @@
         "data": []
       }
     },
+    "labWorkRules": {
+      "contractVersion": "0.40.0",
+      "synthetic": true,
+      "method": "GET",
+      "path": "/api/v1/lab/work-rules",
+      "stage": "CONTEXT1",
+      "status": 200,
+      "request": {
+        "params": {},
+        "query": {},
+        "headers": {},
+        "body": null
+      },
+      "response": {
+        "data": {
+          "platform": {
+            "version": "synthetic",
+            "content": "synthetic"
+          },
+          "canPublish": false,
+          "records": []
+        }
+      }
+    },
+    "saveLabWorkRule": {
+      "contractVersion": "0.40.0",
+      "synthetic": true,
+      "method": "POST",
+      "path": "/api/v1/lab/work-rules",
+      "stage": "CONTEXT1",
+      "status": 200,
+      "request": {
+        "params": {},
+        "query": {},
+        "headers": {
+          "Idempotency-Key": "synthetic_command_0001"
+        },
+        "body": {
+          "scope": "lab",
+          "kind": "rule",
+          "title": "synthetic",
+          "content": "synthetic",
+          "recordId": null,
+          "expectedVersion": 0,
+          "action": "save"
+        }
+      },
+      "response": {
+        "data": {
+          "scope": "lab",
+          "kind": "rule",
+          "title": "synthetic",
+          "content": "synthetic",
+          "id": "synthetic",
+          "scopeId": "synthetic",
+          "sourceTaskId": null,
+          "authorId": "synthetic",
+          "authorName": "synthetic",
+          "status": "candidate",
+          "version": 1,
+          "updatedAt": "2026-09-21T08:00:00+08:00",
+          "allowedActions": []
+        }
+      }
+    },
     "peerDevice": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/peer-library/devices",
@@ -849,7 +914,7 @@
       }
     },
     "peerRequests": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/peer-library/requests",
@@ -868,7 +933,7 @@
       }
     },
     "createPeerRequest": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/peer-library/requests",
@@ -908,7 +973,7 @@
       }
     },
     "peerRequest": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/peer-library/requests/{id}",
@@ -944,7 +1009,7 @@
       }
     },
     "updatePeerRequest": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/peer-library/requests/{id}",
@@ -986,7 +1051,7 @@
       }
     },
     "peerSignals": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/peer-library/requests/{id}/signals",
@@ -1008,7 +1073,7 @@
       }
     },
     "sendPeerSignal": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/peer-library/requests/{id}/signals",
@@ -1034,7 +1099,7 @@
       }
     },
     "myLabs": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/me/labs",
@@ -1056,7 +1121,7 @@
       }
     },
     "createLab": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/labs",
@@ -1082,7 +1147,7 @@
       }
     },
     "selectLab": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/me/lab-context",
@@ -1105,7 +1170,7 @@
       }
     },
     "labMembership": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/labs/{id}/membership",
@@ -1133,7 +1198,7 @@
       }
     },
     "inviteLabMember": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/labs/{id}/member-invitations",
@@ -1166,7 +1231,7 @@
       }
     },
     "decideLabInvitation": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/lab-member-invitations/{id}/decision",
@@ -1200,7 +1265,7 @@
       }
     },
     "revokeLabInvitation": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/lab-member-invitations/{id}/revoke",
@@ -1233,7 +1298,7 @@
       }
     },
     "previewLabCode": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/lab-join-preview",
@@ -1258,7 +1323,7 @@
       }
     },
     "joinLab": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/lab-joins",
@@ -1284,7 +1349,7 @@
       }
     },
     "removeLabMember": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/labs/{id}/members/{memberId}/remove",
@@ -1310,7 +1375,7 @@
       }
     },
     "leaveLab": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/labs/{id}/leave",
@@ -1333,7 +1398,7 @@
       }
     },
     "renameLab": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/labs/{id}/rename",
@@ -1361,7 +1426,7 @@
       }
     },
     "communityCatalog": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/community-catalog",
@@ -1391,7 +1456,7 @@
       }
     },
     "communityCatalogEntry": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/community-catalog/{id}",
@@ -1433,7 +1498,7 @@
       }
     },
     "beginResearchUpload": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/research-library/collections/{id}/uploads",
@@ -1472,7 +1537,7 @@
       }
     },
     "putResearchUploadPart": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/research-library/collections/{id}/uploads/parts",
@@ -1499,7 +1564,7 @@
       }
     },
     "completeResearchUpload": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/research-library/collections/{id}/uploads/complete",
@@ -1546,7 +1611,7 @@
       }
     },
     "researchCollections": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/research-library/collections",
@@ -1566,7 +1631,7 @@
       }
     },
     "createResearchCollection": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/research-library/collections",
@@ -1604,7 +1669,7 @@
       }
     },
     "updateResearchCollection": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/research-library/collections/{id}/settings",
@@ -1647,7 +1712,7 @@
       }
     },
     "withdrawResearchCollection": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/research-library/collections/{id}/withdraw",
@@ -1684,7 +1749,7 @@
       }
     },
     "importResearchFile": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/research-library/collections/{id}/files",
@@ -1741,7 +1806,7 @@
       }
     },
     "researchFiles": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/research-library/collections/{id}/files",
@@ -1762,7 +1827,7 @@
       }
     },
     "researchFile": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/research-library/files/{id}",
@@ -1809,7 +1874,7 @@
       }
     },
     "researchFileContent": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/research-library/files/{id}/content",
@@ -1828,7 +1893,7 @@
       }
     },
     "researchFileExcerpt": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/research-library/files/{id}/excerpt",
@@ -1867,7 +1932,7 @@
       }
     },
     "withdrawResearchFile": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/research-library/files/{id}/withdraw",
@@ -1913,7 +1978,7 @@
       }
     },
     "researchLibrarySearch": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/research-library/search",
@@ -1933,7 +1998,7 @@
       }
     },
     "bindAgentResearchCollections": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/research-library/agents/{id}/collections",
@@ -1962,7 +2027,7 @@
       }
     },
     "agentResearchCollections": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/research-library/agents/{id}/collections",
@@ -1986,7 +2051,7 @@
       }
     },
     "agentResearchContext": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/research-library/agents/{id}/context",
@@ -2021,7 +2086,7 @@
       }
     },
     "validateResearchCitations": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/research-library/agents/{id}/validate-citations",
@@ -2049,7 +2114,7 @@
       }
     },
     "feishuStatus": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/feishu/status",
@@ -2071,7 +2136,7 @@
       }
     },
     "connectFeishu": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/feishu/connect",
@@ -2091,7 +2156,7 @@
       }
     },
     "disconnectFeishu": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/feishu/disconnect",
@@ -2110,7 +2175,7 @@
       }
     },
     "previewFeishuDocument": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/feishu/preview",
@@ -2140,7 +2205,7 @@
       }
     },
     "importFeishuSnapshot": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/feishu/import",
@@ -2187,7 +2252,7 @@
       }
     },
     "installedSkills": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/skills",
@@ -2206,7 +2271,7 @@
       }
     },
     "installSkill": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/skills",
@@ -2266,7 +2331,7 @@
       }
     },
     "skillSource": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/skills/{id}/source",
@@ -2322,7 +2387,7 @@
       }
     },
     "updateSkillSettings": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/skills/{id}/settings",
@@ -2375,7 +2440,7 @@
       }
     },
     "reviseSkill": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/skills/{id}/revisions",
@@ -2438,7 +2503,7 @@
       }
     },
     "skillVersions": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/skills/{id}/versions",
@@ -2457,7 +2522,7 @@
       }
     },
     "rollbackSkill": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/skills/{id}/rollback",
@@ -2506,7 +2571,7 @@
       }
     },
     "skillUses": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/skills/{id}/uses",
@@ -2525,7 +2590,7 @@
       }
     },
     "personalMemorySettings": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/me/memory-settings",
@@ -2547,7 +2612,7 @@
       }
     },
     "updatePersonalMemorySettings": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/me/memory-settings",
@@ -2576,7 +2641,7 @@
       }
     },
     "personalMemories": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/me/memories",
@@ -2597,7 +2662,7 @@
       }
     },
     "personalMemory": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/me/memories/{id}",
@@ -2628,7 +2693,7 @@
       }
     },
     "createPersonalMemory": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/me/memories",
@@ -2663,7 +2728,7 @@
       }
     },
     "updatePersonalMemory": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/me/memories/{id}",
@@ -2701,7 +2766,7 @@
       }
     },
     "decidePersonalMemory": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/me/memories/{id}/decision",
@@ -2737,7 +2802,7 @@
       }
     },
     "personalFollowups": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/me/followups",
@@ -2758,7 +2823,7 @@
       }
     },
     "personalFollowupRuns": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/me/followups/{id}/runs",
@@ -2780,7 +2845,7 @@
       }
     },
     "personalFollowup": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/me/followups/{id}",
@@ -2818,7 +2883,7 @@
       }
     },
     "createPersonalFollowup": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/me/followups",
@@ -2865,7 +2930,7 @@
       }
     },
     "updatePersonalFollowup": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/me/followups/{id}",
@@ -2915,7 +2980,7 @@
       }
     },
     "changePersonalFollowup": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/me/followups/{id}/state",
@@ -2958,7 +3023,7 @@
       }
     },
     "workbench": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/me/workbench",
@@ -2979,7 +3044,7 @@
       }
     },
     "personalWorkTask": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/work/tasks/{id}",
@@ -3021,7 +3086,7 @@
       }
     },
     "createPersonalWorkTask": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/work/tasks",
@@ -3068,7 +3133,7 @@
       }
     },
     "activatePersonalWorkTask": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/work/tasks/{id}/activate",
@@ -3114,7 +3179,7 @@
       }
     },
     "decidePersonalWorkTask": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/work/tasks/{id}/participation",
@@ -3161,7 +3226,7 @@
       }
     },
     "invitePersonalWorkContact": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/work/tasks/{id}/invite",
@@ -3208,7 +3273,7 @@
       }
     },
     "runPersonalWorkTask": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/work/tasks/{id}/run",
@@ -3255,7 +3320,7 @@
       }
     },
     "submitPersonalWorkResult": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/work/tasks/{id}/result",
@@ -3302,7 +3367,7 @@
       }
     },
     "reviewPersonalWorkResult": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/work/tasks/{id}/review",
@@ -3350,7 +3415,7 @@
       }
     },
     "cancelPersonalWorkTask": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/work/tasks/{id}/cancel",
@@ -3396,7 +3461,7 @@
       }
     },
     "capabilityPublications": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/capability-square",
@@ -3419,7 +3484,7 @@
       }
     },
     "capabilityPublication": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/capability-square/{id}",
@@ -3475,7 +3540,7 @@
       }
     },
     "publishCapability": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/capability-square",
@@ -3535,7 +3600,7 @@
       }
     },
     "withdrawCapability": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/capability-square/{id}/withdraw",
@@ -3595,7 +3660,7 @@
       }
     },
     "socialConversation": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/work/tasks/{id}/conversation",
@@ -3633,7 +3698,7 @@
       }
     },
     "planTasks": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/plans/{id}/tasks",
@@ -3661,7 +3726,7 @@
       }
     },
     "researchWorkspace": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/labs/{id}/research-workspace",
@@ -3701,7 +3766,7 @@
       }
     },
     "importAgentProfile": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/agents/import",
@@ -3779,7 +3844,7 @@
       }
     },
     "exportAgentProfile": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/agents/{id}/export",
@@ -3806,7 +3871,7 @@
       }
     },
     "agentConnection": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/agents/{id}/connection",
@@ -3829,7 +3894,7 @@
       }
     },
     "updateAgentConnection": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/agents/{id}/connection",
@@ -3861,7 +3926,7 @@
       }
     },
     "disconnectAgentConnection": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/agents/{id}/connection/disconnect",
@@ -3888,7 +3953,7 @@
       }
     },
     "probeAgentConnection": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/agents/{id}/connection/probe",
@@ -3918,7 +3983,7 @@
       }
     },
     "personalModelKeyPreview": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/me/model-configurations/{id}/key-preview",
@@ -3942,7 +4007,7 @@
       }
     },
     "personalModels": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/me/model-configurations",
@@ -3966,7 +4031,7 @@
       }
     },
     "createPersonalModel": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/me/model-configurations",
@@ -4002,7 +4067,7 @@
       }
     },
     "updatePersonalModel": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "PATCH",
       "path": "/api/v1/me/model-configurations/{id}",
@@ -4041,7 +4106,7 @@
       }
     },
     "deletePersonalModel": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/me/model-configurations/{id}/delete",
@@ -4071,7 +4136,7 @@
       }
     },
     "defaultPersonalModel": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/me/model-configurations/default",
@@ -4100,7 +4165,7 @@
       }
     },
     "imSession": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/im/session",
@@ -4126,7 +4191,7 @@
       }
     },
     "imContacts": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/im/contacts",
@@ -4146,7 +4211,7 @@
       }
     },
     "imConversations": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/im/conversations",
@@ -4166,7 +4231,7 @@
       }
     },
     "imSync": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/im/sync",
@@ -4189,7 +4254,7 @@
       }
     },
     "imSyncConversation": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/im/conversations/{id}/sync",
@@ -4217,7 +4282,7 @@
       }
     },
     "imCreateGroup": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/im/groups",
@@ -4265,7 +4330,7 @@
       }
     },
     "imInviteContact": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/im/conversations/{id}/invite",
@@ -4308,7 +4373,7 @@
       }
     },
     "chatMessageDetails": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/conversations/{id}/messages/{messageId}/details",
@@ -4346,7 +4411,7 @@
       }
     },
     "withdrawChatMessage": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/conversations/{id}/messages/{messageId}/withdraw",
@@ -4388,7 +4453,7 @@
       }
     },
     "deletePersonalAgent": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/agents/{id}/delete",
@@ -4414,7 +4479,7 @@
       }
     },
     "chatContacts": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/contacts",
@@ -4436,7 +4501,7 @@
       }
     },
     "chatContact": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/contacts/{id}",
@@ -4482,7 +4547,7 @@
       }
     },
     "updateContactProfile": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/contacts/{id}/profile",
@@ -4536,7 +4601,7 @@
       }
     },
     "createPersonalAgent": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/agents",
@@ -4587,7 +4652,7 @@
       }
     },
     "requestContact": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/contacts/{id}/relationship",
@@ -4635,7 +4700,7 @@
       }
     },
     "contactRequests": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/contact-requests",
@@ -4657,7 +4722,7 @@
       }
     },
     "decideContactRequest": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/contact-requests/{id}/decision",
@@ -4692,7 +4757,7 @@
       }
     },
     "revokeContact": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/contacts/{id}/relationship/revoke",
@@ -4742,7 +4807,7 @@
       }
     },
     "revokeContactRequest": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/contact-requests/{id}/revoke",
@@ -4776,7 +4841,7 @@
       }
     },
     "chatMemories": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/memories",
@@ -4798,7 +4863,7 @@
       }
     },
     "createChatMemory": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/memories",
@@ -4834,7 +4899,7 @@
       }
     },
     "reviseChatMemory": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/memories/{id}/revisions",
@@ -4871,7 +4936,7 @@
       }
     },
     "revokeChatMemory": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/memories/{id}/revoke",
@@ -4906,7 +4971,7 @@
       }
     },
     "chatMemoryHistory": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/memories/{id}/history",
@@ -4940,7 +5005,7 @@
       }
     },
     "personalConversation": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/personal-conversation",
@@ -5008,7 +5073,7 @@
       }
     },
     "chatConversations": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/conversations",
@@ -5028,7 +5093,7 @@
       }
     },
     "chatConversation": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/conversations/{id}",
@@ -5066,7 +5131,7 @@
       }
     },
     "chatConversationContacts": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/conversations/{id}/contacts",
@@ -5088,7 +5153,7 @@
       }
     },
     "chatMessageAgentStatuses": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/conversations/{id}/messages/{messageId}/agent-statuses",
@@ -5110,7 +5175,7 @@
       }
     },
     "markChatRead": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/conversations/{id}/read",
@@ -5138,7 +5203,7 @@
       }
     },
     "updateChatPreferences": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/conversations/{id}/preferences",
@@ -5167,7 +5232,7 @@
       }
     },
     "createDirectConversation": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/direct-conversations",
@@ -5207,7 +5272,7 @@
       }
     },
     "chatMessages": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/conversations/{id}/messages",
@@ -5229,7 +5294,7 @@
       }
     },
     "agentChatMessage": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/conversations/{id}/agent-messages",
@@ -5267,7 +5332,7 @@
       }
     },
     "agentFileMessage": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/conversations/{id}/agent-files",
@@ -5307,7 +5372,7 @@
       }
     },
     "sendChatMessage": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/conversations/{id}/messages",
@@ -5350,7 +5415,7 @@
       }
     },
     "chatTurn": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/turns/{id}",
@@ -5391,7 +5456,7 @@
       }
     },
     "chatTurnProgress": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/turns/{id}/progress",
@@ -5422,7 +5487,7 @@
       }
     },
     "cancelChatTurn": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/turns/{id}/cancel",
@@ -5467,7 +5532,7 @@
       }
     },
     "retryChatTurn": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/turns/{id}/retry",
@@ -5516,7 +5581,7 @@
       }
     },
     "chatActions": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/conversations/{id}/actions",
@@ -5538,7 +5603,7 @@
       }
     },
     "decideChatAction": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/actions/{id}/decision",
@@ -5591,7 +5656,7 @@
       }
     },
     "chatInvitations": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/chat/invitations",
@@ -5611,7 +5676,7 @@
       }
     },
     "decideChatInvitation": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/invitations/{id}/decision",
@@ -5640,7 +5705,7 @@
       }
     },
     "revokeChatMember": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/chat/conversations/{id}/members/{contactId}/revoke",
@@ -5671,7 +5736,7 @@
       }
     },
     "live": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/health/live",
@@ -5686,7 +5751,7 @@
       "response": {
         "data": {
           "status": "ok",
-          "contractVersion": "0.39.0",
+          "contractVersion": "0.40.0",
           "checks": {
             "database": "ok",
             "storage": "ok",
@@ -5697,7 +5762,7 @@
       }
     },
     "ready": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/health/ready",
@@ -5712,7 +5777,7 @@
       "response": {
         "data": {
           "status": "ok",
-          "contractVersion": "0.39.0",
+          "contractVersion": "0.40.0",
           "checks": {
             "database": "ok",
             "storage": "ok",
@@ -5723,7 +5788,7 @@
       }
     },
     "login": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/auth/login",
@@ -5751,7 +5816,7 @@
       }
     },
     "register": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/auth/register",
@@ -5777,7 +5842,7 @@
       }
     },
     "session": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/auth/session",
@@ -5808,7 +5873,7 @@
       }
     },
     "logout": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/auth/logout",
@@ -5827,7 +5892,7 @@
       }
     },
     "managerInvites": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/labs/{id}/registration-invites",
@@ -5849,7 +5914,7 @@
       }
     },
     "createManagerInvite": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/labs/{id}/registration-invites",
@@ -5885,7 +5950,7 @@
       }
     },
     "revokeManagerInvite": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/labs/{id}/registration-invites/{inviteId}/revoke",
@@ -5916,7 +5981,7 @@
       }
     },
     "labAiSettings": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/labs/{id}/ai-settings",
@@ -5944,7 +6009,7 @@
       }
     },
     "updateLabAiSettings": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "PATCH",
       "path": "/api/v1/labs/{id}/ai-settings",
@@ -5978,7 +6043,7 @@
       }
     },
     "me": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/me",
@@ -6003,7 +6068,7 @@
       }
     },
     "members": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/labs/{id}/members",
@@ -6025,7 +6090,7 @@
       }
     },
     "availability": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "PATCH",
       "path": "/api/v1/me/availability",
@@ -6055,7 +6120,7 @@
       }
     },
     "plans": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/plans",
@@ -6081,7 +6146,7 @@
       }
     },
     "actionItems": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/labs/{id}/action-items",
@@ -6109,7 +6174,7 @@
       }
     },
     "createPlan": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/plans",
@@ -6143,7 +6208,7 @@
       }
     },
     "getPlan": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/plans/{id}",
@@ -6172,7 +6237,7 @@
       }
     },
     "editPlan": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "PATCH",
       "path": "/api/v1/plans/{id}",
@@ -6209,7 +6274,7 @@
       }
     },
     "confirmPlan": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/plans/{id}/confirm",
@@ -6245,7 +6310,7 @@
       }
     },
     "tasks": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/tasks",
@@ -6267,7 +6332,7 @@
       }
     },
     "task": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/tasks/{id}",
@@ -6323,7 +6388,7 @@
       }
     },
     "invite": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/invitations",
@@ -6365,7 +6430,7 @@
       }
     },
     "cancelInvitation": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/invitations/cancel",
@@ -6420,7 +6485,7 @@
       }
     },
     "invitationDecision": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/invitations/{id}/decision",
@@ -6456,7 +6521,7 @@
       }
     },
     "claim": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/claim",
@@ -6489,7 +6554,7 @@
       }
     },
     "start": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/start",
@@ -6544,7 +6609,7 @@
       }
     },
     "submit": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/deliverables",
@@ -6581,7 +6646,7 @@
       }
     },
     "review": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/deliverables/{id}/review",
@@ -6619,7 +6684,7 @@
       }
     },
     "proposeChange": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/change-proposals",
@@ -6680,7 +6745,7 @@
       }
     },
     "decideChange": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/change-proposals/{id}/decision",
@@ -6729,7 +6794,7 @@
       }
     },
     "withdraw": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/withdraw",
@@ -6759,7 +6824,7 @@
       }
     },
     "cancelTask": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/cancel",
@@ -6815,7 +6880,7 @@
       }
     },
     "overview": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/labs/{id}/overview",
@@ -6855,7 +6920,7 @@
       }
     },
     "revokeAccess": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/revoke-access",
@@ -6912,7 +6977,7 @@
       }
     },
     "revokeArtifact": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/artifacts/{id}/revoke",
@@ -6945,7 +7010,7 @@
       }
     },
     "events": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/tasks/{id}/events",
@@ -6967,7 +7032,7 @@
       }
     },
     "upload": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/artifacts",
@@ -7001,7 +7066,7 @@
       }
     },
     "artifact": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/artifacts/{id}",
@@ -7029,7 +7094,7 @@
       }
     },
     "content": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/artifacts/{id}/content",
@@ -7048,7 +7113,7 @@
       }
     },
     "planRequest": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/planning-requests",
@@ -7089,7 +7154,7 @@
       }
     },
     "getPlanRequest": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/planning-requests/{id}",
@@ -7118,7 +7183,7 @@
       }
     },
     "run": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/runs",
@@ -7191,7 +7256,7 @@
       }
     },
     "getRun": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/runs/{id}",
@@ -7249,7 +7314,7 @@
       }
     },
     "cancelRun": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/runs/{id}/cancel",
@@ -7312,7 +7377,7 @@
       }
     },
     "publicCapabilities": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/public-capabilities",
@@ -7330,7 +7395,7 @@
       }
     },
     "retryRun": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/runs/{id}/retry",
@@ -7394,7 +7459,7 @@
       }
     },
     "submitCandidate": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/runs/{id}/submit",
@@ -7429,7 +7494,7 @@
       }
     },
     "cancelPlanning": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/planning-requests/{id}/cancel",
@@ -7463,7 +7528,7 @@
       }
     },
     "planningRequests": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/planning-requests",
@@ -7484,7 +7549,7 @@
       }
     },
     "conclusions": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/conclusions",
@@ -7505,7 +7570,7 @@
       }
     },
     "retainConclusion": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/conclusions",
@@ -7553,7 +7618,7 @@
       }
     },
     "conclusion": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/conclusions/{id}",
@@ -7589,7 +7654,7 @@
       }
     },
     "conclusionHistory": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/conclusions/{id}/history",
@@ -7608,7 +7673,7 @@
       }
     },
     "reviseConclusion": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/conclusions/{id}/revisions",
@@ -7657,7 +7722,7 @@
       }
     },
     "revokeConclusion": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/conclusions/{id}/revoke",
@@ -7685,7 +7750,7 @@
       }
     },
     "createSample": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/public-method-feedback",
@@ -7730,7 +7795,7 @@
       }
     },
     "samples": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/public-text-method/samples",
@@ -7751,7 +7816,7 @@
       }
     },
     "taskSamples": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/tasks/{id}/public-method-feedback",
@@ -7774,7 +7839,7 @@
       }
     },
     "revokeSample": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/public-text-method/samples/{id}/revoke",
@@ -7802,7 +7867,7 @@
       }
     },
     "publicMethods": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/public-text-method",
@@ -7827,7 +7892,7 @@
       }
     },
     "createMethod": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/public-text-method/versions",
@@ -7872,7 +7937,7 @@
       }
     },
     "trialMethod": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/public-text-method/trials",
@@ -7939,7 +8004,7 @@
       }
     },
     "activateMethod": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/public-text-method/activate",
@@ -7971,7 +8036,7 @@
       }
     },
     "disableMethod": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/public-text-method/disable",
@@ -8001,7 +8066,7 @@
       }
     },
     "methodEvents": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/public-text-method/events",
@@ -8021,7 +8086,7 @@
       }
     },
     "capabilities": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/capabilities",
@@ -8043,7 +8108,7 @@
       }
     },
     "createCapability": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/capabilities",
@@ -8079,7 +8144,7 @@
       }
     },
     "testCapability": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/capabilities/{id}/test-runs",
@@ -8113,7 +8178,7 @@
       }
     },
     "publish": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/capabilities/{id}/publish",
@@ -8150,7 +8215,7 @@
       }
     },
     "disable": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/capabilities/{id}/disable",
@@ -8186,7 +8251,7 @@
       }
     },
     "knowledge": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/tasks/{id}/knowledge",
@@ -8208,7 +8273,7 @@
       }
     },
     "feedback": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/tasks/{id}/feedback-sharing",
@@ -8245,7 +8310,7 @@
       }
     },
     "feishuLibraries": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "GET",
       "path": "/api/v1/feishu/library",
@@ -8262,7 +8327,7 @@
       }
     },
     "bindFeishuLibrary": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/feishu/library/bind",
@@ -8304,7 +8369,7 @@
       }
     },
     "queryFeishuLibrary": {
-      "contractVersion": "0.39.0",
+      "contractVersion": "0.40.0",
       "synthetic": true,
       "method": "POST",
       "path": "/api/v1/feishu/library/query",

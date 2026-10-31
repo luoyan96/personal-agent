@@ -2609,3 +2609,15 @@ typecheck、typecheck:electron、build:web 通过；local-dsh 41 项（含新增
 验证：客户端 `tsc --noEmit` 通过；`tests/workbench-view.test.mjs` 第 4 项改为断言页面出现「课题组任务」「个人任务」、不再出现裸的「新建任务」、课题组任务走 `setPlanningLaunch` 且在 `!assistantReady` 时禁用；5 项全过。
 
 安装包 0.10.83 首次构建耗时 15 分 17 秒：rcedit 报 `Unable to commit changes` 后重试成功（元数据核对 FileVersion 0.10.83 正确），但它在 `win-unpacked` 里留下 229MB 的 `RCXD908.tmp`，被 NSIS 一起打进安装包（484MB）。清掉临时文件后用 `electron-builder --prepackaged release/Base/0.10.83/win-unpacked` 只重打安装器，得到正常体积 `clients/openim/release/Base/0.10.83/AcceptCat_0.10.83.exe`（405,075,923 字节，SHA256 `11a40c319f1e87128484a2f942d1b1905d55dde2ef31ca6bd8fdbcdc4d69e05c`）。以后遇到 rcedit 失败要检查 `win-unpacked` 里有没有 `*.tmp` 残留，否则包会莫名变大。仍无后台改动。
+
+## 2026-10-31 资料页新增「课题组规范」，规则终于能在任务外看和改
+
+负责人先问「资料库里面会保存课题组的一些底层逻辑吗，比如写论文的风格、写项目书应该怎么写、写专利的模板什么的，都怎么设计的，我如果想看的话是怎么看」，随后说「可以加吧，不然真的不知道怎么用的感觉。很乱比如我要更新或者有新的资料什么的，不知道怎么改，也不知道我用的时候是用的什么样的规则」。
+
+核对结论：资料库只存文件；「底层逻辑」分三层——平台基本规则与课题组/项目规则（`work_context_records`，`WorkRule` 的 scope=lab/project、kind=rule/memory）、18 个默认角色文档（`agents/roles/*`，persona.md + work.md + meta.json + SKILL.md，编译成 `research-skills/role-catalog`）、19 个内置方法（`agents/skills/*`，经「内置方法」预览后装私人副本）。角色文档在「通讯录 → 助手 → 角色文件」可看可导出；规则此前只能从某个任务的「规则与记忆」进入，所以没人知道自己实际按什么写。
+
+后台：新增 `labWorkRules`（GET `/lab/work-rules`）与 `saveLabWorkRule`（POST 同路径），只接受 `scope=lab, kind=rule`；`canPublish=isLabManager`，负责人保存即 `active`、成员保存为 `candidate`，确认/撤回复用版本校验、幂等键与不可变修订（`work_context_records` + `work_context_revisions`）。`WorkRule.sourceTaskId` 改为可空，任务外创建的课题组规则没有来源任务；任务内 `workContext` 仍按 `scope_id=labId` 带出同一批记录。契约升到 **0.40.0**，重新导出 openapi/examples，`apps/web/tests/contracts.spec.ts` 的版本断言同步。
+
+客户端：`资料` 页新增第四个页签「课题组规范」（`LabStandards.tsx` + `library-workspace.scss`）。内容依次是：规则/资料的区别说明（规则自动进任务、资料只是参考、个人任务只带平台规则）、平台基本规则（v 号 + 正文）、课题组规则按状态分组（生效中 / 待负责人确认 / 已撤回，显示版本、作者、时间，带修改 / 确认生效 / 撤回）、「模板与范文」列出课题组范围的资料集并给「去资料库上传或更新」。页签用 `availability.supports(40)` 门禁，未部署新后台时不显示，避免出现点不开的死页。
+
+验证：`apps/api` + `apps/web` + `packages/contracts` 共 58 文件 789 项通过（`work-context.spec` 新增用例覆盖成员提候选、负责人确认、确认时篡改正文被忽略、版本冲突 409、撤回后 409、scope/kind 伪造 400、匿名 401、lab 列表与任务上下文一致）；客户端 `tsc --noEmit` 通过；新增 `clients/openim/tests/lab-standards.test.mjs` 2 项并加入 desktop.yml。安装包 0.10.84 见下。**该页签要生效需要部署后台（契约 0.40.0）。**

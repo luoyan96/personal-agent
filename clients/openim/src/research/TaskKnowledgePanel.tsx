@@ -45,7 +45,7 @@ export function TaskKnowledgePanel({target,state,canWork,busy,command}:{target:T
     <strong>{scopeLabel[r.scope]} · {r.kind==='rule'?'规则':'记忆'} · {r.title}</strong>
     <small>{statusLabel[r.status]} · v{r.version} · {r.authorName} · {new Date(r.updatedAt).toLocaleString()}</small>
     <p>{r.content}</p>
-    {r.kind==='memory'&&<a href={`#/workbench?task=${encodeURIComponent(r.sourceTaskId)}`}>查看来源任务</a>}
+    {r.kind==='memory'&&r.sourceTaskId&&<a href={`#/workbench?task=${encodeURIComponent(r.sourceTaskId)}`}>查看来源任务</a>}
     <div className="task-knowledge-actions">
      {r.allowedActions.includes('revise')&&<Button disabled={busy} onClick={()=>begin(r)}>修改</Button>}
      {r.status==='candidate'&&r.allowedActions.includes('confirm')&&<Button disabled={busy} onClick={()=>void mutate(r,'confirm')}>确认生效</Button>}
