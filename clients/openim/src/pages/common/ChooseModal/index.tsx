@@ -238,9 +238,9 @@ export const ChooseContact: FC<ChooseContactProps> = ({
             throw new Error(
               `科研群已创建，即时通信同步未完成（${
                 mapping.reason || mapping.transportStatus
-              }）。可以重试同步，成员仍需独立同意邀请。`,
+              }）。可以重试同步。`,
             );
-          message.success("群聊已创建，邀请状态可在聊天信息中查看");
+          message.success("群聊已创建，成员已直接入群");
           await toSpecifiedConversation({
             sourceID: mapping.groupID,
             sessionType: SessionType.Group,
@@ -260,11 +260,11 @@ export const ChooseContact: FC<ChooseContactProps> = ({
             if (type === "INVITE_TO_GROUP") {
               if (!canonical.allowedActions.includes("invite"))
                 throw new Error("仅群主可以邀请成员。");
+              // Only an existing member is skipped. A legacy pending invite can
+              // be selected again and becomes a joined member immediately.
               if (
                 canonical.members.some(
-                  (m) =>
-                    m.contactId === contactId &&
-                    (m.status === "joined" || m.status === "invited"),
+                  (m) => m.contactId === contactId && m.status === "joined",
                 )
               )
                 continue;
@@ -297,7 +297,7 @@ export const ChooseContact: FC<ChooseContactProps> = ({
           });
           if (!operation.isCurrent()) return;
           if (type === "INVITE_TO_GROUP")
-            message.success("邀请已提交，接受后才会加入群聊");
+            message.success("已加入群聊");
         }
         closeOverlay();
         return;

@@ -24,9 +24,10 @@ export function ResearchInvitations() {
   const contacts = useResearchStore((s) => s.contacts);
   return (
     <div className="h-full space-y-4 overflow-auto bg-white p-5">
-      <h2 className="text-base font-bold">群邀请与任务承接</h2>
+      <h2 className="text-base font-bold">任务承接与历史群邀请</h2>
       <p className="text-xs text-slate-600">
-        真人入群、私人 AI 授权、接受任务分别决定。允许自己的 AI
+        群主拉人入群会直接生效，不再需要你确认；这里只保留此前未处理的群邀请。
+        接受任务仍需你单独决定。允许自己的 AI
         加入群，不会把你本人加入群。
       </p>
       {(invitations.error || tasks.error || failure) && (

@@ -2545,3 +2545,15 @@ typecheck、typecheck:electron、build:web 通过；local-dsh 41 项（含新增
 合并后在 main 重新构建安装包（0.10.74 只在本机、未公开，公开版本直接从 0.10.73 到 0.10.75）。构建时本机批量删除守卫拦截 `research-skills/dist/roles` 与 `.electron-runtime` 的清理，改为移到仓库外 `D:/deepseek-agent/.runtime/trash-20261030/`，仓库脚本未改。安装器 405061949 字节，SHA256 `aac075610ffc89a876dac3db5eebe06de679d6bd5ee6f468ee2d434373004755`，blockmap 416813 字节，成品 FileVersion/ProductVersion 0.10.75。
 
 先建草稿、上传四个附件并核对 digest，再于 10:49:29 公开为稳定 Latest v0.10.75。匿名复查：`/releases/latest` 302 到该标签、`latest.yml` 与本地产物一致、安装器直链 HEAD 200 且 405061949 字节、标签指向 `bb40f76`。未运行安装器、未启动成品、未连真实账号或模型；后台未部署。README、项目总览与简版交接 prompt 同步指向 0.10.75。详见 docs/deployment/acceptcat-0.10.75.md，证据 D:/deepseek-agent/.runtime/release-0.10.75-20261030。
+
+## 2026-10-31 群聊改为直接拉人，不再等对方同意
+
+负责人要求「群聊功能不用邀请后等待对方同意，直接拉人进群就行，群直接建立好」，并确认范围包含「别人的 AI 助理也直接进」。
+
+原实现里群成员是两段式：建群只把自己、公共 Agent、自己名下 Agent 写成 `joined`，其他真人与他人的个人 Agent 写成 `invited`，同时写入 `chat_invitations`；被邀请人要在「群邀请与任务承接」页逐条同意才变 `joined`，未同意前 `chatConversation` 404、`sendChatMessage` 也发不出，所以刚建好的群看起来是「待加入」。OpenIM 侧成员表由 `activeContacts`（只取 joined）算出，因此邀请没接受前这些人也进不了 IM 群。
+
+改法只动成员事实的来源，不动传输层：`ChatService.newConversation` 对建群成员一律写 `joined`，`inviteContact` 同样直接写 `joined`（此前 invited/declined/revoked 的身份重新加入即转正），`inviteDocument` 删除，不再产生新的待办邀请。`decideChatInvitation` 路由与 `chat_invitations` 表保留，只处理历史 pending 记录。任务承接边界未动：`personal_work_participants` 仍是 invited/accepted，进群不代表接受任务；`chat-worker` 里「确认后建群并直接加入所选成员，任务承接仍需各自接受」的提示同步改口。客户端 `ChooseModal` 建群/加人成功文案、`ResearchInvitations` 页说明、`ResearchComposer` 的发送拒绝文案一并更新，`ResearchGroupPicker` 与 `ChooseModal` 不再禁用 `invited` 身份，老群待加入成员可重新选中转为 joined。
+
+代价明确：新成员可读入群前的群历史；把别人的个人 Agent 拉进群会立即生效，不再由主人确认。契约描述同步（`imCreateGroup`/`imInviteContact`），重新导出 contract 0.39.0。
+
+验证：apps/api 39 个文件 414 项通过（含改写后的 chat 42、workspace 7、openim 15、personal-accounts 等）；apps/web 与 packages/contracts 19 个文件 372 项通过；`@research-agent-platform/api` typecheck 与 `clients/openim` `tsc --noEmit` 通过；`check-content` 通过（顺带把 `release`、`.set-aside` 加入忽略集，避免本机构建产物里的旧 SKILL 副本误报）。未做真实 OpenIM 双端联调、未重新打包、未部署后台、未推送分支。

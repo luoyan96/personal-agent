@@ -196,25 +196,25 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     expect(s.calls.filter(c=>c.path==='/friend/import_friend')).toEqual([])
     expect(s.calls.filter(c=>c.path==='/auth/get_user_token')).toEqual([])
   })
-  it('creates and invites without AI, with authorized idempotent replay and separate joined authority',async()=>{
+  it('creates and invites without AI, with authorized idempotent replay and direct joined membership',async()=>{
     const s=await setup(false),body={title:'真实讨论群',contactIds:[s.human('member_B').id,s.agent('member_C').id],sharedContext:context,plan:null},key=randomUUID()
     const created=await s.request('imCreateGroup',body,{},0,key);expect(created.status,created.raw).toBe(200)
     let group=created.value.data as Conversation;expect(group.taskIds).toEqual([]);expect(s.db.prepare('SELECT count(*) n FROM tasks').get()!.n).toBe(0)
     expect((await s.request('imCreateGroup',body,{},0,key)).value.data.id).toBe(group.id)
     expect((await s.request('imCreateGroup',{...body,title:'changed'}, {},0,key)).status).toBe(409)
-    expect((await s.request('chatConversation',null,{id:group.id},1)).status).toBe(404)
-    const invitation=(await s.request('chatInvitations',null,{},1)).value.data[0]
-    expect((await s.request('decideChatInvitation',{expectedVersion:invitation.version,decision:'accept'},{id:invitation.id},1)).status).toBe(200)
+    // Selecting an Agent joins only that Agent; its owner stays outside the group.
+    expect((await s.request('chatConversation',null,{id:group.id},2)).status).toBe(404)
     group=(await s.request('chatConversation',null,{id:group.id})).value.data
-    const aiInvite=(await s.request('chatInvitations',null,{},2)).value.data[0];await s.request('decideChatInvitation',{expectedVersion:aiInvite.version,decision:'accept'},{id:aiInvite.id},2)
+    expect(group.members.every(member=>member.status==='joined')).toBe(true)
+    expect((await s.request('chatInvitations',null,{},1)).value.data).toEqual([])
     expect((await s.request('imConversations',null,{},2)).value.data.conversations).toEqual([])
-    expect((await s.request('imInviteContact',{contactId:s.human('member_C').id,expectedConversationVersion:group.version},{id:group.id})).status).toBe(409)
+    expect((await s.request('imInviteContact',{contactId:s.human('member_C').id,expectedConversationVersion:group.version+1},{id:group.id})).status).toBe(409)
     group=(await s.request('chatConversation',null,{id:group.id})).value.data
     expect((await s.request('imInviteContact',{contactId:s.human('member_C').id,expectedConversationVersion:group.version},{id:group.id},1)).status).toBe(403)
     const inviteKey=randomUUID(),command={contactId:s.human('member_C').id,expectedConversationVersion:group.version}
     expect((await s.request('imInviteContact',command,{id:group.id},0,inviteKey)).status).toBe(200)
     expect((await s.request('imInviteContact',command,{id:group.id},0,inviteKey)).status).toBe(200)
-    expect(s.db.prepare('SELECT count(*) n FROM chat_invitations WHERE conversation_id=?').get(group.id)!.n).toBe(3)
+    expect(s.db.prepare('SELECT count(*) n FROM chat_invitations WHERE conversation_id=?').get(group.id)!.n).toBe(0)
   })
   it('uses admin-only IM owner, reconciles joined recipients and rejects native role/registration bypasses',async()=>{
     const s=await setup();await s.request('imSession',{platformID:5});await s.request('imSession',{platformID:5},{},1)
@@ -224,9 +224,13 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     expect((await s.callback('callbackBeforeSendGroupMsgCommand',{groupID:mapped.groupID,sendID:'imAdmin',senderPlatformID:0,msgFrom:200,contentType:1501,content:'{}'})).value.nextCode).toBe(0)
     expect(s.groups.get(mapped.groupID)!.find(m=>m.userID===s.identity(s.human('member_A').id))!.roleLevel).toBe(20)
     const msg={groupID:mapped.groupID,sendID:s.identity(s.human('member_B').id),senderPlatformID:5,msgFrom:100,contentType:101,content:'{"content":"hello"}'}
-    expect((await s.callback('callbackBeforeSendGroupMsgCommand',msg)).value.nextCode).toBe(1)
-    const invitation=(await s.request('chatInvitations',null,{},1)).value.data[0];await s.request('decideChatInvitation',{expectedVersion:invitation.version,decision:'accept'},{id:invitation.id},1)
-    expect((await s.callback('callbackBeforeSendGroupMsgCommand',{...msg,sendID:s.identity(s.human('member_A').id)})).value.nextCode).toBe(1)
+    // Joined at creation: the first group message needs no invitation round.
+    expect((await s.callback('callbackBeforeSendGroupMsgCommand',msg)).value.nextCode).toBe(0)
+    // A real IM identity that is not a member of this group still cannot send into it.
+    const outsider=await s.request('imCreateGroup',{title:'没有乙的群',contactIds:[s.publicAgent.id],sharedContext:context,plan:null});expect(outsider.status,outsider.raw).toBe(200)
+    const outsiderMapping=(await s.request('imSyncConversation',{}, {id:outsider.value.data.id})).value.data
+    expect(outsiderMapping.transportStatus).toBe('ready')
+    expect((await s.callback('callbackBeforeSendGroupMsgCommand',{...msg,groupID:outsiderMapping.groupID})).value.nextCode).toBe(1)
     mapped=(await s.request('imSyncConversation',{}, {id:group.id})).value.data;expect(mapped.transportStatus).toBe('ready')
     expect((await s.callback('callbackBeforeSendGroupMsgCommand',msg)).value.nextCode).toBe(0)
     s.db.prepare("UPDATE auth_accounts SET disabled=1 WHERE member_id='member_B'").run()

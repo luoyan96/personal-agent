@@ -243,7 +243,7 @@ export function useResearchComposer() {
         : undefined;
     if (addressed) {
       if (!mapping || !canonical.data?.data.allowedActions.includes("send"))
-        throw new Error("当前群聊尚未允许发送，请等待同步或接受邀请。");
+        throw new Error("当前群聊尚未允许发送，请等待同步完成。");
       return {
         route: "sendChatMessage",
         conversationId: mapping.researchConversationId,

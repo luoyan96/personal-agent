@@ -91,18 +91,16 @@ export function ResearchGroupPicker({
           const member = read.data?.group?.members.find(
             (m) => m.contactId === contact.id,
           );
-          const disabled = member?.status === "joined" || member?.status === "invited";
+          // Only an existing member is disabled; a legacy pending invite can be
+          // selected again and becomes a joined member immediately.
+          const disabled = member?.status === "joined";
           const item: CheckListItem = {
             contactId: contact.id,
             nickname: contact.displayName,
             identityDescription: groupIdentityLabel(contact, contacts, actorId),
             disabled,
             selectionStatus:
-              member?.status === "joined"
-                ? "已加入"
-                : member?.status === "invited"
-                ? "待接受"
-                : undefined,
+              member?.status === "joined" ? "已加入" : undefined,
           };
           return (
             <CheckItem

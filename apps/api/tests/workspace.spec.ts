@@ -42,7 +42,7 @@ describe('social workspace actual HTTP/SQLite; model and IM transport deliberate
   expect((await s.ok('capabilityPublications',null,{},0,`?limit=1&cursor=${encodeURIComponent(cursor)}`))).toEqual([]);expect((await s.call('capabilityPublication',null,{id:last.id})).status).toBe(404);expect((await s.call('withdrawCapability',{expectedVersion:a.version},{id:a.id},2)).status).toBe(404)
   expect(other.agent.id).not.toBe(agent.id)
  })
- it('creates cross-space social groups with independent human and Agent invitations, task acceptance, real output and exact review',async()=>{
+ it('creates cross-space social groups with direct group membership, task acceptance, real output and exact review',async()=>{
   const s=await setup(),foreign=await s.human(1),agent=await s.ok('createPersonalAgent',profile),key=randomUUID()
   expect((await s.call('createPersonalWorkTask',{title:'真实协作',goal:'共享当前目标',contactIds:[foreign.id,agent.id]})).status).toBe(403);await s.accept(foreign.id)
   const task=await s.ok('createPersonalWorkTask',{title:'真实协作',goal:'分析共享的合成段落',contactIds:[foreign.id,agent.id],agentContactId:agent.id},{},0,'',key)
@@ -51,11 +51,11 @@ describe('social workspace actual HTTP/SQLite; model and IM transport deliberate
   expect(active.participants.find((p:{contactId:string})=>p.contactId===agent.id).status).toBe('accepted')
   expect((await s.ok('chatConversation',null,{id:active.conversationId})).members.find((m:{contactId:string})=>m.contactId===agent.id).status).toBe('joined')
   expect((await s.ok('chatInvitations')).some((i:{conversationId:string;invitedContactId:string})=>i.conversationId===active.conversationId&&i.invitedContactId===agent.id)).toBe(false)
-  expect((await s.call('chatConversation',null,{id:active.conversationId},1)).status).toBe(404)
+  expect((await s.call('chatConversation',null,{id:active.conversationId},1)).status).toBe(200)
   expect(await s.ok('personalWorkTask',null,{id:task.id},1)).toMatchObject({summaryOnly:true,goal:null,result:null,conversationId:null})
-  let invitations=await s.ok('chatInvitations',null,{},1);expect(invitations).toHaveLength(1);await s.ok('decideChatInvitation',{decision:'accept',expectedVersion:invitations[0].version},{id:invitations[0].id},1)
+  // Group membership is direct; only task commitment needs the participant's decision.
+  expect((await s.ok('chatInvitations',null,{},1)).filter((i:{conversationId:string})=>i.conversationId===active.conversationId)).toEqual([])
   expect((await s.call('runPersonalWorkTask',{expectedVersion:active.version,agentContactId:agent.id},{id:task.id},1)).status).toBe(403)
-  expect((await s.call('sendChatMessage',{text:'未承接不能派发',intent:'ask_agent',agentContactId:agent.id,budget:{maxTokens:4000,maxSeconds:90}},{id:active.conversationId},1)).status).toBeGreaterThanOrEqual(400)
   let current=await s.ok('decidePersonalWorkTask',{expectedVersion:active.version,decision:'accept'},{id:task.id},1);expect(current.summaryOnly).toBe(false)
   await s.ok('createPersonalMemory',{topic:'私有',content:'OWNER_PRIVATE_NOT_GROUP',scope:'general'});current=await s.ok('personalWorkTask',null,{id:task.id})
   const runKey=randomUUID(),running=await s.ok('runPersonalWorkTask',{expectedVersion:current.version,agentContactId:agent.id},{id:task.id},1,'',runKey);expect(running.status).toBe('running')
@@ -83,24 +83,25 @@ describe('social workspace actual HTTP/SQLite; model and IM transport deliberate
   expect(await s.ok('personalWorkTask',null,{id:task.id})).toMatchObject({turnId:explicit.turn.id,status:'awaiting_review',result:{messageId:expect.any(String),summary:'自然讨论当前文字',accepted:false}})
   expect((await s.call('task',null,{id:task.id},1)).status).toBe(404);expect(own.conversation.id).not.toBe(active.conversationId)
  })
- it('owner confirmation immediately enables the selected owned Agent, while foreign humans/Agents and legacy groups still require separate consent',async()=>{
+ it('owner confirmation immediately enables the selected owned Agent; group membership is direct while task commitment stays separate',async()=>{
   const s=await setup(),owned=await s.ok('createPersonalAgent',profile),human=await s.human(1),foreign=await s.ok('createPersonalAgent',{...profile,displayName:'好友的专家'},{},1)
   await s.accept(human.id);await s.accept(foreign.id)
   const task=await s.ok('createPersonalWorkTask',{title:'确认即可开始',goal:'分析当前合成文字',contactIds:[owned.id,human.id,foreign.id],agentContactId:owned.id}),active=await s.ok('activatePersonalWorkTask',{expectedVersion:task.version},{id:task.id})
   const group=await s.ok('chatConversation',null,{id:active.conversationId})
-  expect(group.members.find((m:{contactId:string})=>m.contactId===owned.id).status).toBe('joined')
-  for(const contactId of [human.id,foreign.id])expect(group.members.find((m:{contactId:string})=>m.contactId===contactId).status).toBe('invited')
+  // Everyone selected is a joined member immediately: no invitation round.
+  for(const contactId of [owned.id,human.id,foreign.id])expect(group.members.find((m:{contactId:string})=>m.contactId===contactId).status).toBe('joined')
   expect(s.db.prepare('SELECT status FROM personal_work_participants WHERE task_id=? AND contact_id=?').get(task.id,owned.id)!.status).toBe('accepted')
+  // Direct membership creates no invitation and does not accept the task.
+  for(const contactId of [human.id,foreign.id])expect(s.db.prepare('SELECT status FROM personal_work_participants WHERE task_id=? AND contact_id=?').get(task.id,contactId)!.status).toBe('invited')
   expect((await s.ok('chatInvitations')).filter((i:{conversationId:string})=>i.conversationId===group.id)).toEqual([])
-  expect((await s.ok('chatInvitations',null,{},1)).filter((i:{conversationId:string})=>i.conversationId===group.id)).toHaveLength(2)
-  expect((await s.call('chatConversation',null,{id:group.id},1)).status).toBe(404)
-  expect((await s.call('sendChatMessage',{text:'尚未获准的好友Agent不能派发',intent:'ask_agent',agentContactId:foreign.id,budget:{maxTokens:4000,maxSeconds:90}},{id:group.id})).status).toBeGreaterThanOrEqual(400)
+  expect((await s.ok('chatInvitations',null,{},1)).filter((i:{conversationId:string})=>i.conversationId===group.id)).toEqual([])
+  expect((await s.call('chatConversation',null,{id:group.id},1)).status).toBe(200)
   const running=await s.ok('runPersonalWorkTask',{expectedVersion:active.version,agentContactId:owned.id},{id:task.id});expect(running.status).toBe('running')
   await s.tick(async input=>{expect(input.prompt).toContain('分析当前合成文字');return model('确认后的实际合成结果')})
   expect(await s.ok('personalWorkTask',null,{id:task.id})).toMatchObject({status:'awaiting_review',result:{summary:'确认后的实际合成结果',accepted:false}})
   const legacy=await s.ok('imCreateGroup',{title:'既有实验室讨论群',contactIds:[owned.id],plan:null,sharedContext:{selectedText:null,artifactRefs:[]}})
   expect(s.db.prepare('SELECT 1 FROM social_groups WHERE conversation_id=?').get(legacy.id)).toBeUndefined()
-  expect(legacy.members.find((m:{contactId:string})=>m.contactId===owned.id).status).toBe('invited')
+  expect(legacy.members.find((m:{contactId:string})=>m.contactId===owned.id).status).toBe('joined')
  })
  it('assistant creates a real collaboration proposal and delegation work item, with no fake automatic membership/completion',async()=>{
   const s=await setup(),own=await s.own(),foreign=await s.human(1);await s.accept(foreign.id);const agent=await s.ok('createPersonalAgent',profile)

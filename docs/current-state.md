@@ -1,6 +1,16 @@
 # 新 AI 接手：当前项目状态
 
-更新日期：2026-10-30（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+更新日期：2026-10-31（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+
+## 群聊直接拉人：建群与加人不再等对方同意
+
+负责人要求「群聊功能不用邀请后等待对方同意，直接拉人进群就行，群直接建立好」，并在被问到范围时明确选择「真人 + 别人的 AI 都直接进」。
+
+原实现把群成员写成 `joined`/`invited` 两种：建群时只有自己、公共 Agent、自己名下的 Agent 是 `joined`，其他真人和别人的个人 Agent 一律 `invited` 并生成 `chat_invitations` 待办；被邀请人要到「群邀请与任务承接」页点同意才变 `joined`，在此之前读不到会话、也发不出消息，所以建完群看到的是一堆「待加入」。
+
+现在 `newConversation` 与 `inviteContact` 一律写入 `joined`，不再生成邀请记录，群在创建返回时就是完整的：OpenIM 侧 `/group/create_group` 一次带全成员，`imSyncConversation` 的期望成员集合直接等于全部成员，不再有第二次「邀请后等待」。任务承接仍是独立决定——`personal_work_participants` 保持自己的 invited/accepted，进群不等于接受任务，这条边界没有动。`decideChatInvitation` 契约保留，只服务此前已存在的 pending 记录；群成员选择器不再禁用 `invited` 身份，重新选中即转成 `joined`（老群里的待加入成员由此可一键补齐）。
+
+代价写在明处：新成员能看到入群前的群历史；把别人的个人 Agent 拉进群也会立即生效，不再由其主人确认（负责人已明确选择该行为）。已验证：apps/api 414 项、apps/web 与 contracts 372 项、API 与客户端 typecheck、contract 0.39.0 重新导出（`imCreateGroup`/`imInviteContact` 描述改为直接入群）。未做真实 OpenIM 双端与安装包验证。
 
 ## 本地聊天历史：0.10.76 的“无法联网”误报已修（0.10.77 本地包）
 

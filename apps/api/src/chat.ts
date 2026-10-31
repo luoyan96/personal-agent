@@ -164,20 +164,15 @@ export class ChatService {
       requireActiveAgent(this.db,contactId)
       const contact = this.contact(contactId)
       if(kind==='group' && (socialTaskId?!socialContactAllowed(this,this.c.actor.id,contactId):!this.teamContact(contact)))fail('FORBIDDEN')
-      // Selecting one's own Agent while explicitly confirming a social group
-      // is already its owner's consent. Other owners decide their invitations.
       const ownedSocialAgent = !!socialTaskId && contact.identity.kind === 'personal_agent' && contact.identity.ownerMemberId === this.c.actor.id
-      const status = kind !== 'group' || contactId === self || contact.identity.kind === 'public_agent' || ownedSocialAgent ? 'joined' : 'invited'
-      this.db.prepare('INSERT INTO chat_members VALUES (?,?,?,?,?)').run(value.id, contactId, status, 1, contactId === self ? 'owner' : 'member')
+      // Group chat is direct membership: whoever the creator selects is a joined
+      // member at creation, so the group exists complete and needs no acceptance
+      // round. Task commitment stays a separate decision: personal work
+      // participants keep their own invited/accepted state.
+      this.db.prepare('INSERT INTO chat_members VALUES (?,?,?,?,?)').run(value.id, contactId, 'joined', 1, contactId === self ? 'owner' : 'member')
       if(ownedSocialAgent&&typeof socialTaskId==='string')this.db.prepare("UPDATE personal_work_participants SET status='accepted' WHERE task_id=? AND contact_id=?").run(socialTaskId,contactId)
-      if (status === 'invited') this.inviteDocument(value, contactId)
     }
     return this.conversation(value.id)
-  }
-  inviteDocument(group: Conversation, contactId: string) {
-    const previous = this.db.prepare('SELECT document FROM chat_invitations WHERE conversation_id=? AND contact_id=?').get(group.id, contactId)
-    const invitation = { id: previous ? decode(previous.document).id : randomUUID(), conversationId: group.id, title: group.title, invitedContactId: contactId, invitedByMemberId: this.c.actor.id, status: 'pending', version: previous ? decode(previous.document).version + 1 : 1 }
-    this.db.prepare('INSERT INTO chat_invitations VALUES (?,?,?,?,?) ON CONFLICT(conversation_id,contact_id) DO UPDATE SET invited_by=excluded.invited_by,document=excluded.document').run(invitation.id, group.id, contactId, this.c.actor.id, encode(invitation))
   }
   invitation(id: string) {
     const row = this.db.prepare('SELECT i.*,c.owner_id group_owner FROM chat_invitations i JOIN chat_conversations c ON c.id=i.conversation_id WHERE i.id=? AND (c.lab_id=? OR EXISTS(SELECT 1 FROM social_groups s WHERE s.conversation_id=c.id))').get(id, this.c.labId)
@@ -444,10 +439,10 @@ export class ChatService {
     this.validatePayload({kind:'invite_contact',contactId},groupId)
     requireActiveAgent(this.db,contactId)
     const contact=this.contact(contactId),existing=group.members.find(m=>m.contactId===contact.id)
-    if(existing?.status==='joined'||existing?.status==='invited')fail('INVALID_STATE')
-    const status=contact.identity.kind==='public_agent'?'joined':'invited'
-    this.db.prepare('INSERT INTO chat_members VALUES (?,?,?,?,?) ON CONFLICT(conversation_id,contact_id) DO UPDATE SET status=excluded.status,version=chat_members.version+1').run(group.id,contact.id,status,1,'member')
-    if(status==='invited')this.inviteDocument(group,contact.id)
+    if(existing?.status==='joined')fail('INVALID_STATE')
+    // Pulling a member in is immediate; no pending invitation is created. A
+    // member that was previously invited/declined/revoked simply becomes joined.
+    this.db.prepare('INSERT INTO chat_members VALUES (?,?,?,?,?) ON CONFLICT(conversation_id,contact_id) DO UPDATE SET status=excluded.status,version=chat_members.version+1').run(group.id,contact.id,'joined',1,'member')
     const raw=this.rawConversation(group.id);raw.version++;this.saveConversation(raw)
     return this.conversation(group.id)
   }

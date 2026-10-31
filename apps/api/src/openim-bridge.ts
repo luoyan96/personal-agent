@@ -107,7 +107,7 @@ export class OpenImBridge {
         if(!Array.isArray(remote.members)||Number(remote.total??remote.members.length)>1000)throw new ImUnavailable('provisioning_failed')
         const expected=new Set([ownerID,...snapshot.contacts.map(value=>value.userID)]),present=new Set(remote.members.map((member:{userID:string})=>member.userID))
         const removed=[...present].filter(userID=>!expected.has(userID));if(removed.length){live();await this.client.request('/group/kick_group',{groupID,kickedUserIDs:removed,reason:'Research membership revoked',sendMessage:false})}
-        const added=[...expected].filter(userID=>!present.has(userID));if(added.length){live();await this.client.request('/group/invite_user_to_group',{groupID,invitedUserIDs:added,reason:'Research membership accepted',sendMessage:false})}
+        const added=[...expected].filter(userID=>!present.has(userID));if(added.length){live();await this.client.request('/group/invite_user_to_group',{groupID,invitedUserIDs:added,reason:'Research group membership',sendMessage:false})}
         const verified=await this.client.request('/group/get_group_member_list',{groupID,filter:0,pagination:{pageNumber:1,showNumber:1000}})
         if(!Array.isArray(verified.members)||verified.members.length!==expected.size||verified.members.some((member:{userID:string;roleLevel:number})=>!expected.has(member.userID)||member.roleLevel!==(member.userID===ownerID?100:20)))throw new ImUnavailable('provisioning_failed')
       }else{
