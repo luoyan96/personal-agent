@@ -2577,3 +2577,17 @@ typecheck、typecheck:electron、build:web 通过；local-dsh 41 项（含新增
 消息整条是邀请时（service、无 turnId、只有一个 task 引用）不再先渲染正文再渲染卡片，而是把正文放进卡片里，避免标题重复两遍；其它带 task 引用的消息保留正文并在下面追加卡片，`artifact` 等仍留在「相关材料」折叠区。判断逻辑抽到纯函数 `isTaskNotice` / `splitTaskResources` / `taskStatusLabel` / `legacyTaskInvitation`，后者识别旧服务端的纯文本邀请模板，让尚未部署新后台时也能得到一张卡片（按钮为「去任务待办」）。
 
 验证：`apps/api` 39 文件 414 项通过（`task-handoffs.spec` 新增断言：邀请消息只有一个 task 引用、version=1、不含私有目标文本）；`clients/openim` 新增 `tests/task-notice-card.test.mjs` 5 项通过并加入 desktop.yml；两端 typecheck 通过，新文件 eslint 干净。客户端 0.10.80 已打包（`AcceptCat_0.10.80.exe`，SHA256 `37621dc73a1b2d4eff44dd470668898b84da8b96fdb950affa862cefb01a8460`）。未部署后台，未做真机双端验收。
+
+## 2026-10-31 任务页只留两个入口，新建任务交给助手
+
+负责人发来任务页截图并标注两点：①「新建任务的时候就不要用原来那种填很多空的界面了，直接就用共用这个资料助手，让它新建」；②「进来的时候可以不把这个输入框露外面，这样就挤压了其他内容的面积，只用露出来一个任务助手，用户可以点了这里再出来，或者点新建任务的时候让助手出来」。截图上还从「待办」向「计划 / 定时 / 团队」画了箭头，追问后负责人选定：**标签栏只留「待办 / 团队」**，计划并进任务助手，定时并进待办列表；新建任务时**原地展开助手成对话**，不再弹表单。
+
+原实现是四个 `Segmented` 选项（待办/计划/定时/团队）占一整行 `.workspace-toolbar`，`PlanningAgent` 无论展开与否都渲染头部按钮和一整块输入框（收起时仍占约 110px），「新建任务」打开一个含名称/目标/联系人/预选 Agent 的 `Modal`。
+
+改法：视图判定抽成纯函数 `clients/openim/src/research/workbench-view.ts`，`tab` 只有 `tasks`/`team`，`view=planning`、`plan`、`planning` 一律落到待办并把助手打开（`PlanningAgent` 新增 `fresh`，从「新建任务」进入时另开一段对话，空对话保留）。标签从独立一行挪进标题行，只剩「待办 / 团队」；「计划记录」改成标题行按钮 + 右侧 `Drawer`（`PlanningHistory` 新增 `onOpen` 回调，选中后关抽屉、展开助手并接入该计划）；「新建任务」清掉 URL 上的计划参数后展开助手并聚焦输入框，只有后台还不支持助手（契约 <0.23 或 <0.32）时才回退到原表单，表单文案同步为「直接建群并把成员拉进来」。
+
+`PlanningAgent` 去掉 `full` 整页形态（`WorkbenchSections.tsx` 随之删除）：收起时只渲染一行入口 `.planning-agent-entry`（机器人图标 + 助手名 + 一句提示 + 上箭头），点开才出现头部按钮、消息与输入框；「专注任务规划」按钮删除，展开即占满内容区，收起恢复列表。同时把标题行里的 `Segmented` 高度对齐 40px。
+
+边界与代价：`定时` 没有独立标签后，定时卡片仍在待办列表的「定时安排」分组，管理（暂停/恢复/新建提醒）在「我的助理 → 任务与提醒」，`/workbench?view=scheduled` 旧链接改为跳待办（`directory-navigation` 断言同步）；助手建的是课题组研究任务（计划确认后创建），个人任务表单只剩回退路径——如果之后仍要「个人任务」入口需要另加。
+
+验证：客户端 `tsc --noEmit` 通过；新增 `tests/workbench-view.test.mjs`（4 项）并加入 desktop.yml，`directory-navigation` 更新；聊天相关 62 项、规划相关 49 项、桌面工作流 3 项通过；`vite build` 通过（注意 `vite build` 也会被本机安全删除守卫按 dist-electron 的 62 项删除拦下，需 `CODEBUDDY_SAFE_DELETE_BULK_THRESHOLD=200000`）。安装包 0.10.81 构建 9 分 11 秒，`clients/openim/release/Base/0.10.81/AcceptCat_0.10.81.exe`（405,073,432 字节，SHA256 `ff0a35623a7cf42b58449325533cdc73e2d651a9708773fc51c70ee3df0ae4de`，FileVersion 0.10.81），产物内已核对新文案与 `.planning-agent-entry` 样式。未部署后台（本次无后台改动），未做真机双端验收。

@@ -34,5 +34,5 @@ test('other personal settings and relocated material/task routes retain their de
   assert.equal(relocatedWorkspace(new URLSearchParams('view=capabilities')), '/me?view=capabilities');
   assert.equal(relocatedWorkspace(new URLSearchParams('view=reports')), '/library?panel=reports');
   assert.equal(relocatedWorkspace(new URLSearchParams('view=library')), '/library');
-  assert.equal(relocatedWorkspace(new URLSearchParams('view=scheduled')), '/workbench?view=planning&panel=scheduled');
+  assert.equal(relocatedWorkspace(new URLSearchParams('view=scheduled')), '/workbench?view=tasks');
 });

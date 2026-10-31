@@ -1,5 +1,5 @@
-import { Alert, Button, Input, Modal, Segmented, Select } from "antd";
-import { useLayoutEffect, useRef, useState } from "react";
+import { Alert, Button, Drawer, Input, Modal, Segmented, Select } from "antd";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import type { WorkbenchCard } from "@research-agent-platform/contracts";
 import { useResearchRead } from "./useResearchRead";
@@ -21,10 +21,10 @@ import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 
 import { ResearchTeamWorkbench } from "./ResearchTeamWorkbench";
 import { relocatedWorkspace } from "./workspace-navigation";
-import { WorkbenchPlanning } from "./WorkbenchSections";
+import { PlanningHistory } from "./PlanningHistory";
 import { workbenchTaskPath, workbenchTaskTarget } from "./workbench-links";
+import { workbenchView, type WorkbenchTab } from "./workbench-view";
 import { PlanningAgent } from "./PlanningAgent";
-type ListFilter = "all" | "completed";
 function WorkbenchOverview({
   card,
   onTask,
@@ -133,30 +133,19 @@ function WorkbenchOverview({
 export function DesktopWorkbench() {
   const [params, setParams] = useSearchParams();
   const relocated = relocatedWorkspace(params);
-  const tab =
-    params.get("view") === "planning" || params.get("plan") || params.get("planning")
-      ? "planning"
-      : params.get("view") === "team"
-      ? "team"
-      : "tasks";
+  // Two front doors only: the task list and the team overview. Saved planning
+  // links land on the list and open the assistant instead of a third tab.
+  const { tab, planning, planId, requestId, filter } = workbenchView(params);
   const [planningLaunch, setPlanningLaunch] = useState(0);
+  const [taskLaunch, setTaskLaunch] = useState(0);
   const [planningExpanded, setPlanningExpanded] = useState(false);
+  const [plansOpen, setPlansOpen] = useState(false);
   const [workbenchRevision, setWorkbenchRevision] = useState(0);
   const {
     id: requestedTask,
     kind: requestedKind,
     valid: requestedValid,
   } = workbenchTaskTarget(params);
-  const filter: ListFilter =
-    params.get("category") === "completed" ? "completed" : "all";
-  const view =
-    tab === "team"
-      ? "team"
-      : tab === "planning"
-      ? params.get("panel") === "scheduled"
-        ? "scheduled"
-        : "planning"
-      : "tasks";
   const [pages, setPages] = useState<(string | undefined)[]>([undefined]);
   const cursor = pages[pages.length - 1];
   const generation = useResearchStore((s) => s.generation),
@@ -210,13 +199,17 @@ export function DesktopWorkbench() {
         c.allowedActions.includes("chat") &&
         !(c.identity.kind === "human" && c.identity.memberId === actor?.member.id),
     );
-  const setTab = (value: string) => {
-    if (value !== "planning") setPlanningLaunch(0);
+  const setTab = (value: WorkbenchTab) => {
+    setPlanningLaunch(0);
     setSelected(undefined);
     setDetails(false);
-    const next = new URLSearchParams({ view: value });
-    setParams(next);
+    setParams(new URLSearchParams({ view: value }));
   };
+  // A saved plan or planning link is a request to keep working on it, so the
+  // assistant opens with that thread instead of a separate page being shown.
+  useEffect(() => {
+    if (planning) setPlanningLaunch((value) => value + 1);
+  }, [planning, planId, requestId]);
   const select = (card: WorkbenchCard) => {
     if (card.taskId && card.source !== "followup") {
       const next = new URLSearchParams(
@@ -270,6 +263,25 @@ export function DesktopWorkbench() {
   // bar stays on the list so the detail screen keeps a single next action.
   const detailOpen = tab === "tasks" && !!requestedTask && requestedValid;
   const assistantBar = !!actor && !detailOpen;
+  // The assistant writes the task; the old form survives only where it cannot run.
+  const assistantReady =
+    Boolean(actor) &&
+    supported &&
+    availability.supports(23) &&
+    availability.supports(32);
+  const startTask = () => {
+    if (!assistantReady) {
+      setCreating(true);
+      setFailure("");
+      setBusy(false);
+      return;
+    }
+    // Drop any plan link so the assistant opens a fresh thread, not the last one.
+    if (planId || requestId || params.get("view") === "planning")
+      setParams(new URLSearchParams({ view: "tasks" }));
+    setTaskLaunch((value) => value + 1);
+    setPlanningLaunch((value) => value + 1);
+  };
   return (
     <div
       className={`social-workspace workspace-workbench ${
@@ -281,40 +293,23 @@ export function DesktopWorkbench() {
           <h1>任务</h1>
         </div>
         <div className="workspace-heading-actions">
+          <Segmented
+            aria-label="任务视图"
+            value={tab}
+            onChange={(value) => setTab(value as WorkbenchTab)}
+            options={[
+              { label: "待办", value: "tasks" },
+              { label: "团队", value: "team" },
+            ]}
+          />
+          <Button onClick={() => setPlansOpen(true)}>计划记录</Button>
           {tab === "tasks" && (
-            <Button
-              type="primary"
-              disabled={!supported}
-              onClick={() => {
-                setCreating(true);
-                setFailure("");
-                setBusy(false);
-              }}
-            >
+            <Button type="primary" disabled={!supported} onClick={startTask}>
               新建任务
             </Button>
           )}
         </div>
       </header>
-      <div className="workspace-toolbar">
-        <Segmented
-          aria-label="任务视图"
-          value={view}
-          onChange={(value) => {
-            setPlanningLaunch(0);
-            const next = String(value);
-            if (next === "scheduled")
-              setParams({ view: "planning", panel: "scheduled" });
-            else setTab(next);
-          }}
-          options={[
-            { label: "待办", value: "tasks" },
-            { label: "计划", value: "planning" },
-            { label: "定时", value: "scheduled" },
-            { label: "团队", value: "team" },
-          ]}
-        />
-      </div>
       {supported && availability.error && (
         <Alert
           type="warning"
@@ -328,13 +323,7 @@ export function DesktopWorkbench() {
           }
         />
       )}
-      <div
-        className={`workbench-content ${
-          tab === "planning" && params.get("panel") !== "scheduled"
-            ? "is-planning-chat"
-            : ""
-        }`}
-      >
+      <div className="workbench-content">
         {!supported ? (
           <WorkspaceUnavailable
             feature="工作台"
@@ -360,12 +349,9 @@ export function DesktopWorkbench() {
                 <Button type="primary" onClick={() => setTab("tasks")}>
                   查看已有任务
                 </Button>
-                <Button onClick={() => setTab("planning")}>打开任务规划</Button>
               </div>
             </section>
           )
-        ) : tab === "planning" ? (
-          <WorkbenchPlanning />
         ) : (
           <div className="workspace-task-body">
             <aside className="workspace-task-list">
@@ -429,9 +415,7 @@ export function DesktopWorkbench() {
                           }
                           onClick={() => select(card)}
                         >
-                          <span className="workspace-task-row-title">
-                            {card.title}
-                          </span>
+                          <span className="workspace-task-row-title">{card.title}</span>
                           <span className="workspace-status">{badge}</span>
                           <p>{card.goal || "接受后可查看获准目标"}</p>
                           <footer>
@@ -451,7 +435,9 @@ export function DesktopWorkbench() {
                       ? "还没有已完成的任务"
                       : "暂时没有要推进的任务"}
                   </h2>
-                  <p>聊天中的协作建议会在这里确认，也可以新建一项任务。</p>
+                  <p>
+                    聊天中的协作建议会在这里确认；要新建，直接跟下面的任务助手说一句就行。
+                  </p>
                 </div>
               )}
               {read.data && read.data.data.length > 0 && (
@@ -553,7 +539,7 @@ export function DesktopWorkbench() {
                 <div className="workspace-empty">
                   <h2>把事情交代清楚，一起推进</h2>
                   <p>
-                    选择任务查看目标、实际成员和结果。只有明确验收后，任务才会标为完成。
+                    跟下面的任务助手说一句要做的事，它会整理成任务；也可以选左侧任务看目标、成员和结果。
                   </p>
                 </div>
               )}
@@ -566,13 +552,11 @@ export function DesktopWorkbench() {
           hidden={detailOpen}
           available={supported && availability.supports(23)}
           conversationAvailable={availability.supports(32)}
-          full={tab === "planning" && params.get("panel") !== "scheduled"}
           focus={planningLaunch}
+          fresh={taskLaunch}
           onExpandedChange={setPlanningExpanded}
-          planId={tab === "planning" ? params.get("plan") || undefined : undefined}
-          requestId={
-            tab === "planning" ? params.get("planning") || undefined : undefined
-          }
+          planId={planId}
+          requestId={requestId}
           onCreated={() => {
             setWorkbenchRevision((value) => value + 1);
             void read.refresh();
@@ -580,6 +564,24 @@ export function DesktopWorkbench() {
           onTeam={() => setTab("team")}
         />
       )}
+      <Drawer
+        title="研究计划记录"
+        placement="right"
+        width={520}
+        open={plansOpen}
+        onClose={() => setPlansOpen(false)}
+        className="workbench-plans-drawer"
+      >
+        <PlanningHistory
+          onOpen={(target) => {
+            setPlansOpen(false);
+            const next = new URLSearchParams({ view: "tasks" });
+            if (target.plan) next.set("plan", target.plan);
+            if (target.request) next.set("planning", target.request);
+            setParams(next);
+          }}
+        />
+      </Drawer>
       <Modal
         title="新建一项任务"
         open={creating}
@@ -658,7 +660,7 @@ export function DesktopWorkbench() {
             />
           </details>
           <p className="workspace-muted">
-            先保存草案，再确认建群和独立邀请；不会自动开始模型处理。
+            这台服务器还开不了任务助手，先用这个表单：保存后直接建群并把成员拉进来，不会自动开始模型处理。
           </p>
           {failure && <Alert type="error" message={failure} />}
           <Button
