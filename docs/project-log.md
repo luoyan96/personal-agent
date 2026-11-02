@@ -2538,3 +2538,13 @@ typecheck、typecheck:electron、build:web 通过；local-dsh 41 项（含新增
 合并后在 main 重新构建安装包（0.10.74 只在本机、未公开，公开版本直接从 0.10.73 到 0.10.75）。构建时本机批量删除守卫拦截 `research-skills/dist/roles` 与 `.electron-runtime` 的清理，改为移到仓库外 `D:/deepseek-agent/.runtime/trash-20261030/`，仓库脚本未改。安装器 405061949 字节，SHA256 `aac075610ffc89a876dac3db5eebe06de679d6bd5ee6f468ee2d434373004755`，blockmap 416813 字节，成品 FileVersion/ProductVersion 0.10.75。
 
 先建草稿、上传四个附件并核对 digest，再于 10:49:29 公开为稳定 Latest v0.10.75。匿名复查：`/releases/latest` 302 到该标签、`latest.yml` 与本地产物一致、安装器直链 HEAD 200 且 405061949 字节、标签指向 `bb40f76`。未运行安装器、未启动成品、未连真实账号或模型；后台未部署。README、项目总览与简版交接 prompt 同步指向 0.10.75。详见 docs/deployment/acceptcat-0.10.75.md，证据 D:/deepseek-agent/.runtime/release-0.10.75-20261030。
+
+## 2026-11-02 资料索引后台 0.41 / schema 032 部署
+
+按负责人指令，固定 feat/task-page-entry/6c93fdc63297fb38db5c0c6bcb3ee3309bf96626，在原实例 Workbench root 完成科研 API/worker 升级，08:41:49 停 worker、08:41:50 停 API、08:42:10 恢复可用，API 窗口 20 秒。新镜像 research-openim-api:library-index-20261101 / sha256:b60dc27e68fa54b96a29f1df4a58dfa3cb7e52929843632c264f1bb58e4524ef，原 lab-standards/e57ac591 保留；新增两条资料索引接口和 STRICT 表，contract 0.40→0.41、schema 031→032、112→113 表。
+
+沿用 group-direct-join 修正版 Dockerfile（research-skills 与 025 双向字节断言）和 lab-standards 全部实际 Compose 层，032 确认 LF/652 字节。489 镜像输入匹配、5 文件 283 项隔离检查通过；实际静止备份 /srv/research-openim-backups/library-index-20261101-20261102T004151Z/research.tar.gz，SHA256 d318dacf4af954c1044420e35681fc86d482afa8495c4e5625cb5efbd9ff523f，恢复副本与正式库各迁移两次、数据和 9 原件/35 配置输入保全。API healthy、worker running/restart=0，其他 6 容器 ID/镜像/状态 cmp 一致，公网 200/0.41 与匿名索引 401，schema_migrations=32、新表 STRICT=1。
+
+发现旧 0.40 严格拒绝 032 历史，与交接中的直接回退建议不符；负责人明确同意继续部署、032 后故障前滚。已在恢复副本用旧镜像只读验证拒绝，并设置恢复守卫；没有恢复正式旧备份或实际回退/前滚。首轮镜像输入检查误包含 Dockerignore 排除的 .env.example、小补丁换行 SyntaxError、第一次 deploy 因预生成 images.yaml 被防覆盖守卫拦下，均在生产停写前发生、失败保留；调整后第二轮真实切换成功。构建 canvas 下载警告自动重试成功。指定提交 CI 红色保留：867 根用例通过后生产入口旧断言 32≠31，另有客户端 koffi loader 失败，不声称全 CI 通过。没有修改固定产品源码以隐藏问题。
+
+未合并产品分支、未发布/安装客户端，未代造生产条目；新增索引、本地校验、另一个普通成员只读待负责人真实验收。完整回执 docs/deployment/library-index-20261102.md，服务器 ops/library-index-20261101；本机 Git 外证据 D:/deepseek-agent/.runtime/library-index-deploy-20261102，独立文档 worktree acceptcat-library-index-deploy。未改安全组/端口/Nginx/证书/凭据或其他 6 容器。
