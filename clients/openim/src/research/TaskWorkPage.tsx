@@ -167,6 +167,7 @@ export function TaskWorkPage({
     [noteText, setNoteText] = useState(""),
     [preview, setPreview] = useState("");
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [selectedOutputNames, setSelectedOutputNames] = useState<string[]>([]);
   const [collection, setCollection] = useState(""),
     [notice, setNotice] = useState("");
   const flight = useRef(false),
@@ -187,6 +188,7 @@ export function TaskWorkPage({
     setNotice("");
     setError("");
     setConnectionError("");
+    setSelectedOutputNames([]);
     noteLoaded.current = false;
   }, [operation.scope]);
   const detail = useResearchRead(async (signal) => {
@@ -366,21 +368,29 @@ export function TaskWorkPage({
     ...(state?.binding.localMaterials || []).map((source) => source.localName),
   ]);
   const outputs = (state?.files || []).filter((file) => !inputNames.has(file.name));
-  const submitted = state?.binding.delivery;
+  const selectedOutputs = outputs.filter((file) => selectedOutputNames.includes(file.name));
+  const delivery = state?.binding.delivery;
+  const submitted = delivery?.status === "submitted" ? delivery : undefined;
+  const pendingDelivery = delivery?.status === "pending" ? delivery : undefined;
+  const addDeliverables = () => command(async () => {
+    const { isCurrent } = operation.capture();
+    const names = await bridge!.taskAddDeliverables(target);
+    if (isCurrent()) setSelectedOutputNames((current) => [...new Set([...current, ...names])]);
+  });
   const submit = () =>
     command(async () => {
       const { isCurrent } = operation.capture();
-      const names = kind === "personal" ? [] : outputs.map((file) => file.name);
+      const names = pendingDelivery?.names ?? (kind === "personal" ? [] : selectedOutputs.map((file) => file.name));
       // The reviewer needs the file list, not a second essay.
       const summary = [
         names.length
-          ? `提交 ${names.length} 个文件：${names.join("、")}`
+          ? `提交 ${names.length} 个文件：${names.map((name) => name.split(/[\\/]/).at(-1)).join("、")}`
           : "提交本任务成果",
         noteText.trim(),
       ]
         .filter(Boolean)
         .join("\n\n");
-      await bridge!.taskSubmit(target, summary, names);
+      await bridge!.taskSubmit(target, pendingDelivery?.summary ?? summary, names);
       if (isCurrent()) {
         setNotice("成果已提交，等待验收。");
         setSection((value) => ({ ...value, plan: true, materials: false }));
@@ -632,19 +642,24 @@ export function TaskWorkPage({
         onToggle={() => toggle("materials")}
         nodeRef={materialsRef}
       >
-        {!state && (
-          <p className="task-work-muted">
-            先在「工作」里选好工作文件夹，这里会列出这次产出的文件。
-          </p>
+        {kind === "research" && !submitted && (
+          <div className="task-material-actions">
+            <Button disabled={busy || !canWork || !bridge?.taskAddDeliverables || Boolean(pendingDelivery)}
+              onClick={() => void addDeliverables()}>添加文件</Button>
+            <span className="task-work-muted">PDF、PNG、文本类文件，单个不超过 10 MiB；PPT、Word 等原件可在下方归档。</span>
+          </div>
         )}
-        {Boolean(state) && !outputs.length && (
-          <p className="task-work-muted">工作文件夹里还没有产出文件。</p>
+        {!outputs.length && !submitted && (
+          <p className="task-work-muted">{canWork ? "添加已完成的文件，或从工作文件夹选择成果。" : "开始任务后即可添加文件提交。"}</p>
         )}
         {outputs.map((file) => (
           <div className="task-work-file" key={file.name}>
-            <span title={file.name}>
-              {file.name} · {file.size} 字节
-            </span>
+            <Checkbox checked={delivery ? delivery.names.includes(file.name) : selectedOutputNames.includes(file.name)}
+              disabled={busy || Boolean(delivery)}
+              onChange={(event) => setSelectedOutputNames((current) => event.target.checked
+                ? [...current, file.name] : current.filter((name) => name !== file.name))}>
+              <span title={file.name}>{file.name.split(/[\\/]/).at(-1)} · {(file.size / 1024).toFixed(1)} KiB</span>
+            </Checkbox>
             <div className="task-material-actions">
               <Button
                 disabled={busy}
@@ -671,10 +686,13 @@ export function TaskWorkPage({
           </div>
         ))}
         {preview && <pre className="task-work-preview">{preview}</pre>}
+        {!delivery && kind === "research" && selectedOutputs.length > 5 && (
+          <p role="status">当前选择 {selectedOutputs.length} 个文件，请保留本次需要提交的最多 5 个。</p>
+        )}
         {submitted ? (
           <div className="task-work-submitted">
             <strong>已提交，等待验收</strong>
-            <p>{submitted.names.join("、") || "已提交文字说明"}</p>
+            <p>{submitted.names.map((name) => name.split(/[\\/]/).at(-1)).join("、") || "已提交文字说明"}</p>
             <small>{submitted.summary}</small>
           </div>
         ) : (
@@ -685,7 +703,7 @@ export function TaskWorkPage({
                 placeholder="补一句说明（可留空）"
                 maxLength={500}
                 value={noteText}
-                disabled={busy}
+                disabled={busy || Boolean(pendingDelivery)}
                 onChange={(e) => setNoteText(e.target.value)}
               />
               <Button
@@ -694,13 +712,14 @@ export function TaskWorkPage({
                 disabled={
                   !bridge?.taskSubmit ||
                   !state ||
-                  (kind === "research" && !outputs.length) ||
+                  (kind === "research" && !pendingDelivery && (!selectedOutputs.length || selectedOutputs.length > 5)) ||
                   !actions.includes("submit")
                 }
                 onClick={() => void submit()}
               >
                 提交这些文件
               </Button>
+              {pendingDelivery && <span role="status">上次提交尚未确认，再次提交会复用原文件和请求。</span>}
             </div>
             {state?.binding.delivery?.versionConflict && (
               <Alert

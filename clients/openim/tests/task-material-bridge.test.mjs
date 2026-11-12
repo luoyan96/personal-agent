@@ -69,6 +69,22 @@ async function fixture(t, library) {
   const call=(name,...args)=>handlers.get(name)({sender:{getURL:()=>`http://fixture/${hash}`}},target,...args);
   return {root,call,uploads:()=>uploads,revealed,downloadSizes,set:values=>{if('original'in values)original=values.original;if('hash'in values)hash=values.hash;if('picker'in values)picker=values.picker;if('valid'in values)valid=values.valid;if('owned'in values)owned=values.owned;if('scope'in values)scope=values.scope;if('running'in values)running=values.running;if('duringPicker'in values)duringPicker=values.duringPicker;}};
 }
+test('direct delivery picker stages files without opening a work folder and rechecks navigation',async t=>{
+  const f=await fixture(t);
+  const input=path.join(f.root,'result.txt');await fs.writeFile(input,'synthetic result');
+  f.set({picker:{canceled:true,filePaths:[]}});
+  assert.equal((await f.call('task-dsh-add-deliverables')).length,0);
+  f.set({picker:{canceled:false,filePaths:[input]},duringPicker:()=>f.set({hash:'#/chat'})});
+  await assert.rejects(f.call('task-dsh-add-deliverables'),/任务工作页/);
+  f.set({hash:'#/workbench?task=synthetic-task',duringPicker:()=>{}});
+  const names=await f.call('task-dsh-add-deliverables');
+  assert.equal(names.length,1);
+  const state=await f.call('task-dsh-status');
+  assert.equal(state.binding.submissionOnly,true);
+  assert.equal(state.files[0].name,names[0]);
+  assert.equal(f.uploads(),0);
+});
+
 test('native material picker cancels without reading, rechecks navigation after selection, and reveals only workspace files',async t=>{
   const f=await fixture(t);await f.call('task-dsh-open',true);
   const input=path.join(f.root,'input.txt');await fs.writeFile(input,'synthetic');

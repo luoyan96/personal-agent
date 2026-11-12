@@ -83,6 +83,53 @@ test("concurrent open and restart recover the exact task session; another task h
   assert.notEqual(a.directory, c.directory);
   assert.notEqual(a.sessionId, c.sessionId);
 });
+
+test("direct deliverables persist and submit without a DSH session, then can open in the workbench", async t => {
+  const f = await fixture(t);
+  const file = path.join(f.root, 'result.pdf');
+  await fs.writeFile(file, '%PDF-1.4\nsynthetic result');
+  const names = await f.store.addDeliverables(context, [file]);
+  assert.equal(f.calls.length, 0);
+  const state = await f.restart().status(context);
+  assert.equal(state.binding.submissionOnly, true);
+  assert.equal(state.files[0].name, names[0]);
+  const again = await f.restart().addDeliverables(context, [file]);
+  assert.deepEqual(again, names);
+  const writes = [];
+  const post = async (url, body, key) => {
+    writes.push({url,body,key});
+    return {id:'artifact_synthetic'};
+  };
+  await f.store.deliver(context, 'Synthetic result', names, post, true);
+  assert.equal(writes.length, 2);
+  assert.equal(writes[0].body.filename, 'result.pdf');
+  assert.equal(Buffer.from(writes[0].body.contentBase64, 'base64').toString(), '%PDF-1.4\nsynthetic result');
+  await f.restart().deliver(context, 'Synthetic result', names, post, true);
+  assert.equal(writes.length, 2);
+  await f.restart().open(context);
+  assert.equal((await f.store.load(context)).submissionOnly, undefined);
+  assert.equal(f.sessions.size, 1);
+});
+
+test("direct delivery validates the whole selection and keeps same-name files distinct", async t => {
+  const f = await fixture(t);
+  const first = path.join(f.root, 'result.txt');
+  const other = path.join(f.root, 'other');
+  await fs.mkdir(other);
+  const second = path.join(other, 'result.txt');
+  const unsupported = path.join(f.root, 'slides.pptx');
+  await fs.writeFile(first, 'one');await fs.writeFile(second, 'two');
+  await fs.writeFile(unsupported, 'synthetic');
+  await assert.rejects(f.store.addDeliverables(context, [first, unsupported]), /Office/);
+  assert.equal(await f.store.load(context), undefined);
+  const names = await f.store.addDeliverables(context, [first, second]);
+  assert.equal(names.length, 2);
+  assert.notEqual(names[0], names[1]);
+  assert.equal((await f.store.readOutput(context,names[0])).toString(),'one');
+  assert.equal((await f.store.readOutput(context,names[1])).toString(),'two');
+  f.deny();
+  await assert.rejects(f.store.addDeliverables(context, [first]), /expired/);
+});
 test("a default work folder is readable, stays under the account root, and never carries a bare task id", async (t) => {
   const f = await fixture(t);
   const b = await f.store.open({ ...context, title: 'Plan: A/B? 复盘' });
