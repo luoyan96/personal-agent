@@ -25,7 +25,7 @@ test("submitting is one button over the produced files, not a form", async () =>
   assert.match(page, /const outputs = /);
   // The reviewer sees what was submitted instead of a second form.
   assert.match(page, /已提交，等待验收/);
-  assert.match(page, /submitted\.names\.join/);
+  assert.match(page, /submitted\.names\.map/);
   assert.doesNotMatch(page, /勾选要归档或提交的成果/);
   assert.doesNotMatch(page, /aria-label="成果摘要"/);
   // Optional material and archiving sit behind one collapsed row each.

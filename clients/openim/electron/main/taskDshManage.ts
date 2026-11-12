@@ -371,6 +371,23 @@ export function registerTaskDshBridge(
     const a = await authorized(event, target);
     return a.store.status(target);
   });
+  ipcMain.handle("task-dsh-add-deliverables", async (event, target: TaskTarget) => {
+    let a = await authorized(event, target, true);
+    if (target.kind !== "research" || !a.task.allowedActions.includes("submit"))
+      throw Error("当前任务不能提交文件成果。");
+    const result = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender)!, {
+      title: "添加待提交成果（单个文件不超过 10 MiB）",
+      properties: ["openFile", "multiSelections"],
+      filters: [{ name: "任务成果", extensions: ["txt", "md", "csv", "tsv", "json", "pdf", "png"] }],
+    });
+    if (result.canceled || !result.filePaths.length) return [];
+    await a.c.account.valid();
+    a = await authorized(event, target, true);
+    await a.coordinator.idle(target);
+    if ((await a.store.status(target))?.phase === "running")
+      throw Error("请等本轮结束后核对成果再添加。");
+    return a.store.addDeliverables(a.context, result.filePaths);
+  });
   ipcMain.handle('task-dsh-import-team-library', async(event,target:TaskTarget,selection:TeamLibrarySelection)=>{
     const a=await authorized(event,target,true), library=await teamLibraryContext(event);
     if(a.c.account.metadata.memberId!==library.memberId)throw Error('资料与工作台账号不一致。');

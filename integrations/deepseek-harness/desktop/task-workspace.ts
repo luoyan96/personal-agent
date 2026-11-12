@@ -30,6 +30,7 @@ export type TaskSource = {
   localName: string;
 };
 export type TaskBinding = TaskTarget & {
+  submissionOnly?: boolean;
   sessionId: string;
   sessionTitle?: string;
   sessionHistory?: {sessionId:string;title:string;at:string}[];
@@ -152,6 +153,7 @@ export class DshTaskWorkspace {
           selectedDirectory || path.join(this.root, "files", defaultFolder(context));
         await mkdir(directory, { recursive: true });
         b = {
+          submissionOnly: true,
           kind: context.kind,
           taskId: context.taskId,
           sessionId: "acceptcat-" + randomUUID(),
@@ -192,6 +194,10 @@ export class DshTaskWorkspace {
           sessionId: b.sessionId,
           title: b.sessionTitle || context.title,
         });
+      }
+      if (b.submissionOnly) {
+        delete b.submissionOnly;
+        await this.save(b);
       }
   }
   private async rotate(b:TaskBinding, context:TaskContext) {
@@ -244,6 +250,10 @@ export class DshTaskWorkspace {
   async status(target: TaskTarget): Promise<DshTaskState | undefined> {
     const b = await this.load(target);
     if (!b) return;
+    if (b.submissionOnly) return {
+      binding: b, phase: "ready", events: [], hasMore: false,
+      needsApproval: false, files: await this.files(b),
+    };
     const projection = await this.rpc("session/projections", {
       sessionId: b.sessionId,
     });
@@ -575,6 +585,62 @@ export class DshTaskWorkspace {
     await this.valid();
     if (bytes.length > 10485760) throw Error("成果文件超过 10 MiB。");
     return bytes;
+  }
+  /** Only native-picker paths enter here. Staging never starts an Agent or uploads files. */
+  async addDeliverables(context: TaskContext, selectedFiles: string[]) {
+    return this.exclusive(context, async () => {
+      if (context.kind !== "research") throw Error("个人协作任务暂支持文字成果。");
+      if (!selectedFiles.length || selectedFiles.length > 5)
+        throw Error("每次最多添加 5 个成果文件。");
+      let b = await this.load(context);
+      if (b?.delivery?.status === "pending") throw Error("请先重试并核对上次提交。");
+      if (b?.pending || (b && !b.submissionOnly && (await this.status(context))?.phase === "running"))
+        throw Error("请先结束本轮并核对未确认请求，再添加成果。");
+      // Validate the entire selection before creating a local workspace.
+      const selected = [];
+      for (const file of selectedFiles) {
+        if (!/\.(txt|md|csv|tsv|json|pdf|png)$/i.test(file))
+          throw Error("直接提交支持 TXT、MD、CSV、TSV、JSON、PDF、PNG；Office 原件请先归档到资料。");
+        const info = await lstat(file);
+        if (!info.isFile() || info.isSymbolicLink() || info.size < 1 || info.size > 10485760)
+          throw Error("直接提交的单个成果须为 1 字节至 10 MiB 的普通文件；较大原件请先归档到资料。");
+        selected.push({ file, ...await hashLocalFile(file) });
+      }
+      if (!b) {
+        const directory = path.join(this.root, "files", defaultFolder(context));
+        await mkdir(directory, { recursive: true });
+        b = {
+          taskId: context.taskId, kind: context.kind, agentId: context.agentId,
+          submissionOnly: true, sessionId: "acceptcat-" + randomUUID(),
+          deviceId: await localDeviceId(this.root), directory: await realpath(directory),
+          sources: [], note: "", updatedAt: new Date().toISOString(),
+        };
+        await this.save(b);
+      }
+      const names: string[] = [];
+      for (const file of selected) {
+        const folder = path.join("deliverables", file.sha256);
+        // Check each parent before writing through the workspace path boundary.
+        for (const relative of ["deliverables", folder]) {
+          const destination = await this.filePath(b, relative, true);
+          await mkdir(destination, { recursive: false }).catch(error => {
+            if (error.code !== "EEXIST") throw error;
+          });
+        }
+        const name = path.join(folder, path.basename(file.file));
+        const destination = await this.filePath(b, name, true);
+        await this.valid();
+        try {
+          const copy = await copyLocalMaterial(file.file, destination, 10485760);
+          if (copy.sha256 !== file.sha256) throw Error("文件已变化，请重新添加。");
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "EEXIST" ||
+              (await hashLocalFile(destination)).sha256 !== file.sha256) throw error;
+        }
+        names.push(name);
+      }
+      return [...new Set(names)];
+    });
   }
   /** Persist exact write intents before dispatch. Lost responses reuse the same server dedup keys and bytes. */
   async deliver(

@@ -209,6 +209,7 @@ const Api: IElectronAPI = {
       taskPrompt: (target, text, requestId) => ipcRenderer.invoke('task-dsh-prompt', target, text, requestId),
       taskNote: (target, note) => ipcRenderer.invoke('task-dsh-note', target, note),
       taskSubmit: (target, summary, names) => ipcRenderer.invoke('task-dsh-submit', target, summary, names),
+      taskAddDeliverables: target => ipcRenderer.invoke('task-dsh-add-deliverables', target),
       taskCancel: target => ipcRenderer.invoke('task-dsh-cancel', target),
       taskRebase: target => ipcRenderer.invoke('task-dsh-rebase', target),
       taskImport: (target, source) => ipcRenderer.invoke('task-dsh-import', target, source),
