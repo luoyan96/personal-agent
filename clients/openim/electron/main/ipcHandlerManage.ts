@@ -18,6 +18,7 @@ import { changeLanguage } from "../i18n";
 import {registerSkillBridge} from "./skillManage";
 import { registerZoteroBridge } from "./zoteroManage";
 import { registerLocalFolderBridge } from "./localFolderManage";
+import { registerWeChatImportBridge } from "./wechatImportManage";
 import { registerLocalLibraryBridge } from "./localLibraryManage";
 import { registerChatHistoryBridge } from "./chatHistoryManage";
 import { registerTeamLibraryBridge } from './teamLibraryManage';
@@ -75,6 +76,7 @@ const readPreference = (key: unknown) => {
 export const setIpcMainListener = () => {
   registerLocalDshBridge();
   registerLocalFolderBridge();
+  registerWeChatImportBridge();
   registerLocalLibraryBridge();
   registerChatHistoryBridge();
   registerTeamLibraryBridge();

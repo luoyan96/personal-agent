@@ -3076,3 +3076,12 @@ PR200，固定产品提交e4c8fc562cb92e9b8fdce56de73541e90549222f（含PR199）
 北京时间 2026-11-12T09:58:48+08:00，Windows **0.10.104** 已公开发布并设为 Latest：[Release](https://github.com/luoyan96/personal-agent/releases/tag/v0.10.104)。固定构建源码/tag 为 main **f70f3a640ce2df2b0b0cf15cb79a82c6e94ed0f5**。PR199/200/201 已审核并按顺序普通合并，PR202仅版本和发布准备，保留原提交历史。
 
 最终EXE 421238113字节，SHA256 f5630e0332b98c1b367aa175c0edac5da5be7a107f85705ff37dfbb55dbd47aa，桌面副本一致。整合树/祖先/保留功能、双类型和客户端定向、PR与固定main四项CI、EXE实际载荷/固定工具、更新清单、隔离启动、禁网跨进程SQLite及四附件公开核验通过。旧0.10.100附件保留；生产acffd5e/0.45/034不变，无后台部署/迁移，未操作私人账号和模型。证据、警告、边界见deployment/acceptcat-0.10.104-release.md。
+
+## 2026-11-12 微信分享 ZIP → 草稿与 Windows 入口
+
+- 分支 feat/wechat-share-import，基于 origin/main/e2e7cf6；保留其他任务分支 PR204。接入负责人本地 HANDOFF 的独立模块，新增当前会话授权与原文/附件预览、显式加入草稿；不扫描历史，不伪造原生消息身份，不自动上传发送。无后台、契约、迁移或模型/提示词变化。
+- 新增 .NET10.0.404 自包含 Winx64 接收器、独立稀疏 MSIX、签名参数、NSIS 注册/卸载、冷启动/第二实例批次、实际包身份探针及诊断。新增精确 yauzl3.4.0/buffer-crc321.0.0，隔离 preload 和主进程运行文件进入 ASAR 校验，13 个必要入口。
+- 590 项客户端检查及双类型/frozen 安装通过；合成目标组件 Playwright/Edge UI 检查通过，修复 Popover 遮挡。Web/Electron、Windows 解包及隔离启动 READY 通过。首次全量检查缺少打包前的 skillImport 和固定插件，补齐构建资源后全量通过；保留失败日志。
+- 负责人先后明确授权 CurrentUser 与 LocalMachine/TrustedPeople 的同一测试证书；当前用户级注册曾被 0x800B0109 拒绝，本机级信任后实际包 Status=Ok/Developer，身份探针及原生暂存自检均退出0。Windows 分享面板显示 AcceptCat，但自动操作未观察到有效接收，等待负责人手动核对；不声称真实微信分享通过。
+- 证据 D:/deepseek-agent/.runtime/wechat-import-* 与 wechat-share-*；使用合成材料和隔离测试宿主，未操作正在使用的 AcceptCat。实现/来源/命令/未验收边界见 docs/development/wechat-share-import.md。本批未合并、部署或公开发布。
+- 同批测试 NSIS 构建完成，D:/deepseek-agent/.runtime/wechat-import-installer/AcceptCat_0.10.104.exe，475017105 字节，SHA256 02faff452dad76e85076be582c81e12d17a8e9f312ac961b37eaf8b7999117ec。仅本地测试，未代安装或公开上传；真实系统分享接收仍待验收。

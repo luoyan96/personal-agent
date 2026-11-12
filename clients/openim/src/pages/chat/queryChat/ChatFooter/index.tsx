@@ -25,6 +25,8 @@ import { useConversationStore } from "@/store";
 import { feedbackToast } from "@/utils/common";
 
 import SendActionBar from "./SendActionBar";
+import { WeChatImportAction } from "@/research/WeChatImportAction";
+import { prepareImportedComposerDraft } from "@/research/wechat-import-draft";
 import ImagePasteTray, { type ImagePasteTrayRef } from "@/research/ImagePasteTray";
 import { isComposerImage, normalizeComposerImage } from "@/research/composer-files";
 import { useFileMessage } from "./SendActionBar/useFileMessage";
@@ -494,6 +496,15 @@ const ChatFooter = () => {
       }));
   };
   const latestDroppedFiles = useLatest(droppedFiles);
+  const stageWeChatDraft = (text: string, files: File[]) => {
+    if (currentScope.current !== scope || !editor.current || !imID || !actor)
+      throw Error("会话已变化，请重新导入。");
+    const nextHtml = prepareImportedComposerDraft({ text, files, html: latestHtml.current,
+      plainText: getCleanText(latestHtml.current), documents: stagedFiles,
+      images: imageTray.current?.snapshot() || [], queued: submissions });
+    droppedFiles(files);
+    if (text) onChange(nextHtml);
+  };
   useEffect(() => {
     const handleDrop = (request: {
       conversationID: string;
@@ -729,6 +740,8 @@ const ChatFooter = () => {
           />
           <div className="desktop-composer-bottom flex items-center justify-between px-3 py-2">
             <SendActionBar
+              wechatImport={(button, chooseFiles) => <WeChatImportAction key={scope} conversationID={imID} memberId={actor}
+                onStage={stageWeChatDraft} chooseFiles={chooseFiles}>{button}</WeChatImportAction>}
               insertEmoji={(emoji) => editor.current?.insertText(emoji)}
               stageFiles={droppedFiles}
               stageImages={(files) => imageTray.current?.stage(files)}

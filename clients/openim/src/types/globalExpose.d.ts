@@ -11,6 +11,7 @@ import type {
 export type DataPath = "public" | "emojiData" | "sdkResources" | "logsPath";
 
 export interface IElectronAPI {
+  wechatImport: import("./wechatImport").WeChatImportBridge;
   getFilePath: (file: File) => string;
   localDsh: import("./localDsh").LocalDshBridge;
   localLibrary: import("./localLibrary").LocalLibraryBridge;

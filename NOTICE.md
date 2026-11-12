@@ -101,3 +101,7 @@ B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `
 
 
 团队资料 Git 工作区的流程设计参考 [Tencent/teamai-cli](https://github.com/Tencent/teamai-cli/tree/a03ca33d8a02304cc22be8425cc1854d4686716c) 的团队文档与 Git 审核实践；未引入该项目代码、资源、hooks或运行时依赖。实现与边界记录于 docs/development/team-library-git.md。
+
+## 2026-11-12 微信分享记录导入接入
+
+接入负责人提供的 D:/deepseek-agent/wechat-import 独立 Node 模块及合成用例，适配 AcceptCat 主进程会话 scope、预览和草稿。模块的聊天头部格式参考 freestylefly/WeChatBridge；Windows ShareTarget 使用 Microsoft 稀疏包接口，接收器由 AcceptCat 独立编写，未复制上游常驻进程、管道或界面代码。上游来源与格式不稳定边界见 docs/development/wechat-share-import.md。新增 yauzl 3.4.0、buffer-crc32 1.0.0 沿各自原有许可分发，不改其许可或署名。

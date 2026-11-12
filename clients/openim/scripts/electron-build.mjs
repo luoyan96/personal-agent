@@ -266,6 +266,8 @@ verifyBuilderToolchain(repoRoot);
 
 if (!dryRun) {
   if (process.platform === 'win32' && (buildAll || forwardedArgs.some(arg => arg === '--win' || arg === '-w'))) await stageRuntime(repoRoot);
+  if (process.platform === 'win32' && (buildAll || forwardedArgs.some(arg => arg === '--win' || arg === '-w')))
+    run('powershell.exe', ['-NoProfile', '-File', path.join(repoRoot, 'windows-share/build.ps1')]);
   prepareWorkspaceForBuild(repoRoot);
   run(process.execPath, [
     path.join(repoRoot, "node_modules", "vite", "bin", "vite.js"),

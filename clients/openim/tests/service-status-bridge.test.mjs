@@ -60,6 +60,7 @@ async function fixture() {
     ["localLibraryManage", ["registerLocalLibraryBridge"]],
     ["teamLibraryManage", ["registerTeamLibraryBridge"]],
     ["chatHistoryManage", ["registerChatHistoryBridge"]],
+    ["wechatImportManage", ["registerWeChatImportBridge"]],
     ["localDshManage", ["registerLocalDshBridge"]],
     ["peerLibraryManage", ["registerPeerLibraryBridge"]],
     ["imageClipboardManage", ["registerImageClipboardBridge"]],
@@ -83,6 +84,7 @@ async function fixture() {
       ipcRenderer: { invoke: async (name, ...args) => handlers.get(name)(event, ...args) },
     },
     "@openim/electron-client-sdk/lib/preload": {},
+    "./wechatImportClient": { createWeChatImportClient: () => ({}) },
     "../utils/imagePasteLimits": { imagePasteLimits: { bytes: 10 * 1024 * 1024 } },
   }, { process: { platform: "win32", version: "vSynthetic", getSystemVersion() {} } });
   const card = await load("../src/research/contact-card.ts", {

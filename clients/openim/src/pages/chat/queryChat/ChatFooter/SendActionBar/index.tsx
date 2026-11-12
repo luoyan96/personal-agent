@@ -1,6 +1,6 @@
 import { FolderOpenOutlined, SmileOutlined } from "@ant-design/icons";
 import { Popover } from "antd";
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useRef, type ReactNode } from "react";
 import { useAgentChatOperation } from "@/research/useAgentChatOperation";
 import type { AgentChatOperation } from "@/research/useAgentChatOperation";
 import ScreenshotAction from "./ScreenshotAction";
@@ -27,16 +27,23 @@ const SendActionBar = ({
   stageFiles,
   stageImages,
   pasteImages,
+  wechatImport,
 }: {
   insertEmoji: (emoji: string) => void;
   stageFiles: (files: File[]) => void;
   stageImages: (files: File[]) => void;
   pasteImages: () => void;
+  wechatImport?: (button: ReactNode, chooseFiles: () => void) => ReactNode;
 }) => {
   const input = useRef<HTMLInputElement>(null);
   const intent = useRef<AgentChatOperation>();
   const capture = useAgentChatOperation();
   useEffect(() => () => intent.current?.dispose(), []);
+  const chooseFiles = () => {
+    intent.current?.dispose(); intent.current = capture(); input.current?.click();
+  };
+  const attachmentButton = <button type="button" className="chat-tool-button" aria-label="添加附件" title="添加图片、文件或微信分享包"
+    onClick={wechatImport ? undefined : chooseFiles}><FolderOpenOutlined /></button>;
   return (
     <div className="px-3 pt-1">
       <div className="flex items-center gap-1" role="toolbar" aria-label="聊天工具栏">
@@ -67,19 +74,7 @@ const SendActionBar = ({
             <SmileOutlined />
           </button>
         </Popover>
-        <button
-          type="button"
-          className="chat-tool-button"
-          aria-label="添加附件"
-          title="添加图片或文件"
-          onClick={() => {
-            intent.current?.dispose();
-            intent.current = capture();
-            input.current?.click();
-          }}
-        >
-          <FolderOpenOutlined />
-        </button>
+        {wechatImport ? wechatImport(attachmentButton, chooseFiles) : attachmentButton}
         <input
           ref={input}
           type="file"

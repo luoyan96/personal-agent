@@ -32,6 +32,7 @@
     "typecheck:electron": "tsc -p tsconfig.electron-check.json",
     "check:workspace": "node scripts/workspace-build.mjs",
     "test:build": "node --test tests/desktop-build.test.mjs",
+    "test:wechat-import": "node --test tests/wechat-import/*.test.mjs",
     "test:dsh-plugin": "node --test tests/dsh-plugin.test.mjs tests/bundled-tools.test.mjs tests/dsh-plugin-upgrade.test.mjs",
     "test:local-dsh": "node --test tests/local-dsh.test.mjs tests/local-dsh-account.test.mjs tests/local-dsh-files.test.mjs tests/task-workspace.test.mjs tests/task-material-bridge.test.mjs tests/team-execution.test.mjs",
     "test:team-library": "node --test tests/team-library.test.mjs tests/team-library-authority.test.mjs tests/library-layout.test.mjs tests/workspace-availability.test.mjs",
@@ -135,6 +136,7 @@
     "ajv": "8.17.1",
     "antd": "5.10.0",
     "axios": "^1.4.0",
+    "buffer-crc32": "1.0.0",
     "ckeditor5": "43.0.0",
     "clsx": "^1.2.1",
     "date-fns": "^2.30.0",
@@ -165,6 +167,7 @@
     "twemoji": "14.0.1",
     "uuid": "^9.0.1",
     "xgplayer": "^3.0.5",
+    "yauzl": "3.4.0",
     "zustand": "^4.3.3"
   }
 }

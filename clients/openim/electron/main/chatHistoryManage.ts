@@ -16,7 +16,7 @@ type Lease = Credentials & { db: ChatHistoryDatabase };
  * it under a hashed name on the local origin; a build served from the service
  * origin keeps `rap_session` directly.
  */
-async function credentials(event: IpcMainInvokeEvent): Promise<Credentials | null> {
+export async function credentials(event: IpcMainInvokeEvent): Promise<Credentials | null> {
   const auth = authority(event);
   const service = new URL(getResearchServiceStatus().address).origin;
   const origin = new URL(auth.contents.getURL()).origin;
@@ -35,7 +35,7 @@ async function credentials(event: IpcMainInvokeEvent): Promise<Credentials | nul
  * exchanged for the member it belongs to. A page cannot ask for someone
  * else's transcript by passing a different id.
  */
-function sessionMemberId(current: Credentials) {
+export function sessionMemberId(current: Credentials) {
   return new Promise<string>((resolve, reject) => {
     const request = net.request({
       url: current.service + "/api/v1/auth/session",
