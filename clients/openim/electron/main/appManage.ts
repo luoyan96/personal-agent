@@ -6,6 +6,7 @@ import { isMac, isProd, isWin } from "../utils";
 import { getStore } from "./storeManage";
 import { IpcMainToRender } from "../constants";
 import { logger } from ".";
+import { receiveWindowsShare } from "./wechatImportManage";
 
 const store = getStore();
 
@@ -15,8 +16,10 @@ export const setSingleInstance = () => {
     process.exit(0);
   }
 
-  app.on("second-instance", () => {
+  void receiveWindowsShare(process.argv).catch(() => logger.warn("Windows分享批次无法读取，请从聊天工具栏重新选择分享包。"));
+  app.on("second-instance", (_event, argv) => {
     showWindow();
+    void receiveWindowsShare(argv).catch(() => logger.warn("Windows分享批次无法读取，请从聊天工具栏重新选择分享包。"));
   });
 };
 

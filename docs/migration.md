@@ -149,3 +149,7 @@ paper-framework-figure-studio-pro 固定修订仅在 Git 外测试完整包往�
 ## 2026-11-09 团队资料 Git 治理参考
 
 参考Tencent/teamai-cli在固定提交a03ca33d8a02304cc22be8425cc1854d4686716c的目录/团队文档/Git审核实践。AcceptCat独立实现资料manifest、权限核对、原件引用与本机Git store，没有复制其源码、hooks或配置，也没有将其namespace当作ACL。DSH只接收经当前账号授权的任务素材副本；生效规则仍由已有工作上下文服务管理。迁移选择、保留旧资料入口及交付边界见development/team-library-git.md。
+
+## 2026-11-12 微信分享导入
+
+将负责人提供的独立 ZIP 导入模块迁入客户端所有的 electron/wechat-import，并沿已有聊天草稿/附件发送路径接入。原导出作为外部来源材料保留，不变造原生消息身份、时间或群成员；不迁移或扫描微信数据库。Windows ShareTarget 为独立原生接收器与独立包身份，不复用微信流安装或证书；注册与文件接收分开验收。无后台或数据库迁移。来源、构建和验证边界见 development/wechat-share-import.md。

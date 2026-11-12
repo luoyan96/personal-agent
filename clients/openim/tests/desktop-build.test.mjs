@@ -112,7 +112,10 @@ test('requires the CommonJS skill importer and its YAML dependency inside the st
   f.put('standalone/dist-electron/utils/screenshotEditorHtml.js','exports.screenshotEditorHtml=()=>{}');
   f.put('standalone/dist-electron/main/teamLibraryManage.js','exports.registerTeamLibraryBridge=()=>{}');
   f.put('standalone/dist-electron/utils/teamLibrary.js','exports.TeamLibraryStore=class {}');
-  assert.equal(runtimeEntryFiles(path.join(f.workspace,'standalone')).length,11);
+  assert.throws(()=>runtimeEntryFiles(path.join(f.workspace,'standalone')), /wechatImportRuntime/);
+  f.put('standalone/dist-electron/main/wechatImportRuntime.js','exports.registerWeChatImport=()=>{}');
+  f.put('standalone/dist-electron/preload/wechatImportClient.js','exports.createWeChatImportClient=()=>{}');
+  assert.equal(runtimeEntryFiles(path.join(f.workspace,'standalone')).length,13);
 });
 
 test('checks the actual archive, not just the staging directory', async t => {

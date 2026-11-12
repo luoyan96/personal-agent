@@ -385,6 +385,7 @@ test("preload exposes narrow image byte methods wired to their actual native han
         ipcRenderer: { invoke: (name, ...args) => f.handlers[name]({}, ...args) },
       },
       "@openim/electron-client-sdk/lib/preload": {},
+      "./wechatImportClient": { createWeChatImportClient: () => ({}) },
       "../utils/imagePasteLimits": limits,
     },
     { process },

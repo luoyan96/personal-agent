@@ -58,6 +58,7 @@
       { from: "../.dsh-runtime", to: "dsh", filter: ["**/*", "**/.*"] },
       // Pinned tools fetched by scripts/desktop-tools.mjs: tectonic and the research plugin tarball.
       { from: "../tools", to: "tools", filter: ["**/*", "!.cache/**"] },
+      { from: "../.windows-share", to: "windows-share", filter: ["**/*", "!.buildtools/**", "!.package/**", "!*.zip", "!app.manifest", "!*.pdb"] },
       {
         from: "node_modules/@openim/electron-client-sdk/assets/win_${arch}/",
         to: "app.asar.unpacked/node_modules/@openim/electron-client-sdk/assets/win_${arch}",
@@ -85,6 +86,7 @@
     ],
   },
   nsis: {
+    include: "../windows-share/installer.nsh",
     installerIcon: "./dist/icons/icon.ico",
     uninstallerIcon: "./dist/icons/icon.ico",
     installerHeaderIcon: "./dist/icons/icon.ico",
