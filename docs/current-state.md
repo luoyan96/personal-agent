@@ -8,7 +8,7 @@
 
 沿用现有后台 0.45/034，无契约或迁移变更。本批直接提交仍受既有附件接口约束：每次最多5份，单份10 MiB，TXT/MD/CSV/TSV/JSON/PDF/PNG。Office及大原件继续通过既有资料归档入口处理，本批没有实现其直接交付。
 
-最终35项定向检查（含3项新增本地/IPC回归）、renderer/Electron类型检查通过；Web/Electron构建通过。实际组件在本地合成页面验证添加、取消勾选、预览、提交成功状态；没有真实账号/模型或生产文件验收。根ci完成内容/运维语法/共享构建/类型/契约导出，进入完整Vitest后长时间无输出；threads和直接node的完整套件尝试仍未完成，271项契约子集通过。日志在Git外 D:/deepseek-agent/.runtime/task-submit-* 与 task-direct-file-submit-ci.log。未合并、未生成新安装包、未发布或部署。
+最终35项定向检查（含3项新增本地/IPC回归）、renderer/Electron类型检查通过；Web/Electron构建通过。实际组件在本地合成页面验证添加、取消勾选、预览、提交成功状态；没有真实账号/模型或生产文件验收。根ci完成内容/运维语法/共享构建/类型/契约导出，初次完整Vitest及threads尝试长时间无输出后停止；直接node单进程全套已恢复执行，271项契约子集通过。PR204两个Linux全仓CI已通过，Windows检查/打包仍运行。另已通过生产入口、B0实际HTTP与Web生产边界检查，并在实际组件合成页面确认提交响应中断不会误报成功、原请求可继续重试。日志在Git外 D:/deepseek-agent/.runtime/task-submit-* 与 task-direct-file-submit-ci.log。未合并、未生成新安装包、未发布或部署。
 
 ## 2026-11-12 Windows 0.10.104 已公开发布
 
