@@ -34,7 +34,7 @@
     "test:build": "node --test tests/desktop-build.test.mjs",
     "test:dsh-plugin": "node --test tests/dsh-plugin.test.mjs tests/bundled-tools.test.mjs tests/dsh-plugin-upgrade.test.mjs",
     "test:local-dsh": "node --test tests/local-dsh.test.mjs tests/local-dsh-account.test.mjs tests/local-dsh-files.test.mjs tests/task-workspace.test.mjs tests/task-material-bridge.test.mjs tests/team-execution.test.mjs",
-    "test:team-library": "node --test tests/team-library.test.mjs tests/team-library-authority.test.mjs tests/library-layout.test.mjs tests/workspace-availability.test.mjs",
+    "test:team-library": "node --test tests/team-library.test.mjs tests/team-library-connect.test.mjs tests/repository-editor.test.mjs tests/team-library-authority.test.mjs tests/library-layout.test.mjs tests/workspace-availability.test.mjs",
     "test:service": "node --test tests/research-service.test.mjs",
     "test:peer-library": "node --test tests/peer-library.test.mjs",
     "test:local-folder": "node --test tests/local-folder.test.mjs",

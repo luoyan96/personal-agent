@@ -26,7 +26,6 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   TeamLibraryEntry,
-  TeamRepositoryInput,
   type ResponseFor,
   type WorkbenchCard,
 } from "@research-agent-platform/contracts";
@@ -40,6 +39,7 @@ import { useResearchRead } from "./useResearchRead";
 import { usePersonalOperation } from "./usePersonalOperation";
 import { useResearchStore } from "./store";
 import { nativeWorkbenchTaskPath } from "./workbench-links";
+import { RepositoryEditor } from "./RepositoryEditor";
 import { LibraryIndexPage } from "./LibraryIndexPage";
 import SafeMessageMarkdown from "./SafeMessageMarkdown";
 import "./team-library.scss";
@@ -70,7 +70,7 @@ function FileIcon({ entry }: { entry: TeamLibraryEntry }) {
     <FileTextOutlined />
   );
 }
-type RepositoryStatus = ResponseFor<"teamRepository">["data"];
+
 
 /** Git publishes curated metadata and small text; originals retain their existing ACL. */
 export function TeamLibraryWorkspace({
@@ -147,6 +147,7 @@ export function TeamLibraryWorkspace({
     setPurpose("");
     setQuery("");
     setNewProject(false);
+    setConfigure(false);
   }, [operation.generation, operation.actorId, binding?.version, binding?.labId]);
   const sync = async () => {
     if (!bridge) return;
@@ -862,97 +863,6 @@ function ProjectEditor({
   );
 }
 
-function RepositoryEditor({
-  current,
-  onClose,
-  onSaved,
-}: {
-  current?: RepositoryStatus;
-  onClose: () => void;
-  onSaved: () => Promise<void>;
-}) {
-  const [url, setUrl] = useState(
-      current?.binding?.url || "https://github.com/luoyan96/files.git",
-    ),
-    [branch, setBranch] = useState(current?.binding?.branch || "main"),
-    [workspaceId, setWorkspaceId] = useState(
-      current?.binding?.workspaceId || "acceptcat-demo",
-    ),
-    [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
-  const operation = usePersonalOperation(true, "team-repository-editor"),
-    key = useRef(crypto.randomUUID());
-  const save = async () => {
-    const ticket = operation.capture();
-    setBusy(true);
-    setError("");
-    try {
-      const value = TeamRepositoryInput.parse({ url, branch, workspaceId });
-      await researchApi("saveTeamRepository", {
-        body: { ...value, expectedVersion: current?.binding?.version || 0 },
-        idempotencyKey: key.current,
-      });
-      if (ticket.isCurrent()) await onSaved();
-    } catch (e) {
-      if (ticket.isCurrent()) setError(message(e));
-    } finally {
-      if (ticket.isCurrent()) setBusy(false);
-    }
-  };
-  return (
-    <Modal
-      open
-      title="团队仓库设置"
-      className="team-library-editor"
-      closable={!busy}
-      maskClosable={!busy}
-      cancelButtonProps={{ disabled: busy }}
-      onCancel={onClose}
-      onOk={save}
-      confirmLoading={busy}
-      okText="保存配置"
-    >
-      <p>
-        仓库配置由课题组共享。成员通过本机 Git 权限访问，不在 AcceptCat 保存 Git 密钥。
-      </p>
-      {error && <Alert type="error" message={error} />}
-      <label>
-        GitHub 仓库地址
-        <Input
-          value={url}
-          onChange={(e) => {
-            setUrl(e.target.value);
-            key.current = crypto.randomUUID();
-          }}
-        />
-      </label>
-      <label>
-        发布分支
-        <Input
-          value={branch}
-          onChange={(e) => {
-            setBranch(e.target.value);
-            key.current = crypto.randomUUID();
-          }}
-        />
-      </label>
-      <label>
-        资料空间 ID
-        <Input
-          value={workspaceId}
-          onChange={(e) => {
-            setWorkspaceId(e.target.value);
-            key.current = crypto.randomUUID();
-          }}
-        />
-      </label>
-      <p>
-        公开仓库对所有人可见，请勿放入实验室内部材料。更换实验室仓库时保留资料空间 ID
-        和相对路径。
-      </p>
-    </Modal>
-  );
-}
 
 function EntryEditor({
   snapshot,

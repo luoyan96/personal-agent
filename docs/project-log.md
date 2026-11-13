@@ -3105,3 +3105,13 @@ PR206发版前补充：公网只读ready仍0.45.0/三项ok；新客户端的固�
 ## 2026-11-13 Windows0.10.105公开发布完成
 
 2026-11-13T00:09:48+08:00发布v0.10.105/Latest，固定构建main/tag 49d55697cf7fad443b006f732b0c3e027239149f。PR206最终5501899与PR207/347e0cb四项CI通过后依次普通合并，最终main四项CI成功，受审树/祖先核对一致。421239209字节，SHA256 16edb7141d3ed71fe41b7803493fa19c0fe15b8587c78adf1c83aead2e131c23，桌面副本一致；冻结1742源码、实际EXE载荷/135资源、11入口、PE/asar版本、更新清单、隔离启动、禁网跨进程缓存、四附件大小/digest及匿名核验通过，旧104附件保留。后台0.45/034保持，新群功能需后续0.46/035部署；未操作生产/私人账号/真实模型。PR204/205独立，原生/聊天编辑器/DSH/Skills与锁文件保留。失败与既有警告见deployment/acceptcat-0.10.105-release.md、Git外release-0.10.105-20261112；实际使用待本人验收。
+
+## 2026-11-13 团队仓库连接表单简化（未发布）
+
+- 按负责人反馈，`codex/library-connect-url` 从实际 origin/main/51eca28782428c11a695d3c6c75dc7c198fea51a 开始，原桌面目录及独立 PR211 保留。`RepositoryEditor` 独立为单地址表单，支持回车、空值禁用和同步提交互斥。发布分支/空间ID改为 Electron 只读发现，不需要用户填写。
+- 新 `team-library-discover` 沿用受信窗口、服务会话与管理员权限，发现前后核对身份/绑定；不改 API/契约/迁移/锁。Git仅在应用自建临时bare目录读取默认分支和普通文件清单，不checkout、不执行仓库脚本、不推送；旧自定义分支保留、仓库迁移校验原workspaceId。网络/空仓库/坏清单/符号链接拒绝，失败不覆盖配置，结束清理临时目录。
+- `test:team-library` 32项通过，包含真实本地Git默认非main分支、迁移/错空间、坏清单、旧缓存/原件与账号隔离，以及真实表单保存前发现、失败重试和账号变化。客户端与Electron类型通过。公开 `https://github.com/luoyan96/files` 的真实只读发现返回规范URL、main、acceptcat-demo；未写远端或线上绑定。
+- Browser plugin not available，使用 Playwright + 隔离 Edge headless 验证真实 React/AntD 表单；Git发现使用真实只读命令，保存请求仅入本地夹具。两种URL回车连接、失败不保存/可重试、1365×900与720×700截图通过，无页面错误。没有操作使用者客户端或私有资料，私有仓库/真实账号配置保存待负责人验收。
+- 初版定向测试暴露桌面独立runtime未导出TeamRepositoryUrl/Input，改用既有TeamRepositoryBinding.shape后通过，不添加另一套契约；VM测试的跨realm Error断言修正为注入同一Error，产品错误处理未因此改写。初次截图处于AntD入场动画，等待动画稳定后重新取证。记录与日志保存在Git外 `D:/deepseek-agent/.runtime/library-connect-20261113`。
+- 本批未合main、未发布、未制作新安装包、无需部署后台。原生编辑PR211独立；后续整合发布必须包含它，已存在的0.10.106输入编辑测试包不含此次单地址界面。
+- 完整Web/Electron构建与4项固定SDK资源/HTML守卫通过；保留既有AntD use-client与构建体积警告。未把Web构建等同于NSIS/安装/生产账号验收。
