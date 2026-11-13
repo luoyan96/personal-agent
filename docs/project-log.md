@@ -3105,3 +3105,12 @@ PR206发版前补充：公网只读ready仍0.45.0/三项ok；新客户端的固�
 ## 2026-11-13 Windows0.10.105公开发布完成
 
 2026-11-13T00:09:48+08:00发布v0.10.105/Latest，固定构建main/tag 49d55697cf7fad443b006f732b0c3e027239149f。PR206最终5501899与PR207/347e0cb四项CI通过后依次普通合并，最终main四项CI成功，受审树/祖先核对一致。421239209字节，SHA256 16edb7141d3ed71fe41b7803493fa19c0fe15b8587c78adf1c83aead2e131c23，桌面副本一致；冻结1742源码、实际EXE载荷/135资源、11入口、PE/asar版本、更新清单、隔离启动、禁网跨进程缓存、四附件大小/digest及匿名核验通过，旧104附件保留。后台0.45/034保持，新群功能需后续0.46/035部署；未操作生产/私人账号/真实模型。PR204/205独立，原生/聊天编辑器/DSH/Skills与锁文件保留。失败与既有警告见deployment/acceptcat-0.10.105-release.md、Git外release-0.10.105-20261112；实际使用待本人验收。
+
+## 2026-11-13 全局文本输入编辑修复候选
+
+负责人报告资料仓库地址粘贴不可用。复用干净的独立D:/deepseek-agent/acceptcat-group-invite-fix工作树，从最新main/51eca28建fix/desktop-input-editing；原C工作树的部署回执分支和两个微信分享未跟踪目录保持原状。仓库表单是普通受控AntD Input，无本页粘贴拦截；Windows旧主进程移除了应用菜单且无统一context-menu处理。旧版独立Electron合成窗确认普通Ctrl+V可成功、但无原生右键菜单，不把所有粘贴失败都归为快捷键问题。
+
+Electron公共层在创建窗口前注册web-contents-created，为可编辑区域及只读文本输入生成原生编辑角色，按实时editFlags及密码/只读条件控制；所有平台保留编辑应用菜单，Windows/Linux主窗口隐藏菜单栏。原生paste不改成DOM赋值或额外剪贴板IPC，保留聊天图片/文件粘贴事件；非输入区域留给消息/图片/文件专用菜单。新增5项策略回归加入Windows CI；与认证/图片/构建守卫共24项通过，双类型及check:content通过。未改API/契约/迁移/模型或DSH源码。
+
+候选版本0.10.106、本地构建与原生操作结果继续记录于Git外D:/deepseek-agent/.runtime/input-editing-20261113。隔离Electron测试首次剪贴板写入不稳定，随后Computer Use截图确认系统锁屏，停止UI操作并请求负责人解锁；不使用软件模拟粘贴结果冒充原生验收。一次临时esbuild命令引号错误改为独立脚本，未影响产品源码。此前部署已使后台达到0.46/035，本批无需部署；修复未合main或公开Release。
+本批构建完成：Windows0.10.106候选NSIS 421242858字节、SHA256 b3f8ece77e61f194e3e158a5ad930ca31076196f9d7c265c5f818e40c8bd2804，桌面AcceptCat_0.10.106-input-editing-test.exe；未发布/代安装。实际asar64523047字节含编辑策略/主进程菜单模块并先于窗口安装，11入口/更新清单/隔离启动通过，既有electron-log重复initialize警告保留。独立Electron合成控件补7项分组交互检查：网址/搜索/密码/多行/富文本输入、全选、菜单生成、密码限制、撤销重做及不替换非输入区菜单通过，无页面异常；Browser插件未列出，使用既有Playwright Electron与Computer Use，未接触真实客户端或账号。外部剪贴板闭环仍受锁屏阻挡，待解锁继续。临时asar核验首次误用@electron/asar与斜杠路径/源码符号，改用现有asar3和编译符号后核对通过，未重打或放宽产品检查。

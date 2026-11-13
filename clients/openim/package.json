@@ -1,6 +1,6 @@
 {
   "name": "research-wechat-openim",
-  "version": "0.10.105",
+  "version": "0.10.106",
   "main": "dist-electron/main/bootstrap.js",
   "description": "AcceptCat · 科研个人助理与课题组协作",
   "author": "blooming",
@@ -48,6 +48,7 @@
     "test:send-recovery": "node --test tests/send-recovery.test.mjs tests/desktop-proxy.test.mjs tests/desktop-transport.test.mjs",
     "test:image-paste": "node --test tests/image-paste.test.mjs",
     "test:auth": "node --test tests/auth-input.test.mjs",
+    "test:editing": "node --test tests/editing-menu.test.mjs",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx src",
     "lint:fix": "eslint --ext .js,.jsx,.ts,.tsx --fix --quiet src",
     "prepare": "node scripts/prepare-hooks.mjs"
