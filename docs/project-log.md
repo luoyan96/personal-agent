@@ -3105,3 +3105,11 @@ PR206发版前补充：公网只读ready仍0.45.0/三项ok；新客户端的固�
 ## 2026-11-13 Windows0.10.105公开发布完成
 
 2026-11-13T00:09:48+08:00发布v0.10.105/Latest，固定构建main/tag 49d55697cf7fad443b006f732b0c3e027239149f。PR206最终5501899与PR207/347e0cb四项CI通过后依次普通合并，最终main四项CI成功，受审树/祖先核对一致。421239209字节，SHA256 16edb7141d3ed71fe41b7803493fa19c0fe15b8587c78adf1c83aead2e131c23，桌面副本一致；冻结1742源码、实际EXE载荷/135资源、11入口、PE/asar版本、更新清单、隔离启动、禁网跨进程缓存、四附件大小/digest及匿名核验通过，旧104附件保留。后台0.45/034保持，新群功能需后续0.46/035部署；未操作生产/私人账号/真实模型。PR204/205独立，原生/聊天编辑器/DSH/Skills与锁文件保留。失败与既有警告见deployment/acceptcat-0.10.105-release.md、Git外release-0.10.105-20261112；实际使用待本人验收。
+
+## 2026-11-13 群助理后台0.46/035部署完成
+
+负责人单独授权升级后台，经已登录Edge阿里云Workbench操作原ECS。固定源码49d55697cf7fad443b006f732b0c3e027239149f，与公开Windows0.10.105一致；新镜像research-openim-api:group-assistant-20261113 / sha256:e25debab9ebd228ad13917c7de2699494c267ce1aff7d9642b6d89e5eff4fa79。沿用容器实际标签的37层Compose链并追加新镜像层，只启停API/worker，其他六容器ID/镜像/状态/重启次数及既有配置不变。530源码输入与镜像核对、035 LF/5678字节摘要、旧025 CRLF兼容断言通过；镜像禁网4文件79项回归通过（130.47秒）。
+
+排空后先停worker再停API，科研目录与配置一致备份到/srv/research-openim-backups/group-assistant-20261113-20261113T020844Z/research.tar.gz，SHA256 a7ea38e66911617320f79a931d5116a550d8d99bf2ccfd8b7e372a5116452850。实际恢复副本校验原始记录/文件、迁移两次并跑生产HTTP，再正式迁移两次：034→035、116→119张非内部表、完整性ok/外键零错/强制ON，第二次全部行不变；18群补齐固定助理、清退15旧群智能体，原始消息/任务承接/执行/个人配置和9原有文件保全检查通过。本次没有待取消的旧群聊天轮。API healthy、worker running且两者restart=0；服务器和本机公网ready返回0.46.0，database/storage/authentication全ok，匿名新接口401；harness保持not_verified。未操作真实账号或模型，实际建群/@群助理/实名转达/多账号IM待负责人验收。
+
+失败/修复均记录：特殊键输入只读预检失效、过时cache prune参数零回收、构建准备缺少运维迁移清单、一次shell引号错误、CRLF/LF运维摘要差异、本地Python子进程/审计连接问题及独立公网匿名复核一次TLS握手失败。最终检查成功，生产迁移没有失败。只回收可重建的闲置Docker构建缓存2.233GB，保留旧镜像/源码/备份/数据；未改Nginx/端口/凭据/schema_migrations。035后不可仅切回034镜像，故障以前滚兼容修复为主。详见deployment/group-assistant-20261113.md；服务器证据/opt/research-openim/ops/group-assistant-20261113，本机D:/deepseek-agent/.runtime/group-assistant-deploy-20261113。部署文档从main/51eca28独立分支记录；无产品源码/安装包变化，PR204/205及已有两个微信分享未跟踪目录保留。
