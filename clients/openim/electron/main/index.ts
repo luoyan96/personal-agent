@@ -16,10 +16,10 @@ export const logger = getLogger(join(app.getPath("userData"), `/OpenIMData/logs`
 const init = () => {
   smokeProgress("app-ready");
   initI18n();
+  createAppMenu();
   createMainWindow();
   initDesktopUpdates();
   if (process.env.OPENIM_SMOKE_TEST !== "1" && process.env.OPENIM_HIDE_WINDOW !== "1") {
-    createAppMenu();
     createTray();
   }
 };

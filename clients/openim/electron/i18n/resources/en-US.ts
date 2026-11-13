@@ -10,6 +10,8 @@ export default {
     minimize: "Minimize",
     close: "Close",
     copy: "Copy",
+    edit: "Edit",
+    delete: "Delete",
     paste: "Paste",
     cut: "Cut",
     undo: "Undo",

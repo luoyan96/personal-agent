@@ -1,8 +1,33 @@
-import { app, Menu } from "electron";
+import { app, BrowserWindow, Menu } from "electron";
 import { t } from "i18next";
 import { isMac } from "../utils";
+import { editingMenu, inputContextMenu, type EditingLabels } from "../utils/editingMenu";
+
+const labels = (): EditingLabels => ({
+  undo: t("system.undo"), redo: t("system.redo"), cut: t("system.cut"),
+  copy: t("system.copy"), paste: t("system.paste"), delete: t("system.delete"),
+  selectAll: t("system.selectAll"),
+});
+let inputMenusRegistered = false;
+
+function registerInputMenus() {
+  if (inputMenusRegistered) return;
+  inputMenusRegistered = true;
+  // Install before windows/views are created: settings, dialogs and embedded DSH
+  // all receive standard editing without per-field clipboard IPC or handlers.
+  app.on("web-contents-created", (_event, contents) => {
+    contents.on("context-menu", (_event, params) => {
+      const template = inputContextMenu(params, labels());
+      if (!template.length || contents.isDestroyed()) return;
+      const window = BrowserWindow.fromWebContents(contents);
+      Menu.buildFromTemplate(template).popup({ ...(window ? { window } : {}) });
+    });
+  });
+}
 
 const createAppMenu = () => {
+  registerInputMenus();
+  const edit = { label: t("system.edit"), submenu: editingMenu(labels()) };
   if (isMac) {
     const template: Electron.MenuItemConstructorOptions[] = [
       {
@@ -21,21 +46,7 @@ const createAppMenu = () => {
           },
         ],
       },
-      {
-        label: t("system.fastKeys"),
-        submenu: [
-          { label: t("system.copy"), role: "copy", accelerator: "CmdOrCtrl+C" },
-          { label: t("system.paste"), role: "paste", accelerator: "CmdOrCtrl+V" },
-          { label: t("system.cut"), role: "cut", accelerator: "CmdOrCtrl+X" },
-          { label: t("system.undo"), role: "undo", accelerator: "CmdOrCtrl+Z" },
-          { label: t("system.redo"), role: "redo", accelerator: "CmdOrCtrl+Y" },
-          {
-            label: t("system.selectAll"),
-            role: "selectAll",
-            accelerator: "CmdOrCtrl+A",
-          },
-        ],
-      },
+      edit,
       {
         label: t("system.window"),
         role: "window",
@@ -48,7 +59,9 @@ const createAppMenu = () => {
 
     Menu.setApplicationMenu(Menu.buildFromTemplate(template));
   } else {
-    Menu.setApplicationMenu(null);
+    // Keep explicit native editing roles/accelerators instead of relying only
+    // on Chromium defaults. Hide the bar rather than removing these actions.
+    Menu.setApplicationMenu(Menu.buildFromTemplate([edit]));
   }
 };
 

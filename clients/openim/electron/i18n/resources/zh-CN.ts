@@ -10,6 +10,8 @@ export default {
     minimize: "最小化",
     close: "关闭",
     copy: "复制",
+    edit: "编辑",
+    delete: "删除",
     paste: "粘贴",
     cut: "剪切",
     undo: "撤销",

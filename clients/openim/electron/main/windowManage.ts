@@ -47,6 +47,7 @@ export function createMainWindow() {
     icon: join(global.pathConfig.publicPath, "favicon.ico"),
     frame: false,
     show: false,
+    autoHideMenuBar: true,
     width: 1280,
     height: 820,
     minWidth: 1024,
