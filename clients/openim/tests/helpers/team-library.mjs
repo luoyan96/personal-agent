@@ -13,7 +13,7 @@ const runtime={exports:{}};vm.runInNewContext(buildLocalDshRuntime(client).outpu
 export const libraryRuntime=runtime.exports;
 const compiled=await build({entryPoints:[path.join(client,'electron/utils/teamLibrary.ts')],bundle:true,platform:'node',format:'cjs',write:false,external:['../main/localDshRuntime']});
 const module={exports:{}};vm.runInNewContext(compiled.outputFiles[0].text,{module,exports:module.exports,require:n=>n==='../main/localDshRuntime'?libraryRuntime:require(n),process,Buffer,TextEncoder,URL,setTimeout,clearTimeout});
-export const {TeamLibraryStore,gitRunner}=module.exports;
+export const {TeamLibraryStore,gitRunner,discoverRepository,repositoryUrl}=module.exports;
 export async function standaloneLibraryStore(t){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'acceptcat-library-cjs-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
  await fs.mkdir(path.join(root,'main'));await fs.mkdir(path.join(root,'utils'));

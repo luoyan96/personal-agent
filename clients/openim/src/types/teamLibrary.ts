@@ -28,6 +28,9 @@ export type TeamLibraryProposal = {
   entry: TeamLibraryEntry | null;
 };
 export type TeamLibraryBridge = {
+  discover: (
+    url: string,
+  ) => Promise<Pick<TeamRepositoryBinding, "url" | "branch" | "workspaceId">>;
   sync: () => Promise<TeamLibrarySnapshot>;
   cached: () => Promise<TeamLibrarySnapshot | null>;
   preview: (selected: TeamLibrarySelection) => Promise<TeamLibraryPreview>;
