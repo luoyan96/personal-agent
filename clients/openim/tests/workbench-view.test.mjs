@@ -87,15 +87,15 @@ test("task navigation includes full history and names the two kinds of task", as
   assert.match(page, /label: "计划记录"/);
   assert.doesNotMatch(page, /label: "计划"/);
   assert.doesNotMatch(page, /label: "定时"/);
-  // Both entries start with 新建 and say what they make.
+  // One menu keeps both scopes explicit and preserves their original actions.
   assert.match(page, /新建课题组任务/);
   assert.match(page, /新建个人任务/);
-  assert.doesNotMatch(page, />\s*新建任务\s*</);
+  assert.match(page, /<Dropdown/);
   // 课题组任务 expands the assistant instead of opening a form.
   assert.match(page, /setPlanningLaunch\(\(value\) => value \+ 1\)/);
-  assert.match(page, /disabled=\{!assistantReady\}/);
+  assert.match(page, /disabled: !assistantReady/);
   // Personal tasks ask for one sentence only.
-  assert.match(page, /onClick=\{startPersonalTask\}/);
+  assert.match(page, /key === "personal" \? startPersonalTask\(\) : startTask\(\)/);
   assert.match(page, /aria-label="任务目标"/);
   assert.doesNotMatch(page, /aria-label="任务名称"/);
 });
