@@ -3171,3 +3171,9 @@ PR213与版本PR214各四项CI通过后普通合并，最终main/tag为0fff9b693
 根pnpm run ci通过（84文件992项Vitest及生产流程检查）；最终桌面615项、renderer/Electron类型检查通过。首轮桌面607通过/2失败：引用恢复测试的隔离contracts导出缺少新用到的真实schema，以及资料索引静态文案断言仍为旧文案；修正fixture导出和同义文案断言，保留失败日志，29项定向及最终615项全量通过。连续消息共享turn回放关系和已确认图片不占待发容量也补充回归。测试不使用真实模型、用户资料或生产写入。
 
 Design QA根design-qa.md与D:/deepseek-agent/.runtime/experience-refresh-20261114保存合并比较、初轮入口过多及修正证据；task-ux-refresh-20261114、chat-recovery-20261114、memory-profile-20261114保存真实组件的合成浏览器验证。Browser插件缺席，使用已安装Playwright/Edge；框架弃用警告原样记录。原生读取遇锁屏，截图不能作为应用证据；安装包待构建及成品核验。该批只交付本地预览，不合并或公开Release，不清理原有账号/记忆/聊天记录，不改后台提示词。
+
+## 2026-11-14 · 0.10.110-preview.1 本地成品完成
+
+固定0a12e4b/树bd301a4，1776份输入；根desktop:win以--publish never完成，提取EXE核对137份构建资源、新页面及既有缓存/截图/压缩代码，更新清单、隔离启动、禁网跨进程缓存、成品Git模块两种真实files URL同步6条公开资料均通过。桌面C:/Users/luo/Desktop/AcceptCat_0.10.110-preview.1.exe，421264125字节，SHA256 14a87626932b7252e4aa5fd56a614a14b7c119d6ddb28d637ac64e62b0bce053。源码和桌面副本核验在D:/deepseek-agent/.runtime/experience-refresh-20261114。内置插件0.4.0、DSH0.2.1-rc.3及固定tectonic保留，没有rcedit临时文件。没有合并、公开Release、后台迁移或真实账号写入。
+
+原生锁屏限制与0.10.109既有electron-log重复初始化提示均如实保留；未宣称真实模型/SDK/原生拖放已验收，也未确认原停止回复的后台原因被修复。此批交付本地安装体验，详情docs/deployment/acceptcat-0.10.110-local-preview.md，设计检查根design-qa.md。
