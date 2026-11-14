@@ -8,6 +8,10 @@ import SafeMessageMarkdown from "./SafeMessageMarkdown";
 import OIMAvatar from "@/research/ResearchAvatar";
 import DesktopWorkCard from "./DesktopWorkCard";
 import { useGroupChatRoster, groupContactDescription } from "./GroupChatRoster";
+import { useChatOutbox, reconcileAcknowledgedMessages } from "./chat-outbox";
+import { progressNeedsRead } from "./agent-progress-state";
+import { useResearchRead } from "./useResearchRead";
+import { ResearchTurnStatus } from "./ResearchTurnStatus";
 
 type Entry = {
   generation: number;
@@ -71,6 +75,24 @@ useResearchStore.subscribe((next, previous) => {
   if (next.generation !== previous.generation) useProgress.setState({ entries: [] });
 });
 
+function StoppedReplyRecovery({ entry }: { entry: Entry }) {
+  const read = useResearchRead(
+    signal => researchApi("chatTurn", { params: { id: entry.turnId }, signal }),
+    `${entry.generation}:${entry.imID}:${entry.turnId}`,
+    true,
+    { poll: false },
+  );
+  const turn = read.data?.data;
+  if (read.error) return <p className="desktop-chat-error" role="alert">回复详情暂时无法读取。<button onClick={() => void read.refresh()}>重新读取</button></p>;
+  if (!turn || turn.id !== entry.turnId || turn.conversationId !== entry.conversationId)
+    return <p role="status" className="text-xs text-slate-500">正在核对回复详情…</p>;
+  return <ResearchTurnStatus turn={turn} compact onRetried={next => {
+    registerAgentProgress(entry.generation, entry.imID, next, { displayName: entry.displayName, inputText: entry.inputText });
+    if (next.id !== entry.turnId) useProgress.setState(s => ({ entries: s.entries.map(e => e.turnId === entry.turnId && e.imID === entry.imID && e.generation === entry.generation ? { ...e, progress: e.progress ? { ...e.progress, phase: "superseded", supersededByTurnId: next.id } : e.progress } : e) }));
+    else void read.refresh();
+  }} />;
+}
+
 /** Only authorized server progress; no simulated typing or native SDK messages. */
 export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
   const history = useContext(AgentProgressHistory);
@@ -87,6 +109,13 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
   const actorId = useResearchStore((s) => s.actor?.member.id);
   const mapping = useResearchStore((s) => s.mappings.find(m => m.imConversationID === imID));
   const entries = useProgress((s) => s.entries);
+  const submissions = useChatOutbox(s => s.items);
+  const receipts = submissions.filter(item => item.generation === generation && item.conversationID === imID && item.state === "acknowledged" && item.receipt?.message.conversationId === mapping?.researchConversationId);
+  useEffect(() => {
+    for (const item of receipts) for (const turn of item.receipt!.turns)
+      registerAgentProgress(generation, imID, turn, { inputText: item.receipt!.message.text || item.text });
+    reconcileAcknowledgedMessages(generation, imID, history.messageIds);
+  }, [generation, imID, mapping?.researchConversationId, submissions, history.messageIds]);
   const contacts = useResearchStore(s => s.contacts);
   const roster = useGroupChatRoster();
   const scope = `${generation}:${imID}`;
@@ -107,13 +136,7 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
             (e) =>
               e.generation === generation &&
               e.imID === imID &&
-              !e.canonicalSeen &&
-              (!e.progress || !["superseded", "stopped"].includes(e.progress.phase)) &&
-              (e.validation !== token ||
-                !(
-                  (e.error || e.progress?.phase === "final") &&
-                  Date.now() - (e.checkedAt || 0) < 5000
-                )),
+              progressNeedsRead(e, token),
           )
           .slice(-8);
         await Promise.all(
@@ -213,15 +236,21 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
       (e) =>
         e.generation === generation &&
         e.imID === imID &&
+        e.conversationId === mapping?.researchConversationId &&
         !e.canonicalSeen &&
         !history.messageIds.has(e.progress?.finalMessageId || "") &&
-        e.validation === token &&
+        (e.validation === token || e.progress?.phase === "stopped") &&
         (e.error || (e.progress && e.progress.phase !== "superseded")),
     )
     .slice(-8);
   return (
     <div ref={container} data-agent-progress className="desktop-agent-progress space-y-2 px-5 pb-4">
-      {visible.map(({ turnId, progress: p, error, agentContactId, displayName, inputText }) => {
+      {receipts.filter(item => !history.messageIds.has(item.receipt!.message.id)).map(item => <div key={item.id} className="chat-acknowledged-input" data-acknowledged-message={item.receipt!.message.id}>
+        <div>{item.receipt!.message.text || item.text}</div>
+        <span role="status">请求已保存 · 等待聊天记录同步</span>
+      </div>)}
+      {visible.map(entry => {
+        const { turnId, progress: p, error, agentContactId, displayName, inputText } = entry;
         const contact = contacts.find(c => c.contact.id === agentContactId);
         const groupContact = roster.data?.data.find(c => c.id === agentContactId);
         const name = groupContact?.displayName || displayName || contact?.contact.displayName || (mapping?.kind === "group" ? "助手" : conversation?.showName);
@@ -267,6 +296,7 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
                   : "本次回复已停止"}
               </p>
               {p!.text && <SafeMessageMarkdown text={p!.text} />}
+              {p!.phase === "stopped" && <StoppedReplyRecovery entry={entry} />}
             </>
           )}
           </div>

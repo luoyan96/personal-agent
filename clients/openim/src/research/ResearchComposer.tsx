@@ -423,7 +423,7 @@ export function useResearchComposer() {
         });
     } else operation.dispose();
     // Only the canonical backend outbox publishes the research pointer.
-    return true;
+    return result.data;
   };
   const controls =
     researchMode && mapping ? (

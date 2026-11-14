@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { MessageItem } from "@openim/wasm-client-sdk";
 import type { PreparedResearchSend } from "./ResearchComposer";
 import { useResearchStore } from "./store";
-import { routes } from "@research-agent-platform/contracts";
+import { routes, ChatMessage, AgentTurn } from "@research-agent-platform/contracts";
 import type { ComposerImage } from "./chat-image-submission";
 
 export type ChatSubmission = {
@@ -19,7 +19,8 @@ export type ChatSubmission = {
   imageAgentConversationId?: string;
   nativeMessage?: MessageItem;
   quoteMessage?: MessageItem;
-  state: "queued" | "sending" | "failed" | "paused";
+  state: "queued" | "sending" | "failed" | "paused" | "acknowledged";
+  receipt?: { message: ChatMessage; turns: AgentTurn[] };
   error?: string;
 };
 // This tab's bounded sessionStorage restores unsent text as paused, never sends
@@ -35,6 +36,16 @@ export function updateSubmission(id: string, patch: Partial<ChatSubmission>) {
 }
 export function removeSubmission(id: string) {
   useChatOutbox.setState((s) => ({ items: s.items.filter((item) => item.id !== id) }));
+}
+export function pendingSubmissions(items: ChatSubmission[], generation: number, conversationID: string) {
+  return items.filter(item => item.generation === generation && item.conversationID === conversationID && item.state !== "acknowledged");
+}
+/** A real SDK pointer replaces its API receipt; text equality never deduplicates sends. */
+export function reconcileAcknowledgedMessages(generation: number, conversationID: string, messageIds: Set<string>) {
+  if (generation !== useResearchStore.getState().generation) return;
+  const items = useChatOutbox.getState().items;
+  const next = items.filter(item => !(item.generation === generation && item.conversationID === conversationID && item.state === "acknowledged" && item.receipt && messageIds.has(item.receipt.message.id)));
+  if (next.length !== items.length) useChatOutbox.setState({ items: next });
 }
 const storageKey = "research-chat-pending-v1",
   maxBytes = 512 * 1024,
@@ -69,7 +80,7 @@ function persist(actor = useResearchStore.getState()) {
           ? { images: images.map(({ file: _file, ocrText: _ocr, ...image }) => image) }
           : {}),
         ...(files ? { files: files.map(({ file: _file, ...entry }) => entry) } : {}),
-        state: "paused",
+        state: item.state === "acknowledged" ? "acknowledged" : "paused",
       })),
       drafts: [...chatDrafts],
     });
@@ -135,6 +146,14 @@ function restore(actor: ReturnType<typeof useResearchStore.getState>) {
       )
         throw new Error("Invalid pending message");
       ids.add(item.id);
+      if (item.state === "acknowledged") {
+        const message = ChatMessage.parse(item.receipt?.message);
+        const turns = AgentTurn.array().max(5).parse(item.receipt?.turns);
+        if (
+          !item.request || message.conversationId !== item.request.conversationId ||
+          turns.some(turn => turn.conversationId !== message.conversationId || turn.inputMessageId !== message.id)
+        ) throw new Error("Invalid acknowledged message");
+      } else if (item.receipt) throw new Error("Unexpected message receipt");
       if (
         item.request &&
         (!["agentChatMessage", "sendChatMessage", "agentFileMessage"].includes(
@@ -221,8 +240,8 @@ function restore(actor: ReturnType<typeof useResearchStore.getState>) {
       items.push({
         ...item,
         generation: actor.generation,
-        state: "paused",
-        error: "刷新前的发送结果尚未确认；重试会核对原请求，不会自动发送。",
+        state: item.state === "acknowledged" ? "acknowledged" : "paused",
+        error: item.state === "acknowledged" ? undefined : "刷新前的发送结果尚未确认；重试会核对原请求，不会自动发送。",
       });
     }
     for (const draft of stored.drafts) {

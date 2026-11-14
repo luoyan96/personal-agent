@@ -203,7 +203,7 @@ export const ChooseContact: FC<ChooseContactProps> = ({
     if (researchMode && type === "CRATE_GROUP" && choosedList.length > 20)
       return message.warning("一次建群最多选择20位成员。");
 
-    if(researchMode && type==="CRATE_GROUP" && (!availability.supports(46)||!labs.data))return message.warning(labs.error||"请等待群规则来源读取完成；此功能需要后台 0.46。");
+    if(researchMode && type==="CRATE_GROUP" && (!availability.supports(46)||!labs.data))return message.warning(labs.error||"群聊功能暂不可用，请稍后重试。");
     setLoading(true);
     setFailure("");
     sending.current = true;
@@ -426,7 +426,7 @@ export const ChooseContact: FC<ChooseContactProps> = ({
           <div className="mb-6 flex items-center">
             <div className="min-w-[60px] font-medium">{t("placeholder.groupName")}</div>
             <Input
-              placeholder={t("placeholder.pleaseEnter")}
+              placeholder="例如：论文讨论"
               maxLength={16}
               spellCheck={false}
               value={groupBaseInfo.groupName}
@@ -438,8 +438,8 @@ export const ChooseContact: FC<ChooseContactProps> = ({
           </div>
           {researchMode && <div className="mb-4 space-y-2 text-sm">
             {labs.data && labs.data.data.labs.length>1 && <Select aria-label="本群课题组" className="w-full" value={groupLabId} onChange={setSelectedLab} options={labs.data.data.labs.map(l=>({label:l.name,value:l.id}))} />}
-            <p>{labs.data?`本群将适用：平台规则${groupLabId?" + "+labs.data.data.labs.find(l=>l.id===groupLabId)?.name+"课题组规则":"（不关联课题组）"}`:availability.version&&!availability.supports(46)?"新建群聊需要后台升级到 0.46。":labs.error||"正在核对群规则来源…"}</p>
-            <p className="text-[var(--sub-text)]">后台 0.46 起，新群固定一个群助理，不读取个人规则、偏好或私聊。</p>
+            <p>{labs.data?`创建后适用：平台规则${groupLabId?" + "+labs.data.data.labs.find(l=>l.id===groupLabId)?.name+"课题组规则":"（不关联课题组）"}`:availability.version&&!availability.supports(46)?"当前服务暂不支持新建群聊，请联系管理员。":labs.error||"正在核对群规则来源…"}</p>
+            <p className="text-[var(--sub-text)]">创建后将配备群助理，使用本群上下文，不读取个人私聊。</p>
           </div>}
           {!researchMode && (
             <div className="mb-6 flex items-center">
@@ -515,7 +515,7 @@ export const ChooseContact: FC<ChooseContactProps> = ({
           loading={loading}
           onClick={() => void confirmChoose()}
         >
-          {createdGroupId ? "重试同步" : t("confirm")}
+          {createdGroupId ? "重试同步" : type === "CRATE_GROUP" ? "创建群聊" : t("confirm")}
         </Button>
       </div>
     </>

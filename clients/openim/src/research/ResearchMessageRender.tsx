@@ -251,7 +251,12 @@ export default function ResearchMessageRender({
                 <LegacyTaskInviteCard text={read.data.fact.text} />
               ) : (
                 read.data.fact.text && (
-                  <SafeMessageMarkdown text={read.data.fact.text} />
+                  read.data.fact.origin === "service" && !read.data.fact.resources.length && !read.data.fact.actionIds.length && !read.data.fact.turnId ? (
+                    <details className="chat-system-notice">
+                      <summary>系统通知 · {read.data.fact.text.split("\n")[0]}</summary>
+                      <SafeMessageMarkdown text={read.data.fact.text} />
+                    </details>
+                  ) : <SafeMessageMarkdown text={read.data.fact.text} />
                 )
               )}
               {!!taskResources.length && (
