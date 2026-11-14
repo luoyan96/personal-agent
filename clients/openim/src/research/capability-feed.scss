@@ -163,6 +163,26 @@
   }
   .capability-live-grid:not(:empty) {
     margin-bottom: 28px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+    gap: 16px;
+    .capability-feed-caption {
+      padding: 18px 18px 12px;
+    }
+    .capability-feed-caption h3 {
+      font-size: 18px;
+    }
+    .capability-feed-outcomes {
+      min-height: 44px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .capability-feed-author small {
+      font-size: 12px;
+    }
+    .capability-feed-metadata {
+      color: #62737c;
+      font-size: 12px;
+    }
   }
   .capability-discovery-grid {
     display: grid;

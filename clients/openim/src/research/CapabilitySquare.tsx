@@ -1,4 +1,4 @@
-import { Alert, App, Button, Input, Modal, Segmented, Select } from "antd";
+import { Alert, App, Button, Input, Modal, Select } from "antd";
 import { useLayoutEffect, useRef, useState } from "react";
 import type {
   CapabilityPublication,
@@ -31,20 +31,6 @@ import "./workspace.scss";
 import "./capability-center.scss";
 import "./research-library.scss";
 import "./capability-feed.scss";
-
-function ConfiguredCapabilityPreview({ contact }: { contact: Contact }) {
-  const description =
-    /输出[：:]([^\n]+)/.exec(contact.profile.capabilityDescription)?.[1] ||
-    contact.profile.capabilityDescription ||
-    contact.profile.introduction;
-  return (
-    <div className="capability-outcome-preview preview-blue capability-configured-preview">
-      <span className="capability-preview-label">维护者的能力介绍</span>
-      <h4>{capabilityCategory(contact)}</h4>
-      <p>{description || "尚未填写能力介绍，先打开名片了解详情。"}</p>
-    </div>
-  );
-}
 
 export function CapabilitySquare() {
   return <CapabilityBrowser view="public" />;
@@ -376,15 +362,16 @@ function CapabilityBrowser({
       {view === "lab" && <ResearchTeamAccountHint />}
       {view !== "public" && (
         <div className="workspace-toolbar">
-          <Segmented
+          <Select
             className="capability-feed-categories"
             aria-label="科研能力分类"
             value={category}
+            style={{ width: 180 }}
             onChange={(v) => {
               setCategory(v as ResearchCategory);
               setSelectedContact(undefined);
             }}
-            options={[...researchCategories]}
+            options={researchCategories.map((value) => ({ value, label: value }))}
           />
         </div>
       )}
@@ -470,11 +457,14 @@ function CapabilityBrowser({
                           : "由所属账号维护"
                       }
                       outcomes={
-                        c.profile.introduction || "打开配置了解实际用途与输入。"
+                        c.profile.introduction ||
+                        c.profile.capabilityDescription ||
+                        "尚未填写介绍"
                       }
                       status={capabilityStatus(c)}
                       icon={<OIMAvatar text={c.displayName} size={32} />}
-                      preview={<ConfiguredCapabilityPreview contact={c} />}
+                      preview={null}
+                      metadata={<span>{capabilityCategory(c)}</span>}
                       selected={selectedContact === c.id}
                       onOpen={() => setSelectedContact(c.id)}
                     />
