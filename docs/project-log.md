@@ -3177,3 +3177,7 @@ Design QA根design-qa.md与D:/deepseek-agent/.runtime/experience-refresh-2026111
 固定0a12e4b/树bd301a4，1776份输入；根desktop:win以--publish never完成，提取EXE核对137份构建资源、新页面及既有缓存/截图/压缩代码，更新清单、隔离启动、禁网跨进程缓存、成品Git模块两种真实files URL同步6条公开资料均通过。桌面C:/Users/luo/Desktop/AcceptCat_0.10.110-preview.1.exe，421264125字节，SHA256 14a87626932b7252e4aa5fd56a614a14b7c119d6ddb28d637ac64e62b0bce053。源码和桌面副本核验在D:/deepseek-agent/.runtime/experience-refresh-20261114。内置插件0.4.0、DSH0.2.1-rc.3及固定tectonic保留，没有rcedit临时文件。没有合并、公开Release、后台迁移或真实账号写入。
 
 原生锁屏限制与0.10.109既有electron-log重复初始化提示均如实保留；未宣称真实模型/SDK/原生拖放已验收，也未确认原停止回复的后台原因被修复。此批交付本地安装体验，详情docs/deployment/acceptcat-0.10.110-local-preview.md，设计检查根design-qa.md。
+
+## 2026-11-14 · 0.10.110 正式发布复核
+
+负责人明确授权复核、合并main并发布正式Release及本地正式包。从已完成预览的ece4334继续独立release分支，fetch确认main仍6779aa2、Latest0.10.109。新PR检索未发现比当前主线更新的同事功能提交；既有挂起的历史PR不混入本批。独立6.1Solhigh只读审阅发现三处P2：50条已保存回执占满待发额度、个人任务误显示文件选择却发送通用文字、成功提交响应丢失后回执核对因submit权限变化被禁用。修复和定向回归处理中，不沿用此前615项通过结论宣称边界已覆盖。新增测试将加入Windows CI。无后台、提示词或数据迁移。
