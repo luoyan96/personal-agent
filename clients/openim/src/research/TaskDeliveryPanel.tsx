@@ -61,8 +61,9 @@ export function TaskDeliveryPanel({
       setBusy(false);
     }
   };
-  const choose = async (paths?: string[]) =>
-    run(async () => {
+  const choose = async (paths?: string[]) => {
+    if (target.kind !== "research") return;
+    await run(async () => {
       setBusyLabel("正在准备文件…");
       const names = await stage(paths);
       if (!names.length) return;
@@ -70,8 +71,9 @@ export function TaskDeliveryPanel({
       setSelection(names);
       setQuestion("");
     });
+  };
   const prepare = () => {
-    if (disabled || busy || !canSubmit) return;
+    if (target.kind !== "research" || disabled || busy || !canSubmit) return;
     const result = prepareTaskDelivery(
       text,
       title,
@@ -90,9 +92,11 @@ export function TaskDeliveryPanel({
           action={
             <Button
               loading={busy}
-              disabled={!canSubmit}
+              disabled={busy}
               onClick={() => {
-                if (flight.current || !canSubmit) return;
+                // This only replays the recorded intent. The main process checks
+                // its exact contents and current authority even after submission.
+                if (flight.current || busy || !pending) return;
                 flight.current = true;
                 setBusy(true);
                 setError("");
@@ -193,7 +197,7 @@ export function TaskDeliveryPanel({
           </Button>
         </div>
       )}
-      {canSubmit && outputs.length > 0 && (
+      {target.kind === "research" && canSubmit && outputs.length > 0 && (
         <details className="task-delivery-output-options">
           <summary>从工作文件夹选择（{outputs.length}）</summary>
           {outputs.map((file) => (
@@ -273,7 +277,7 @@ export function TaskDeliveryPanel({
             ))}
         </div>
       )}
-      {selection.length > 0 && canSubmit && (
+      {target.kind === "research" && selection.length > 0 && canSubmit && (
         <div className="task-delivery-confirm">
           <strong>提交到「{title}」</strong>
           {selection.map((name) => (
@@ -285,6 +289,7 @@ export function TaskDeliveryPanel({
             disabled={disabled || !canSubmit}
             onClick={() =>
               void run(async () => {
+                if (target.kind !== "research") return;
                 setBusyLabel("正在提交，等待回执…");
                 await submit(selection);
                 setSelection([]);
