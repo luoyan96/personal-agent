@@ -53,6 +53,7 @@ import {
   updateSubmission,
   removeSubmission,
   pendingSubmissions,
+  assertSubmissionCapacity,
   type ChatSubmission,
 } from "@/research/chat-outbox";
 
@@ -370,8 +371,7 @@ const ChatFooter = () => {
       const images = imageTray.current?.snapshot() || [];
       if (!cleanText && !images.length && !stagedFiles.length) return;
       assertImageQueueCapacity(images, pendingSubmissions(useChatOutbox.getState().items, generation));
-      if (submissions.length >= 20 || useChatOutbox.getState().items.length >= 50)
-        throw new Error("还有较多消息未发送，请先处理发送记录。");
+      assertSubmissionCapacity(useChatOutbox.getState().items, generation, imID);
       const imageAgentId = images.length ? directImageAgent() : undefined;
       const selected = readMentionComposer(original);
       let text =

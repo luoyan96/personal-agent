@@ -40,6 +40,12 @@ export function removeSubmission(id: string) {
 export function pendingSubmissions(items: ChatSubmission[], generation: number, conversationID?: string) {
   return items.filter(item => item.generation === generation && (conversationID === undefined || item.conversationID === conversationID) && item.state !== "acknowledged");
 }
+/** Server-persisted receipts never consume the capacity reserved for unsent work. */
+export function assertSubmissionCapacity(items: ChatSubmission[], generation: number, conversationID: string) {
+  const pending = pendingSubmissions(items, generation);
+  if (pending.length >= 50 || pending.filter(item => item.conversationID === conversationID).length >= 20)
+    throw new Error("还有较多消息未发送，请先处理发送记录。");
+}
 /** A real SDK pointer replaces its API receipt; text equality never deduplicates sends. */
 export function reconcileAcknowledgedMessages(generation: number, conversationID: string, messageIds: Set<string>) {
   if (generation !== useResearchStore.getState().generation) return;
@@ -51,6 +57,8 @@ const storageKey = "research-chat-pending-v1",
   maxBytes = 512 * 1024,
   maxAge = 24 * 60 * 60 * 1000;
 let hydratedActor: string | undefined;
+let pruningReceipts = false;
+const receiptNotice = "较早的已保存回执已收起；同步后可在聊天记录中查看。待发内容保留。";
 const notice = (message: string) => useChatOutbox.setState({ notice: message });
 function removeStored() {
   try {
@@ -67,10 +75,10 @@ function persist(actor = useResearchStore.getState()) {
   )
     return;
   try {
-    const items = useChatOutbox
+    let items = useChatOutbox
       .getState()
       .items.filter((item) => item.generation === actor.generation);
-    const value = JSON.stringify({
+    const serialize = () => JSON.stringify({
       version: 1,
       memberId: hydratedActor,
       storedAt: Date.now(),
@@ -84,13 +92,52 @@ function persist(actor = useResearchStore.getState()) {
       })),
       drafts: [...chatDrafts],
     });
+    // Only temporary HTTP success receipts may be discarded. Original pending
+    // requests, their idempotency keys and drafts always take precedence.
+    const dropped = new Set<string>();
+    const dropOldestReceipt = () => {
+      const oldest = items.find(item => item.state === "acknowledged");
+      if (!oldest) return false;
+      dropped.add(oldest.id);
+      items = items.filter(item => item !== oldest);
+      return true;
+    };
+    while (items.filter(item => item.state === "acknowledged").length > 50)
+      dropOldestReceipt();
+    let value = serialize();
+    while (new TextEncoder().encode(value).byteLength > maxBytes && dropOldestReceipt())
+      value = serialize();
+    const publishPrunedReceipts = () => {
+      if (!dropped.size) return;
+      pruningReceipts = true;
+      try {
+        useChatOutbox.setState(s => ({
+          items: s.items.filter(item => !dropped.has(item.id)),
+          notice: receiptNotice,
+        }));
+      } finally {
+        pruningReceipts = false;
+      }
+    };
+    publishPrunedReceipts();
     if (
       new TextEncoder().encode(value).byteLength > maxBytes ||
-      items.length > 50 ||
+      items.filter(item => item.state !== "acknowledged").length > 50 ||
       chatDrafts.size > 50
     )
       throw new Error("Storage limit");
-    sessionStorage.setItem(storageKey, value);
+    // Browser quota may be lower than our byte bound. Retry without success
+    // receipts before reporting that pending content cannot be persisted.
+    for (;;) {
+      try {
+        sessionStorage.setItem(storageKey, value);
+        break;
+      } catch (error) {
+        if (!dropOldestReceipt()) throw error;
+        value = serialize();
+        publishPrunedReceipts();
+      }
+    }
   } catch {
     removeStored();
     notice("浏览器未能保存待发内容；目前仅在本页保留，请勿刷新，并先处理发送记录。");
@@ -123,7 +170,9 @@ function restore(actor: ReturnType<typeof useResearchStore.getState>) {
       Date.now() - stored.storedAt > maxAge ||
       stored.storedAt > Date.now() + 60000 ||
       !Array.isArray(stored.items) ||
-      stored.items.length > 50 ||
+      stored.items.length > 100 ||
+      stored.items.filter((item: ChatSubmission) => item?.state === "acknowledged").length > 50 ||
+      stored.items.filter((item: ChatSubmission) => item?.state !== "acknowledged").length > 50 ||
       !Array.isArray(stored.drafts) ||
       stored.drafts.length > 50
     )
@@ -267,7 +316,7 @@ function restore(actor: ReturnType<typeof useResearchStore.getState>) {
   }
 }
 useChatOutbox.subscribe((next, previous) => {
-  if (next.items !== previous.items) persist();
+  if (!pruningReceipts && next.items !== previous.items) persist();
 });
 useResearchStore.subscribe((next, previous) => {
   if (

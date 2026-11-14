@@ -22,10 +22,13 @@ async function compiled(file, imports, globals = {}) {
   } });
   return module.exports;
 }
-async function fixture() {
+async function fixture(quotaBytes = Infinity) {
   const storage = new Map();
   const actor = create(() => ({ generation: 1, actor: { member: { id: "synthetic_A" } }, sessionActorId: "synthetic_A" }));
-  const load = () => compiled("../src/research/chat-outbox.ts", { zustand: { create }, "./store": { useResearchStore: actor }, "@research-agent-platform/contracts": contracts }, { sessionStorage: { getItem: id => storage.get(id), setItem: (id, value) => storage.set(id, value), removeItem: id => storage.delete(id) } });
+  const load = () => compiled("../src/research/chat-outbox.ts", { zustand: { create }, "./store": { useResearchStore: actor }, "@research-agent-platform/contracts": contracts }, { sessionStorage: { getItem: id => storage.get(id), setItem: (id, value) => {
+    if (new TextEncoder().encode(value).byteLength > quotaBytes) throw Error("Synthetic storage quota");
+    storage.set(id, value);
+  }, removeItem: id => storage.delete(id) } });
   return { actor, storage, load, outbox: await load() };
 }
 
@@ -104,6 +107,119 @@ test("the full 50-receipt bound restores without converting any receipt into a s
   assert.equal(restored.useChatOutbox.getState().items.length, 50);
   assert.equal(restored.pendingSubmissions(restored.useChatOutbox.getState().items, 1).length, 0);
   assert.equal(restored.useChatOutbox.getState().notice, "");
+});
+
+test("50 acknowledged receipts leave capacity for the next pending request and reload never dispatches it", async () => {
+  const f = await fixture();
+  const receipts = Array.from({ length: 50 }, (_, i) => entry(`saved_${i}`));
+  f.outbox.useChatOutbox.setState({ items: receipts });
+  assert.doesNotThrow(() => f.outbox.assertSubmissionCapacity(f.outbox.useChatOutbox.getState().items, 1, "synthetic_im"));
+  const pending = { ...entry("original_next_request_key"), state: "queued", receipt: undefined };
+  f.outbox.useChatOutbox.setState({ items: [...receipts, pending] });
+  const restarted = await f.load();
+  const items = restarted.useChatOutbox.getState().items;
+  assert.equal(items.length, 51);
+  assert.equal(items.filter(item => item.state === "acknowledged").length, 50);
+  assert.equal(items.filter(item => item.state === "queued" || item.state === "sending").length, 0);
+  const restoredPending = restarted.pendingSubmissions(items, 1);
+  assert.equal(restoredPending.length, 1);
+  assert.equal(restoredPending[0].id, pending.id);
+  assert.equal(restoredPending[0].state, "paused");
+  assert.equal(JSON.stringify(restoredPending[0].request), JSON.stringify(pending.request));
+});
+
+test("the 51st success prunes only the oldest temporary receipt and explains the retention boundary", async () => {
+  const f = await fixture();
+  const receipts = Array.from({ length: 50 }, (_, i) => entry(`saved_${i}`));
+  const waiting = { ...entry("waiting_original_key"), state: "failed", receipt: undefined };
+  const sending = { ...entry("new_success"), state: "sending", receipt: undefined };
+  f.outbox.useChatOutbox.setState({ items: [...receipts, waiting, sending] });
+  f.outbox.updateSubmission(sending.id, { state: "acknowledged", receipt: entry().receipt });
+  const items = f.outbox.useChatOutbox.getState().items;
+  assert.equal(items.length, 51);
+  assert.equal(items.some(item => item.id === "saved_0"), false);
+  assert.equal(items.some(item => item.id === "saved_1"), true);
+  assert.equal(items.some(item => item.id === "new_success" && item.state === "acknowledged"), true);
+  assert.equal(items.find(item => item.id === waiting.id), waiting);
+  assert.equal(f.outbox.useChatOutbox.getState().notice, "较早的已保存回执已收起；同步后可在聊天记录中查看。待发内容保留。");
+  const restarted = await f.load();
+  assert.equal(restarted.useChatOutbox.getState().items.length, 51);
+  assert.equal(restarted.pendingSubmissions(restarted.useChatOutbox.getState().items, 1)[0].id, waiting.id);
+});
+
+test("byte pressure discards acknowledged UI receipts before any original pending request or draft", async () => {
+  const f = await fixture();
+  const text = "合成内容".repeat(1900);
+  const receipts = Array.from({ length: 30 }, (_, i) => ({
+    ...entry(`large_saved_${i}`), text, html: `<p>${text}</p>`,
+    request: { ...entry().request, body: { text, continuous: true } },
+    receipt: { ...entry().receipt, message: { ...message, text } },
+  }));
+  const pending = { ...entry("must_keep_original_key"), state: "queued", receipt: undefined };
+  const draft = "未发送的草稿".repeat(3000);
+  f.outbox.saveChatDraft("draft_conversation", draft);
+  f.outbox.useChatOutbox.setState({ items: [...receipts, pending] });
+  const items = f.outbox.useChatOutbox.getState().items;
+  assert.ok(items.length < 31 && items.length > 1, "only enough oldest receipts should be removed to fit");
+  assert.equal(items.find(item => item.id === pending.id), pending);
+  assert.equal(f.outbox.chatDrafts.get("draft_conversation"), draft);
+  const stored = [...f.storage.values()][0];
+  assert.ok(new TextEncoder().encode(stored).byteLength <= 512 * 1024);
+  assert.match(f.outbox.useChatOutbox.getState().notice, /待发内容保留/);
+  const restarted = await f.load();
+  const restoredPending = restarted.pendingSubmissions(restarted.useChatOutbox.getState().items, 1);
+  assert.equal(restoredPending.length, 1);
+  assert.equal(restoredPending[0].id, pending.id);
+  assert.equal(restoredPending[0].state, "paused");
+  assert.equal(JSON.stringify(restoredPending[0].request), JSON.stringify(pending.request));
+  assert.equal(restarted.chatDrafts.get("draft_conversation"), draft);
+});
+
+test("50 actual pending requests still block new sends and each conversation retains its 20-pending limit", async () => {
+  const { outbox } = await fixture();
+  const pending = Array.from({ length: 50 }, (_, i) => ({
+    ...entry(`pending_${i}`), conversationID: `conversation_${i}`, state: "paused", receipt: undefined,
+  }));
+  assert.throws(() => outbox.assertSubmissionCapacity(pending, 1, "new_conversation"), /还有较多消息未发送/);
+  assert.doesNotThrow(() => outbox.assertSubmissionCapacity(pending.slice(1), 1, "new_conversation"));
+  const oneConversation = pending.slice(0, 20).map(item => ({ ...item, conversationID: "same_conversation" }));
+  assert.throws(() => outbox.assertSubmissionCapacity(oneConversation, 1, "same_conversation"), /还有较多消息未发送/);
+  assert.doesNotThrow(() => outbox.assertSubmissionCapacity(oneConversation, 1, "different_conversation"));
+});
+
+test("the independent 50-pending and 50-receipt bounds restore all 100 records", async () => {
+  const f = await fixture();
+  const receipts = Array.from({ length: 50 }, (_, i) => entry(`saved_${i}`));
+  const pending = Array.from({ length: 50 }, (_, i) => ({
+    ...entry(`pending_${i}`), conversationID: `conversation_${i}`, state: "paused", receipt: undefined,
+  }));
+  f.outbox.useChatOutbox.setState({ items: [...receipts, ...pending] });
+  const restarted = await f.load();
+  const items = restarted.useChatOutbox.getState().items;
+  assert.equal(items.length, 100);
+  assert.equal(restarted.pendingSubmissions(items, 1).length, 50);
+  assert.equal(items.filter(item => item.state === "acknowledged").length, 50);
+  assert.equal(items.filter(item => item.state === "queued" || item.state === "sending").length, 0);
+});
+
+test("a lower browser quota also sheds success receipts before giving up on pending storage", async () => {
+  const f = await fixture(10000);
+  const text = "synthetic saved text ".repeat(300);
+  const receipt = {
+    ...entry("large_saved"), text, html: `<p>${text}</p>`,
+    request: { ...entry().request, body: { text, continuous: true } },
+    receipt: { ...entry().receipt, message: { ...message, text } },
+  };
+  const pending = { ...entry("pending_original_key"), state: "failed", receipt: undefined };
+  f.outbox.saveChatDraft("draft_conversation", "synthetic unsent draft");
+  f.outbox.useChatOutbox.setState({ items: [receipt, pending] });
+  assert.equal(f.outbox.useChatOutbox.getState().items.length, 1);
+  assert.equal(f.outbox.useChatOutbox.getState().items[0], pending);
+  assert.match(f.outbox.useChatOutbox.getState().notice, /待发内容保留/);
+  const restarted = await f.load();
+  assert.equal(restarted.useChatOutbox.getState().items[0].id, pending.id);
+  assert.equal(restarted.useChatOutbox.getState().items[0].state, "paused");
+  assert.equal(restarted.chatDrafts.get("draft_conversation"), "synthetic unsent draft");
 });
 
 test("receipt acceptance still rejects altered request bodies and non-human message receipts", async () => {
