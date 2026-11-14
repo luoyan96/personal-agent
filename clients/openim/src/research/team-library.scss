@@ -867,12 +867,12 @@
   .team-library-row.selected { background: #e8f4ff; }
   .team-library-agent {
     margin-top: 24px;
-    padding: 12px;
+    padding: 8px 12px;
     border-radius: 10px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
-    label { grid-column: 1 / -1; white-space: normal; }
+    label { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     small { display: block; font-size: 12px; color: #697176; margin-top: 3px; }
   }
   .team-library-detail { grid-column: auto; border: 1px solid #e7ebe8; border-radius: 12px; padding: 18px; min-width: 0; }

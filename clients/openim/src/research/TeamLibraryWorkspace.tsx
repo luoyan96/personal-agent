@@ -3,6 +3,7 @@ import {
   Button,
   Checkbox,
   Drawer,
+  Dropdown,
   Empty,
   Input,
   Modal,
@@ -17,6 +18,7 @@ import {
   FilePptOutlined,
   FileTextOutlined,
   FolderOpenOutlined,
+  MoreOutlined,
   HistoryOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -367,15 +369,6 @@ export function TeamLibraryWorkspace({
               )}
               {snapshot && (
                 <Button
-                  icon={<HistoryOutlined />}
-                  disabled={!snapshot}
-                  onClick={openHistory}
-                >
-                  更新记录
-                </Button>
-              )}
-              {snapshot && (
-                <Button
                   type="primary"
                   icon={<UploadOutlined />}
                   disabled={!snapshot || !bridge}
@@ -388,13 +381,12 @@ export function TeamLibraryWorkspace({
                 </Button>
               )}
               {snapshot && (
-                <Button
-                  icon={<PlusOutlined />}
-                  disabled={!snapshot || !bridge}
-                  onClick={() => setEditing(true)}
-                >
-                  更多来源
-                </Button>
+                <Dropdown trigger={["click"]} menu={{ items: [
+                  { key: "history", label: "更新记录", icon: <HistoryOutlined /> },
+                  { key: "sources", label: "添加更多来源", icon: <PlusOutlined />, disabled: !bridge },
+                ], onClick: ({ key }) => { if (key === "history") void openHistory(); else setEditing(true); } }}>
+                  <Button icon={<MoreOutlined />} aria-label="更多资料操作" />
+                </Dropdown>
               )}
             </>
           )}
@@ -649,7 +641,6 @@ export function TeamLibraryWorkspace({
                 <div className="team-library-agent">
                   <label htmlFor="team-library-question">
                     查找资料并带入任务
-                    <small>按已发布目录的名称、说明和用途匹配</small>
                   </label>
                   <Input.TextArea
                     id="team-library-question"

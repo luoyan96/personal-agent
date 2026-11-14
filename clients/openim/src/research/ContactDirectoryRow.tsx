@@ -113,7 +113,7 @@ export function ContactDirectoryRow({
         className="workspace-person-row"
         aria-pressed={selected}
         onClick={onSelect}
-        aria-label={`${contact.displayName}${starred ? "，已星标" : ""}`}
+        aria-label={`${contact.displayName}${source ? `，${source}` : ""}${starred ? "，已星标" : ""}`}
         title="右键或按 Shift+F10 打开菜单"
         onKeyDown={(event) => {
           if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) {
