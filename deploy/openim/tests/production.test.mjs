@@ -75,7 +75,7 @@ test('real production CLI and HTTP: explicit 023 migration, private bootstrap, o
     assert.equal(run('migrate').status, 0); assert.equal(run('migrate').status, 0);
     let db = new DatabaseSync(databasePath);
     try {
-      assert.equal(db.prepare('SELECT max(version) v FROM schema_migrations').get().v, 36);
+      assert.equal(db.prepare('SELECT max(version) v FROM schema_migrations').get().v, 39);
       assert.equal(db.prepare('SELECT count(*) n FROM members').get().n, 0);
       assert.equal(db.prepare('SELECT count(*) n FROM labs').get().n, 0);
     } finally { db.close(); }

@@ -10,6 +10,7 @@ export * from './personal-models.js'
 export * from './agent-connections.js'
 
 export * from './personal-assistant.js'
+export * from './assistant-memory.js'
 export * from './workspace.js'
 export * from './research-team.js'
 export * from './skills.js'

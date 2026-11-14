@@ -15,6 +15,7 @@ import { openImRoutes } from './openim.js'
 import { AccountUsername, AccountPassword, RegistrationCode } from './authentication.js'
 import { personalModelRoutes } from './personal-models.js'
 import { personalAssistantRoutes } from './personal-assistant.js'
+import { assistantMemoryRoutes } from './assistant-memory.js'
 import { workspaceRoutes } from './workspace.js'
 import { communityRoutes } from './community.js'
 import { researchTeamRoutes } from './research-team.js'
@@ -113,7 +114,7 @@ const foundationRoutes = {
   knowledge: route('GET', '/tasks/{id}/knowledge', 'B4', id, pagination, z.null(), m.page(m.Knowledge), 200, 'Task ACL and explicit authorized conclusions only.'),
   feedback: route('POST', '/tasks/{id}/feedback-sharing', 'B4', id, empty, version.extend({ deliverableId: m.Id, revision: m.Version, decision: z.enum(['share_selected', 'decline', 'revoke']), selectedText: m.Text.nullable(), purpose: z.literal('public_capability_improvement') }), m.data(m.Sharing), 200, 'Rights holder only; separate from review; only selected text; revoke stops future reuse, cannot erase prior copies. Detailed revision policy gated at B4.'),
 } as const
-export const routes: typeof teamLibraryRoutes & typeof teamWorkRoutes & typeof workContextRoutes & typeof libraryIndexRoutes & typeof peerLibraryRoutes & typeof labMembershipRoutes & typeof foundationRoutes & typeof communityRoutes & typeof researchLibraryRoutes & typeof feishuRoutes & typeof skillRoutes & typeof personalAssistantRoutes & typeof workspaceRoutes & typeof researchTeamRoutes & typeof agentIntegrationRoutes & typeof personalModelRoutes & typeof openImRoutes & typeof chatRoutes & typeof feishuLibraryRoutes = { ...teamLibraryRoutes, ...teamWorkRoutes, ...workContextRoutes, ...libraryIndexRoutes, ...peerLibraryRoutes, ...labMembershipRoutes, ...communityRoutes, ...researchLibraryRoutes, ...feishuRoutes, ...skillRoutes, ...personalAssistantRoutes, ...workspaceRoutes, ...researchTeamRoutes, ...agentIntegrationRoutes, ...personalModelRoutes, ...openImRoutes, ...chatRoutes, ...foundationRoutes, ...feishuLibraryRoutes }
+export const routes: typeof teamLibraryRoutes & typeof teamWorkRoutes & typeof workContextRoutes & typeof libraryIndexRoutes & typeof peerLibraryRoutes & typeof labMembershipRoutes & typeof foundationRoutes & typeof communityRoutes & typeof researchLibraryRoutes & typeof feishuRoutes & typeof skillRoutes & typeof personalAssistantRoutes & typeof assistantMemoryRoutes & typeof workspaceRoutes & typeof researchTeamRoutes & typeof agentIntegrationRoutes & typeof personalModelRoutes & typeof openImRoutes & typeof chatRoutes & typeof feishuLibraryRoutes = { ...teamLibraryRoutes, ...teamWorkRoutes, ...workContextRoutes, ...libraryIndexRoutes, ...peerLibraryRoutes, ...labMembershipRoutes, ...communityRoutes, ...researchLibraryRoutes, ...feishuRoutes, ...skillRoutes, ...personalAssistantRoutes, ...assistantMemoryRoutes, ...workspaceRoutes, ...researchTeamRoutes, ...agentIntegrationRoutes, ...personalModelRoutes, ...openImRoutes, ...chatRoutes, ...foundationRoutes, ...feishuLibraryRoutes }
 export type RouteName = keyof typeof routes
 export type RequestFor<K extends RouteName> = z.input<(typeof routes)[K]['request']>
 export type ResponseFor<K extends RouteName> = z.output<(typeof routes)[K]['response']>

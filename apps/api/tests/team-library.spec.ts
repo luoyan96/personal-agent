@@ -105,10 +105,10 @@ it('keeps repository bindings isolated when the same account changes its selecte
 })
 it('upgrades an existing 032 database idempotently without changing existing records',async()=>{
  const s=await setup()
- s.db.exec('DROP TABLE IF EXISTS assistant_feedback; DROP TABLE IF EXISTS group_dialogue_preferences; DELETE FROM schema_migrations WHERE version=36; DROP TABLE IF EXISTS group_notices; DROP TABLE IF EXISTS group_governance_events; DROP TABLE IF EXISTS group_retired_agents; DELETE FROM schema_migrations WHERE version=35; DROP TABLE IF EXISTS personal_work_rule_revisions; DROP TABLE IF EXISTS personal_work_rules; DELETE FROM schema_migrations WHERE version=34; DROP TABLE team_library_repositories; DELETE FROM schema_migrations WHERE version=33')
+ s.db.exec('DROP VIEW IF EXISTS assistant_memory_index; DROP TABLE IF EXISTS assistant_memory_compression_jobs; DROP TABLE IF EXISTS assistant_memory_revisions; DROP TABLE IF EXISTS assistant_memories; DELETE FROM schema_migrations WHERE version>=37; DROP TABLE IF EXISTS assistant_feedback; DROP TABLE IF EXISTS group_dialogue_preferences; DELETE FROM schema_migrations WHERE version=36; DROP TABLE IF EXISTS group_notices; DROP TABLE IF EXISTS group_governance_events; DROP TABLE IF EXISTS group_retired_agents; DELETE FROM schema_migrations WHERE version=35; DROP TABLE IF EXISTS personal_work_rule_revisions; DROP TABLE IF EXISTS personal_work_rules; DELETE FROM schema_migrations WHERE version=34; DROP TABLE team_library_repositories; DELETE FROM schema_migrations WHERE version=33')
  const before=s.db.prepare('SELECT count(*) n FROM members').get()
  migrate(s.db);migrate(s.db)
- expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(36)
+ expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(39)
  expect(s.db.prepare('SELECT count(*) n FROM members').get()).toEqual(before)
  expect(s.db.prepare('PRAGMA table_list').all().filter((r:any)=>r.name==='team_library_repositories')[0]!.strict).toBe(1)
  expect(s.db.prepare('PRAGMA foreign_key_check').all()).toEqual([])

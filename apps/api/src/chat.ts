@@ -11,7 +11,8 @@ import { ResearchLibraryService } from './research-library.js'
 import type { ResearchContextSnapshot, ResearchReadReceipt } from '@research-agent-platform/contracts'
 import { randomUUID, createHmac } from 'node:crypto'
 import { z } from 'zod'
-import { Contact, Conversation, ConversationMember, ConversationViewerState, ChatMessage, ChatAction, ChatActionPayload, AgentTurn, SendChatMessage, ChatResource, routes, chatRoutes, agentIntegrationRoutes, personalAssistantRoutes, workspaceRoutes } from '@research-agent-platform/contracts'
+import { Contact, Conversation, ConversationMember, ConversationViewerState, ChatMessage, ChatAction, ChatActionPayload, AgentTurn, SendChatMessage, ChatResource, routes, chatRoutes, agentIntegrationRoutes, personalAssistantRoutes, assistantMemoryRoutes, workspaceRoutes } from '@research-agent-platform/contracts'
+import { assistantMemoryCommands, assistantMemoryReplay, authorizeAssistantMemory, handleAssistantMemory } from './assistant-memories.js'
 import type { RequestFor } from '@research-agent-platform/contracts'
 import { Collaboration } from './collaboration.js'
 import { AiService, canonical, instant } from './ai.js'
@@ -37,10 +38,10 @@ import type { ContinuousInput } from './continuous-chat.js'
 import {dialogueSourcesCurrent,taskSourcesCurrent,type DialogueSelection} from './dialogue-context.js'
 import {workspaceCommands,workspaceAuthorize,workspaceHandle,workspaceReplay,isSocialGroup,socialContactAllowed,checkWorkTurn,personalWork,socialWorkContext,recordSocialWorkTurn} from './workspace.js'
 
-export type ChatCommand = keyof typeof chatRoutes | keyof typeof agentIntegrationRoutes | keyof typeof personalAssistantRoutes | keyof typeof workspaceRoutes | 'imCreateGroup' | 'imInviteContact'
+export type ChatCommand = keyof typeof chatRoutes | keyof typeof agentIntegrationRoutes | keyof typeof personalAssistantRoutes | keyof typeof assistantMemoryRoutes | keyof typeof workspaceRoutes | 'imCreateGroup' | 'imInviteContact'
 type Resource = z.infer<typeof ChatResource>
 export type TurnInput = DialogueSelection & { librarySnapshot?:ResearchContextSnapshot; libraryRead?:ResearchReadReceipt; skill?:SkillCall; workTaskId?:string; workTaskVersion?:number; scheduledFollowupId?:string; scheduledRunId?:string; continuous?:ContinuousInput; budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; personalAssistant?:boolean; assistantMode?:'coordinate'; delegatedByTurnId?:string; personalMemoryFingerprint?:string; assistantDirectoryFingerprint?:string; assistantReceipt?:AgentTurn['assistantReceipt'];memoryReceipt?:AgentTurn['memoryReceipt'];followupReceipt?:AgentTurn['followupReceipt']; externalConsent?:boolean; externalAgent?:boolean; externalConnectionVersion?:number; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED'; assistantFailure?:'AGENT_LIMIT_REACHED'; fileDocument?:FileDocument; fileSource?:AgentFileSelection; fileRead?:AgentTurn['fileRead']; modelInputDiagnostic?:{budgetMaxTokens:number;inputTokenBound:number;maxOutputTokens:number;admitted:boolean}; modelOutputDiagnostic?:{stage:string;returnedTextLength:number;trimEmpty:boolean;maxOutputTokens:number;reasoningEffort:string;finishReason?:string;failure?:string;errorCategory?:string} }
-export type ChatRequest = { params: { id?: string; contactId?: string; messageId?: string; noticeId?:string }; query: { known?: string; cursor?: string; limit?: number; search?: string; afterSequence?: number; category?: 'all'|'ongoing'|'awaiting_me'|'completed'|'scheduled'; kind?: 'all'|'human'|'agent'; view?: 'directory'|'mine'|'public'; direction?: 'all'|'incoming'|'outgoing'; status?: 'all'|'pending'|'confirmed'|'candidate'|'revoked'|'active'|'paused'|'completed'|'cancelled'; scope?: 'private_agent'|'conversation'|'local'|'global'; scopeId?: string }; headers: { 'Idempotency-Key'?: string }; body: unknown }
+export type ChatRequest = { params: { id?: string; contactId?: string; messageId?: string; noticeId?:string }; query: { known?: string; cursor?: string; limit?: number; search?: string; afterSequence?: number; category?: 'all'|'ongoing'|'awaiting_me'|'completed'|'scheduled'; kind?: 'all'|'human'|'agent'; view?: 'directory'|'mine'|'public'; direction?: 'all'|'incoming'|'outgoing'; status?: 'all'|'pending'|'confirmed'|'candidate'|'revoked'|'active'|'paused'|'completed'|'cancelled'; scope?: 'private_agent'|'conversation'|'local'|'global'|'personal'|'agent'; scopeId?: string; subjectId?: string }; headers: { 'Idempotency-Key'?: string }; body: unknown }
 type Request = ChatRequest
 const decode = (value: unknown) => JSON.parse(String(value))
 const encode = JSON.stringify
@@ -507,6 +508,7 @@ export class ChatService {
   cursorMac(value: string) { return createHmac('sha256', signingKey(this.db)).update(`chat:${value}`).digest('hex') }
   authorize(name: ChatCommand, req: Request) {
     if(authorizeGroupCommand(this,name,req))return
+    if((assistantMemoryCommands as readonly string[]).includes(name)){authorizeAssistantMemory(this,name,req);return}
     if(workspaceAuthorize(this,name,req))return
     if(personalCommands.includes(name)){if(req.params.id){if(name.toLowerCase().includes('followup'))followup(this,req.params.id);else memory(this,req.params.id)}return}
     if(this.directory.authorize(name,req))return
@@ -528,6 +530,7 @@ export class ChatService {
       if(name==='updateGroupLab')return {data:this.conversation(req.params.id!)}
       if(name==='withdrawGroupNotice')return handleGroupCommand(this,name,req)
       const workspaceResponse=workspaceReplay(this,name,previous);if(workspaceResponse)return route.response.parse(workspaceResponse)
+      if((assistantMemoryCommands as readonly string[]).includes(name))return route.response.parse(assistantMemoryReplay(this,name,previous))
       if(personalCommands.includes(name)){if(name==='updatePersonalMemorySettings')return route.response.parse({data:memorySettings(this)});return route.response.parse({data:name.toLowerCase().includes('followup')?followup(this,previous.data.id):memory(this,previous.data.id)})}
       if(['updateAgentConnection','disconnectAgentConnection'].includes(name))return route.response.parse({data:connectionStateForReplay(this,req.params.id!)})
       const directoryReplay=this.directory.replay(name,previous);if(directoryReplay)return route.response.parse(directoryReplay)
@@ -545,6 +548,7 @@ export class ChatService {
     return response
   }
   handle(name: ChatCommand, req: Request, parsedFile?:ParsedAgentFile): unknown {
+    if((assistantMemoryCommands as readonly string[]).includes(name))return handleAssistantMemory(this,name,req)
     const governed=handleGroupCommand(this,name,req);if(governed)return governed
     const id = req.params.id!, b = req.body
     if(name==='chatTranscriptSync')return syncTranscript(this,id,(req.query as RequestFor<'chatTranscriptSync'>['query']).known)

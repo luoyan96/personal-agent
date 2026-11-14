@@ -9,11 +9,11 @@ const session={data:{member:{id:'synthetic_A',labId:'synthetic_lab',displayName:
 test('only a successful schema-validated API response can establish the public service version',async t=>{
  const old=globalThis.fetch,window=globalThis.window;t.after(()=>{globalThis.fetch=old;globalThis.window=window});globalThis.window={dispatchEvent(){}};
  assert.equal(api.getServiceVersion(),undefined);
- globalThis.fetch=async()=>Response.json({data:{}},{headers:{'X-Contract-Version':'0.46.0'}});
+ globalThis.fetch=async()=>Response.json({data:{}},{headers:{'X-Contract-Version':'0.49.0'}});
  await assert.rejects(api.researchApi('session'));assert.equal(api.getServiceVersion(),undefined);
  globalThis.fetch=async()=>Response.json(session,{headers:{'X-Contract-Version':'0.45.0'}});
  await api.researchApi('session');assert.equal(api.getServiceVersion(),'0.45.0');
- globalThis.fetch=async()=>Response.json({error:{code:'UNAUTHORIZED',message:'no',requestId:'synthetic_req'}},{status:401,headers:{'X-Contract-Version':'0.47.0'}});
+ globalThis.fetch=async()=>Response.json({error:{code:'UNAUTHORIZED',message:'no',requestId:'synthetic_req'}},{status:401,headers:{'X-Contract-Version':'0.49.0'}});
  await assert.rejects(api.researchApi('session'));assert.equal(api.getServiceVersion(),'0.45.0');
  globalThis.fetch=async()=>Response.json(session,{headers:{'X-Contract-Version':'invalid'}});
  await api.researchApi('session');assert.equal(api.getServiceVersion(),'0.45.0');

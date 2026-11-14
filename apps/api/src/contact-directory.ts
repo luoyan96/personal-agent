@@ -92,7 +92,14 @@ export class ContactDirectory {
     const agent=this.contact(agentId), conversation=this.chat.conversation(conversationId,false)
     const privateAllowed=agent.identity.kind==='personal_agent' && agent.identity.ownerMemberId===this.actor.id && (conversation.kind==='personal'||conversation.kind==='direct')
     const rows=this.db.prepare("SELECT id FROM chat_memories WHERE status='active' AND ((scope='conversation' AND scope_id=?) OR (scope='private_agent' AND scope_id=?)) ORDER BY id").all(conversationId,privateAllowed?agentId:'')
-    const memories=rows.map(row=>this.memory(String(row.id)))
+    const agentRows=privateAllowed?this.db.prepare("SELECT * FROM assistant_memories WHERE owner_id=? AND scope='agent' AND subject_id=? AND status='confirmed' ORDER BY id").all(this.actor.id,agentId):[]
+    // Legacy private notes stay in chat_memories. New typed/compressed notes
+    // retain their own authority, revisions and payload in assistant_memories.
+    const notes=agentRows.map(row=>{
+      const payload=JSON.parse(String(row.payload_json)) as {text?:string;value?:string}
+      return {id:String(row.id),scope:'private_agent' as const,scopeId:agentId,topic:String(row.topic),type:String(row.type),content:String(row.detail??payload.text??payload.value??row.summary),source:row.source_label?String(row.source_label):null,status:'active' as const,version:Number(row.version),createdByMemberId:String(row.owner_id),createdAt:String(row.created_at),updatedAt:String(row.updated_at),allowedActions:[]}
+    })
+    const memories=[...rows.map(row=>this.memory(String(row.id))),...notes].sort((a,b)=>a.id.localeCompare(b.id))
     const relation=this.relationRow(agent)
     // Coordinator recommendations depend on the bounded public roster. A changed
     // candidate profile cannot leave an older matching proposal publishable.

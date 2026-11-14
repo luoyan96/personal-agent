@@ -84,6 +84,7 @@ export function restore(source:string,destination:string,operator:string){
      doc.status='interrupted';doc.failure='RESTORED_REQUIRES_REVIEW';doc.version=Number(doc.version)+1;doc.updatedAt=now;if('endedAt' in doc)doc.endedAt=now
      db.prepare("UPDATE execution_jobs SET status='interrupted',version=?,fence=fence+1,lease_owner=NULL,lease_until=NULL,document=? WHERE id=?").run(Number(doc.version),JSON.stringify(doc),row.id!)
     }
+    db.prepare("UPDATE assistant_memory_compression_jobs SET status='failed',attempts=attempts+1,lease_until=NULL,failure='RESTORED_REQUIRES_REVIEW',updated_at=? WHERE status IN ('queued','running')").run(now)
     // Notification evidence is retained, but no old pending intent can auto-dispatch.
     db.exec("UPDATE outbox SET status='uncertain',lease_owner=NULL,lease_until=NULL WHERE status IN ('pending','leased')")
     db.prepare('INSERT INTO maintenance_audit(request_id,operator,action,lab_id,request_hash,result_json,at) VALUES(?,?,?,?,?,?,?)').run(randomUUID(),operator,'restore','_system','restored','{}',now)
