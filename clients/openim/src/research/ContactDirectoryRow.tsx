@@ -45,7 +45,7 @@ export function ContactDirectoryRow({
       ? "我的助理"
       : owner
       ? `${owner.displayName}的助理`
-      : "课题组助理";
+      : "其他账号的助理";
   const busy = useRef(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const items = [
