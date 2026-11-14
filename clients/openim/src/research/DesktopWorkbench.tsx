@@ -1,4 +1,5 @@
-import { Alert, Button, Input, Modal, Segmented, Select } from "antd";
+import { Alert, Button, Dropdown, Input, Modal, Segmented, Select } from "antd";
+import { DownOutlined } from "@ant-design/icons";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import type { WorkbenchCard } from "@research-agent-platform/contracts";
@@ -322,22 +323,22 @@ export function DesktopWorkbench() {
             ]}
           />
           {tab !== "history" && (
-            <>
-              <Button disabled={!supported} onClick={startPersonalTask}>
-                新建个人任务
-              </Button>
-              <span
-                title={
-                  assistantReady
-                    ? undefined
-                    : "这台服务器还没有任务助手，暂时只能建个人任务"
-                }
-              >
-                <Button type="primary" disabled={!assistantReady} onClick={startTask}>
-                  新建课题组任务
-                </Button>
-              </span>
-            </>
+            <Dropdown
+              trigger={["click"]}
+              menu={{
+                items: [
+                  { key: "personal", label: "新建个人任务", disabled: !supported },
+                  {
+                    key: "research",
+                    label: <span title={assistantReady ? undefined : "这台服务器还没有任务助手，暂时只能建个人任务"}>新建课题组任务</span>,
+                    disabled: !assistantReady,
+                  },
+                ],
+                onClick: ({ key }) => key === "personal" ? startPersonalTask() : startTask(),
+              }}
+            >
+              <Button type="primary" disabled={!supported}>新建任务 <DownOutlined /></Button>
+            </Dropdown>
           )}
         </div>
       </header>
@@ -487,7 +488,6 @@ export function DesktopWorkbench() {
                             key={`${card.source}:${card.id}`}
                             title={card.title}
                             status={badge}
-                            description={card.goal || "接受后可查看获准目标"}
                             meta={card.owner.displayName}
                             hint={step && step !== badge ? step : undefined}
                             selected={
@@ -611,7 +611,8 @@ export function DesktopWorkbench() {
       </div>
       {!!actor && (
         <PlanningAgent
-          hidden={detailOpen || tab === "history"}
+          view={tab}
+          hidden={detailOpen || tab === "history" || (tab === "tasks" && !activeCard && !planningExpanded)}
           available={supported && availability.supports(23)}
           conversationAvailable={availability.supports(32)}
           focus={planningLaunch}
@@ -672,6 +673,8 @@ export function DesktopWorkbench() {
             处理时在任务里选。
           </p>
           {failure && <Alert type="error" message={failure} />}
+          <div className="workspace-task-form-actions">
+            <Button disabled={busy} onClick={() => setCreating(false)}>取消</Button>
           <Button
             type="primary"
             loading={busy}
@@ -680,6 +683,7 @@ export function DesktopWorkbench() {
           >
             建好任务
           </Button>
+          </div>
         </div>
       </Modal>
     </div>

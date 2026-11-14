@@ -143,6 +143,10 @@ export function ResearchTeamWorkbench({
     });
     return matches.length ? [{ ...group, matches }] : [];
   });
+  const displayTask = selectedTask || visible[0]?.matches[0]?.task.id;
+  useEffect(() => {
+    if (!selectedTask && displayTask) onSelectTask(displayTask);
+  }, [selectedTask, displayTask, onSelectTask]);
   const pageCount = Math.max(1, Math.ceil(visible.length / 8)),
     currentPage = Math.min(page, pageCount);
   if (!actor) return <p role="status">正在确认课题组身份…</p>;
@@ -193,48 +197,54 @@ export function ResearchTeamWorkbench({
                 setPage(1);
               }}
             />
-            <Select
-              aria-label="计划阶段"
-              value={stage}
-              options={[
-                { value: "all", label: "全部阶段" },
-                { value: "active", label: "正在推进" },
-                { value: "planned", label: "准备开展" },
-                { value: "closed", label: "已结束" },
-              ]}
-              onChange={(value) => {
-                setStage(value);
-                setPage(1);
-              }}
-            />
-            <Select
-              aria-label="按计划筛选"
-              placeholder="全部计划"
-              value={direction}
-              allowClear
-              onChange={(id) => {
-                setDirection(id);
-                setPage(1);
-              }}
-              options={directions.map((group) => ({
-                value: group.id,
-                label: group.title,
-              }))}
-            />
-            <Segmented
-              block
-              aria-label="进度筛选"
-              value={filter}
-              options={[
-                { label: "全部", value: "all" },
-                { label: "待审", value: "review" },
-                { label: "临近截止", value: "deadline" },
-              ]}
-              onChange={(v) => {
-                setFilter(v as Filter);
-                setPage(1);
-              }}
-            />
+            <details className="workspace-task-filters">
+              <summary>
+                更多筛选
+                {stage !== "all" || direction || filter !== "all" ? " · 已启用" : ""}
+              </summary>
+              <Select
+                aria-label="计划阶段"
+                value={stage}
+                options={[
+                  { value: "all", label: "全部阶段" },
+                  { value: "active", label: "正在推进" },
+                  { value: "planned", label: "准备开展" },
+                  { value: "closed", label: "已结束" },
+                ]}
+                onChange={(value) => {
+                  setStage(value);
+                  setPage(1);
+                }}
+              />
+              <Select
+                aria-label="按计划筛选"
+                placeholder="全部计划"
+                value={direction}
+                allowClear
+                onChange={(id) => {
+                  setDirection(id);
+                  setPage(1);
+                }}
+                options={directions.map((group) => ({
+                  value: group.id,
+                  label: group.title,
+                }))}
+              />
+              <Segmented
+                block
+                aria-label="进度筛选"
+                value={filter}
+                options={[
+                  { label: "全部", value: "all" },
+                  { label: "待审", value: "review" },
+                  { label: "临近截止", value: "deadline" },
+                ]}
+                onChange={(v) => {
+                  setFilter(v as Filter);
+                  setPage(1);
+                }}
+              />
+            </details>
             {read.data && (
               <div className="workspace-task-statistics" aria-label="课题组任务统计">
                 <span>
@@ -307,10 +317,9 @@ export function ResearchTeamWorkbench({
                         ? "待开始"
                         : workspaceStatusLabel[status] || status
                     }
-                    description={isFullTask(task) ? task.goal : task.summary}
                     meta={`${owner} · ${deadline.label}`}
                     hint={teamNextStep(task, actor.member.id)}
-                    selected={selectedTask === task.id}
+                    selected={displayTask === task.id}
                     onSelect={() => onSelectTask(task.id)}
                   />
                 );
@@ -358,10 +367,10 @@ export function ResearchTeamWorkbench({
       }
     >
       <>
-        {selectedTask ? (
+        {displayTask ? (
           <WorkspaceTaskDetail
-            key={`${generation}:research:${selectedTask}`}
-            taskId={selectedTask}
+            key={`${generation}:research:${displayTask}`}
+            taskId={displayTask}
             kind="research"
             onChanged={read.refresh}
           />

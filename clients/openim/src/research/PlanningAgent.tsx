@@ -64,6 +64,7 @@ type Props = {
   conversationAvailable: boolean;
   /** Hidden keeps the session and the draft alive while another view is in front. */
   hidden?: boolean;
+  view?: string;
   focus: number;
   /** Bumped by "新建任务": open a clean thread instead of the last one. */
   fresh?: number;
@@ -113,6 +114,7 @@ function PlanningAgentSession({
   available,
   conversationAvailable,
   hidden,
+  view,
   focus,
   fresh,
   draft,
@@ -141,6 +143,13 @@ function PlanningAgentSession({
   const [failure, setFailure] = useState("");
   const [storageFailure, setStorageFailure] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const previousView = useRef(view);
+  useEffect(() => {
+    if (previousView.current !== view) {
+      previousView.current = view;
+      setExpanded(false);
+    }
+  }, [view]);
   const [editing, setEditing] = useState<{
     plan: ChatPlan;
     stepId: string;
@@ -869,12 +878,12 @@ function PlanningAgentSession({
             type="default"
             className="planning-agent-toggle"
             icon={<ArrowLeftOutlined />}
-            aria-label="返回工作台"
+            aria-label="返回任务"
             aria-expanded
-            title="收起对话，返回工作台"
+            title="收起对话，返回任务列表"
             onClick={() => setExpanded(false)}
           >
-            返回工作台
+            返回任务
           </Button>
         </nav>
       </header>
