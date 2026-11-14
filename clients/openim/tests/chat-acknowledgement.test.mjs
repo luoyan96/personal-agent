@@ -72,6 +72,51 @@ test("cross-conversation receipt is rejected rather than restoring authority", a
   assert.equal((await f.load()).useChatOutbox.getState().items.length, 0);
 });
 
+test("an idempotent replay of an earlier continuous input restores its receipt and shared updated turn", async () => {
+  const f = await fixture();
+  const replay = { ...entry(), receipt: { message, turns: [{ ...turn, inputMessageId: "newer_batch_input", version: 4 }] } };
+  f.outbox.useChatOutbox.setState({ items: [replay, { ...entry("next_sentence"), receipt: undefined, state: "queued" }] });
+  const restored = await f.load();
+  const items = restored.useChatOutbox.getState().items;
+  assert.equal(items[0].state, "acknowledged");
+  assert.equal(items[0].receipt.message.id, message.id);
+  assert.equal(items[0].receipt.turns[0].inputMessageId, "newer_batch_input");
+  assert.equal(items[1].state, "paused");
+  assert.equal(restored.pendingSubmissions(items, 1)[0].id, "next_sentence");
+  assert.equal(items.filter(item => item.state === "queued").length, 0);
+});
+
+test("acknowledged images do not consume the pending-image limit across conversations", async () => {
+  const { outbox } = await fixture();
+  const { imagePasteLimits } = await compiled("../src/types/imageClipboard.ts", {});
+  const { assertImageQueueCapacity } = await compiled("../src/research/chat-image-submission.ts", { "@/types/imageClipboard": { imagePasteLimits } });
+  const images = Array.from({ length: 20 }, (_, i) => ({ id: `image_${i}`, size: 100, sent: true }));
+  const acknowledged = { ...entry(), images };
+  assert.doesNotThrow(() => assertImageQueueCapacity([{ id: "new_image", size: 100 }], outbox.pendingSubmissions([acknowledged], 1)));
+  assert.throws(() => assertImageQueueCapacity([{ id: "new_image", size: 100 }], outbox.pendingSubmissions([{ ...acknowledged, state: "paused" }], 1)), /待发图片较多/);
+});
+
+test("the full 50-receipt bound restores without converting any receipt into a send", async () => {
+  const f = await fixture();
+  const entries = Array.from({ length: 50 }, (_, i) => ({ ...entry(`request_${i}`), receipt: { message: { ...message, id: `message_${i}`, turnId: `turn_${i}` }, turns: [{ ...turn, id: `turn_${i}`, inputMessageId: `message_${i}` }] } }));
+  f.outbox.useChatOutbox.setState({ items: entries });
+  const restored = await f.load();
+  assert.equal(restored.useChatOutbox.getState().items.length, 50);
+  assert.equal(restored.pendingSubmissions(restored.useChatOutbox.getState().items, 1).length, 0);
+  assert.equal(restored.useChatOutbox.getState().notice, "");
+});
+
+test("receipt acceptance still rejects altered request bodies and non-human message receipts", async () => {
+  for (const change of [
+    { request: { ...entry().request, body: { text: "altered original text", continuous: true } } },
+    { receipt: { message: { ...message, origin: "model" }, turns: [turn] } },
+  ]) {
+    const f = await fixture();
+    f.outbox.useChatOutbox.setState({ items: [{ ...entry(), ...change }] });
+    assert.equal((await f.load()).useChatOutbox.getState().items.length, 0);
+  }
+});
+
 test("stopped and superseded progress revalidate once after navigation; live updates still poll", async () => {
   const { progressNeedsRead } = await compiled("../src/research/agent-progress-state.ts", {});
   const stopped = { validation: "previous_mount", progress: { phase: "stopped" } };

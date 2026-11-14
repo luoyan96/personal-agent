@@ -369,7 +369,7 @@ const ChatFooter = () => {
     try {
       const images = imageTray.current?.snapshot() || [];
       if (!cleanText && !images.length && !stagedFiles.length) return;
-      assertImageQueueCapacity(images, useChatOutbox.getState().items);
+      assertImageQueueCapacity(images, pendingSubmissions(useChatOutbox.getState().items, generation));
       if (submissions.length >= 20 || useChatOutbox.getState().items.length >= 50)
         throw new Error("还有较多消息未发送，请先处理发送记录。");
       const imageAgentId = images.length ? directImageAgent() : undefined;
