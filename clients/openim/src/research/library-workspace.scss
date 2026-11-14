@@ -199,3 +199,103 @@
     }
   }
 }
+
+.library-page-shell {
+  .library-section-body > .library-workspace-content > .library-index {
+    padding: 0;
+  }
+  .workspace-reports {
+    padding: 0;
+  }
+  .workspace-reports > h2 {
+    margin-bottom: 6px;
+  }
+  .workspace-reports .workspace-empty {
+    padding: 32px 0;
+    text-align: left;
+    max-width: 600px;
+    margin: 0;
+  }
+  .workspace-reports .workspace-empty h2 {
+    font-size: 19px;
+  }
+  .library-standards-page .record-list-tools .ant-segmented {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .library-standards-page .record-platform {
+    max-width: 780px;
+    width: 100%;
+    margin: 0;
+  }
+  .library-platform-policy {
+    padding: 16px 0;
+    border-top: 1px solid #eeeef0;
+  }
+  .library-platform-policy summary {
+    cursor: pointer;
+    color: #1466aa;
+  }
+  .library-platform-policy p {
+    padding-top: 12px;
+  }
+  .research-library-heading {
+    padding: 0 0 18px;
+    align-items: flex-start;
+  }
+  .research-library-heading .research-library-actions {
+    margin: 0;
+  }
+  .research-library-body {
+    padding: 0;
+  }
+  .research-library-body.is-empty {
+    flex-direction: column;
+  }
+  .research-library-body.is-empty .research-collection-rail {
+    width: 100%;
+    border: 0;
+    padding: 0;
+    overflow: visible;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .research-library-body.is-empty .research-collection-rail .ant-input-search {
+    max-width: 280px;
+  }
+  .research-library-body.is-empty .research-file-list {
+    border: 0;
+    padding: 0;
+    min-height: 200px;
+  }
+  .research-library-body.is-empty .research-library-empty {
+    text-align: left;
+    padding: 30px 0;
+  }
+  .research-library-body.is-empty .research-library-empty > .anticon {
+    font-size: 28px;
+    margin-bottom: 14px;
+  }
+}
+@media (max-width: 720px) {
+  .library-page-shell .library-section-body > .library-workspace-content {
+    padding: 18px;
+  }
+  .library-page-shell .library-standards-page {
+    padding: 18px;
+  }
+  .library-page-shell .research-library-heading {
+    flex-wrap: wrap;
+  }
+}
+
+.library-page-shell .library-record-empty {
+  flex: 1;
+  padding: 28px 0;
+  color: #697176;
+}
+.library-page-shell .library-record-empty h3 {
+  font-size: 19px;
+  color: #25323e;
+}

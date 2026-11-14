@@ -326,3 +326,33 @@ test("search clears hidden plan details; confirmed plans cannot manufacture task
   assert(text(tree).includes("此步骤暂无可访问的任务。"));
   assert.equal(f.writes.length, 0);
 });
+
+test("library standards navigation keeps each section's heading and only related tabs", async () => {
+  const f = await fixture("LabStandards.tsx");
+  for (const [section, heading, tabs] of [
+    ["templates", "PPT 工作模板", ["PPT 模板", "可复用方法"]],
+    ["methods", "可复用方法", ["PPT 模板", "可复用方法"]],
+    ["platform", "平台基本规则", ["课题组规则", "平台基本规则"]],
+  ]) {
+    f.params.set("section", section);
+    const tree = f.render();
+    assert.equal(
+      nodes(tree).find((node) => node.type === "header").props.children[0].props
+        .children[0].props.children,
+      heading,
+    );
+    const navigation = nodes(tree).find(
+      (node) => node.type === "nav" && node.props["aria-label"] === "规范分类",
+    );
+    assert.deepEqual(
+      nodes(navigation)
+        .filter((node) => node.type === "button")
+        .map(text),
+      tabs,
+    );
+    assert.equal(button(tree, "返回资料"), undefined);
+  }
+  const details = nodes(f.render()).find((node) => node.type === "details");
+  assert.match(text(details), /Read-only policy/);
+  assert.equal(f.writes.length, 0);
+});

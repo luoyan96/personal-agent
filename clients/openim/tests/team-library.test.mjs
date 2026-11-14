@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {libraryFixture,standaloneLibraryStore,TeamLibraryStore,gitRunner,sha} from './helpers/team-library.mjs';
+import {libraryFixture,standaloneLibraryStore,TeamLibraryStore,gitRunner,gitFailureMessage,sha} from './helpers/team-library.mjs';
 import {TeamLibraryPath} from '../../../packages/contracts/dist/team-library.js';
 
 test('real Git fetch, verified originals, cached reopen and failed refresh preserve the published version',async t=>{
@@ -75,4 +75,49 @@ test('a dropped binary original is versioned in a review branch and retries with
  assert.notEqual(next.commit,result.commit);
  await assert.rejects(f.store.propose(snap.revision,{...entry,id:'other',source:f.entry.source},undefined,bytes),/路径已被|路径已有/);
  await assert.rejects(f.store.propose(snap.revision,entry,undefined,Buffer.alloc(20*1024*1024+1)),/20 MiB/);
+});
+
+test("Git diagnostics select actionable recovery without returning sensitive helper output", () => {
+  const secret =
+    "https://private-token@github.com/private/repo.git?password=do-not-display";
+  for (const [diagnostic, expected] of [
+    ["Could not resolve host: github.com", /网络连接失败/],
+    ["Failed to connect to github.com port 443", /网络连接失败/],
+    ["fatal: Authentication failed", /Git 访问权限不足/],
+    ["remote: Permission to synthetic/files.git denied to member.", /Git 访问权限不足/],
+    ["remote: Write access to repository not granted.", /Git 访问权限不足/],
+    ["RPC failed; curl 56 Recv failure", /网络连接失败/],
+    ["fatal: could not read Username: terminal prompts disabled", /Git 访问权限不足/],
+    ["remote: Repository not found.", /仓库不存在或当前账号无权访问/],
+    ["fatal: couldn't find remote ref refs/heads/published", /仓库发布分支不存在/],
+    ["fatal: unexplained helper failure", /Git操作未完成/],
+  ]) {
+    const message = gitFailureMessage(["fetch"], `${diagnostic}\n${secret}`);
+    assert.match(message, /^同步资料失败：/);
+    assert.match(message, expected);
+    assert.doesNotMatch(
+      message,
+      /private-token|private\/repo|password|do-not-display|unexplained/,
+    );
+  }
+  assert.match(
+    gitFailureMessage(["ls-remote"], "fatal: Authentication failed"),
+    /^识别仓库分支失败/,
+  );
+  assert.match(
+    gitFailureMessage(["push"], "fatal: Authentication failed"),
+    /^提交待审更新失败/,
+  );
+});
+
+test("a malformed manifest does not replace the last successful snapshot", async (t) => {
+  const f = await libraryFixture(t),
+    previous = await f.store.sync();
+  await f.publish({ ...f.manifest, entries: "invalid-private-payload" });
+  await assert.rejects(f.store.sync(), (error) => {
+    assert.match(error.message, /acceptcat-library.json/);
+    assert.doesNotMatch(error.message, /invalid-private-payload|ZodError/);
+    return true;
+  });
+  assert.equal((await f.store.cached()).revision, previous.revision);
 });

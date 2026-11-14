@@ -113,7 +113,7 @@ export function LibraryWorkspace() {
             </div>
           ) : standards ? (
             <LabStandards />
-          ) : index ? (
+          ) : index || params.get("scope") === "mine" ? (
             <div className="library-workspace-content">
               <LibraryIndexPage />
             </div>
@@ -122,10 +122,7 @@ export function LibraryWorkspace() {
               <ResearchLibrary />
             </div>
           ) : (
-            <TeamLibraryWorkspace
-              supported
-              tab={params.get("scope") === "mine" ? "mine" : "team"}
-            />
+            <TeamLibraryWorkspace supported />
           )}
         </div>
       </main>

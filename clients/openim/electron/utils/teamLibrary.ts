@@ -123,6 +123,37 @@ export async function discoverRepository(
 }
 
 /** Bare object storage: no checkout, smudge filters, hooks, submodule or repo scripts. */
+export function gitFailureMessage(args: string[], diagnostic: string): string {
+  // Match diagnostics in memory only. Never return helper output, URLs, credentials or paths.
+  const stage =
+    args[0] === "ls-remote"
+      ? "识别仓库分支"
+      : args[0] === "fetch"
+      ? "同步资料"
+      : args[0] === "push"
+      ? "提交待审更新"
+      : "读取仓库";
+  const reason =
+    /repository not found|repository .* does not exist|not found.*repository|requested URL returned error: 404/i.test(
+      diagnostic,
+    )
+      ? "仓库不存在或当前账号无权访问。请核对仓库地址；私有仓库请先在本机 Git 登录有权限的账号。"
+      : /authentication failed|could not read (?:Username|Password)|terminal prompts disabled|permission.*denied|write access.*not granted|access denied|requested URL returned error: (?:401|403)|invalid username or (?:password|token)/i.test(
+          diagnostic,
+        )
+      ? "Git 访问权限不足。请在本机 Git 登录有权限的账号并检查仓库授权，再重试。"
+      : /could not resolve|failed to connect|unable to access|connection (?:timed out|reset|refused)|network is unreachable|curl (?:5|6|7|18|28|35|52|55|56|60)\b|TLS|SSL|schannel|proxy|HTTP (?:502|503|504)|requested URL returned error: 5\d\d/i.test(
+          diagnostic,
+        )
+      ? "网络连接失败。请检查网络、代理及 GitHub 连通性，再重试同步。"
+      : /couldn't find remote ref|could not find remote ref|not our ref|remote ref does not exist/i.test(
+          diagnostic,
+        )
+      ? "仓库发布分支不存在。请让维护者核对发布分支，或在仓库设置中重新连接。"
+      : "Git操作未完成。请检查本机 Git 是否能访问此仓库，再重试；仍失败时请联系仓库维护者。";
+  return `${stage}失败：${reason} 已有缓存与已发布资料保持不变。`;
+}
+
 export function gitRunner(directory: string): GitRun {
   return (args, options = {}) =>
     new Promise((resolve, reject) => {
@@ -161,6 +192,7 @@ export function gitRunner(directory: string): GitRun {
       const chunks: Buffer[] = [];
       let size = 0,
         failed = false;
+      let diagnostic = "";
       const timer = setTimeout(() => {
         failed = true;
         child.kill();
@@ -175,21 +207,29 @@ export function gitRunner(directory: string): GitRun {
         } else chunks.push(b);
       });
       // Git/helper diagnostics may contain credentials or URLs. Keep them out of UI/logs.
-      child.stderr.on("data", () => {});
-      child.on("error", () => {
+      child.stderr.on("data", (bytes: Buffer) => {
+        if (diagnostic.length < 16384)
+          diagnostic += bytes.toString("utf8").slice(0, 16384 - diagnostic.length);
+      });
+      child.on("error", (error: NodeJS.ErrnoException) => {
         clearTimeout(timer);
-        if (!failed) reject(Error("未找到Git，请安装Git for Windows后重试。"));
+        if (!failed) {
+          failed = true;
+          reject(
+            Error(
+              error.code === "ENOENT"
+                ? "未找到Git，请安装Git for Windows后重试。"
+                : "无法启动本机 Git，请检查安装及运行权限后重试。",
+            ),
+          );
+        }
       });
       child.on("close", (code) => {
         clearTimeout(timer);
         if (!failed)
           code === 0
             ? resolve(Buffer.concat(chunks))
-            : reject(
-                Error(
-                  "Git操作未完成，请检查仓库地址、网络和本机Git访问权限；没有覆盖已发布资料。",
-                ),
-              );
+            : reject(Error(gitFailureMessage(args, diagnostic)));
       });
       child.stdin.on("error", () => {});
       child.stdin.end(options.input);
@@ -285,11 +325,17 @@ export class TeamLibraryStore {
       )
         .toString()
         .trim();
-      const manifest = schemas.TeamLibraryManifest.parse(
-        JSON.parse(
-          (await this.object(revision, manifestPath, 1024 * 1024)).toString("utf8"),
-        ),
-      );
+      const bytes = await this.object(revision, manifestPath, 1024 * 1024);
+      let manifest: TeamLibraryManifest;
+      try {
+        manifest = schemas.TeamLibraryManifest.parse(
+          JSON.parse(bytes.toString("utf8")),
+        );
+      } catch {
+        throw Error(
+          "仓库资料清单格式不正确。请让维护者检查 acceptcat-library.json 后重新同步；已保留上次成功同步的资料。",
+        );
+      }
       if (manifest.workspaceId !== this.binding.workspaceId)
         throw Error("仓库资料空间ID不匹配；保留旧版本，请核对绑定。");
       const snapshot = {

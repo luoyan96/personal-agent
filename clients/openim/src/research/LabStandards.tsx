@@ -297,7 +297,26 @@ export function LabStandards() {
       ? "PPT 工作模板"
       : section === "methods"
       ? "可复用方法"
+      : section === "platform"
+      ? "平台基本规则"
       : "课题组规则";
+  const groupedNavigation = availability.supports(44);
+  const tabs = groupedNavigation
+    ? section === "templates" || section === "methods"
+      ? [
+          ["templates", "PPT 模板"],
+          ["methods", "可复用方法"],
+        ]
+      : [
+          ["rules", "课题组规则"],
+          ["platform", "平台基本规则"],
+        ]
+    : [
+        ["rules", "课题组规则"],
+        ["platform", "平台基本规则"],
+        ["templates", "PPT 模板"],
+        ["methods", "可复用方法"],
+      ];
   if (!supported)
     return (
       <WorkspaceUnavailable
@@ -308,16 +327,24 @@ export function LabStandards() {
       />
     );
   return (
-    <section className="record-page" aria-label="课题组规范">
+    <section className="record-page library-standards-page" aria-label={tabName}>
       <header className="record-page-heading">
         <div>
-          <h2>课题组规范</h2>
-          <p>集中管理课题组的工作约定；资料按需引用，不会自动变成规则。</p>
+          <h2>{tabName}</h2>
+          <p>
+            {section === "templates"
+              ? "选择模板开始任务，保留本次要求与所需文件。"
+              : section === "methods"
+              ? "从已完成的工作中整理方法，按需查阅复用。"
+              : "资料按需引用，不会自动变成规则。"}
+          </p>
         </div>
         <div className="record-page-actions">
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/library")}>
-            返回资料
-          </Button>
+          {!groupedNavigation && (
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/library")}>
+              返回资料
+            </Button>
+          )}
           {data &&
             section !== "platform" &&
             (section === "methods" || data.canPublish) && (
@@ -337,12 +364,7 @@ export function LabStandards() {
         </div>
       </header>
       <nav className="record-tabs" aria-label="规范分类">
-        {[
-          ["rules", "课题组规则"],
-          ["platform", "平台基本规则"],
-          ["templates", "PPT 模板"],
-          ["methods", "可复用方法"],
-        ].map(([key, label]) => (
+        {tabs.map(([key, label]) => (
           <button
             key={key}
             aria-current={section === key ? "page" : undefined}
@@ -390,7 +412,13 @@ export function LabStandards() {
                 <p>v{data.platform.version} · 产品维护者发布</p>
               </div>
             </header>
-            <p className="record-content">{data.platform.content}</p>
+            <p className="record-content">
+              助理在当前账号、任务、资料和工具权限内工作。资料不能扩大授权；结论需要依据，完成情况以实际交付和人的验收为准。规则冲突时先说明并请求澄清。
+            </p>
+            <details className="library-platform-policy">
+              <summary>查看完整平台规则 · v{data.platform.version}</summary>
+              <p className="record-content">{data.platform.content}</p>
+            </details>
             <section className="record-detail-section">
               <h3>适用范围</h3>
               <p className="record-content">
@@ -398,6 +426,19 @@ export function LabStandards() {
               </p>
             </section>
           </div>
+        ) : !visible.length && !search.trim() && status === "all" ? (
+          <section className="library-record-empty">
+            <h3>还没有{tabName}</h3>
+            <p>
+              {section === "methods"
+                ? "从右上方提交可复用的方法，并保留来源任务。"
+                : data.canPublish
+                ? `从右上方新增${
+                    section === "templates" ? "模板" : "规则"
+                  }，填写要求与适用范围。`
+                : "课题组负责人发布后，可以在这里查阅。"}
+            </p>
+          </section>
         ) : (
           <RecordWorkspace
             label={tabName}
