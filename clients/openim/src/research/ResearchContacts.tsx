@@ -19,6 +19,7 @@ import { useContactStars } from "./useContactStars";
 import { usePersonalOperation } from "./usePersonalOperation";
 import { WorkspaceContactCard } from "./WorkspaceContactCard";
 import "./workspace.scss";
+import "./directory-skills.scss";
 
 const DirectorySkillLibrary = lazy(() => import("./DirectorySkillLibrary").then(module => ({ default: module.DirectorySkillLibrary })));
 
@@ -51,6 +52,7 @@ export function ResearchContacts() {
       query: { view, scope: "local", limit: 50, cursor: next, search: search.trim() }, signal,
     }), kind, signal, cursor),
     `${filterKey}:${JSON.stringify(cursor) || ""}`,
+    !library,
   );
   const openChat = useResearchContactChat();
   const [savedId, setSavedId] = useState<string>();
@@ -113,7 +115,7 @@ export function ResearchContacts() {
     setAdding(false); setSelected({ id: contact.id, kind: contactDirectoryKind(contact) });
     if (library) {
       const next = new URLSearchParams(params);
-      ["panel", "agent", "skill", "catalog"].forEach(key => next.delete(key));
+      ["panel", "agent", "skill", "catalog", "returnContact"].forEach(key => next.delete(key));
       setParams(next);
     }
   };
@@ -124,7 +126,7 @@ export function ResearchContacts() {
       const targetKind = contactDirectoryKind(result.data);
       selectContact(result.data);
       const next = new URLSearchParams(params); next.set("kind", targetKind);
-      ["panel", "agent", "skill", "catalog"].forEach(key => next.delete(key));
+      ["panel", "agent", "skill", "catalog", "returnContact"].forEach(key => next.delete(key));
       setParams(next);
     }).catch(error => { if (ticket.isCurrent()) setPageFailure(error instanceof Error ? error.message : "资料暂未打开。"); });
   };
@@ -135,7 +137,7 @@ export function ResearchContacts() {
   const changeKind = (nextKind: DirectoryKind) => {
     setSearch(""); setAdding(false);
     const next = new URLSearchParams(params); next.set("kind", nextKind);
-    ["contact", "action", "view", "panel", "agent", "skill", "catalog"].forEach(key => next.delete(key));
+    ["contact", "action", "view", "panel", "agent", "skill", "catalog", "returnContact"].forEach(key => next.delete(key));
     setParams(next);
   };
   const openSkills = (skillId?: string, agentId?: string) => {
@@ -143,18 +145,19 @@ export function ResearchContacts() {
     const next = new URLSearchParams({ kind: "agents", panel: "skills" });
     if (skillId) next.set("skill", skillId);
     if (agentId) next.set("agent", agentId);
+    if (selectedContact) next.set("returnContact", selectedContact);
     setParams(next);
   };
   const closeSkills = () => {
     const next = new URLSearchParams({ kind: "agents" });
-    const agent = params.get("agent");
+    const agent = params.get("returnContact") || params.get("agent");
     if (agent) next.set("contact", agent);
     setParams(next);
   };
   return (
-    <div className="social-workspace desktop-contacts-content">
+    <div className={`social-workspace desktop-contacts-content${library ? " is-skill-library" : ""}`}>
       <div className="workspace-split">
-        <aside className="workspace-list-pane">
+        {!library && <aside className="workspace-list-pane">
           <div className="workspace-heading">
             <h1>通讯录</h1>
             <div className="flex gap-2">
@@ -237,7 +240,7 @@ export function ResearchContacts() {
               </div>
             )}
           </div>
-        </aside>
+        </aside>}
         <main className="workspace-detail-pane">
           {library ? (
             <Suspense fallback={<p role="status">正在打开技能库…</p>}>
