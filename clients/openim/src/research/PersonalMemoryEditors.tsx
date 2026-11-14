@@ -37,7 +37,7 @@ export function PersonalMemoryEditor({
 }) {
   return (
     <Modal
-      title={confirming ? "修改候选" : editing ? "修改记忆" : "记住一件事"}
+      title={confirming ? "修改候选" : editing ? "修改习惯" : "补充一条习惯"}
       open={open}
       centered
       width={500}
@@ -163,8 +163,10 @@ export function PersonalMemorySettingsEditor({
         {failure && <Alert type="error" message={failure} />}
         <div className="memory-setting-row">
           <div>
-            <h3>让助理提出记忆候选</h3>
-            <p>候选仍需你确认，不会自动保存性格。</p>
+            <h3>允许从日常表述中提出候选</h3>
+            <p>
+              这类候选确认后才使用。明确保存和聊天、任务反馈中形成的习惯另行处理，不受此开关控制。
+            </p>
           </div>
           <Switch
             aria-label="允许助理提出记忆候选"
@@ -194,7 +196,9 @@ export function PersonalMemorySettingsEditor({
             checked={!!policy?.quietHours}
             disabled={!ready || !policy || busy}
             onChange={(value) =>
-              update({ quietHours: value ? { start: "22:00", end: "08:00" } : null })
+              update({
+                quietHours: value ? { start: "22:00", end: "08:00" } : null,
+              })
             }
           />
         </div>
@@ -207,7 +211,10 @@ export function PersonalMemorySettingsEditor({
               disabled={busy}
               onChange={(event) =>
                 update({
-                  quietHours: { ...policy.quietHours!, start: event.target.value },
+                  quietHours: {
+                    ...policy.quietHours!,
+                    start: event.target.value,
+                  },
                 })
               }
             />
@@ -219,7 +226,10 @@ export function PersonalMemorySettingsEditor({
               disabled={busy}
               onChange={(event) =>
                 update({
-                  quietHours: { ...policy.quietHours!, end: event.target.value },
+                  quietHours: {
+                    ...policy.quietHours!,
+                    end: event.target.value,
+                  },
                 })
               }
             />

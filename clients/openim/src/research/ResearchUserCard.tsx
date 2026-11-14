@@ -237,7 +237,7 @@ export const ResearchUserCard = forwardRef<
               {assistant ? <>
                 {contact.profile.introduction && <p>{contact.profile.introduction}</p>}
                 {roleDetails && <AgentRoleDocuments contact={contact} />}
-                {ownAssistant && !contact.agentRuntime && contact.allowedActions.includes("manage_private_memory") && <AssistantPreferences key={scope} contactId={contact.id} />}
+                {ownAssistant && !contact.agentRuntime && contact.allowedActions.includes("manage_private_memory") && <AssistantPreferences key={scope} contactId={contact.id} showPrivate={!memories} />}
               </> : <dl>
                 {(
                   [
@@ -290,13 +290,13 @@ export const ResearchUserCard = forwardRef<
                   <Button onClick={edit}>{contact.identity.kind === "human" ? "编辑资料" : "编辑角色"}</Button>
                 )}
                 {contact.allowedActions.includes("manage_private_memory") && (
-                  <Button onClick={() => setMemories(!memories)}>私人记忆</Button>
+                  <Button onClick={() => setMemories(!memories)}>{memories ? "收起专属记忆" : "管理助理专属记忆"}</Button>
                 )}
                 {contact.identity.kind === "personal_agent" && contact.profile.role === "specialist" && contact.identity.ownerMemberId === actor?.member.id && contact.allowedActions.includes('edit_profile') && <>
                   <Button onClick={() => setConnection(!connection)}>外部服务</Button>
                 </>}
               </Space>
-              <ContactCardShare contact={contact} active={isOverlayOpen} />
+              <details className="assistant-share-disclosure"><summary>分享联系人名片</summary><ContactCardShare contact={contact} active={isOverlayOpen} /></details>
 
             </>
           )}
