@@ -29,7 +29,7 @@ await esbuild.build({
           namespace: "fixture",
         }));
         build.onLoad({ filter: /^chat-contracts$/, namespace: "fixture" }, () => ({
-          contents: 'export { chatRoutes as routes } from "production-chat-contract";',
+          contents: 'export { chatRoutes as routes, ChatMessage, AgentTurn } from "production-chat-contract";',
         }));
         build.onResolve({ filter: /^production-chat-contract$/ }, () => ({
           path: fileURLToPath(

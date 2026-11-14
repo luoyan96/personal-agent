@@ -16,7 +16,7 @@ test("the index page keeps pointers, not files", async () => {
   assert.match(page, /researchApi\("libraryIndex"\)/);
   assert.match(page, /researchApi\("saveLibraryIndexEntry"/);
   // The page says out loud that originals stay on disk.
-  assert.match(page, /原件不上传/);
+  assert.match(page, /原件保留在本机/);
   // Recommended is one per project and purpose, and is visible in the list.
   assert.match(page, /推荐使用/);
   assert.match(page, /同一项目、同一用途里推荐用这份/);
