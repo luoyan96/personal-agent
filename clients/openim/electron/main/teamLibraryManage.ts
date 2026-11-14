@@ -6,13 +6,13 @@ const { TeamRepositoryBinding } =
 import { authority } from "./localFolderManage";
 import { desktopSessionCookie } from "../utils/desktopServer";
 import { getResearchServiceStatus } from "./windowManage";
-import { TeamLibraryStore, gitRunner } from "../utils/teamLibrary";
+import { TeamLibraryStore, gitRunner, discoverRepository } from "../utils/teamLibrary";
 import type { TeamLibraryEntry } from "@research-agent-platform/contracts";
 import type { TeamLibrarySelection } from "../../src/types/teamLibrary";
 
 const stores = new Map<string, TeamLibraryStore>();
 /** Account, team and repository are resolved from the current server session, never IPC ids. */
-export async function teamLibraryContext(event: IpcMainInvokeEvent) {
+async function teamLibrarySession(event: IpcMainInvokeEvent) {
   const owner = authority(event),
     service = new URL(getResearchServiceStatus().address).origin;
   const origin = new URL(owner.contents.getURL()).origin;
@@ -73,9 +73,13 @@ export async function teamLibraryContext(event: IpcMainInvokeEvent) {
     });
   const member = await request("/api/v1/auth/session"),
     status = await request("/api/v1/library/repository");
-  const binding = TeamRepositoryBinding.parse(status.binding);
   await valid();
   if (typeof member.member?.id !== "string") throw Error("无法核对资料账号。");
+  return { member, status, service, valid, request };
+}
+export async function teamLibraryContext(event: IpcMainInvokeEvent) {
+  const { member, status, service, valid, request } = await teamLibrarySession(event);
+  const binding = TeamRepositoryBinding.parse(status.binding);
   const identity = createHash("sha256")
     .update(JSON.stringify([service, member.member.id, binding]))
     .digest("hex");
@@ -146,7 +150,39 @@ async function inContext<T>(
     if (operations.get(c.identity) === next) operations.delete(c.identity);
   }
 }
-export function registerTeamLibraryBridge() {
+export function registerTeamLibraryBridge(discover = discoverRepository) {
+  ipcMain.handle("team-library-discover", async (event, url: unknown) => {
+    const c = await teamLibrarySession(event);
+    if (!c.status.canConfigure) throw Error("只有课题组负责人可以连接团队仓库。");
+    const previous = c.status.binding
+      ? TeamRepositoryBinding.parse(c.status.binding)
+      : null;
+    const check = async () => {
+      await c.valid();
+      const status = await c.request("/api/v1/library/repository");
+      const session = await c.request("/api/v1/auth/session");
+      if (
+        !status.canConfigure ||
+        JSON.stringify(status.binding) !== JSON.stringify(c.status.binding) ||
+        session.member?.id !== c.member.member.id ||
+        session.member?.labId !== c.member.member.labId
+      )
+        throw Error("课题组、权限或仓库已变化，请重新连接。");
+      await c.valid();
+    };
+    const root = path.join(app.getPath("userData"), "team-library-connect");
+    const value = await discover(root, url, previous, (directory) => {
+      const run = gitRunner(directory);
+      return async (...args) => {
+        await c.valid();
+        const result = await run(...args);
+        await c.valid();
+        return result;
+      };
+    });
+    await check();
+    return value;
+  });
   ipcMain.handle("team-library-cached", (e) => inContext(e, (c) => c.store.cached()));
   ipcMain.handle("team-library-sync", (e) =>
     inContext(e, async (c) => {

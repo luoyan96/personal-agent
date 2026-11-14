@@ -24,6 +24,104 @@ const digest = (bytes: Buffer | string) =>
 const manifestPath = "acceptcat-library.json";
 export const gitLibraryLimit = 20 * 1024 * 1024;
 
+export function repositoryUrl(input: unknown): string {
+  if (typeof input !== "string") throw Error("请粘贴 GitHub 仓库地址。");
+  const value = input.trim().replace(/\/$/, "");
+  if (!schemas.TeamRepositoryBinding.shape.url.safeParse(value).success)
+    throw Error("请粘贴 GitHub 仓库地址，例如 https://github.com/团队/资料仓库。");
+  return value.replace(/\.git$/i, "") + ".git";
+}
+
+async function readObject(
+  run: GitRun,
+  revision: string,
+  relative: string,
+  maxBytes: number,
+) {
+  if (!/^[a-f0-9]{40}$/.test(revision)) throw Error("资料版本无效。");
+  schemas.TeamLibraryPath.parse(relative);
+  const mode = (
+    await run(["ls-tree", "-z", revision, "--", relative], { maxBytes: 2048 })
+  ).toString();
+  if (!mode.startsWith("100644 blob ") && !mode.startsWith("100755 blob "))
+    throw Error(
+      relative === manifestPath
+        ? "仓库可以访问，但缺少有效的 acceptcat-library.json 资料清单；请由仓库维护者初始化后重试。"
+        : "资料不存在或不是普通文件，不读取符号链接。",
+    );
+  return run(["show", `${revision}:${relative}`], { maxBytes });
+}
+
+/** Read-only discovery before saving a shared binding. Never initializes or pushes remote files. */
+export async function discoverRepository(
+  root: string,
+  input: unknown,
+  previous: TeamRepositoryBinding | null,
+  runner: (directory: string) => GitRun = gitRunner,
+) {
+  const url = repositoryUrl(input);
+  await fs.mkdir(root, { recursive: true });
+  const directory = await fs.mkdtemp(path.join(root, "connect-"));
+  try {
+    const run = runner(path.join(directory, "objects.git"));
+    await run(["init", "--bare", path.join(directory, "objects.git")]);
+    await run(["config", "remote.origin.url", url]);
+    await run(["config", "remote.origin.promisor", "true"]);
+    await run(["config", "remote.origin.partialclonefilter", "blob:none"]);
+    // Preserve an explicitly configured publishing branch for the same repository.
+    let branch =
+      previous && repositoryUrl(previous.url).toLowerCase() === url.toLowerCase()
+        ? previous.branch
+        : undefined;
+    if (!branch) {
+      const head = (
+        await run(["ls-remote", "--symref", "origin", "HEAD"], { maxBytes: 8192 })
+      ).toString();
+      branch = /^ref: refs\/heads\/([^\t\r\n]+)\tHEAD$/m.exec(head)?.[1];
+      if (!branch)
+        throw Error("仓库尚无默认分支或无法识别；请先在 GitHub 完成首次提交。");
+    }
+    // Reuse the existing branch boundary before constructing a refspec.
+    schemas.TeamRepositoryBinding.shape.branch.parse(branch);
+    await run([
+      "fetch",
+      "--depth=1",
+      "--filter=blob:none",
+      "--no-tags",
+      "--no-recurse-submodules",
+      "origin",
+      `refs/heads/${branch}`,
+    ]);
+    const revision = (await run(["rev-parse", "FETCH_HEAD^{commit}"]))
+      .toString()
+      .trim();
+    let manifest: TeamLibraryManifest;
+    const bytes = await readObject(run, revision, manifestPath, 1024 * 1024);
+    try {
+      manifest = schemas.TeamLibraryManifest.parse(JSON.parse(bytes.toString("utf8")));
+    } catch {
+      throw Error(
+        "仓库资料清单格式不正确，请由仓库维护者检查 acceptcat-library.json；原配置未更改。",
+      );
+    }
+    if (previous && previous.workspaceId !== manifest.workspaceId)
+      throw Error(
+        "新仓库的资料空间与当前团队不一致。迁移时请保留原资料清单中的 workspaceId；原配置未更改。",
+      );
+    return { url, branch, workspaceId: manifest.workspaceId };
+  } finally {
+    // mkdtemp owns this directory; never delete a caller-supplied repository/folder.
+    const resolved = path.resolve(directory),
+      parent = path.resolve(root);
+    if (
+      path.dirname(resolved) !== parent ||
+      !path.basename(resolved).startsWith("connect-")
+    )
+      throw Error("临时资料目录校验失败。");
+    await fs.rm(resolved, { recursive: true, force: true });
+  }
+}
+
 /** Bare object storage: no checkout, smudge filters, hooks, submodule or repo scripts. */
 export function gitRunner(directory: string): GitRun {
   return (args, options = {}) =>
@@ -136,14 +234,7 @@ export class TeamLibraryStore {
     await this.run(["config", "remote.origin.partialclonefilter", "blob:none"]);
   }
   private async object(revision: string, relative: string, maxBytes = gitLibraryLimit) {
-    if (!/^[a-f0-9]{40}$/.test(revision)) throw Error("资料版本无效。");
-    schemas.TeamLibraryPath.parse(relative);
-    const mode = (
-      await this.run(["ls-tree", "-z", revision, "--", relative], { maxBytes: 2048 })
-    ).toString();
-    if (!mode.startsWith("100644 blob ") && !mode.startsWith("100755 blob "))
-      throw Error("资料不存在或不是普通文件，不读取符号链接。");
-    const bytes = await this.run(["show", `${revision}:${relative}`], { maxBytes });
+    const bytes = await readObject(this.run, revision, relative, maxBytes);
     if (
       bytes
         .subarray(0, 100)

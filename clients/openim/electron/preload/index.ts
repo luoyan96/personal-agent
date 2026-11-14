@@ -179,6 +179,7 @@ const Api: IElectronAPI = {
   getVersion: () => process.version,
   getPlatform,
   teamLibrary: {
+    discover: url => ipcRenderer.invoke('team-library-discover', url),
     sync: () => ipcRenderer.invoke('team-library-sync'),
     cached: () => ipcRenderer.invoke('team-library-cached'),
     preview: selected => ipcRenderer.invoke('team-library-preview', selected),
