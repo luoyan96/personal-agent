@@ -3155,3 +3155,7 @@ PR213与版本PR214各四项CI通过后普通合并，最终main/tag为0fff9b693
 ## 2026-11-14 · 单字段仓库连接遗漏修复
 
 整合本地分支 codex/library-connect-url / 8ef6bc2 到最新 main/bbcc959，冲突保留导入文件、候选多选和配置弹窗的完整重置。新增 discover IPC 复用会话与管理权限核验，读取远端默认分支和清单后才保存已解析绑定；旧绑定分支/空间继续保留核对。两个真实 GitHub URL 均只读发现和同步成功，6条资料、HEAD819c279；未对用户仓库push或更改生产绑定。定向23项、桌面全套596项、客户端与Electron类型检查通过。修复原先处于PR #212但未合并，本次继续更新同一PR，公开0.10.108保持现状。证据D:/deepseek-agent/.runtime/library-url-integration-20261114。
+
+## 2026-11-14 · 0.10.109 发布准备
+
+负责人授权复核合并#212并发布新版本。以def5e4a准备0.10.109，596项桌面回归及类型检查已通过，真实files仓库两种URL均同步6条资料。PR212首次Windows检查在记忆历史测试30秒超时，同一提交重跑中。成品必须包含单URL表单和discover完整IPC链，核验记录在D:/deepseek-agent/.runtime/release-0.10.109-20261114。
