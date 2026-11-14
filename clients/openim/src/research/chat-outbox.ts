@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { MessageItem } from "@openim/wasm-client-sdk";
 import type { PreparedResearchSend } from "./ResearchComposer";
 import { useResearchStore } from "./store";
-import { routes } from "@research-agent-platform/contracts";
+import { routes, ChatMessage, AgentTurn } from "@research-agent-platform/contracts";
 import type { ComposerImage } from "./chat-image-submission";
 
 export type ChatSubmission = {
@@ -19,7 +19,8 @@ export type ChatSubmission = {
   imageAgentConversationId?: string;
   nativeMessage?: MessageItem;
   quoteMessage?: MessageItem;
-  state: "queued" | "sending" | "failed" | "paused";
+  state: "queued" | "sending" | "failed" | "paused" | "acknowledged";
+  receipt?: { message: ChatMessage; turns: AgentTurn[] };
   error?: string;
 };
 // This tab's bounded sessionStorage restores unsent text as paused, never sends
@@ -36,10 +37,28 @@ export function updateSubmission(id: string, patch: Partial<ChatSubmission>) {
 export function removeSubmission(id: string) {
   useChatOutbox.setState((s) => ({ items: s.items.filter((item) => item.id !== id) }));
 }
+export function pendingSubmissions(items: ChatSubmission[], generation: number, conversationID?: string) {
+  return items.filter(item => item.generation === generation && (conversationID === undefined || item.conversationID === conversationID) && item.state !== "acknowledged");
+}
+/** Server-persisted receipts never consume the capacity reserved for unsent work. */
+export function assertSubmissionCapacity(items: ChatSubmission[], generation: number, conversationID: string) {
+  const pending = pendingSubmissions(items, generation);
+  if (pending.length >= 50 || pending.filter(item => item.conversationID === conversationID).length >= 20)
+    throw new Error("还有较多消息未发送，请先处理发送记录。");
+}
+/** A real SDK pointer replaces its API receipt; text equality never deduplicates sends. */
+export function reconcileAcknowledgedMessages(generation: number, conversationID: string, messageIds: Set<string>) {
+  if (generation !== useResearchStore.getState().generation) return;
+  const items = useChatOutbox.getState().items;
+  const next = items.filter(item => !(item.generation === generation && item.conversationID === conversationID && item.state === "acknowledged" && item.receipt && messageIds.has(item.receipt.message.id)));
+  if (next.length !== items.length) useChatOutbox.setState({ items: next });
+}
 const storageKey = "research-chat-pending-v1",
   maxBytes = 512 * 1024,
   maxAge = 24 * 60 * 60 * 1000;
 let hydratedActor: string | undefined;
+let pruningReceipts = false;
+const receiptNotice = "较早的已保存回执已收起；同步后可在聊天记录中查看。待发内容保留。";
 const notice = (message: string) => useChatOutbox.setState({ notice: message });
 function removeStored() {
   try {
@@ -56,10 +75,10 @@ function persist(actor = useResearchStore.getState()) {
   )
     return;
   try {
-    const items = useChatOutbox
+    let items = useChatOutbox
       .getState()
       .items.filter((item) => item.generation === actor.generation);
-    const value = JSON.stringify({
+    const serialize = () => JSON.stringify({
       version: 1,
       memberId: hydratedActor,
       storedAt: Date.now(),
@@ -69,17 +88,56 @@ function persist(actor = useResearchStore.getState()) {
           ? { images: images.map(({ file: _file, ocrText: _ocr, ...image }) => image) }
           : {}),
         ...(files ? { files: files.map(({ file: _file, ...entry }) => entry) } : {}),
-        state: "paused",
+        state: item.state === "acknowledged" ? "acknowledged" : "paused",
       })),
       drafts: [...chatDrafts],
     });
+    // Only temporary HTTP success receipts may be discarded. Original pending
+    // requests, their idempotency keys and drafts always take precedence.
+    const dropped = new Set<string>();
+    const dropOldestReceipt = () => {
+      const oldest = items.find(item => item.state === "acknowledged");
+      if (!oldest) return false;
+      dropped.add(oldest.id);
+      items = items.filter(item => item !== oldest);
+      return true;
+    };
+    while (items.filter(item => item.state === "acknowledged").length > 50)
+      dropOldestReceipt();
+    let value = serialize();
+    while (new TextEncoder().encode(value).byteLength > maxBytes && dropOldestReceipt())
+      value = serialize();
+    const publishPrunedReceipts = () => {
+      if (!dropped.size) return;
+      pruningReceipts = true;
+      try {
+        useChatOutbox.setState(s => ({
+          items: s.items.filter(item => !dropped.has(item.id)),
+          notice: receiptNotice,
+        }));
+      } finally {
+        pruningReceipts = false;
+      }
+    };
+    publishPrunedReceipts();
     if (
       new TextEncoder().encode(value).byteLength > maxBytes ||
-      items.length > 50 ||
+      items.filter(item => item.state !== "acknowledged").length > 50 ||
       chatDrafts.size > 50
     )
       throw new Error("Storage limit");
-    sessionStorage.setItem(storageKey, value);
+    // Browser quota may be lower than our byte bound. Retry without success
+    // receipts before reporting that pending content cannot be persisted.
+    for (;;) {
+      try {
+        sessionStorage.setItem(storageKey, value);
+        break;
+      } catch (error) {
+        if (!dropOldestReceipt()) throw error;
+        value = serialize();
+        publishPrunedReceipts();
+      }
+    }
   } catch {
     removeStored();
     notice("浏览器未能保存待发内容；目前仅在本页保留，请勿刷新，并先处理发送记录。");
@@ -112,7 +170,9 @@ function restore(actor: ReturnType<typeof useResearchStore.getState>) {
       Date.now() - stored.storedAt > maxAge ||
       stored.storedAt > Date.now() + 60000 ||
       !Array.isArray(stored.items) ||
-      stored.items.length > 50 ||
+      stored.items.length > 100 ||
+      stored.items.filter((item: ChatSubmission) => item?.state === "acknowledged").length > 50 ||
+      stored.items.filter((item: ChatSubmission) => item?.state !== "acknowledged").length > 50 ||
       !Array.isArray(stored.drafts) ||
       stored.drafts.length > 50
     )
@@ -135,6 +195,16 @@ function restore(actor: ReturnType<typeof useResearchStore.getState>) {
       )
         throw new Error("Invalid pending message");
       ids.add(item.id);
+      if (item.state === "acknowledged") {
+        const message = ChatMessage.parse(item.receipt?.message);
+        const turns = AgentTurn.array().max(5).parse(item.receipt?.turns);
+        if (
+          !item.request || message.origin !== "human" || message.conversationId !== item.request.conversationId ||
+          // A replayed continuous-batch receipt keeps the original message but
+          // returns the shared turn's latest inputMessageId, not necessarily this one.
+          turns.some(turn => turn.conversationId !== message.conversationId)
+        ) throw new Error("Invalid acknowledged message");
+      } else if (item.receipt) throw new Error("Unexpected message receipt");
       if (
         item.request &&
         (!["agentChatMessage", "sendChatMessage", "agentFileMessage"].includes(
@@ -221,8 +291,8 @@ function restore(actor: ReturnType<typeof useResearchStore.getState>) {
       items.push({
         ...item,
         generation: actor.generation,
-        state: "paused",
-        error: "刷新前的发送结果尚未确认；重试会核对原请求，不会自动发送。",
+        state: item.state === "acknowledged" ? "acknowledged" : "paused",
+        error: item.state === "acknowledged" ? undefined : "刷新前的发送结果尚未确认；重试会核对原请求，不会自动发送。",
       });
     }
     for (const draft of stored.drafts) {
@@ -246,7 +316,7 @@ function restore(actor: ReturnType<typeof useResearchStore.getState>) {
   }
 }
 useChatOutbox.subscribe((next, previous) => {
-  if (next.items !== previous.items) persist();
+  if (!pruningReceipts && next.items !== previous.items) persist();
 });
 useResearchStore.subscribe((next, previous) => {
   if (

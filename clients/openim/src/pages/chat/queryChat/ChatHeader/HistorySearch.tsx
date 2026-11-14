@@ -108,6 +108,17 @@ export default function HistorySearch({
     time: Date.parse(message.createdAt),
     canonical: message,
   });
+  const locate = (result: Result) => {
+    if (!isScopeCurrent()) return;
+    locateMessage(
+      timelineScope(generation, conversation?.conversationID || ""),
+      result.native ? { clientMsgID: result.native.clientMsgID } : {
+        messageId: result.canonical?.id,
+        sequence: result.canonical?.sequence,
+      },
+    );
+    close();
+  };
   const search = async (more = false) => {
     const term = (more ? searched : query).trim();
     if (!isScopeCurrent() || !term || !conversation || busyRef.current) return;
@@ -254,19 +265,18 @@ export default function HistorySearch({
         )}
         <div className="desktop-history-results">
           {results.map((result) => (
-            <button
-              type="button"
-              key={result.id}
-              onClick={() => {
-                if (isScopeCurrent()) setSelected(result);
-              }}
-            >
+            <div className="chat-search-result" key={result.id}>
+            <button type="button" className="chat-search-locate" aria-label={`定位：${result.text}`} onClick={() => locate(result)}>
               <div>
                 <strong>{result.sender}</strong>
                 <time>{formatMessageTime(result.time)}</time>
               </div>
               <p>{result.text}</p>
             </button>
+            <button type="button" className="chat-search-preview" onClick={() => {
+              if (isScopeCurrent()) setSelected(result);
+            }}>预览 / 引用</button>
+            </div>
           ))}
         </div>
         {busy && (
@@ -295,18 +305,7 @@ export default function HistorySearch({
           <>
             <Button
               onClick={() => {
-                if (!selected || !isScopeCurrent()) return;
-                locateMessage(
-                  timelineScope(generation, conversation?.conversationID || ""),
-                  selected.native
-                    ? { clientMsgID: selected.native.clientMsgID }
-                    : {
-                        messageId: selected.canonical?.id,
-                        sequence: selected.canonical?.sequence,
-                      },
-                );
-                setSelected(undefined);
-                close();
+                if (selected) locate(selected);
               }}
             >
               定位到聊天

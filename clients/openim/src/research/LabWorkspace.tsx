@@ -52,6 +52,8 @@ export function LabWorkspace() {
   useEffect(() => {
     setUsername("");
     setPickerOpen(false);
+    setIssued(undefined);
+    codeDraft.current = undefined;
   }, [current?.id, actor?.member.id]);
   const friends = useResearchRead(
     (signal) =>
@@ -166,6 +168,10 @@ export function LabWorkspace() {
           run("joinLab", { body: { inviteCode: code.trim() } }, "已加入课题组。", true)
       );
   };
+  const pending = (invite: { status: string; expiresAt: string }) =>
+    invite.status === "pending" && new Date(invite.expiresAt).getTime() > Date.now();
+  const invitationStatus = (invite: { status: string; expiresAt: string }) =>
+    invite.status === "pending" ? "已过期" : ({ accepted: "已接受", declined: "已谢绝", revoked: "已撤销" }[invite.status] || invite.status);
   if (labs.error)
     return (
       <Alert
@@ -199,10 +205,10 @@ export function LabWorkspace() {
       </header>
       {failure && <Alert type="error" message={failure} showIcon />}
       {feedback && <Alert type="success" message={feedback} showIcon />}
-      {labs.data.data.invitations.length > 0 && (
+      {labs.data.data.invitations.some(pending) && (
         <section aria-label="收到的课题组邀请">
           <h3>收到的邀请</h3>
-          {labs.data.data.invitations.map((i) => (
+          {labs.data.data.invitations.filter(pending).map((i) => (
             <div className="lab-member-row" key={i.id}>
               <div>
                 <strong>{i.labName}</strong>
@@ -254,7 +260,7 @@ export function LabWorkspace() {
           ))}
         </section>
       )}
-      <section>
+      <section className="lab-space-switcher">
         <h3>当前空间</h3>
         <Select
           aria-label="切换课题组"
@@ -274,9 +280,6 @@ export function LabWorkspace() {
             run("selectLab", { body: { labId } }, "已切换空间。", true)
           }
         />
-        <p className="workspace-muted">
-          切换后，工作台使用所选课题组；聊天、个人助手和私人资料保留。
-        </p>
       </section>
       {current && (
         <section aria-label="课题组成员">
@@ -421,7 +424,7 @@ export function LabWorkspace() {
               )}
             </div>
           ))}
-          {detail.data?.data.invitations.map((i) => (
+          {detail.data?.data.invitations.filter(pending).map((i) => (
             <div className="lab-member-row" key={i.id}>
               <div>
                 {i.memberName}
@@ -441,9 +444,15 @@ export function LabWorkspace() {
               </Button>
             </div>
           ))}
+          {detail.data?.data.invitations.some(i => !pending(i)) && <details className="lab-secondary">
+            <summary>历史成员邀请</summary>
+            {detail.data.data.invitations.filter(i => !pending(i)).map(i => <div className="lab-member-row" key={i.id}>
+              <span>{i.memberName}</span><span>{invitationStatus(i)} · 有效期至 {new Date(i.expiresAt).toLocaleDateString()}</span>
+            </div>)}
+          </details>}
           {current.role === "manager" && (
-            <>
-              <h4>邀请码</h4>
+            <details className="lab-secondary" open={Boolean(issued)}>
+              <summary>邀请码与邀请记录</summary>
               <p>没有账号的人可在注册时填写；已有账号可在本页输入同一个邀请码加入。</p>
               <Button
                 disabled={busy}
@@ -529,12 +538,12 @@ export function LabWorkspace() {
               <p className="workspace-muted">
                 负责人暂不支持直接退出；需要解散或交接时联系维护者处理。
               </p>
-            </>
+            </details>
           )}
         </section>
       )}
-      <section>
-        <h3>通过邀请码加入</h3>
+      <details className="lab-secondary lab-join">
+        <summary>通过邀请码加入课题组</summary>
         <Space.Compact style={{ width: "100%" }}>
           <Input
             aria-label="课题组邀请码"
@@ -546,10 +555,10 @@ export function LabWorkspace() {
             查看并加入
           </Button>
         </Space.Compact>
-      </section>
+      </details>
       {!labs.data.data.groups.some((g) => g.role === "manager") && (
-        <section>
-          <h3>创建课题组</h3>
+        <details className="lab-secondary lab-create">
+          <summary>创建课题组</summary>
           <p>创建后你将成为负责人，可以邀请成员和管理共享范围。</p>
           <Space.Compact style={{ width: "100%" }}>
             <Input
@@ -574,8 +583,12 @@ export function LabWorkspace() {
               创建课题组
             </Button>
           </Space.Compact>
-        </section>
+        </details>
       )}
+      {labs.data.data.invitations.some(i => !pending(i)) && <details className="lab-secondary">
+        <summary>收到邀请的历史记录</summary>
+        {labs.data.data.invitations.filter(i => !pending(i)).map(i => <div className="lab-member-row" key={i.id}><span>{i.labName} · {i.inviterName} 邀请</span><span>{invitationStatus(i)} · 有效期至 {new Date(i.expiresAt).toLocaleDateString()}</span></div>)}
+      </details>}
       <p className="workspace-muted">
         加入课题组不会开放私人论文库、模型 Key
         或飞书账号。资料仍由库主人明确选择共享；飞书原表的网页访问继续受飞书权限控制。

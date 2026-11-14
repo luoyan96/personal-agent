@@ -1,5 +1,6 @@
 import { Alert, Button } from "antd";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { DesktopReportArtifact } from "@/types/desktopWork";
 import { useResearchRead } from "./useResearchRead";
 import { useResearchStore } from "./store";
@@ -9,6 +10,7 @@ import DesktopWorkCard from "./DesktopWorkCard";
 import { useDesktopWork } from "./desktop-work";
 
 export function WorkspaceReports({ active }: { active: boolean }) {
+  const navigate = useNavigate();
   const actorId = useResearchStore((s) => s.actor?.member.id),
     mappings = useResearchStore((s) => s.mappings);
   const jobs = useDesktopWork((s) => s.jobs);
@@ -90,9 +92,7 @@ export function WorkspaceReports({ active }: { active: boolean }) {
   return (
     <section className="workspace-reports">
       <h2>本机报告</h2>
-      <p className="workspace-muted">
-        本机保存的文件任务结果，只读取你当前获准聊天中的报告。报告不会上传到服务器。
-      </p>
+      <p className="workspace-muted">仅显示当前获准聊天中保存在这台电脑上的报告。</p>
       {!available && (
         <p className="workspace-muted mt-6">
           Windows 桌面客户端可以在这里查看本机报告。
@@ -137,7 +137,10 @@ export function WorkspaceReports({ active }: { active: boolean }) {
       {read.data && !read.data.length && (
         <div className="workspace-empty">
           <h2>还没有保存的报告</h2>
-          <p>在 Agent 聊天中完成本地文件任务后，保存的报告会出现在这里。</p>
+          <p>在本机工作台处理文件，保存后的报告会出现在这里。</p>
+          <Button type="primary" onClick={() => navigate("/dsh")}>
+            打开本机工作台
+          </Button>
         </div>
       )}
     </section>

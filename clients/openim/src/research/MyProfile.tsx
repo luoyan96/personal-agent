@@ -21,7 +21,7 @@ const fields = [
   ["displayName", "昵称", 200],
   ["introduction", "个人介绍", 2000],
   ["capabilityDescription", "研究方向与能力", 4000],
-  ["personality", "交流偏好", 2000],
+  ["personality", "名片上的交流介绍", 2000],
 ] as const;
 
 export function MyProfile() {
@@ -140,7 +140,10 @@ export function MyProfile() {
         <>
           <div className="my-profile-account">
             <AcceptCatAccountNumber username={contact.username} isSelf />
-            <ContactCardShare contact={contact} active />
+            <details className="my-profile-share">
+              <summary>分享我的名片</summary>
+              <ContactCardShare contact={contact} active />
+            </details>
           </div>
           {draft ? (
             <form

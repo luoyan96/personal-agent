@@ -45,9 +45,10 @@ export function TaskDeliveryPanel({
   const [question, setQuestion] = useState(""),
     [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [busyLabel, setBusyLabel] = useState("");
   const flight = useRef(false);
   const run = async (action: () => Promise<void>) => {
-    if (flight.current || disabled) return;
+    if (flight.current || disabled || !canSubmit) return;
     flight.current = true;
     setBusy(true);
     setError("");
@@ -60,18 +61,19 @@ export function TaskDeliveryPanel({
       setBusy(false);
     }
   };
-  const choose = async (paths?: string[], direct = true) =>
-    run(async () => {
+  const choose = async (paths?: string[]) => {
+    if (target.kind !== "research") return;
+    await run(async () => {
+      setBusyLabel("正在准备文件…");
       const names = await stage(paths);
       if (!names.length) return;
-      if (direct) await submit(names);
-      else {
-        setAttached(names);
-        setSelection(names);
-        setQuestion("");
-      }
+      setAttached(names);
+      setSelection(names);
+      setQuestion("");
     });
+  };
   const prepare = () => {
+    if (target.kind !== "research" || disabled || busy || !canSubmit) return;
     const result = prepareTaskDelivery(
       text,
       title,
@@ -90,15 +92,22 @@ export function TaskDeliveryPanel({
           action={
             <Button
               loading={busy}
+              disabled={busy}
               onClick={() => {
-                if (busy) return;
+                // This only replays the recorded intent. The main process checks
+                // its exact contents and current authority even after submission.
+                if (flight.current || busy || !pending) return;
+                flight.current = true;
                 setBusy(true);
                 setError("");
                 void retry()
                   .catch((failure) =>
                     setError(failure instanceof Error ? failure.message : "请重试。"),
                   )
-                  .finally(() => setBusy(false));
+                  .finally(() => {
+                    flight.current = false;
+                    setBusy(false);
+                  });
               }}
             >
               核对并重试
@@ -108,16 +117,18 @@ export function TaskDeliveryPanel({
       )}
       <div className="task-delivery-header">
         <div>
-          <h3>交付材料</h3>
+          <h3>交付成果</h3>
           <p>
             {target.kind === "personal"
               ? "本任务支持文字成果"
               : "文件会提交到这项任务，负责人可直接下载"}
           </p>
         </div>
-        {target.kind === "research" && (
+        {target.kind === "research" && canSubmit && (
           <Button
             icon={<MessageOutlined />}
+            disabled={disabled || busy}
+            aria-expanded={assistant}
             onClick={() => setAssistant((value) => !value)}
           >
             让助理帮我交
@@ -137,7 +148,7 @@ export function TaskDeliveryPanel({
           />
           <Button
             type="primary"
-            disabled={disabled || busy || !text.trim()}
+            disabled={disabled || busy || !canSubmit || !text.trim()}
             loading={busy}
             onClick={() =>
               void run(async () => {
@@ -150,17 +161,18 @@ export function TaskDeliveryPanel({
           </Button>
         </div>
       )}
-      {target.kind === "research" && (
+      {target.kind === "research" && canSubmit && (
         <div
           className={"task-delivery-drop" + (over ? " is-over" : "")}
           onDragOver={(event) => {
             event.preventDefault();
-            setOver(true);
+            if (!disabled && !busy) setOver(true);
           }}
           onDragLeave={() => setOver(false)}
           onDrop={(event) => {
             event.preventDefault();
             setOver(false);
+            if (disabled || busy || !canSubmit) return;
             const paths = Array.from(event.dataTransfer.files)
               .map((file) => window.electronAPI?.getFilePath(file))
               .filter((value): value is string => Boolean(value));
@@ -172,18 +184,46 @@ export function TaskDeliveryPanel({
           }}
         >
           <CloudUploadOutlined aria-hidden />
-          <h3>{busy ? "正在提交文件…" : "把文件拖到这里，就交好了"}</h3>
+          <div>
+            <strong>拖入要交付的文件</strong>
+            <small>最多 5 份 · 单份 512 MiB · 核对后提交</small>
+          </div>
           <Button
             type="primary"
             disabled={disabled || busy}
             onClick={() => void choose()}
           >
-            选择文件并提交
+            选择文件
           </Button>
-          <small>每次最多 5 份，单份最大 512 MiB</small>
         </div>
       )}
-      {assistant && (
+      {target.kind === "research" && canSubmit && outputs.length > 0 && (
+        <details className="task-delivery-output-options">
+          <summary>从工作文件夹选择（{outputs.length}）</summary>
+          {outputs.map((file) => (
+            <Button
+              key={file.name}
+              disabled={disabled || busy}
+              onClick={() => {
+                setSelection([file.name]);
+                setQuestion("");
+              }}
+            >
+              {filename(file.name)}
+            </Button>
+          ))}
+          <Button
+            disabled={disabled || busy}
+            onClick={() => {
+              setSelection(outputs.map((file) => file.name));
+              setQuestion("");
+            }}
+          >
+            选择全部产出
+          </Button>
+        </details>
+      )}
+      {assistant && canSubmit && (
         <div className="task-delivery-assistant">
           <Input.Search
             aria-label="告诉助理要提交哪份文件"
@@ -201,7 +241,7 @@ export function TaskDeliveryPanel({
           <Button
             icon={<PaperClipOutlined />}
             disabled={disabled || busy}
-            onClick={() => void choose(undefined, false)}
+            onClick={() => void choose()}
           >
             附上文件
           </Button>
@@ -235,34 +275,43 @@ export function TaskDeliveryPanel({
                 {filename(file.name)}
               </Button>
             ))}
-          {selection.length > 0 && (
-            <div className="task-delivery-confirm">
-              <strong>提交到「{title}」</strong>
-              {selection.map((name) => (
-                <p key={name}>{filename(name)}</p>
-              ))}
-              <Button
-                type="primary"
-                loading={busy}
-                disabled={disabled}
-                onClick={() =>
-                  void run(async () => {
-                    await submit(selection);
-                    setSelection([]);
-                    setAttached([]);
-                    setText("");
-                  })
-                }
-              >
-                确认提交
-              </Button>
-              <Button onClick={() => setSelection([])} disabled={busy}>
-                先不交
-              </Button>
-            </div>
-          )}
         </div>
       )}
+      {target.kind === "research" && selection.length > 0 && canSubmit && (
+        <div className="task-delivery-confirm">
+          <strong>提交到「{title}」</strong>
+          {selection.map((name) => (
+            <p key={name}>{filename(name)}</p>
+          ))}
+          <Button
+            type="primary"
+            loading={busy}
+            disabled={disabled || !canSubmit}
+            onClick={() =>
+              void run(async () => {
+                if (target.kind !== "research") return;
+                setBusyLabel("正在提交，等待回执…");
+                await submit(selection);
+                setSelection([]);
+                setAttached([]);
+                setText("");
+              })
+            }
+          >
+            确认提交
+          </Button>
+          <Button
+            onClick={() => {
+              setSelection([]);
+              setAttached([]);
+            }}
+            disabled={busy}
+          >
+            先不交
+          </Button>
+        </div>
+      )}
+      {busy && <p role="status">{busyLabel || "正在核对提交回执…"}</p>}
       {error && <Alert type="error" message={error} />}
       {submitted?.status === "submitted" && (
         <div className="task-work-submitted" role="status">

@@ -112,3 +112,13 @@ test('disabling or creating a fresh renderer does not inherit a confirmed versio
   f.hook(false); f.pending(); assert.equal(f.hook().version, undefined);
   const fresh = await fixture(); assert.equal(fresh.hook().version, undefined);
 });
+
+test('my materials and existing index links mount the local index without a team Git workspace', async () => {
+  const f = await fixture(); f.confirm('0.49.0');
+  for (const panel of ['scope=mine', 'panel=index']) {
+    f.panel = panel;
+    const tree = f.render();
+    assert(has(tree, 'Index'));
+    assert.equal(has(tree, 'Team'), false);
+  }
+});

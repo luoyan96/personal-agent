@@ -307,7 +307,7 @@ export function SkillLibrary({
           action={<Button onClick={read.refresh}>重试</Button>}
         />
       )}
-      <div className="skill-library-body">
+      <div className={`skill-library-body${read.data?.data.length === 0 ? " is-empty" : ""}`}>
         <aside>
           {!read.data && !read.error && <p role="status">正在读取技能…</p>}
           {read.data?.data.length === 0 && (
@@ -315,7 +315,7 @@ export function SkillLibrary({
               <h3>{scope === "mine" ? "还没有安装技能" : "暂无可见技能"}</h3>
               <p>
                 {scope === "mine"
-                  ? "选择自己的 SKILL.md 文件夹，或导入作者提供的技能 ZIP。"
+                  ? "从文件夹、ZIP 或 GitHub 导入已有方法，先查看再确认安装。"
                   : "公开介绍不等于授权使用。由技能所有者分别设置调用和源码权限。"}
               </p>
             </div>
@@ -573,7 +573,7 @@ export function SkillLibrary({
                 </section>
               )}
             </>
-          ) : (
+          ) : read.data?.data.length === 0 ? null : (
             <div className="skill-empty">
               <h3>让 Agent 学会你的做事方法</h3>
               <p>选择技能查看版本、绑定的 Agent 和授权范围。</p>

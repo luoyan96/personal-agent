@@ -14,7 +14,9 @@ import { researchScopeLabels } from "./research-library-api";
 import SafeMessageMarkdown from "./SafeMessageMarkdown";
 import { taskEventRows } from "./task-dsh-events";
 import { TaskDeliveryPanel } from "./TaskDeliveryPanel";
-import { deliveryReceiptLabel } from "./task-delivery-command";
+import { TaskDeliveryDownload } from "./TaskDeliveryDownload";
+import { taskStateLabels } from "./task-planning";
+import { workspaceStatusLabel } from "./workspace-labels";
 import { TaskArchivePanel } from "./TaskArchivePanel";
 import { TaskExecutionStatus } from "./TaskExecutionStatus";
 import { TaskKnowledgePanel } from "./TaskKnowledgePanel";
@@ -126,7 +128,15 @@ function progressNote(state: DshTaskState) {
 }
 
 /** The first thing anyone needs: what this task is for and what counts as done. */
-function TaskBrief({ goal, acceptance }: { goal: string; acceptance: string }) {
+function TaskBrief({
+  goal,
+  acceptance,
+  accepted,
+}: {
+  goal: string;
+  acceptance: string;
+  accepted: boolean;
+}) {
   return (
     <section className="task-work-brief" aria-label="目标与验收">
       {goal.trim() && (
@@ -140,7 +150,7 @@ function TaskBrief({ goal, acceptance }: { goal: string; acceptance: string }) {
           <h3>
             验收标准<span>逐条对照，全部满足才算完成</span>
           </h3>
-          <Points text={acceptance} checklist />
+          <Points text={acceptance} checklist={!accepted} />
         </div>
       )}
     </section>
@@ -197,12 +207,16 @@ export function TaskWorkPage({
         params: { id: taskId },
         signal,
       });
-      return { task: r.data, artifacts: [] };
+      return { task: r.data, artifacts: [], deliverables: [] };
     }
     const r = await researchApi("task", { params: { id: taskId }, signal });
     return "task" in r.data
-      ? { task: r.data.task, artifacts: r.data.artifacts || [] }
-      : { task: r.data, artifacts: [] };
+      ? {
+          task: r.data.task,
+          artifacts: r.data.artifacts || [],
+          deliverables: r.data.deliverables || [],
+        }
+      : { task: r.data, artifacts: [], deliverables: [] };
   }, `work-page:${kind}:${taskId}`);
   const collections = useResearchRead(
     () => researchApi("researchCollections", { query: { limit: 100 } }),
@@ -221,6 +235,31 @@ export function TaskWorkPage({
   const task = detail.data?.task,
     actions: string[] = task?.allowedActions || [];
   const serviceStatus = task && "status" in task ? task.status : "";
+  const personalResult =
+    kind === "personal" && task && "result" in task ? task.result : undefined;
+  const deliveries = detail.data?.deliverables || [];
+  const hasServerDelivery = deliveries.length > 0 || Boolean(personalResult);
+  const latestDelivery = deliveries.reduce<(typeof deliveries)[number] | undefined>(
+    (latest, item) => (!latest || item.revision > latest.revision ? item : latest),
+    undefined,
+  );
+  const latestAccepted = deliveries
+    .filter((item) => item.review?.decision === "accepted")
+    .reduce<(typeof deliveries)[number] | undefined>(
+      (latest, item) => (!latest || item.revision > latest.revision ? item : latest),
+      undefined,
+    );
+  const completed = serviceStatus === "completed" || serviceStatus === "cancelled";
+  const statusLabel =
+    serviceStatus === "completed" &&
+    kind === "research" &&
+    latestDelivery?.review?.decision !== "accepted"
+      ? "已结束 · 验收记录待核对"
+      : kind === "personal"
+      ? personalResult?.accepted
+        ? "已验收"
+        : workspaceStatusLabel[serviceStatus] || serviceStatus
+      : taskStateLabels[serviceStatus] || serviceStatus;
   const canWork =
     kind === "research"
       ? actions.includes("submit")
@@ -232,8 +271,8 @@ export function TaskWorkPage({
     kind === "personal" && actions.includes("activate") && Boolean(version);
   const isOpen = (id: string) => {
     if (section[id] !== undefined) return section[id];
-    if (id === "plan") return !canWork;
-    return id === "work";
+    if (id === "plan") return !canWork && !completed;
+    return id === "work" && state?.phase === "running" && !completed;
   };
   const toggle = (id: string) =>
     setSection((value) => ({ ...value, [id]: !isOpen(id) }));
@@ -370,20 +409,31 @@ export function TaskWorkPage({
     ...(state?.binding.localMaterials || []).map((source) => source.localName),
   ]);
   const outputs = (state?.files || []).filter((file) => !inputNames.has(file.name));
-  const submitted = state?.binding.delivery?.status === "submitted" ? state.binding.delivery : undefined;
+  const submitted =
+    state?.binding.delivery?.status === "submitted"
+      ? state.binding.delivery
+      : undefined;
   const submit = (selectedNames?: string[], summaryText?: string) =>
     command(async () => {
       const { isCurrent } = operation.capture();
-      const names = kind === "personal" ? [] : selectedNames || (state?.binding.delivery?.status === "pending" ? state.binding.delivery.names : outputs.map((file) => file.name));
+      const names =
+        kind === "personal"
+          ? []
+          : selectedNames ||
+            (state?.binding.delivery?.status === "pending"
+              ? state.binding.delivery.names
+              : outputs.map((file) => file.name));
       // The reviewer needs the file list, not a second essay.
-      const summary = summaryText || [
-        names.length
-          ? `提交 ${names.length} 个文件：${names.join("、")}`
-          : "提交本任务成果",
-        noteText.trim(),
-      ]
-        .filter(Boolean)
-        .join("\n\n");
+      const summary =
+        summaryText ||
+        [
+          names.length
+            ? `提交 ${names.length} 个文件：${names.join("、")}`
+            : "提交本任务成果",
+          noteText.trim(),
+        ]
+          .filter(Boolean)
+          .join("\n\n");
       await bridge!.taskSubmit(target, summary, names);
       if (isCurrent()) {
         setNotice("提交回执已确认。");
@@ -394,7 +444,20 @@ export function TaskWorkPage({
     <section className="task-work-page" aria-label="任务工作页">
       <header className="task-work-heading">
         <div>
-          <h2>{task?.title || "正在读取任务…"}</h2>
+          <div className="task-work-title-row">
+            <h2>{task?.title || "正在读取任务…"}</h2>
+            {statusLabel && <span className="workspace-status">{statusLabel}</span>}
+          </div>
+          {latestAccepted && (
+            <p className="task-work-accepted-note">
+              已验收第 {latestAccepted.revision} 版
+              {latestAccepted.sources.length
+                ? ` · ${latestAccepted.sources
+                    .map((source) => source.label)
+                    .join("、")}`
+                : " · 文字成果"}
+            </p>
+          )}
         </div>
         {Boolean(connectionError || state) && (
           <span>
@@ -430,17 +493,163 @@ export function TaskWorkPage({
         />
       )}
       {notice && <Alert type="success" message={notice} />}
-      {(actions.includes("submit") || state?.binding.delivery) && bridge?.taskStageDelivery && (
-        <TaskDeliveryPanel key={operation.scope} target={target} title={task?.title || "当前任务"} outputs={outputs}
-          currentStatus={serviceStatus} canSubmit={actions.includes("submit")}
-          disabled={busy || !actions.includes("submit") || state?.binding.delivery?.status === "pending"} submitted={submitted} submit={submit}
-          pending={state?.binding.delivery?.status === "pending"}
-          retry={() => command(async () => { const delivery = state?.binding.delivery; if (delivery) await bridge.taskSubmit(target, delivery.summary, delivery.names); }, true)}
-          stage={paths => bridge.taskStageDelivery(target, paths)} />
-      )}
+      <section className="task-work-delivery" aria-label="交付成果">
+        {actions.includes("submit") && noteText && (
+          <Input.TextArea
+            aria-label="补充说明"
+            value={noteText}
+            rows={2}
+            maxLength={500}
+            disabled={busy}
+            onChange={(event) => setNoteText(event.target.value)}
+          />
+        )}
+        {(actions.includes("submit") ||
+          state?.binding.delivery?.status === "pending" ||
+          (submitted && !hasServerDelivery)) &&
+          bridge?.taskStageDelivery && (
+            <TaskDeliveryPanel
+              key={operation.scope}
+              target={target}
+              title={task?.title || "当前任务"}
+              outputs={outputs}
+              currentStatus={serviceStatus}
+              canSubmit={actions.includes("submit")}
+              disabled={
+                busy ||
+                !actions.includes("submit") ||
+                state?.binding.delivery?.status === "pending"
+              }
+              submitted={hasServerDelivery ? undefined : submitted}
+              submit={submit}
+              pending={state?.binding.delivery?.status === "pending"}
+              retry={() =>
+                command(async () => {
+                  const delivery = state?.binding.delivery;
+                  if (delivery)
+                    await bridge.taskSubmit(target, delivery.summary, delivery.names);
+                }, true)
+              }
+              stage={(paths) => bridge.taskStageDelivery(target, paths)}
+            />
+          )}
+        {personalResult && (
+          <div className="task-work-submitted">
+            <strong>{personalResult.accepted ? "已验收结果" : "待核对结果"}</strong>
+            <SafeMessageMarkdown text={personalResult.summary} />
+          </div>
+        )}
+        {deliveries.length > 0 && (
+          <div className="task-work-delivery-history">
+            {[
+              latestDelivery,
+              ...deliveries.filter((item) => item.id !== latestDelivery?.id),
+            ]
+              .filter((item): item is NonNullable<typeof item> => Boolean(item))
+              .map((delivery, index) => (
+                <details key={delivery.id} open={index === 0}>
+                  <summary>
+                    第 {delivery.revision} 版 ·{" "}
+                    {delivery.review?.decision === "accepted"
+                      ? "已验收"
+                      : delivery.review?.decision === "changes_requested"
+                      ? "要求修改"
+                      : "等待验收"}
+                  </summary>
+                  <p>{delivery.summary}</p>
+                  {delivery.review && (
+                    <p className="research-task-feedback">
+                      审阅意见：{delivery.review.comment}
+                    </p>
+                  )}
+                  {delivery.artifactRefs.length > 0 && (
+                    <p>关联材料：{delivery.artifactRefs.join("、")}</p>
+                  )}
+                  {delivery.sources.map((source, index) => (
+                    <TaskDeliveryDownload
+                      key={index}
+                      target={target}
+                      locator={source.locator}
+                      label={source.label}
+                    />
+                  ))}
+                </details>
+              ))}
+          </div>
+        )}
+        {actions.includes("submit") &&
+          outputs.map((file) => (
+            <div className="task-work-file" key={file.name}>
+              <span title={file.name}>
+                {file.name} · {file.size} 字节
+              </span>
+              <div className="task-material-actions">
+                <Button
+                  disabled={busy}
+                  onClick={() =>
+                    void command(() => bridge!.taskReveal(target, file.name))
+                  }
+                >
+                  在文件夹中显示
+                </Button>
+                <Button
+                  disabled={busy}
+                  onClick={() =>
+                    void command(async () => {
+                      const { isCurrent } = operation.capture();
+                      const output = await bridge!.taskOutput(target, file.name);
+                      if (isCurrent())
+                        setPreview(output.preview || "此格式请在文件夹中打开查看。");
+                    })
+                  }
+                >
+                  查看文字
+                </Button>
+              </div>
+            </div>
+          ))}
+        {preview && <pre className="task-work-preview">{preview}</pre>}
+        {state?.binding.delivery?.versionConflict && (
+          <Alert
+            type="warning"
+            message="提交时任务已被更新"
+            description="先展开「安排」核对变更；确认仍按这一版成果提交后，使用最新任务版本重试。已上传文件会继续复用。"
+            action={
+              <Button
+                disabled={busy || !actions.includes("submit")}
+                onClick={() =>
+                  void command(async () => {
+                    await bridge!.taskRebase(target);
+                    const delivery = state.binding.delivery!;
+                    await bridge!.taskSubmit(target, delivery.summary, delivery.names);
+                    setSection((value) => ({
+                      ...value,
+                      plan: true,
+                      materials: false,
+                    }));
+                    setNotice("提交回执已确认。");
+                  })
+                }
+              >
+                已核对，重新提交此版
+              </Button>
+            }
+          />
+        )}
+        {!deliveries.length &&
+          !personalResult &&
+          !state?.binding.delivery &&
+          !actions.includes("submit") && (
+            <p className="task-work-muted">暂无可查看的交付记录。</p>
+          )}
+      </section>
       {task && "goal" in task && task.goal && (
         <TaskBrief
           goal={task.goal}
+          accepted={
+            serviceStatus === "completed" &&
+            latestDelivery?.review?.decision === "accepted"
+          }
           acceptance={"acceptanceCriteria" in task ? task.acceptanceCriteria : ""}
         />
       )}
@@ -502,9 +711,7 @@ export function TaskWorkPage({
               >
                 打开工作文件夹
               </Button>
-              <Button onClick={() => reveal("materials")}>
-                取用共享资料 / 归档成果
-              </Button>
+              <Button onClick={() => reveal("materials")}>资料与归档</Button>
             </div>
             <p className="task-work-muted">
               本地文件是主要工作材料，补充素材只复制到本机；使用模型时，读取的相关内容可能作为上下文发送。
@@ -543,7 +750,7 @@ export function TaskWorkPage({
                       size="small"
                       onClick={() => {
                         setNoteText(row.text.trim().slice(0, 500));
-                        setSection((value) => ({ ...value, materials: true }));
+                        setNotice("已将这条回复放入交付说明，可在交付区核对。");
                       }}
                     >
                       用作提交说明
@@ -632,121 +839,12 @@ export function TaskWorkPage({
         )}
       </Section>
       <Section
-        title="成果与提交"
-        hint={
-          submitted
-            ? `已提交 ${submitted.names.length} 个文件`
-            : outputs.length
-            ? `${outputs.length} 个产出文件`
-            : "还没有产出文件"
-        }
+        title="资料与归档"
+        hint="取用共享资料，或归档本机产出"
         open={isOpen("materials")}
         onToggle={() => toggle("materials")}
         nodeRef={materialsRef}
       >
-        {!state && (
-          <p className="task-work-muted">
-            先在「工作」里选好工作文件夹，这里会列出这次产出的文件。
-          </p>
-        )}
-        {Boolean(state) && !outputs.length && (
-          <p className="task-work-muted">工作文件夹里还没有产出文件。</p>
-        )}
-        {outputs.map((file) => (
-          <div className="task-work-file" key={file.name}>
-            <span title={file.name}>
-              {file.name} · {file.size} 字节
-            </span>
-            <div className="task-material-actions">
-              <Button
-                disabled={busy}
-                onClick={() =>
-                  void command(() => bridge!.taskReveal(target, file.name))
-                }
-              >
-                在文件夹中显示
-              </Button>
-              <Button
-                disabled={busy}
-                onClick={() =>
-                  void command(async () => {
-                    const { isCurrent } = operation.capture();
-                    const output = await bridge!.taskOutput(target, file.name);
-                    if (isCurrent())
-                      setPreview(output.preview || "此格式请在文件夹中打开查看。");
-                  })
-                }
-              >
-                查看文字
-              </Button>
-            </div>
-          </div>
-        ))}
-        {preview && <pre className="task-work-preview">{preview}</pre>}
-        {submitted && !actions.includes("submit") ? (
-          <div className="task-work-submitted">
-            <strong>{deliveryReceiptLabel(serviceStatus)}</strong>
-            <p>{submitted.names.join("、") || "已提交文字说明"}</p>
-            <small>{submitted.summary}</small>
-          </div>
-        ) : (
-          <>
-            <div className="task-material-actions">
-              <Input
-                aria-label="补充说明"
-                placeholder="补一句说明（可留空）"
-                maxLength={500}
-                value={noteText}
-                disabled={busy}
-                onChange={(e) => setNoteText(e.target.value)}
-              />
-              <Button
-                type="primary"
-                loading={busy}
-                disabled={
-                  !bridge?.taskSubmit ||
-                  !state ||
-                  (kind === "research" && !outputs.length) ||
-                  !actions.includes("submit")
-                }
-                onClick={() => void submit().catch(() => {})}
-              >
-                提交这些文件
-              </Button>
-            </div>
-            {state?.binding.delivery?.versionConflict && (
-              <Alert
-                type="warning"
-                message="提交时任务已被更新"
-                description="先到「安排与验收」核对变更；确认仍按这一版成果提交后，使用最新任务版本重试。已上传文件会继续复用。"
-                action={
-                  <Button
-                    disabled={busy || !actions.includes("submit")}
-                    onClick={() =>
-                      void command(async () => {
-                        await bridge!.taskRebase(target);
-                        const delivery = state.binding.delivery!;
-                        await bridge!.taskSubmit(
-                          target,
-                          delivery.summary,
-                          delivery.names,
-                        );
-                        setSection((value) => ({
-                          ...value,
-                          plan: true,
-                          materials: false,
-                        }));
-                        setNotice("提交回执已确认。");
-                      })
-                    }
-                  >
-                    已核对，重新提交此版
-                  </Button>
-                }
-              />
-            )}
-          </>
-        )}
         <details className="task-work-more">
           <summary>取用共享资料（可选）</summary>
           <p>只把你选定的版本取到本机，不必先上传本地素材。</p>
@@ -792,7 +890,11 @@ export function TaskWorkPage({
               <Button
                 disabled={!state || busy || !canWork || f.status !== "available"}
                 onClick={() =>
-                  void importFile({ kind: "library", id: f.id, version: f.version })
+                  void importFile({
+                    kind: "library",
+                    id: f.id,
+                    version: f.version,
+                  })
                 }
               >
                 用于本任务

@@ -146,3 +146,22 @@
     align-items: stretch;
   }
 }
+
+.library-page-shell .library-index-head {
+  padding: 0 0 8px;
+  border: 0;
+  background: transparent;
+}
+.library-page-shell .library-index-head h2 {
+  font-size: 22px;
+}
+.library-page-shell .library-index-empty {
+  border: 0;
+  background: transparent;
+  padding: 24px 0;
+  font-size: 13px;
+}
+.library-page-shell .library-index-folder {
+  border-style: solid;
+  background: #fafbfc;
+}

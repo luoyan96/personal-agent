@@ -52,6 +52,8 @@ import {
   useChatOutbox,
   updateSubmission,
   removeSubmission,
+  pendingSubmissions,
+  assertSubmissionCapacity,
   type ChatSubmission,
 } from "@/research/chat-outbox";
 
@@ -86,9 +88,7 @@ const ChatFooter = () => {
   const latestHtml = useLatest(html);
   const outbox = useChatOutbox((s) => s.items);
   const storageNotice = useChatOutbox((s) => s.notice);
-  const submissions = outbox.filter(
-    (item) => item.generation === generation && item.conversationID === imID,
-  );
+  const submissions = pendingSubmissions(outbox, generation, imID);
   const pending = submissions.some((item) => item.state === "sending");
   const recovery = submissions.find(
     (item) => item.state === "failed" || item.state === "paused",
@@ -175,11 +175,7 @@ const ChatFooter = () => {
         requestEpoch === epoch.current &&
         currentScope.current === scope
       ) {
-        const item = useChatOutbox
-          .getState()
-          .items.find(
-            (item) => item.generation === generation && item.conversationID === imID,
-          );
+        const item = pendingSubmissions(useChatOutbox.getState().items, generation, imID)[0];
         if (!item || item.state !== "queued") break;
         const tracked = operations.current.get(item.id);
         if (!tracked?.operation.isCurrent()) {
@@ -273,15 +269,18 @@ const ChatFooter = () => {
             );
             if (!sent) throw new Error(`文件“${entry.name}”未完成发送，请重试原消息。`);
           }
-          if (request)
-            await composer.sendPrepared(
+          let receipt: ChatSubmission["receipt"];
+          if (request) {
+            const acknowledged = await composer.sendPrepared(
               request,
               item.id,
               tracked.operation.isCurrent,
               tracked.intent,
               tracked.operation.signal,
             );
-          else if (item.text.trim()) {
+            const groupTurns = (acknowledged as { turns?: NonNullable<ChatSubmission["receipt"]>["turns"] }).turns;
+            receipt = { message: acknowledged.message, turns: groupTurns ?? (acknowledged.turn ? [acknowledged.turn] : []) };
+          } else if (item.text.trim()) {
             const current = useConversationStore.getState().currentConversation;
             if (
               current?.conversationID !== item.conversationID ||
@@ -320,7 +319,8 @@ const ChatFooter = () => {
             );
           }
           if (operations.current.get(item.id) !== tracked) break;
-          removeSubmission(item.id);
+          if (receipt) updateSubmission(item.id, { state: "acknowledged", receipt, error: undefined });
+          else removeSubmission(item.id);
           tracked.operation.dispose();
           operations.current.delete(item.id);
         } catch (error) {
@@ -344,6 +344,7 @@ const ChatFooter = () => {
         .items.find(
           (item) =>
             item.generation === useResearchStore.getState().generation &&
+            item.state !== "acknowledged" &&
             item.conversationID ===
               useConversationStore.getState().currentConversation?.conversationID,
         );
@@ -369,9 +370,8 @@ const ChatFooter = () => {
     try {
       const images = imageTray.current?.snapshot() || [];
       if (!cleanText && !images.length && !stagedFiles.length) return;
-      assertImageQueueCapacity(images, useChatOutbox.getState().items);
-      if (submissions.length >= 20 || useChatOutbox.getState().items.length >= 50)
-        throw new Error("还有较多消息未发送，请先处理发送记录。");
+      assertImageQueueCapacity(images, pendingSubmissions(useChatOutbox.getState().items, generation));
+      assertSubmissionCapacity(useChatOutbox.getState().items, generation, imID);
       const imageAgentId = images.length ? directImageAgent() : undefined;
       const selected = readMentionComposer(original);
       let text =
@@ -467,6 +467,7 @@ const ChatFooter = () => {
   };
   const retrySubmission = (item: ChatSubmission) => {
     if (
+      item.state === "acknowledged" ||
       item.generation !== useResearchStore.getState().generation ||
       item.conversationID !==
         useConversationStore.getState().currentConversation?.conversationID

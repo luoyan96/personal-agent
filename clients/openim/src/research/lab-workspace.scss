@@ -54,3 +54,15 @@
     gap: 8px;
   }
 }
+.lab-workspace {
+  gap: 14px;
+  .lab-space-switcher { display: flex; align-items: center; gap: 16px; padding: 12px 16px; flex-wrap: wrap; }
+  .lab-space-switcher h3 { margin: 0; font-size: 13px; color: #647581; }
+  .lab-space-switcher .ant-select { flex: 1; }
+  .lab-secondary { border-top: 1px solid #e4ebf0; padding: 12px 0; }
+  .lab-secondary > summary { cursor: pointer; color: #405c70; font-size: 13px; font-weight: 600; }
+  .lab-secondary[open] > summary { margin-bottom: 14px; }
+  .lab-join, .lab-create { padding: 14px 16px; border: 1px solid #e4ebf0; border-radius: 10px; }
+}
+.lab-workspace > .my-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lab-workspace > section > h3 { margin-top: 0; font-size: 16px; }

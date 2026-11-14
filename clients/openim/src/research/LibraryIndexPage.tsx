@@ -53,6 +53,7 @@ export function LibraryIndexPage() {
     supported && Boolean(actor),
   );
   const local = useLocalLibrary();
+  const [query, setQuery] = useState("");
   const [draft, setDraft] = useState<Draft>();
   const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -60,7 +61,14 @@ export function LibraryIndexPage() {
   const [notice, setNotice] = useState("");
   const [checks, setChecks] = useState<Record<string, Check>>({});
   const entries = read.data?.data.entries || [];
-  const projects = [...new Set(entries.map((entry) => entry.project))].sort();
+  const visible = entries.filter(
+    (entry) =>
+      !query.trim() ||
+      [entry.name, entry.project, entry.summary].some((value) =>
+        value.toLowerCase().includes(query.trim().toLowerCase()),
+      ),
+  );
+  const projects = [...new Set(visible.map((entry) => entry.project))].sort();
   const bridge = window.electronAPI?.localLibrary;
   const save = async (action: "save" | "revoke", entry?: LibraryIndexEntry) => {
     const source = entry
@@ -146,46 +154,66 @@ export function LibraryIndexPage() {
     <section className="library-index" aria-label="资料索引">
       <div className="library-index-head">
         <div>
-          <h2>资料索引：文件在本地，这里只记“有哪些、干什么用”</h2>
-          <p>
-            每条索引只存文件名、登记文件夹内的相对路径、用途、摘要和维护人；原件不上传。
-            别人看到的是清单，自己的机器上有同一套目录就能直接用。
-          </p>
+          <h2>我的资料</h2>
+          <p>原件保留在本机，资料索引供课题组成员查阅。</p>
         </div>
-        <Button
-          type="primary"
-          disabled={busy || !local.status?.registered}
-          onClick={() =>
-            setDraft({
-              version: 0,
-              project: projects[0] || "",
-              name: "",
-              relPath: "",
-              purpose: "reference",
-              summary: "",
-              sha256: null,
-              recommended: false,
-            })
-          }
-        >
-          新增索引
-        </Button>
-      </div>
-      <div className="library-index-folder">
-        {local.status?.registered ? (
-          <span>
-            本地文件夹：<strong>{local.status.name}</strong>
-            {local.manifest
-              ? `（${local.manifest.files.length} 个可用文件）`
-              : "（现在打不开）"}
-          </span>
+        {!local.status?.registered ? (
+          <Button
+            type="primary"
+            loading={local.busy}
+            disabled={!bridge}
+            onClick={() => void local.pick()}
+          >
+            选择资料文件夹
+          </Button>
         ) : (
-          <span>还没有登记本地资料文件夹，先选一个再新增索引。</span>
+          <Button
+            type="primary"
+            disabled={busy}
+            onClick={() =>
+              setDraft({
+                version: 0,
+                project: projects[0] || "",
+                name: "",
+                relPath: "",
+                purpose: "reference",
+                summary: "",
+                sha256: null,
+                recommended: false,
+              })
+            }
+          >
+            新增索引
+          </Button>
         )}
-        <Button size="small" loading={local.busy} onClick={() => void local.pick()}>
-          {local.status?.registered ? "更换文件夹" : "选择文件夹"}
-        </Button>
       </div>
+      {local.status?.registered && (
+        <div className="library-index-folder">
+          {local.status?.registered ? (
+            <span>
+              本地文件夹：<strong>{local.status.name}</strong>
+              {local.manifest
+                ? `（${local.manifest.files.length} 个可用文件）`
+                : "（现在打不开）"}
+            </span>
+          ) : (
+            <span>还没有登记本地资料文件夹，先选一个再新增索引。</span>
+          )}
+          <Button size="small" loading={local.busy} onClick={() => void local.pick()}>
+            {local.status?.registered ? "更换文件夹" : "选择文件夹"}
+          </Button>
+        </div>
+      )}
+      {entries.length > 0 && (
+        <Input.Search
+          aria-label="搜索资料索引"
+          placeholder="搜索文件名、项目或用途说明"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          allowClear
+        />
+      )}
+      {!bridge && <p>请在 Windows 桌面客户端选择本地资料文件夹。</p>}
       {(failure || local.failure) && (
         <Alert type="error" message={failure || local.failure} />
       )}
@@ -201,16 +229,20 @@ export function LibraryIndexPage() {
       {!read.data && !read.error && <p role="status">正在读取索引…</p>}
       {read.data && !entries.length && (
         <p className="library-index-empty">
-          还没有索引。挑一份项目里最常被问到的文件（母版、实验室介绍、成果统计），
-          点「新增索引」写清用途和摘要，以后别人不用再问你。
+          {local.status?.registered
+            ? "还没有资料索引。新增一条，记录文件用途和位置。"
+            : "先选择存放资料的文件夹，再登记常用文件。原件不会上传。"}
         </p>
+      )}
+      {!!entries.length && !visible.length && (
+        <p className="library-index-empty">没有符合条件的资料索引。</p>
       )}
       {projects.map((project) => (
         <section key={project} className="library-index-group" aria-label={project}>
           <h3>
-            {project} · {entries.filter((entry) => entry.project === project).length}
+            {project} · {visible.filter((entry) => entry.project === project).length}
           </h3>
-          {entries
+          {visible
             .filter((entry) => entry.project === project)
             .map((entry) => {
               const checkState = checks[entry.id];

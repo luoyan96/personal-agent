@@ -1,6 +1,5 @@
 .personal-agent-desktop .workspace-workbench {
   &.is-planning-expanded {
-    > .workspace-heading,
     > .workspace-toolbar,
     > .workspace-subnavigation,
     > .workbench-content {
@@ -830,5 +829,38 @@
     justify-self: end;
     height: 38px;
     border-radius: 10px;
+  }
+}
+
+.personal-agent-desktop .workspace-workbench {
+  .planning-agent-composer {
+    border-top: 1px solid #dce7ef;
+    padding: 14px 18px;
+    background: #f9fbfd;
+  }
+  .planning-agent-composer textarea.ant-input {
+    border: 1px solid #c7d9e6;
+    border-radius: 10px;
+    background: #fff;
+    padding: 11px 13px;
+  }
+  .planning-agent-composer textarea.ant-input:focus {
+    border-color: #1473c8;
+    box-shadow: 0 0 0 2px #1473c81a;
+  }
+  .planning-agent-composer > div {
+    margin-top: 8px;
+  }
+  .planning-agent-heading {
+    flex-wrap: wrap;
+  }
+  .planning-agent-heading nav {
+    flex-wrap: wrap;
+  }
+  .planning-history-page .record-row > div > strong {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 }

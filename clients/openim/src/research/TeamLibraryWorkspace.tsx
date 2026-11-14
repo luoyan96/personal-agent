@@ -3,6 +3,7 @@ import {
   Button,
   Checkbox,
   Drawer,
+  Dropdown,
   Empty,
   Input,
   Modal,
@@ -11,12 +12,13 @@ import {
 } from "antd";
 import {
   ArrowUpOutlined,
+  CloseOutlined,
   FileImageOutlined,
   FilePdfOutlined,
   FilePptOutlined,
   FileTextOutlined,
   FolderOpenOutlined,
-  FolderOutlined,
+  MoreOutlined,
   HistoryOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -75,7 +77,6 @@ function FileIcon({ entry }: { entry: TeamLibraryEntry }) {
     <FileTextOutlined />
   );
 }
-
 
 /** Git publishes curated metadata and small text; originals retain their existing ACL. */
 export function TeamLibraryWorkspace({
@@ -161,13 +162,7 @@ export function TeamLibraryWorkspace({
     [includeRules, setIncludeRules] = useState(true);
   const current = repository.data?.data,
     binding = current?.binding;
-  const entry = snapshot?.manifest.entries.find((e) => e.id === selected),
-    entries = snapshot?.manifest.entries || [];
-  const preview =
-    previewResult?.entryId === entry?.id &&
-    previewResult?.revision === snapshot?.revision
-      ? previewResult?.value
-      : undefined;
+  const entries = snapshot?.manifest.entries || [];
   const visible = entries.filter(
     (e) =>
       (!project || e.projectId === project) &&
@@ -177,6 +172,12 @@ export function TeamLibraryWorkspace({
           s.toLowerCase().includes(query.toLowerCase()),
         )),
   );
+  const entry = visible.find((e) => e.id === selected);
+  const preview =
+    previewResult?.entryId === entry?.id &&
+    previewResult?.revision === snapshot?.revision
+      ? previewResult?.value
+      : undefined;
   const sequence = useRef(0);
   useEffect(() => {
     setSnapshot(undefined);
@@ -349,39 +350,44 @@ export function TeamLibraryWorkspace({
         <div className="team-library-tools">
           {tab === "team" && (
             <>
-              <Button
-                icon={<ReloadOutlined />}
-                disabled={!binding || !bridge}
-                loading={busy}
-                onClick={sync}
-              >
-                同步
-              </Button>
-              <Button
-                icon={<HistoryOutlined />}
-                disabled={!snapshot}
-                onClick={openHistory}
-              >
-                更新记录
-              </Button>
-              <Button
-                type="primary"
-                icon={<UploadOutlined />}
-                disabled={!snapshot || !bridge}
-                onClick={() => {
-                  setImportTarget("");
-                  fileInput.current?.click();
-                }}
-              >
-                导入文件
-              </Button>
-              <Button
-                icon={<PlusOutlined />}
-                disabled={!snapshot || !bridge}
-                onClick={() => setEditing(true)}
-              >
-                更多来源
-              </Button>
+              {current?.canConfigure && (
+                <Button
+                  icon={<SettingOutlined />}
+                  aria-label="仓库设置"
+                  onClick={() => setConfigure(true)}
+                />
+              )}
+              {snapshot && (
+                <Button
+                  icon={<ReloadOutlined />}
+                  disabled={!binding || !bridge}
+                  loading={busy}
+                  onClick={sync}
+                >
+                  同步
+                </Button>
+              )}
+              {snapshot && (
+                <Button
+                  type="primary"
+                  icon={<UploadOutlined />}
+                  disabled={!snapshot || !bridge}
+                  onClick={() => {
+                    setImportTarget("");
+                    fileInput.current?.click();
+                  }}
+                >
+                  导入文件
+                </Button>
+              )}
+              {snapshot && (
+                <Dropdown trigger={["click"]} menu={{ items: [
+                  { key: "history", label: "更新记录", icon: <HistoryOutlined /> },
+                  { key: "sources", label: "添加更多来源", icon: <PlusOutlined />, disabled: !bridge },
+                ], onClick: ({ key }) => { if (key === "history") void openHistory(); else setEditing(true); } }}>
+                  <Button icon={<MoreOutlined />} aria-label="更多资料操作" />
+                </Dropdown>
+              )}
             </>
           )}
         </div>
@@ -395,33 +401,61 @@ export function TeamLibraryWorkspace({
           event.target.value = "";
         }}
       />
-      <div className="team-library-status">
-        {snapshot?.manifest.title || "课题组资料"}
-        {snapshot && (
-          <small>
-            {" "}
-            ·{" "}
-            {snapshot.stale
-              ? "保留上次版本"
-              : new Date(snapshot.syncedAt).toLocaleString("zh-CN", {
-                  month: "numeric",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }) + " 已同步"}
-          </small>
-        )}
-      </div>
+      {tab === "team" && snapshot && (
+        <div className="team-library-status">
+          {snapshot?.manifest.title || "课题组资料"}
+          {snapshot && (
+            <small>
+              {" "}
+              ·{" "}
+              {snapshot.stale || error
+                ? "上次成功同步 " +
+                  new Date(snapshot.syncedAt).toLocaleString("zh-CN", {
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : new Date(snapshot.syncedAt).toLocaleString("zh-CN", {
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }) + " 已同步"}
+            </small>
+          )}
+        </div>
+      )}
       {(error || repository.error) && (
         <Alert
           type="error"
           showIcon
           message={error || repository.error}
-          closable
-          onClose={() => setError("")}
+          action={
+            snapshot ? (
+              <Button
+                size="small"
+                loading={busy || repository.loading}
+                onClick={() => (binding ? void sync() : void repository.refresh())}
+              >
+                重试
+              </Button>
+            ) : undefined
+          }
         />
       )}
-      {snapshot?.stale && <Alert type="warning" showIcon message={snapshot.warning} />}
+      {snapshot?.stale && (
+        <Alert
+          type="warning"
+          showIcon
+          message={snapshot.warning}
+          action={
+            <Button size="small" loading={busy} onClick={() => void sync()}>
+              重新同步
+            </Button>
+          }
+        />
+      )}
       {tab === "mine" ? (
         <div className="team-library-personal">
           <LibraryIndexPage />
@@ -466,74 +500,34 @@ export function TeamLibraryWorkspace({
                 <Spin tip="正在同步团队资料" />
               ) : (
                 <>
-                  <h2>还没有可读取的资料目录</h2>
-                  <p>同步尚未完成。请重新连接，或查看仓库设置中的地址。</p>
-                  <Button onClick={sync}>重新同步</Button>
-                  {current?.canConfigure && (
-                    <Button onClick={() => setConfigure(true)}>仓库设置</Button>
-                  )}
+                  <FolderOpenOutlined />
+                  <h2>{error ? "团队资料同步未完成" : "还没有可读取的资料目录"}</h2>
+                  <p>同步成功后，资料会显示在这里。我的资料可独立使用。</p>
+                  <Button type="primary" onClick={sync}>
+                    重新同步
+                  </Button>
                 </>
               )}
             </div>
           ) : (
-            <div className="team-library-grid">
-              <aside className="team-library-tree">
-                <div className="team-library-tree-heading">
-                  项目资料
-                  {current?.canConfigure && (
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<SettingOutlined />}
-                      aria-label="仓库设置"
-                      onClick={() => setConfigure(true)}
-                    />
-                  )}
-                </div>
-                <button
-                  className={!project ? "selected" : ""}
-                  onClick={() => {
-                    setProject("");
-                    setPurpose("");
-                  }}
-                >
-                  <FolderOutlined />
-                  全部资料 <small>{entries.length}</small>
-                </button>
-                {snapshot.manifest.projects.map((p) => (
-                  <div key={p.id}>
-                    <button
-                      className={project === p.id && !purpose ? "selected" : ""}
-                      onClick={() => {
-                        setProject(p.id);
-                        setPurpose("");
-                      }}
-                    >
-                      {project === p.id ? <FolderOpenOutlined /> : <FolderOutlined />}
-                      {p.name}
-                    </button>
-                    {project === p.id && (
-                      <div className="team-library-subtree">
-                        {Object.entries(purposes)
-                          .filter(([key]) =>
-                            entries.some(
-                              (e) => e.projectId === p.id && e.purpose === key,
-                            ),
-                          )
-                          .map(([key, label]) => (
-                            <button
-                              className={purpose === key ? "selected" : ""}
-                              key={key}
-                              onClick={() => setPurpose(key)}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <footer>
+            <div className={`team-library-grid ${entry ? "has-selection" : ""}`}>
+              <div className="team-library-center">
+                <header>
+                  <Select
+                    aria-label="按项目查看资料"
+                    value={project}
+                    onChange={(value) => {
+                      setProject(value);
+                      setPurpose("");
+                    }}
+                    options={[
+                      { value: "", label: "全部项目" },
+                      ...snapshot.manifest.projects.map((p) => ({
+                        value: p.id,
+                        label: p.name,
+                      })),
+                    ]}
+                  />
                   <Button
                     type="text"
                     icon={<PlusOutlined />}
@@ -541,37 +535,9 @@ export function TeamLibraryWorkspace({
                   >
                     新建项目
                   </Button>
-                  <p>按项目维护，一次整理，多次取用。</p>
-                  <Button type="text" onClick={() => setPanel("standards")}>
-                    课题组生效规范 ↗
-                  </Button>
-                </footer>
-              </aside>
-              <div className="team-library-center">
-                <div className="team-library-breadcrumb">
-                  团队资料 <span>/</span>{" "}
-                  {snapshot.manifest.projects.find((p) => p.id === project)?.name ||
-                    "全部资料"}
-                </div>
-                <header>
-                  <div>
-                    <h2>
-                      {snapshot.manifest.projects.find((p) => p.id === project)?.name ||
-                        "全部资料"}
-                    </h2>
-                    {snapshot.manifest.projects.find((p) => p.id === project)
-                      ?.description && (
-                      <p>
-                        {
-                          snapshot.manifest.projects.find((p) => p.id === project)
-                            ?.description
-                        }
-                      </p>
-                    )}
-                  </div>
                   <Input.Search
                     aria-label="查找团队资料"
-                    placeholder="搜索资料、用途或维护者"
+                    placeholder="搜索文件名、说明或维护者"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     allowClear
@@ -583,15 +549,21 @@ export function TeamLibraryWorkspace({
                     { value: "template", label: "模板与案例" },
                     { value: "figure", label: "图与素材" },
                     { value: "reference", label: "参考资料" },
-                  ].map((filter) => (
-                    <Button
-                      key={filter.value}
-                      type={purpose === filter.value ? "primary" : "default"}
-                      onClick={() => setPurpose(filter.value)}
-                    >
-                      {filter.label}
-                    </Button>
-                  ))}
+                  ]
+                    .filter(
+                      (filter) =>
+                        !filter.value ||
+                        entries.some((e) => e.purpose === filter.value),
+                    )
+                    .map((filter) => (
+                      <Button
+                        key={filter.value}
+                        type={purpose === filter.value ? "primary" : "default"}
+                        onClick={() => setPurpose(filter.value)}
+                      >
+                        {filter.label}
+                      </Button>
+                    ))}
                 </div>
                 <div
                   className="team-library-file-drop"
@@ -604,15 +576,17 @@ export function TeamLibraryWorkspace({
                     beginImport(event.dataTransfer.files);
                   }}
                 >
-                  <UploadOutlined /> 拖入资料，确认新增或更新版本
-                  <button
+                  <UploadOutlined /> 拖入文件，提议新增或更新
+                  <Button
+                    type="link"
+                    size="small"
                     onClick={() => {
                       setImportTarget("");
                       fileInput.current?.click();
                     }}
                   >
                     选择文件
-                  </button>
+                  </Button>
                 </div>
                 <div className="team-library-table" role="table" aria-label="项目资料">
                   <div className="team-library-row table-heading" role="row">
@@ -664,22 +638,15 @@ export function TeamLibraryWorkspace({
                     />
                   )}
                 </div>
-                <div className="team-library-guidance">
-                  <strong>使用这些资料开展工作</strong>
-                  <p>选中一份材料，带入任务工作区；项目要求和来源版本可以一起保留。</p>
-                </div>
                 <div className="team-library-agent">
                   <label htmlFor="team-library-question">
-                    资料助手{" "}
-                    <small>
-                      {entry ? "围绕「" + entry.name + "」继续工作" : "先选择一份资料"}
-                    </small>
+                    查找资料并带入任务
                   </label>
                   <Input.TextArea
                     id="team-library-question"
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
-                    placeholder="用上次组会的模板，把这次实验图放进去…"
+                    placeholder="描述所需模板、图片或参考资料…"
                     maxLength={4000}
                     autoSize={{ minRows: 1, maxRows: 3 }}
                     onPressEnter={(event) => {
@@ -700,134 +667,136 @@ export function TeamLibraryWorkspace({
                   />
                 </div>
               </div>
-              <aside className="team-library-detail">
-                {entry ? (
-                  <>
-                    <div className="team-library-detail-title">
-                      <FileIcon entry={entry} />
-                      <h2>{entry.name}</h2>
-                    </div>
-                    <p className="team-library-summary">
-                      {entry.summary || "尚未补充使用说明。"}
-                    </p>
-                    <div className="team-library-preview" aria-label="资料预览">
-                      {previewBusy ? (
-                        <Spin />
-                      ) : preview?.kind === "text" ? (
-                        <>
-                          {entry.name.toLowerCase().endsWith(".md") ? (
-                            <SafeMessageMarkdown text={preview.text} />
-                          ) : (
-                            <pre>{preview.text}</pre>
-                          )}
-                          {preview.truncated && (
-                            <small>预览已截断；正文请在原件中阅读。</small>
-                          )}
-                        </>
-                      ) : preview?.kind === "image" ? (
-                        <img src={preview.dataUrl} alt={entry.name} />
-                      ) : (
+              {entry && (
+                <aside className="team-library-detail">
+                  {entry ? (
+                    <>
+                      <div className="team-library-detail-title">
+                        <FileIcon entry={entry} />
+                        <h2>{entry.name}</h2>
+                        <Button
+                          type="text"
+                          icon={<CloseOutlined />}
+                          aria-label="关闭资料详情"
+                          onClick={() => setSelected("")}
+                        />
+                      </div>
+                      <p className="team-library-summary">
+                        {entry.summary || "尚未补充使用说明。"}
+                      </p>
+                      <div className="team-library-preview" aria-label="资料预览">
+                        {previewBusy ? (
+                          <Spin />
+                        ) : preview?.kind === "text" ? (
+                          <>
+                            {entry.name.toLowerCase().endsWith(".md") ? (
+                              <SafeMessageMarkdown text={preview.text} />
+                            ) : (
+                              <pre>{preview.text}</pre>
+                            )}
+                            {preview.truncated && (
+                              <small>预览已截断；正文请在原件中阅读。</small>
+                            )}
+                          </>
+                        ) : preview?.kind === "image" ? (
+                          <img src={preview.dataUrl} alt={entry.name} />
+                        ) : (
+                          <div>
+                            <FileIcon entry={entry} />
+                            <p>
+                              {preview?.kind === "file"
+                                ? `${fileType(entry)} · ${(
+                                    preview.size /
+                                    1024 /
+                                    1024
+                                  ).toFixed(1)} MB`
+                                : previewError}
+                            </p>
+                            {preview?.kind === "file" && (
+                              <small>此格式在工作台原生文件区或本机阅读器打开。</small>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <dl>
                         <div>
-                          <FileIcon entry={entry} />
-                          <p>
-                            {preview?.kind === "file"
-                              ? `${fileType(entry)} · ${(
-                                  preview.size /
-                                  1024 /
-                                  1024
-                                ).toFixed(1)} MB`
-                              : previewError}
-                          </p>
-                          {preview?.kind === "file" && (
-                            <small>此格式在工作台原生文件区或本机阅读器打开。</small>
-                          )}
+                          <dt>用途</dt>
+                          <dd>{purposes[entry.purpose]}</dd>
                         </div>
-                      )}
-                    </div>
-                    <dl>
-                      <div>
-                        <dt>用途</dt>
-                        <dd>{purposes[entry.purpose]}</dd>
-                      </div>
-                      <div>
-                        <dt>维护者</dt>
-                        <dd>{entry.maintainer || "未登记"}</dd>
-                      </div>
-                      <div>
-                        <dt>发布版本</dt>
-                        <dd title={snapshot.revision}>
-                          {snapshot.revision.slice(0, 8)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>原件位置</dt>
-                        <dd>
-                          {entry.source.kind === "git" || entry.source.kind === "local"
-                            ? entry.source.path
-                            : "共享服务 · v" + entry.source.version}
-                        </dd>
-                      </div>
-                    </dl>
-                    <Checkbox
-                      checked={includeRules}
-                      onChange={(e) => setIncludeRules(e.target.checked)}
-                    >
-                      同时带入本项目规范与要求
-                    </Checkbox>
-                    <Button
-                      type="primary"
-                      block
-                      loading={taskBusy}
-                      onClick={() => {
-                        setChosenIds([entry.id]);
-                        void chooseTask();
-                      }}
-                    >
-                      用于任务
-                    </Button>
-                    <div className="team-library-detail-actions">
-                      <Button
-                        disabled={
-                          entry.source.kind !== "git" || previewBusy || !!previewError
-                        }
-                        onClick={() =>
-                          run(() =>
-                            bridge!.open({
-                              revision: snapshot.revision,
-                              entryId: entry.id,
-                            }),
-                          )
-                        }
+                        <div>
+                          <dt>维护者</dt>
+                          <dd>{entry.maintainer || "未登记"}</dd>
+                        </div>
+                        <div>
+                          <dt>发布版本</dt>
+                          <dd title={snapshot.revision}>
+                            {snapshot.revision.slice(0, 8)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>原件位置</dt>
+                          <dd>
+                            {entry.source.kind === "git" ||
+                            entry.source.kind === "local"
+                              ? entry.source.path
+                              : "共享服务 · v" + entry.source.version}
+                          </dd>
+                        </div>
+                      </dl>
+                      <Checkbox
+                        checked={includeRules}
+                        onChange={(e) => setIncludeRules(e.target.checked)}
                       >
-                        定位副本
-                      </Button>
+                        同时带入本项目规范与要求
+                      </Checkbox>
                       <Button
+                        type="primary"
+                        block
+                        loading={taskBusy}
                         onClick={() => {
-                          if (entry.source.kind === "git") {
-                            setImportTarget(entry.id);
-                            fileInput.current?.click();
-                          } else setEditing(entry);
+                          setChosenIds([entry.id]);
+                          void chooseTask();
                         }}
                       >
-                        更新文件
+                        用于任务
                       </Button>
-                      <Button onClick={() => setEditing(entry)}>编辑说明</Button>
-                    </div>
-                  </>
-                ) : (
-                  <Empty description="选择资料查看说明与版本" />
-                )}
-              </aside>
+                      <div className="team-library-detail-actions">
+                        <Button
+                          disabled={
+                            entry.source.kind !== "git" || previewBusy || !!previewError
+                          }
+                          onClick={() =>
+                            run(() =>
+                              bridge!.open({
+                                revision: snapshot.revision,
+                                entryId: entry.id,
+                              }),
+                            )
+                          }
+                        >
+                          打开原件副本
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            if (entry.source.kind === "git") {
+                              setImportTarget(entry.id);
+                              fileInput.current?.click();
+                            } else setEditing(entry);
+                          }}
+                        >
+                          更新文件
+                        </Button>
+                        <Button onClick={() => setEditing(entry)}>编辑说明</Button>
+                      </div>
+                    </>
+                  ) : (
+                    <Empty description="选择资料查看说明与版本" />
+                  )}
+                </aside>
+              )}
             </div>
           )}
         </>
-      )}
-      {supported && current?.canConfigure && (
-        <div className="team-library-secondary">
-          <Button icon={<SettingOutlined />} onClick={() => setConfigure(true)}>
-            仓库设置
-          </Button>
-        </div>
       )}
       <Drawer
         open={panel === "history"}
@@ -1091,7 +1060,6 @@ function ProjectEditor({
     </Modal>
   );
 }
-
 
 function EntryEditor({
   snapshot,

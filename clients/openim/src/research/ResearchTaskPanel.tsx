@@ -567,7 +567,7 @@ export function ResearchTaskPanel({
           </Button>
         </div>
       )}
-      {deliverables.map((delivery) => (
+      {!embedded && deliverables.map((delivery) => (
         <article key={delivery.id} className="rounded border p-3">
           <p>
             交付第 {delivery.revision} 版 ·{" "}

@@ -1,0 +1,8 @@
+.personal-agent-desktop .desktop-contacts-content.is-skill-library {
+  .workspace-detail-pane { width: 100%; }
+  .skill-library { background: #fff; }
+  .skill-library-body.is-empty { grid-template-columns: minmax(0, 1fr); min-height: 220px; }
+  .skill-library-body.is-empty > aside { border-right: 0; }
+  .skill-library-back { margin-bottom: 12px; }
+  .agent-library-gate { padding: 24px; display: grid; gap: 14px; }
+}

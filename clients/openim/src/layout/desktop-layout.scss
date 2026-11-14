@@ -11,7 +11,7 @@
   .ant-btn { box-shadow: none; border-radius: 22px; }
   .ant-btn-primary { background: var(--ac-blue); color: var(--ac-text); border-color: transparent; }
   .ant-btn-primary:hover:enabled { background: #aedbfb; color: var(--ac-text); }
-  .ant-btn-primary:disabled { background: var(--ac-soft); color: #9ea5aa; }
+  .ant-btn-primary:disabled { background: var(--ac-soft); color: #717a80; border: 1px solid #dde1e5; cursor: not-allowed; }
   .ant-input, .ant-input-affix-wrapper, .ant-select-selector { border-radius: 14px; }
   .ant-layout { background: var(--ac-canvas); min-width: 0; }
   .desktop-titlebar { height: 36px; min-height: 36px; position: relative; background: var(--ac-canvas); }

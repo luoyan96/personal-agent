@@ -138,16 +138,15 @@ function LibraryBody() {
     catch (error) { if (isCurrent()) { setFailure(failureText(error)); await collections.refresh(); } }
   };
   return <div className="research-library">
-    <header className="research-library-heading"><div><h2>资料库</h2><p>保存共享材料与归档成果；本地文件可直接在 DSH 或任务中使用，无需先上传。</p></div><div className="research-library-actions"><Button onClick={() => setFeishuOpen(true)}>连接飞书资料</Button><Button type="primary" onClick={() => setEditing("new")}>新建集合</Button></div></header>
+    <header className="research-library-heading"><div><h2>{params.get("panel") === "collections" ? "共享原件" : "资料库"}</h2><p>按集合保存原件与版本，读取范围由集合权限决定。</p></div><div className="research-library-actions"><Button onClick={() => setFeishuOpen(true)}>连接飞书资料</Button>{Boolean(shownCollections?.length) && <Button type="primary" onClick={() => setEditing("new")}>新建集合</Button>}</div></header>
     {failure && <Alert type="warning" message={failure} />}
-    <div className={`research-library-body ${sourceId ? "has-source" : ""}`}>
+    <div className={`research-library-body ${sourceId ? "has-source" : ""} ${shownCollections && !shownCollections.length ? "is-empty" : ""}`}>
       <aside className="research-collection-rail" aria-label="资料集合">
         <Segmented aria-label="集合范围" value={scope} options={[{ label: "全部", value: "visible" }, { label: "课题组", value: "lab" }, { label: "我的", value: "mine" }]} onChange={v => { setScope(v as typeof scope); setSelectedId(undefined); setSourceId(undefined); }} />
         <Input.Search aria-label="搜索资料集合" placeholder="搜索集合" onSearch={setCollectionSearch} allowClear />
         {collections.error && <Alert type="warning" message={collections.error} action={<Button onClick={collections.refresh}>重试</Button>} />}
         {!collections.data && !collections.error && <p role="status">正在读取集合…</p>}
         {shownCollections?.map(c => <button className="research-collection-row" key={c.id} aria-pressed={collection?.id === c.id} onClick={() => { setSelectedId(c.id); setSourceId(undefined); setQuery(""); setSearch(""); }}><FolderOutlined /><span><strong>{c.name}</strong><small>{researchScopeLabels[c.scope]} · {c.externalSource ? '飞书实时资料库' : `${c.fileCount} 份来源`}</small></span></button>)}
-        {shownCollections && !shownCollections.length && <div className="research-library-empty"><h3>{scope === "lab" ? "暂无课题组共享资料" : "暂无资料集合"}</h3><p>{scope === "lab" ? "私人库不会自动出现。库主人可在集合设置中选择课题组共享。" : "新建集合后，导入论文、笔记与素材。"}</p></div>}
       </aside>
       <section className="research-file-list" aria-label="集合文件">
         {collection ? <>
@@ -157,11 +156,11 @@ function LibraryBody() {
           {(files.error || matches.error) && <Alert type="warning" message={files.error || matches.error} action={<Button onClick={() => { void files.refresh(); void matches.refresh(); }}>重试</Button>} />}
           {query ? <div className="research-search-results">{matches.loading && <p role="status">正在检索…</p>}{matches.data?.data.map((match, i) => <button key={`${match.citation.sourceId}:${match.citation.version}:${match.citation.pageNumber}:${i}`} onClick={() => setSourceId(match.citation.sourceId)}><strong>{match.filename}</strong><small>v{match.citation.version} · 第 {match.citation.pageNumber} 页 · 字符 {match.citation.start}–{match.citation.end}</small><p>{match.text}</p>{match.partial && <small>此处为实际提取页的局部片段</small>}</button>)}{matches.data && !matches.data.data.length && <div className="research-library-empty"><h3>未找到实际文字片段</h3><p>调整关键词；仅保存原件的素材不会产生文字检索结果。</p></div>}<Button onClick={() => { setQuery(""); setSearch(""); }}>返回文件列表</Button></div> : <>
             <div className="research-file-table" role="table" aria-label="来源列表"><div className="research-file-table-head" role="row"><span>来源</span><span>状态</span><span>版本</span></div>{files.data?.data.map(file => <button role="row" aria-label={file.filename} aria-pressed={file.id === sourceId} key={file.id} onClick={() => setSourceId(file.id)}><span><FileTextOutlined />{file.filename}</span><span>{file.extraction === "text_extracted" ? "已提取文字" : file.extraction === "original_only" ? "原件" : "提取失败"}</span><span>v{file.version}</span></button>)}</div>
-            {files.loading && !files.data && <p role="status">正在读取来源…</p>}{files.data && !files.data.data.length && <div className="research-library-empty"><h3>集合中尚无来源</h3><p>{collection.owned ? "导入文件，保留原件与版本，再检索实际文字。" : "集合所有者尚未导入可用资料。"}</p></div>}
+            {files.loading && !files.data && <p role="status">正在读取来源…</p>}{files.data && !files.data.data.length && <div className="research-library-empty"><h3>集合中尚无来源</h3><p>{collection.owned ? "从上方导入文件，保留原件与版本。" : "集合所有者尚未导入可用资料。"}</p></div>}
           </>}
           </>}
           {collection.owned && <div className="research-library-withdraw"><Button type="text" danger onClick={() => modal.confirm({ title: "撤回此资料集合？", content: "后续查询将停止使用此集合，飞书原表保持。", onOk: withdraw })}>撤回集合</Button></div>}
-        </> : <div className="research-library-empty"><h3>选择资料集合</h3><p>集合范围决定谁可以读取资料。</p></div>}
+        </> : collections.error ? <div className="research-library-empty"><h3>暂时无法读取集合</h3><p>请重试读取后再选择或新建集合。</p><Button onClick={collections.refresh}>重新读取</Button></div> : !collections.data ? <p role="status">正在读取集合…</p> : shownCollections?.length === 0 ? <div className="research-library-empty"><FolderOutlined /><h3>{collectionSearch ? "没有匹配的资料集合" : scope === "lab" ? "暂无课题组共享集合" : "还没有资料集合"}</h3><p>{collectionSearch ? "换个名称搜索，或新建一个集合。" : scope === "lab" ? "新建集合并选择课题组共享，再导入原件。" : "新建集合，再导入论文、笔记或素材。"}</p><Button type="primary" onClick={() => setEditing("new")}>新建资料集合</Button></div> : <div className="research-library-empty"><h3>选择资料集合</h3><p>查看原件、版本与检索结果。</p></div>}
       </section>
       {sourceId && collection && <SourceDetail key={sourceId} id={sourceId} collection={collection} onClose={() => setSourceId(undefined)} onChanged={refresh} onVersion={source => setImporting({ collection, source })} />}
     </div>

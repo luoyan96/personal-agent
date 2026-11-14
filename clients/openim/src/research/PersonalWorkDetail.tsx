@@ -153,7 +153,7 @@ export function PersonalWorkDetail({
             </p>
           ))}
       </div>
-      {task.result && (
+      {task.result && !embedded && (
         <section className="workspace-result">
           <h3>{task.result.accepted ? "已验收结果" : "待核对结果"}</h3>
           <SafeMessageMarkdown text={task.result.summary} />
@@ -289,7 +289,7 @@ export function PersonalWorkDetail({
                 </Button>
               </section>
             )}
-            {allowed("submit") && (
+            {allowed("submit") && (!embedded || !window.electronAPI?.localDsh?.taskStageDelivery) && (
               <section>
                 <h3>分享这一版成果</h3>
                 <Input.TextArea

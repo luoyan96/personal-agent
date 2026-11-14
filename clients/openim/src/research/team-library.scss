@@ -827,3 +827,68 @@
     display: none;
   }
 }
+
+// One file list and a selected detail pane inside the library navigation.
+.library-page-shell .team-library {
+  container-type: inline-size;
+  .team-library-bar { margin-bottom: 12px; gap: 12px; }
+  .team-library-tools { gap: 8px; flex-wrap: wrap; }
+  .team-library-status { margin: 0 0 18px; font-size: 13px; }
+  > .ant-alert { margin-bottom: 16px; }
+  .team-library-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    gap: 20px;
+    overflow: visible;
+    background: transparent;
+  }
+  .team-library-grid.has-selection { grid-template-columns: minmax(0, 1fr) 310px; }
+  .team-library-center { padding: 0; min-width: 0; }
+  .team-library-center > header {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    .ant-select { min-width: 140px; max-width: 240px; }
+    .ant-input-search { width: auto; min-width: 200px; flex: 1; margin: 0; }
+  }
+  .team-library-quick-filters { margin-bottom: 12px; gap: 6px; }
+  .team-library-file-drop { padding: 10px 12px; margin-bottom: 14px; border-radius: 8px; font-size: 12px; }
+  .team-library-file-drop .ant-btn { height: 24px; padding: 0; border: 0; vertical-align: baseline; font-size: 13px; }
+  .team-library-table { overflow-x: auto; }
+  .team-library-row { grid-template-columns: minmax(140px, 1fr) 84px 68px 68px; gap: 10px; min-width: 410px; padding: 13px 10px; font-size: 13px; }
+  .team-library-row .team-library-filename strong { font-size: 14px; line-height: 1.5; }
+  .team-library-row > span:last-child { display: block; }
+  .team-library-row.selected { background: #e8f4ff; }
+  .team-library-agent {
+    margin-top: 24px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    label { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    small { display: block; font-size: 12px; color: #697176; margin-top: 3px; }
+  }
+  .team-library-detail { grid-column: auto; border: 1px solid #e7ebe8; border-radius: 12px; padding: 18px; min-width: 0; }
+  .team-library-detail-title { display: flex; gap: 10px; align-items: flex-start; }
+  .team-library-detail-title h2 { flex: 1; min-width: 0; font-size: 18px; }
+  .team-library-detail-title .ant-btn { flex-shrink: 0; padding: 0; width: 24px; height: 24px; }
+  .team-library-detail-title .ant-btn .anticon { font-size: 14px; }
+  .team-library-preview { height: auto; max-height: 240px; min-height: 100px; margin-bottom: 14px; }
+  .team-library-detail dl { margin: 16px 0; font-size: 12px; }
+  .team-library-detail-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .team-library-empty { min-height: 240px; padding: 28px; border: 0; align-items: flex-start; gap: 10px; }
+  .team-library-empty h2 { font-size: 19px; margin: 0; }
+  .team-library-empty p { margin: 0 0 6px; color: #697176; }
+  .team-library-empty .anticon { font-size: 28px; }
+}
+@container (max-width: 780px) {
+  .library-page-shell .team-library .team-library-grid.has-selection { grid-template-columns: minmax(0, 1fr); }
+  .library-page-shell .team-library .team-library-detail { max-width: none; }
+}

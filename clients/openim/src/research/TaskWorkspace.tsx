@@ -71,7 +71,6 @@ export function TaskWorkspace({
 export function TaskListRow({
   title,
   status,
-  description,
   meta,
   hint,
   selected,
@@ -79,7 +78,6 @@ export function TaskListRow({
 }: {
   title: string;
   status: string;
-  description: string;
   meta: string;
   hint?: string;
   selected: boolean;
@@ -87,9 +85,10 @@ export function TaskListRow({
 }) {
   return (
     <button className="workspace-task-row" aria-pressed={selected} onClick={onSelect}>
-      <span className="workspace-task-row-title">{title}</span>
-      <span className="workspace-status">{status}</span>
-      <p>{description}</p>
+      <span className="workspace-task-row-heading">
+        <span className="workspace-task-row-title">{title}</span>
+        <span className="workspace-status">{status}</span>
+      </span>
       <footer>{meta}</footer>
       {hint && <small className="workspace-task-row-hint">{hint}</small>}
     </button>

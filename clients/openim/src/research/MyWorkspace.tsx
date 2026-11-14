@@ -33,8 +33,8 @@ const sections = [
   { value: "labs", label: "课题组", icon: TeamOutlined },
   { value: "capabilities", label: "课题组能力", icon: TeamOutlined },
   { value: "models", label: "模型设置", icon: ApiOutlined },
-  { value: "memory", label: "记忆与偏好", icon: BookOutlined },
-  { value: "rules", label: "个人规则", icon: SafetyCertificateOutlined },
+  { value: "memory", label: "我的习惯", icon: BookOutlined },
+  { value: "rules", label: "固定要求", icon: SafetyCertificateOutlined },
   { value: "preferences", label: "通用设置", icon: SettingOutlined },
   { value: "version", label: "版本与帮助", icon: CloudDownloadOutlined },
 ];
@@ -43,9 +43,7 @@ export function MyWorkspace() {
   const [params, setParams] = useSearchParams();
   const requested = params.get("view");
   const relocated = relocatedMyWorkspace(params);
-  const view = sections.some((s) => s.value === requested)
-      ? requested!
-      : "profile";
+  const view = sections.some((s) => s.value === requested) ? requested! : "profile";
   const generation = useResearchStore((s) => s.generation);
   const actor = useResearchStore((s) => s.actor);
   const self = useUserStore((s) => s.selfInfo);
@@ -152,7 +150,11 @@ export function MyWorkspace() {
                   <summary>头像素材署名</summary>
                   <p>
                     应用图标与私人助理「大肥鱼」头像：
-                    <a href="https://github.com/YunYueSama/codex-deepseek-pet" target="_blank" rel="noreferrer">
+                    <a
+                      href="https://github.com/YunYueSama/codex-deepseek-pet"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       YunYueSama / codex-deepseek-pet
                     </a>
                   </p>

@@ -31,7 +31,7 @@ export function PersonalRules() {
   const read = useResearchRead(
     () => researchApi("personalWorkRules"),
     "personal-work-rules",
-    supported,
+    supported
   );
   const [editing, setEditing] = useState<{
     id?: string;
@@ -43,14 +43,17 @@ export function PersonalRules() {
   const [failure, setFailure] = useState("");
   const [notice, setNotice] = useState("");
   useLayoutEffect(() => {
-    setEditing(undefined); setBusy(false); setFailure(""); setNotice("");
+    setEditing(undefined);
+    setBusy(false);
+    setFailure("");
+    setNotice("");
   }, [operation.scope]);
   const data = read.data?.data;
   const records = data?.records || [];
 
   const submit = async (
     action: "save" | "confirm" | "revoke",
-    record?: { id: string; version: number; title: string; content: string },
+    record?: { id: string; version: number; title: string; content: string }
   ) => {
     const draft = record ?? editing;
     if (!draft) return;
@@ -76,11 +79,12 @@ export function PersonalRules() {
           ? "已撤回，这条不会再进入你的私聊。"
           : action === "confirm"
           ? "已确认生效。"
-          : "已保存，之后的本人私聊与本机任务执行会使用这条规则。",
+          : "已保存，之后的本人私聊与本机任务执行会使用这条规则。"
       );
       await read.refresh();
     } catch (e) {
-      if (captured.isCurrent()) setFailure(e instanceof Error ? e.message : "未保存，内容已保留。");
+      if (captured.isCurrent())
+        setFailure(e instanceof Error ? e.message : "未保存，内容已保留。");
     } finally {
       if (captured.isCurrent()) setBusy(false);
     }
@@ -90,7 +94,7 @@ export function PersonalRules() {
     return (
       <section className="my-rules workspace-standards">
         <WorkspaceUnavailable
-          feature="个人规则"
+          feature="固定要求"
           pending={!availability.data && !availability.error}
           error={availability.error}
           onRetry={availability.refresh}
@@ -99,18 +103,18 @@ export function PersonalRules() {
     );
 
   return (
-    <section className="my-rules workspace-standards" aria-label="个人规则">
+    <section className="my-rules workspace-standards" aria-label="固定要求">
       <header className="my-section-heading">
-        <h2>个人规则</h2>
+        <h2>固定要求</h2>
         <p>
-          回答方式、写作习惯、称呼和语言，适用于本人私聊、个人会话及本机任务工作区。
-          群聊和共享个人任务不加载。个人规则不能覆盖平台或团队要求。
+          由你明确设定，和聊天中形成的习惯分别保存。用于本人私聊、个人会话及本机任务工作区。
+          群聊和共享个人任务不加载，不能覆盖平台或团队要求。
         </p>
       </header>
       {read.error && (
         <Alert
           type="error"
-          message="个人规则暂不可用"
+          message="固定要求暂不可用"
           description={read.error}
           action={<Button onClick={read.refresh}>重试读取</Button>}
         />
@@ -119,17 +123,15 @@ export function PersonalRules() {
       {failure && <Alert type="error" message={failure} />}
       <div className="workspace-standards-heading">
         <div>
-          <h3>我的规则</h3>
+          <h3>已保存的要求</h3>
           <p>确认后立即生效；撤回后保留历史，不再进入新对话。</p>
         </div>
         <Button
           type="primary"
           disabled={busy || Boolean(editing)}
-          onClick={() =>
-            setEditing({ version: 0, title: "", content: "" })
-          }
+          onClick={() => setEditing({ version: 0, title: "", content: "" })}
         >
-          新增规则
+          新增要求
         </Button>
       </div>
       {editing && (
@@ -170,10 +172,10 @@ export function PersonalRules() {
           </div>
         </div>
       )}
-      {!read.data && !read.error && <p>正在读取个人规则…</p>}
+      {!read.data && !read.error && <p>正在读取固定要求…</p>}
       {read.data && !records.length && !editing && !read.error && (
         <p className="workspace-muted">
-          还没有个人规则。写一条你最常重复的要求，之后每次私聊都会带上它。
+          还没有固定要求。可以保存一条需要持续遵守的明确要求。
         </p>
       )}
       {records.map((record) => (
@@ -184,7 +186,8 @@ export function PersonalRules() {
               {statusLabels[record.status]}
             </span>
             <small>
-              v{record.version} · {new Date(record.updatedAt).toLocaleString("zh-CN")}
+              v{record.version} ·{" "}
+              {new Date(record.updatedAt).toLocaleString("zh-CN")}
             </small>
           </header>
           <p>{record.content}</p>

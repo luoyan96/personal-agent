@@ -121,7 +121,9 @@
   > .my-section-heading {
     display: block;
     margin-bottom: 0;
-    h2 { font-size: 23px; }
+    h2 {
+      font-size: 23px;
+    }
   }
 }
 .my-profile-account {
@@ -135,6 +137,12 @@
   .contact-card-share {
     margin: 0;
   }
+}
+.my-profile-share {
+  align-self: start;
+  padding: 12px;
+  summary { cursor: pointer; color: #1473c8; font-weight: 500; }
+  &[open] summary { margin-bottom: 12px; }
 }
 .my-profile-facts {
   margin: 0;
@@ -241,4 +249,19 @@
 
 .my-preferences > .my-section-heading {
   display: block;
+}
+
+.my-general-settings {
+  max-width: 760px;
+  border: 1px solid #e6ebef;
+  border-radius: 16px;
+  .ant-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+  }
+  .ant-radio-wrapper {
+    margin: 0;
+    font-size: 14px;
+  }
 }

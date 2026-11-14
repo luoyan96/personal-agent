@@ -1,5 +1,5 @@
 import { CloseOutlined, RightOutlined } from "@ant-design/icons";
-import { Checkbox, Divider, Modal } from "antd";
+import { Radio, Divider, Modal } from "antd";
 import { t } from "i18next";
 import { forwardRef, ForwardRefRenderFunction, memo, useRef } from "react";
 
@@ -81,7 +81,13 @@ export const PersonalSettingsContent = ({
   };
 
   return (
-    <div className="flex flex-col bg-[var(--chat-bubble)]">
+    <div
+      className={
+        embedded
+          ? "my-general-settings flex flex-col bg-white"
+          : "flex flex-col bg-[var(--chat-bubble)]"
+      }
+    >
       {!embedded && <BlackList ref={backListRef} />}
       {!embedded && (
         <div className="app-drag flex items-center justify-between bg-[var(--gap-text)] p-5">
@@ -103,42 +109,30 @@ export const PersonalSettingsContent = ({
             </div>
             <div className="pb-8 pl-1">
               <div className="pb-3 font-medium">{t("placeholder.chooseLanguage")}</div>
-              <div>
-                <Checkbox
-                  checked={localeStr === "zh-CN"}
-                  className="mr-4"
-                  onChange={(e) => localeChange(e.target.checked, "zh-CN")}
-                >
-                  简体中文
-                </Checkbox>
-                <Checkbox
-                  checked={localeStr === "en-US"}
-                  onChange={(e) => localeChange(e.target.checked, "en-US")}
-                >
-                  English
-                </Checkbox>
-              </div>
+              <Radio.Group
+                aria-label={t("placeholder.chooseLanguage")}
+                value={localeStr}
+                onChange={(event) => localeChange(true, event.target.value)}
+                options={[
+                  { value: "zh-CN", label: "简体中文" },
+                  { value: "en-US", label: "English" },
+                ]}
+              />
             </div>
             {Boolean(window.electronAPI) && (
               <div className="pb-8 pl-1">
                 <div className="pb-3 font-medium">
                   {t("placeholder.closeButtonEvent")}
                 </div>
-                <div>
-                  <Checkbox
-                    checked={closeAction === "quit"}
-                    className="mr-4"
-                    onChange={(e) => closeActionChange(e.target.checked, "quit")}
-                  >
-                    {t("placeholder.exitApplication")}
-                  </Checkbox>
-                  <Checkbox
-                    checked={closeAction === "miniSize"}
-                    onChange={(e) => closeActionChange(e.target.checked, "miniSize")}
-                  >
-                    {t("placeholder.minimize")}
-                  </Checkbox>
-                </div>
+                <Radio.Group
+                  aria-label={t("placeholder.closeButtonEvent")}
+                  value={closeAction}
+                  onChange={(event) => closeActionChange(true, event.target.value)}
+                  options={[
+                    { value: "quit", label: t("placeholder.exitApplication") },
+                    { value: "miniSize", label: t("placeholder.minimize") },
+                  ]}
+                />
               </div>
             )}
           </div>
