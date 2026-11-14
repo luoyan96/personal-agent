@@ -3159,3 +3159,7 @@ PR213与版本PR214各四项CI通过后普通合并，最终main/tag为0fff9b693
 ## 2026-11-14 · 0.10.109 发布准备
 
 负责人授权复核合并#212并发布新版本。以def5e4a准备0.10.109，596项桌面回归及类型检查已通过，真实files仓库两种URL均同步6条资料。PR212首次Windows检查在记忆历史测试30秒超时，同一提交重跑中。成品必须包含单URL表单和discover完整IPC链，核验记录在D:/deepseek-agent/.runtime/release-0.10.109-20261114。
+
+## 2026-11-14 · 0.10.109 正式完成
+
+#212以02cd206合并，版本#221以3efb436合并，两PR各四项检查成功。固定构建/tag b16c579，源码树与合并时main一致。EXE内单URL表单、discover preload/main及实际Git实现核验通过，提取的模块用两种真实files URL同步6条资料。冻结1770份输入、136份实际载荷、更新清单、隔离启动、禁网缓存和桌面副本均通过。0.10.109公开为Latest，四附件大小和SHA256一致；本地C:/Users/luo/Desktop/AcceptCat_0.10.109.exe，SHA256 75e6aa7c0d9b4bdf2e52c240a47aa289e7dc643225055e3d4ef2084b118f8880。后台沿用0.49/039。完整回执deployment/acceptcat-0.10.109-release.md。
