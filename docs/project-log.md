@@ -3560,3 +3560,5 @@ README 和当前状态改用 [产品官网](https://deepchat.acceptcat.com/) 与
 两组 Linux Foundation 和 Windows 打包通过。Windows Foundation 在固定模型适配器用例的 PDF 上传阶段两次超时。该用例改用实际 UTF-8 文本附件，继续检查普通回复与附件回复的推理设置、截断用量和回执。专门的 PDF 解析用例和生产时限照常运行。本机 15 项附件与契约测试通过。另一次本机完整检查的四组 HTTP 子进程启动超时，四组串行复测共 41 项通过。日志位于 `D:/deepseek-agent/.runtime/deepchat-release-1.0.4/`。
 
 随后两次 Windows Foundation 运行分别触及 039 和 015 迁移测试的 20 秒时限，后一次持久化诊断用例也因附件响应缺少正文而失败。旧库迁移用例在托管 Windows 上使用 45 秒测试时限，其他环境使用测试套件默认的 30 秒。持久化诊断改用真实文本附件，并显式核对上传 HTTP 状态。运行时限、迁移断言和专门的 PDF 用例保持原样。
+
+后续 Windows Foundation 通过迁移与持久化诊断，首个专门的 PDF 用例仍触及解析子进程的 8 秒时限，后续 PDF 用例通过。Windows CI 在该套件启动时先用独立子进程解析一页合成 PDF，核对内容并记录启动时间。实际 PDF 请求继续使用生产的 8 秒时限。原失败日志一并保留。

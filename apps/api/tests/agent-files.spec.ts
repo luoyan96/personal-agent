@@ -1,10 +1,11 @@
+import {fork} from 'node:child_process'
 import {randomUUID,randomBytes} from 'node:crypto'
 import {mkdirSync,mkdtempSync,rmSync,writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {createServer as createHttpServer} from 'node:http'
 import {z} from 'zod'
-import {afterEach,describe,it,expect,vi} from 'vitest'
+import {afterEach,beforeAll,describe,it,expect,vi} from 'vitest'
 import {routes,Id,Text,Budget,Version,Instant,ChatAvailability,ModelUsage,ChatResource,Mention,AgentFileMessage,type RouteName} from '@research-agent-platform/contracts'
 import {readConfig} from '../src/config.js'
 import {openDatabase,migrate} from '../src/database.js'
@@ -72,6 +73,28 @@ async function setup(){
 
 
 describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{timeout:30000},()=>{
+ beforeAll(async()=>{
+  if(!process.env.CI||process.platform!=='win32')return
+  // Warm the pinned dependency before measuring requests on a cold hosted runner.
+  // Each PDF test still starts a new parser with the production request deadline.
+  const started=performance.now()
+  const env=Object.fromEntries(['PATH','SystemRoot','TEMP','TMP'].flatMap(key=>process.env[key]?[[key,process.env[key]!]]:[]))
+  const child=fork(new URL('../src/agent-file-parser-child.ts',import.meta.url),[],{
+   env,execArgv:['--max-old-space-size=128','--max-semi-space-size=8'],stdio:['ignore','ignore','inherit','ipc'],
+   signal:AbortSignal.timeout(30_000),windowsHide:true,
+  })
+  try{
+   const parsed=await new Promise<unknown>((resolve,reject)=>{
+    child.once('message',resolve)
+    child.once('error',reject)
+    child.once('exit',(code,signal)=>reject(new Error(`PDF parser preflight exited before replying (${code ?? signal})`)))
+    child.send({base64:syntheticPdf(['Synthetic preflight.']).toString('base64')},error=>{if(error)reject(error)})
+   })
+   expect(parsed).toEqual({pages:[{pageNumber:1,text:'Synthetic preflight.'}]})
+   console.info(`Windows CI PDF parser preflight completed in ${Math.round(performance.now()-started)} ms`)
+  }finally{child.kill()}
+ },35_000)
+
  it('ends automatic attachment scope for a new task but preserves explicit file references after restart',async()=>{
   const s=await setup(),own=await s.own(),sent=await s.call('agentFileMessage',uploadBody(Buffer.from('OLD_PAPER_SOURCE_42'),'previous-paper.txt','text/plain'),{id:own.conversation.id})
   await s.tick(async()=>result('OLD_PAPER_RECEIPT_42：仅按旧附件要求输出 END_PAGE_42。'))
