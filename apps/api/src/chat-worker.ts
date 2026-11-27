@@ -181,7 +181,7 @@ export class ChatWorker {
       if(personal.records.length||agentContext.memories.length)console.log(`CHAT_MEMORY conversation=${group.id} ${lifecycleReceipt({preference:personal.records.length+agentContext.memories.length,turn:1})} omitted=${personal.omitted}`)
       input.agentContextFingerprint=agentContext.fingerprint
       this.db.prepare('UPDATE chat_turns SET request_json=? WHERE id=?').run(JSON.stringify(input),turn.id)
-      const habits = group.kind === 'group' || !personal.fingerprint
+      const habits = !input.consultationVersion && (group.kind === 'group' || !personal.fingerprint)
         ? currentHabit(this.db, s.c.actor.id, group.kind === 'group' ? group.id : '').content : ''
       const contactColumns=['id','displayName','identity','availability','profile']
       const selectedTasks=input.context.filter(ref=>ref.kind==='task').map(ref=>s.c.task(ref.ref.id))
@@ -200,7 +200,7 @@ export class ChatWorker {
       if(library)system+='\n'+researchLibrarySystem
       const document=input.fileSource?s.fileDocument(input.fileSource.messageId,group.id):undefined
       if(document)system+=fileChatSystem
-      const notes=input.dailyChat?olderDialogue(s,group.id,input.inputSequence,messages,currentTurnText(s,turn.id),input.fileSource?.messageId):undefined,tasks=input.dailyChat&&group.kind!=='group'?dialogueTaskState(s,group,currentTurnText(s,turn.id)):[]
+      const notes=input.dailyChat?olderDialogue(s,group.id,input.inputSequence,messages,currentTurnText(s,turn.id),input.fileSource?.messageId):undefined,tasks=input.dailyChat&&group.kind!=='group'&&!input.consultationVersion?dialogueTaskState(s,group,currentTurnText(s,turn.id)):[]
       let layers:DialogueLayers={messages:[],notes:{method:'source_quotes',scope:'current_conversation',summary:[],recalled:[]},tasks:[]}
       system+=rulesSuffix
       const baseSystem=system,contextSystem=(selection:DialogueLayers)=>baseSystem+projectDecisionSuffix()+(selection.notes.summary.length||selection.notes.recalled.length||selection.tasks.length?'\n'+dialogueContextSystem:'')
@@ -294,15 +294,18 @@ export class ChatWorker {
       if (!admitted) {
         turn.status = 'failed'; turn.failure = 'BUDGET_EXCEEDED'; turn.version++; turn.updatedAt = instant(); s.saveTurn(turn); return null
       }
+      const selected=personalModelRuntime(this.db,s.c.actor,this.config)
       let apiKey: string
-      try { apiKey = external?.apiKey??personalModelKey(this.db, s.c.actor, this.config) } catch {
+      try {
+        if (input.consultationVersion && selected.source !== 'personal') throw new ApiError('MODEL_UNAVAILABLE')
+        apiKey = external?.apiKey??personalModelKey(this.db,s.c.actor,this.config)
+      } catch {
         turn.status = 'unavailable'; turn.failure = 'MODEL_UNAVAILABLE'; turn.version++; turn.updatedAt = instant(); s.saveTurn(turn); return null
       }
       const fence = Number(row.fence) + 1
       turn.status = 'running'; turn.version++; turn.updatedAt = instant(); s.saveTurn(turn)
       this.db.prepare('UPDATE chat_turns SET fence=?,lease_owner=?,lease_until=? WHERE id=?').run(fence, this.owner, Date.now() + 15000, turn.id)
       this.db.prepare('INSERT INTO chat_attempts VALUES (?,?,?,NULL)').run(turn.id, row.root_id!, instant())
-      const selected=personalModelRuntime(this.db,s.c.actor,this.config)
       // Bounded file/project text work needs visible output: provider-default
       // reasoning can otherwise consume the entire 4096-token output cap.
       return { id: turn.id, ownerId: String(row.owner_id), fence, input,assistantStickers,externalEndpoint:external?.endpoint, modelInput: { provider:selected.provider,...(selected.provider==='deepseek'&&input.dailyChat&&(input.fileSource||input.projectExecution||input.intakeOutputLimitRecovery)?{reasoningEffort:'off' as const}:{}),system, prompt, model:external?.model??selected.model, maxTokens: Math.min(4096,remainingOutput), timeoutMs: input.budget.maxSeconds * 1000 }, credential: { apiKey } }

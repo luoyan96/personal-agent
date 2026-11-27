@@ -5,6 +5,7 @@ import {
   CloudDownloadOutlined,
   ExperimentOutlined,
   LogoutOutlined,
+  MessageOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
   TeamOutlined,
@@ -26,6 +27,7 @@ import { WorkbenchCapabilities } from "./CapabilitySquare";
 import { ModelSettings } from "./ModelSettings";
 import { PersonalMemoryPanel } from "./PersonalMemoryPanel";
 import { PersonalRules } from "./PersonalRules";
+import { PersonalConsultationSettings } from "./PersonalConsultationSettings";
 import { MyProfile } from "./MyProfile";
 import { LabWorkspace } from "./LabWorkspace";
 import { useResearchStore } from "./store";
@@ -42,6 +44,7 @@ const sectionGroups = [
     items: [
       { value: "memory", label: "我的习惯", icon: BookOutlined },
       { value: "rules", label: "固定要求", icon: SafetyCertificateOutlined },
+      { value: "consultation", label: "助理咨询", icon: MessageOutlined },
     ],
   },
   {
@@ -259,6 +262,8 @@ export function MyWorkspace() {
               <PersonalMemoryPanel active inMyWorkspace />
             ) : view === "rules" ? (
               <PersonalRules />
+            ) : view === "consultation" ? (
+              <PersonalConsultationSettings />
             ) : view === "preferences" ? (
               <section className="my-preferences">
                 <header className="my-section-heading">

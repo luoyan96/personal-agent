@@ -12,6 +12,7 @@ import { ResearchTurnStatus } from "./ResearchTurnStatus";
 import type { SentFileContext } from "./useScopedFileSender";
 import { firstPartyFile, maxAgentFileBytes } from "./firstPartyFile";
 import { retryableAgentFileError } from "./agent-file-errors";
+import { isVisitingPersonalAgent } from "./agent-consultation";
 
 type ReadBody = RequestFor<"agentFileMessage">["body"];
 type ReadResult = ResponseFor<"agentFileMessage">["data"];
@@ -59,7 +60,8 @@ export function canReadSdkFile(message: MessageItem) {
   const peer = research.contacts.find(item => item.userID === conversation?.userID)?.contact;
   return Boolean(researchMode && research.actor && research.sessionActorId === research.actor.member.id &&
     research.session?.user?.userID === useUserStore.getState().selfInfo.userID && conversation && mapping && mapping.kind !== "group" && peer &&
-    peer.identity.kind !== "human" && !peer.agentRuntime && peer.allowedActions.includes("chat") &&
+    peer.identity.kind !== "human" && !isVisitingPersonalAgent(peer, research.actor.member.id) &&
+    !peer.agentRuntime && peer.allowedActions.includes("chat") &&
     message.status === MessageStatus.Succeeded && message.sendID === useUserStore.getState().selfInfo.userID &&
     message.recvID === conversation.userID && !message.groupID &&
     message.fileElem && mediaTypes[message.fileElem.fileName.split(".").at(-1)?.toLowerCase() || ""]);

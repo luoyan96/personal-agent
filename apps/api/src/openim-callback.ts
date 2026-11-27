@@ -28,9 +28,9 @@ export class OpenImCallbacks {
     return serviceFor(this.db,id,this.bridge.config).c.actor
   }
   group(groupID:unknown){if(typeof groupID!=='string')fail('FORBIDDEN');const row=this.db.prepare('SELECT conversation_id FROM im_conversations WHERE group_id=?').get(groupID);if(!row)fail('FORBIDDEN');const source=this.db.prepare("SELECT c.owner_id,m.owner_id viewer_id FROM chat_conversations c JOIN chat_members x ON x.conversation_id=c.id AND x.status='joined' JOIN chat_contacts m ON m.id=x.contact_id AND m.kind='human' JOIN auth_accounts a ON a.member_id=m.owner_id AND a.disabled=0 WHERE c.id=? ORDER BY (m.owner_id=c.owner_id) DESC LIMIT 1").get(row.conversation_id!);if(!source)fail('FORBIDDEN');const chat=this.bridge.chat(serviceFor(this.db,String(source.viewer_id),this.bridge.config).c.actor);return {chat,group:chat.conversation(String(row.conversation_id),false),members:this.bridge.activeContacts(chat,chat.conversation(String(row.conversation_id),false)).map(member=>member.userID)}}
-  pair(ownerUserID:unknown,peerUserID:unknown){const owner=this.contact(ownerUserID),peer=this.contact(peerUserID);if(owner.identity.kind==='human'){const chat=this.bridge.chat(serviceFor(this.db,owner.identity.memberId,this.bridge.config).c.actor);chat.directory.requireDirect(chat.contact(peer.id));return chat}
-    // Server Agent -> authorized human is the reverse of the same relationship.
-    if(peer.identity.kind!=='human')fail('FORBIDDEN');const chat=this.bridge.chat(serviceFor(this.db,peer.identity.memberId,this.bridge.config).c.actor);chat.directory.requireDirect(chat.contact(owner.id));return chat
+  pair(ownerUserID:unknown,peerUserID:unknown){const owner=this.contact(ownerUserID),peer=this.contact(peerUserID);if(owner.identity.kind==='human'){const chat=this.bridge.chat(serviceFor(this.db,owner.identity.memberId,this.bridge.config).c.actor);chat.directory.requireFriendTransport(chat.contact(peer.id));return chat}
+    // For native friend operations, the reverse pair requires the same grant.
+    if(peer.identity.kind!=='human')fail('FORBIDDEN');const chat=this.bridge.chat(serviceFor(this.db,peer.identity.memberId,this.bridge.config).c.actor);chat.directory.requireFriendTransport(chat.contact(owner.id));return chat
   }
   pointer(body:Body){const content=typeof body.content==='string'?JSON.parse(body.content):body.content as Body|undefined;const custom=(content?.customElem??content) as Body|undefined;const raw=custom?.data;return typeof raw==='string'?OpenImResearchPointer.safeParse(JSON.parse(raw)):OpenImResearchPointer.safeParse(null)}
   serverPointer(body:Body){
@@ -42,7 +42,7 @@ export class OpenImCallbacks {
     const sender=value.senderContactId?this.db.prepare('SELECT owner_id FROM chat_contacts WHERE id=?').get(value.senderContactId):null
     const owner=String(turn?.owner_id??(value.origin==='human'?sender?.owner_id:null)??row.owner_id),chat=this.bridge.chat(serviceFor(this.db,owner,this.bridge.config).c.actor),message=chat.projectedMessage(pointer.data.messageId)
     if(message.sequence!==pointer.data.sequence||this.bridge.identity(chat,message.senderContactId??chat.human().id).userID!==body.sendID)fail('FORBIDDEN')
-    return pointer.data
+    return {chat,message}
   }
   message(body:Body,operator:ReturnType<OpenImCallbacks['operator']>){
     if(operator.admin&&body.msgFrom===200&&body.senderPlatformID===0&&typeof body.contentType==='number'&&body.contentType>=1000&&body.contentType<=5000){
@@ -51,10 +51,16 @@ export class OpenImCallbacks {
       return
     }
     const server=body.msgFrom===200&&body.senderPlatformID===10
-    if(server){if(!operator.admin)fail('FORBIDDEN');this.serverPointer(body)}
-    else{if(operator.admin||operator.userID!==body.sendID||body.msgFrom!==100||body.senderPlatformID!==(operator.platform==='Windows'?3:5))fail('FORBIDDEN');this.actor(body.sendID,body.senderPlatformID)}
-    if(body.groupID){const {chat,group,members}=this.group(body.groupID),mapping=this.bridge.mapping(chat,group.id);if(mapping.transportStatus!=='ready')fail('FORBIDDEN');if(!members.includes(String(body.sendID)))fail('FORBIDDEN');if(server&&this.pointer(body).data?.conversationId!==group.id)fail('FORBIDDEN');chat.contact(this.contact(body.sendID).id)}
-    else{const chat=this.pair(body.sendID,body.recvID);if(server){const pointer=this.pointer(body);const mapped=this.bridge.mapping(chat,pointer.data!.conversationId);if(mapped.groupID||!mapped.imConversationID.includes(String(body.sendID))||!mapped.imConversationID.includes(String(body.recvID)))fail('FORBIDDEN')}}
+    if(server&&!operator.admin)fail('FORBIDDEN')
+    const canonical=server?this.serverPointer(body):null
+    if(!server){if(operator.admin||operator.userID!==body.sendID||body.msgFrom!==100||body.senderPlatformID!==(operator.platform==='Windows'?3:5))fail('FORBIDDEN');this.actor(body.sendID,body.senderPlatformID)}
+    if(body.groupID){const {chat,group,members}=this.group(body.groupID),mapping=this.bridge.mapping(chat,group.id);if(mapping.transportStatus!=='ready')fail('FORBIDDEN');if(!members.includes(String(body.sendID)))fail('FORBIDDEN');if(canonical&&canonical.message.conversationId!==group.id)fail('FORBIDDEN');chat.contact(this.contact(body.sendID).id)}
+    else if(canonical){
+      const {chat,message}=canonical,mapping=this.bridge.mapping(chat,message.conversationId)
+      const selfId=this.bridge.identity(chat,chat.human().id).userID
+      const expectedRecipient=body.sendID===selfId?mapping.peerUserID:selfId
+      if(mapping.groupID||(body.sendID!==selfId&&body.sendID!==mapping.peerUserID)||body.recvID!==expectedRecipient)fail('FORBIDDEN')
+    }else this.pair(body.sendID,body.recvID)
   }
   before(command:string,body:Body,operator:ReturnType<OpenImCallbacks['operator']>){
     if(command==='callbackBeforeSendSingleMsgCommand'||command==='callbackBeforeSendGroupMsgCommand'){this.message(body,operator);return}

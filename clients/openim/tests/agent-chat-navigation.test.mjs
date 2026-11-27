@@ -5,9 +5,9 @@ import vm from "node:vm";
 import ts from "typescript";
 
 const source = await fs.readFile(new URL("../src/hooks/useConversationToggle.ts", import.meta.url), "utf8");
-function fixture() {
+function fixture(kind = "personal_agent") {
   const old = { conversationID: "im_old" }, next = { conversationID: "im_agent", userID: "peer_agent", conversationType: 1 };
-  const actor = { generation: 1, actor: { member: { id: "actor_A" } }, contacts: [{ userID: "peer_agent", contact: { id: "agent_A", allowedActions: ["chat"] } }], refresh: async () => {} };
+  const actor = { generation: 1, actor: { member: { id: "actor_A" } }, contacts: [{ userID: "peer_agent", contact: { id: "agent_A", identity: { kind }, allowedActions: ["chat"] } }], refresh: async () => {} };
   const conversations = { currentConversation: old, conversationList: [], updateCurrentConversation: async (value, _, canCommit) => { if (canCommit()) conversations.currentConversation = value; } };
   const navigations = [], requests = [], route = { pathname: "/square" };
   const store = selector => selector(conversations); store.getState = () => conversations;
@@ -62,6 +62,13 @@ test("changing account, current conversation, panel permission or route during A
 
 test("permission revoked during refresh prevents direct-conversation API and navigation", async () => {
   const f = fixture(); f.actor.refresh = async () => { f.actor.contacts[0].contact.allowedActions = []; };
+  await assert.rejects(f.open({ sourceID: "peer_agent", sessionType: 1, isCurrent: () => true }), /此助理当前无法聊天/);
+  assert.deepEqual(f.requests, []); assert.deepEqual(f.navigations, []);
+});
+
+test("human contacts still require accepted friendship for chat", async () => {
+  const f = fixture("human");
+  f.actor.contacts[0].contact.allowedActions = ["request"];
   await assert.rejects(f.open({ sourceID: "peer_agent", sessionType: 1, isCurrent: () => true }), /请先添加联系人/);
   assert.deepEqual(f.requests, []); assert.deepEqual(f.navigations, []);
 });

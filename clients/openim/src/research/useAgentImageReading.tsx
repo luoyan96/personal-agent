@@ -10,6 +10,7 @@ import { useAgentFileReading } from "./useAgentFileReading";
 import type { SentFileContext } from "./useScopedFileSender";
 import { firstPartyFile } from "./firstPartyFile";
 import { imagePasteLimits } from "@/types/imageClipboard";
+import { isVisitingPersonalAgent } from "./agent-consultation";
 
 // Shared across the composer and image bubbles; one SDK image cannot start two
 // simultaneous OCR jobs. The API separately deduplicates by the original ID.
@@ -39,6 +40,7 @@ export function directImageAgent() {
     mapping.kind !== "group" &&
     peer &&
     peer.identity.kind !== "human" &&
+    !isVisitingPersonalAgent(peer, state.actor.member.id) &&
     !peer.agentRuntime &&
     peer.allowedActions.includes("chat")
     ? mapping.researchConversationId

@@ -94,12 +94,12 @@ describe('explicit Agent creation over actual HTTP/SQLite with synthetic model o
     expect(isAgentCreationCommand('帮我创建一个研究为什么项目失败的 Agent，说话不要啰嗦。')).toBe(true)
     const manual=(await s.call('createPersonalAgent',profile)).value.data,direct=(await s.call('createDirectConversation',{contactId:manual.id})).value.data
     const toSpecialist=await s.send(direct.id);expect(toSpecialist.turn.purpose).toBeUndefined();await s.tick(async()=>modelResult('我只讨论档案，不创建联系人。'))
-    const r=(await s.call('requestContact',{}, {id:own.agent.id},1)).value.data.relationship
-    await s.call('decideContactRequest',{expectedVersion:r.version,decision:'accept'},{id:r.requestId})
+    expect((await s.call('updateAgentConsultation',{expectedVersion:0,mode:'free'},{id:own.agent.id})).status).toBe(200)
     const foreign=(await s.call('createDirectConversation',{contactId:own.agent.id},{},1)).value.data
-    const toForeign=await s.send(foreign.id,command,1);expect(toForeign.turn.purpose).toBeUndefined();await s.tick(async()=>modelResult('继续自然讨论。'))
+    const toForeign=await s.send(foreign.id,command,1);expect(toForeign.turn.purpose).toBeUndefined();expect(await s.tick(async()=>modelResult('继续自然讨论。'))).toBe(true)
+    expect((await s.turn(toForeign.turn.id,1)).status).toBe('succeeded')
     expect(s.specialists()).toBe(1);expect(s.specialists(1)).toBe(0);s.legacyStored()
-  })
+  },60000)
 
   it('clarifies only through a bounded question and fails strict/missing/unknown/over-budget output without creating partial records',async()=>{
     const s=await setup(),own=await s.own()
@@ -208,7 +208,7 @@ describe('explicit Agent creation over actual HTTP/SQLite with synthetic model o
     s.legacyBudget(sent.turn.id)
     await s.tick(async input=>{const p=JSON.parse(input.prompt),column=p.messageColumns.indexOf('text');expect(p.earlierMessagesOmitted).toBe(true);expect(p.messages.at(-1)[column]).toBe(current);expect(p.memories.some((m:any)=>m.content===privateMemory)).toBe(true);expect(input.maxTokens).toBeGreaterThanOrEqual(512);return modelResult('完整保留当前请求和获准记忆。')})
     expect((await s.turn(sent.turn.id)).status).toBe('succeeded')
-    const foreign=(await s.call('requestContact',{}, {id:agent.id},1)).value.data.relationship;await s.call('decideContactRequest',{expectedVersion:foreign.version,decision:'accept'},{id:foreign.requestId})
+    expect((await s.call('updateAgentConsultation',{expectedVersion:0,mode:'free'},{id:agent.id})).status).toBe(200)
     const otherDirect=(await s.call('createDirectConversation',{contactId:agent.id},{},1)).value.data
     const otherSent=await s.send(otherDirect.id,'另一人的独立文字讨论。',1)
     await s.tick(async input=>{expect(input.prompt).not.toContain(privateMemory);return modelResult('只使用当前人的获准上下文。')});expect((await s.turn(otherSent.turn.id,1)).status).toBe('succeeded')

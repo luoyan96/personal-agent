@@ -7,7 +7,15 @@ import * as stickerMessage from "../src/research/chat-sticker-message.ts";
 
 // Exercise the actual composer events and asynchronous pump with controlled
 // stores/SDK/API. The document preparation module is also the real source.
-async function fixture({ failOnce = false, failStickerOnce = false, agent = true, group = false, ownAssistant = false } = {}) {
+async function fixture({
+  failOnce = false,
+  failStickerOnce = false,
+  agent = true,
+  group = false,
+  ownAssistant = false,
+  consultation = false,
+  consultationError,
+} = {}) {
   const state = [],
     refs = [],
     dependencies = [],
@@ -95,9 +103,13 @@ async function fixture({ failOnce = false, failStickerOnce = false, agent = true
   };
   const composer = {
     isGroup: group,
+    consultation,
     mentionContacts: [],
     invalid: false,
-    prepareResearch: (text) => (agent ? { ...prepared, body: { text } } : undefined),
+    prepareResearch: (text) => {
+      if (consultationError) throw new Error(consultationError);
+      return agent ? { ...prepared, body: { text } } : undefined;
+    },
     acceptSendIntent: () => 1,
     async sendPrepared(request, key) {
       calls.push({ kind: "api", request: structuredClone(request), key });
@@ -233,6 +245,7 @@ async function fixture({ failOnce = false, failStickerOnce = false, agent = true
   vm.runInNewContext(transpile(source), {
     module,
     exports: module.exports,
+    Error,
     window: {},
     crypto: { randomUUID: () => `id-${++serial}` },
     require: (name) => {
@@ -355,6 +368,47 @@ test("real Footer file-only message requests one document reading rather than dr
   );
   assert.equal(f.calls[2].request.route, "agentFileMessage");
   assert.equal(f.calls[2].request.body.text, undefined);
+});
+
+test("consultation rejects attachments and sends text only to the canonical Agent endpoint", async () => {
+  const f = await fixture({ consultation: true });
+  f.stage([document()]);
+  assert.equal(f.find((node) => node.type === "Actions").props.textOnly, true);
+  assert.equal(f.find((node) => node.type === "ImageTray"), undefined);
+  assert.match(f.notices[0].msg, /只支持文字/);
+  f.type("Can you explain this method?");
+  f.send();
+  await settle();
+  assert.deepEqual(f.calls.map(({ kind, request }) => [kind, request.route, request.body.text]), [
+    ["api", "agentChatMessage", "Can you explain this method?"],
+  ]);
+});
+
+test("a consultation sticker uses the canonical text route and keeps the draft", async () => {
+  const f = await fixture({ consultation: true });
+  f.type("待发草稿");
+  f.sendSticker();
+  await settle();
+  f.render();
+  assert.deepEqual(f.calls.map(({ kind, request }) => [kind, request.route, request.body.text]), [
+    ["api", "agentChatMessage", "[大肥鱼娘贴纸] 挥手打招呼"],
+  ]);
+  assert.equal(f.find((node) => node.type === "Editor").props.value, "待发草稿");
+});
+
+test("a consultation sticker cannot bypass the canonical send gate", async () => {
+  for (const options of [
+    { consultationError: "这位助理暂不开放咨询。" },
+    { consultationError: "请先在模型设置中配置你的模型 API。" },
+    { agent: false },
+  ]) {
+    const f = await fixture({ consultation: true, ...options });
+    f.sendSticker();
+    await settle();
+    assert.deepEqual(f.calls, []);
+    assert.equal(f.outbox.getState().items.length, 0);
+    assert.equal(f.notices[0].msg, options.consultationError ?? "正在同步咨询会话，请稍后再试。");
+  }
 });
 
 test("one sticker sends through OpenIM in other assistant and human DMs and groups with the draft untouched", async () => {

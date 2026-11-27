@@ -204,6 +204,14 @@ const ChatFooter = () => {
         updateSubmission(item.id, { state: "sending", error: undefined });
         try {
           let request = item.request;
+          if (
+            composer.consultation &&
+            (request?.route !== "agentChatMessage" ||
+              item.stickerId ||
+              item.files?.length ||
+              item.images?.length)
+          )
+            throw new Error("助理咨询只支持文字。请将文字重新发到当前会话。");
           if (item.files?.length && !item.fileAgentConversationId && directImageAgent())
             throw new Error(
               "这条旧附件记录的阅读结果尚未核对，请先检查聊天回执，再重新选择原文件发送。文字记录已保留。",
@@ -405,19 +413,27 @@ const ChatFooter = () => {
       return;
     try {
       assertSubmissionCapacity(useChatOutbox.getState().items, generation, imID);
+      const caption = personalStickerText(label);
       const coordinator = research.session?.coordinator;
-      const request: ChatSubmission["request"] =
+      const ownAssistant =
         coordinator?.kind === "personal" &&
         coordinator.imConversationID === imID &&
         coordinator.peerUserID === conversation.userID &&
         !conversation.groupID &&
-        !!actor && research.sessionActorId === actor
+        !!actor &&
+        research.sessionActorId === actor;
+      const request: ChatSubmission["request"] =
+        composer.consultation
+          ? composer.prepareResearch(caption)
+          : ownAssistant
           ? {
               route: "agentChatMessage",
               conversationId: coordinator.researchConversationId,
-              body: { text: personalStickerText(label), continuous: true },
+              body: { text: caption, continuous: true },
             }
           : undefined;
+      if (composer.consultation && request?.route !== "agentChatMessage")
+        throw new Error("正在同步咨询会话，请稍后再试。");
       const id = crypto.randomUUID();
       const operation = captureSend();
       operations.current.set(id, {
@@ -438,7 +454,10 @@ const ChatFooter = () => {
       useChatOutbox.setState((s) => ({ items: [...s.items, item] }));
       void pump();
     } catch (error) {
-      feedbackToast({ error, msg: "贴纸未发送，请处理待发消息后重试" });
+      feedbackToast({
+        error,
+        msg: error instanceof Error ? error.message : "贴纸未发送，请稍后重试。",
+      });
     }
   };
   const enterToSend = () => {
@@ -453,6 +472,8 @@ const ChatFooter = () => {
     const original = latestHtml.current;
     try {
       const images = imageTray.current?.snapshot() || [];
+      if (composer.consultation && (images.length || stagedFiles.length))
+        throw new Error("助理咨询只支持文字，请先移除附件。");
       if (!cleanText && !images.length && !stagedFiles.length) return;
       assertImageQueueCapacity(images, pendingSubmissions(useChatOutbox.getState().items, generation));
       assertSubmissionCapacity(useChatOutbox.getState().items, generation, imID);
@@ -570,6 +591,10 @@ const ChatFooter = () => {
   };
 
   const droppedFiles = (files: File[]) => {
+    if (composer.consultation && files.length) {
+      feedbackToast({ msg: "助理咨询只支持文字。" });
+      return;
+    }
     const images = files.filter(isComposerImage);
     const documents = files.filter((file) => !isComposerImage(file));
     if (documents.some((file) => !file.size)) {
@@ -610,7 +635,7 @@ const ChatFooter = () => {
     <footer
       onPasteCapture={(event) => {
         const files = Array.from(event.clipboardData.files);
-        if (files.some((file) => !file.type.startsWith("image/"))) {
+        if ((composer.consultation && files.length) || files.some((file) => !file.type.startsWith("image/"))) {
           event.preventDefault();
           event.stopPropagation();
           droppedFiles(files);
@@ -635,12 +660,12 @@ const ChatFooter = () => {
           type: "INVITE_TO_GROUP", extraData: groupID, initialSearch: inviteName,
         })}>选择「{inviteName}」加入当前群</Button>}
         <div className="composer-attachments">
-        <ImagePasteTray
+        {!composer.consultation && <ImagePasteTray
           key={scope}
           ref={imageTray}
           onStateChange={setImageState}
           insertText={(text) => editor.current?.insertText(text)}
-        />
+        />}
         {!!stagedFiles.length && (
           <section className="composer-file-tray" aria-label="待发送文件">
             {stagedFiles.map((file, index) => (
@@ -783,8 +808,8 @@ const ChatFooter = () => {
             </p>
           )}
           {composer.controls}
-          {fileReading.controls}
-          {imageReading.controls}
+          {!composer.consultation && fileReading.controls}
+          {!composer.consultation && imageReading.controls}
           {composer.advanced && composer.isCoordinator && !html && (
             <div className="px-3 py-1 text-xs">
               <p className="mb-1 text-slate-600">目标 · 材料 · 交付 · 截止时间</p>
@@ -828,6 +853,7 @@ const ChatFooter = () => {
             <SendActionBar
               key={scope}
               insertEmoji={(emoji) => editor.current?.insertText(emoji)}
+              textOnly={composer.consultation}
               sendSticker={queueSticker}
               stageFiles={droppedFiles}
               stageImages={(files) => imageTray.current?.stage(files)}
@@ -839,8 +865,8 @@ const ChatFooter = () => {
               aria-label="发送消息"
               title="发送消息（Enter）；Shift+Enter 换行"
               disabled={
-                (!getCleanText(html) && !imageState.count && !stagedFiles.length) ||
-                imageState.busy ||
+                (!getCleanText(html) && (composer.consultation || (!imageState.count && !stagedFiles.length))) ||
+                (!composer.consultation && imageState.busy) ||
                 composer.invalid
               }
               onClick={() => void enterToSend()}

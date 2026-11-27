@@ -1,5 +1,6 @@
 import { Alert, Button, Checkbox, InputNumber, Modal, Select, Space } from "antd";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import type { AgentTurn, RequestFor } from "@research-agent-platform/contracts";
 type ChatResource = NonNullable<
   RequestFor<"sendChatMessage">["body"]["context"]
@@ -23,6 +24,7 @@ import { registerAgentProgress, useStoppedReplyInTimeline } from "./agent-progre
 import { isPendingAgentReply } from "./agent-progress-state";
 import { groupMessageBody, type SelectedMention } from "./group-mentions";
 import { useGroupChatRoster, groupContactDescription } from "./GroupChatRoster";
+import { isVisitingPersonalAgent } from "./agent-consultation";
 
 import { useSkillChatSelection } from "./SkillLibrary";
 export type PreparedResearchSend =
@@ -101,12 +103,19 @@ export function useResearchComposer() {
       }) || [];
   const isDirectAgent =
     !!mapping && mapping.kind !== "group" && !!peer && peer.identity.kind !== "human";
+  const consultation =
+    researchMode && !!peer && !conversation?.groupID && isVisitingPersonalAgent(peer, actorId);
+  const consultationClosed =
+    consultation && !!canonical.data && !canonical.data.data.allowedActions.includes("send");
+  const consultationNeedsModel =
+    consultation && (peer?.availability.reason === "missing_credentials" || peer?.availability.status === "disabled");
+  const consultationUnavailable = consultation && peer?.availability.reason === "platform_disabled";
   const external = isDirectAgent ? peer?.agentRuntime : undefined;
   const externalReady = !!external && peer?.availability.status === "available";
   const skillChat = useSkillChatSelection(
     peer?.id,
     `${actorGeneration}:${imID}`,
-    researchMode && isDirectAgent && !external && !advanced,
+    researchMode && isDirectAgent && !external && !advanced && !consultation,
   );
   const externalScope = `${imID}:${actorGeneration}:${external?.serviceOrigin}:${external?.callerAllowed}`;
   const consentAvailable = useRef(externalConsent);
@@ -228,7 +237,7 @@ export function useResearchComposer() {
     text: string,
     mentions?: SelectedMention[],
   ): Exclude<PreparedResearchSend, { route: "agentFileMessage" }> | undefined => {
-    const advancedRequest = advanced && mode === "ask_agent";
+    const advancedRequest = !consultation && advanced && mode === "ask_agent";
     const useMentions = !advanced || !!mentions?.length;
     if (
       researchMode &&
@@ -268,6 +277,10 @@ export function useResearchComposer() {
       );
     if (external && advancedRequest)
       throw new Error("本站外部接入只转发本条文字，不转发本站的协作、记忆或附件。");
+    if (consultationClosed) throw new Error("这位助理暂不开放咨询。");
+    if (consultation && !isDirectAgent) throw new Error("正在同步咨询会话，请稍后再试。");
+    if (consultationNeedsModel) throw new Error("请先在模型设置中配置你的模型 API。");
+    if (consultationUnavailable) throw new Error("服务暂未开启模型调用。");
     if (!researchMode || (!isDirectAgent && !advancedRequest)) return undefined;
     if (
       !mapping ||
@@ -301,7 +314,7 @@ export function useResearchComposer() {
             ...(external ? { externalConsent: true } : { continuous: true }),
             ...(skillChat.selection
               ? { skill: skillChat.selection }
-              : !external &&
+              : !external && !consultation &&
                 peer?.profile.role === "coordinator" &&
                 peerChatRequest(text)
               ? { peerFileRequest: peerChatRequest(text) }
@@ -426,6 +439,16 @@ export function useResearchComposer() {
   const controls =
     researchMode && mapping ? (
       <>
+        {consultation && (
+          <p className="px-3 py-2 text-xs leading-5 text-slate-600" role="status">
+            {consultationClosed
+              ? "这位助理暂不开放咨询。"
+              : consultationUnavailable
+              ? "服务暂未开启模型调用。"
+              : "文字咨询 · 使用你的模型 API，调用费用由你承担。"}
+            {!consultationClosed && consultationNeedsModel && <> <Link to="/me?view=models">打开模型设置</Link></>}
+          </p>
+        )}
         {external && (
           <div className="px-3 py-2 text-xs leading-5 text-slate-600">
             <p className="truncate" title={external.serviceOrigin}>
@@ -457,7 +480,7 @@ export function useResearchComposer() {
           </div>
         )}
         {skillChat.controls}
-        {advanced && (
+        {advanced && !consultation && (
           <div className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs">
             <strong>需求与协作</strong>
             <Select
@@ -605,11 +628,12 @@ export function useResearchComposer() {
     acceptSendIntent,
     controls,
     mentionContacts,
+    consultation,
     isGroup: mapping?.kind === "group",
     isCoordinator: mapping?.kind === "personal",
     advanced,
     advancedToggle:
-      researchMode && mapping && agents.length && !external ? (
+      researchMode && mapping && agents.length && !external && !consultation ? (
         <Button
           type="text"
           aria-expanded={advanced}
@@ -623,6 +647,10 @@ export function useResearchComposer() {
       ) : null,
     invalid:
       skillChat.invalid ||
+      consultationClosed ||
+      consultationNeedsModel ||
+      consultationUnavailable ||
+      (consultation && !isDirectAgent) ||
       (researchMode &&
         ((advanced && mode === "ask_agent") || isDirectAgent) &&
         ((!!external &&

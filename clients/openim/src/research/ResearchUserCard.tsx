@@ -16,6 +16,8 @@ import { ContactCardShare } from "./ContactCardShare";
 import { AgentRoleDocuments } from "./AgentRoleDocuments";
 import { contactRoleProfile } from "./agent-role-documents";
 import { ContactRemovalButton } from './useContactRemoval';
+import { AgentConsultation } from "./AgentConsultation";
+import { isPersonalConsultationContact, isVisitingPersonalAgent } from "./agent-consultation";
 
 export const ResearchUserCard = forwardRef<
   OverlayVisibleHandle,
@@ -42,6 +44,7 @@ export const ResearchUserCard = forwardRef<
   const assistant = Boolean(contact && contact.identity.kind !== "human");
   const ownerId = contact?.identity.kind === "personal_agent" ? contact.identity.ownerMemberId : undefined;
   const ownAssistant = Boolean(ownerId && ownerId === actor?.member.id);
+  const visitingAgent = !!contact && isVisitingPersonalAgent(contact, actor?.member.id);
   const ownerName = ownerId && !ownAssistant
     ? contacts.find(({ contact: member }) => member.identity.kind === "human" && member.identity.memberId === ownerId)?.contact.displayName
     : undefined;
@@ -175,13 +178,13 @@ export const ResearchUserCard = forwardRef<
             }
           </p>
           </>}
-          {contact?.agentRuntime && (
+          {contact.agentRuntime && !visitingAgent && (
             <div className="text-sm text-slate-600">
               <strong>外部文字服务</strong>
               <p className="break-all">{contact.agentRuntime.serviceOrigin}</p>
               <p>仅发送本次授权的文字，费用由连接服务的账号承担。</p>
               <p>{contact.agentRuntime.verification === "passed" ? "最近连接测试通过" : contact.agentRuntime.verification === "failed" ? "最近连接测试失败" : "尚未测试连接"}</p>
-              <p>{contact.agentRuntime.callerAllowed ? "当前账号可调用" : "请联系所属成员开通调用权限"}</p>
+              {contact.agentRuntime.callerAllowed && <p>当前账号可调用</p>}
             </div>
           )}
           {editing ? (
@@ -254,8 +257,13 @@ export const ResearchUserCard = forwardRef<
                   </div>
                 ))}
               </dl>}
+              {isPersonalConsultationContact(contact) && (ownAssistant || visitingAgent) && (
+                <AgentConsultation contactId={contact.id} active={isOverlayOpen} onChatOpened={() => {
+                  if (currentScope.current === scope && useResearchStore.getState().generation === generation) close();
+                }} />
+              )}
               <Space wrap>
-                {contact.allowedActions.includes("chat") && (
+                {!visitingAgent && contact.allowedActions.includes("chat") && (
                   <Button
                     type="primary"
                     loading={busy}
@@ -270,7 +278,7 @@ export const ResearchUserCard = forwardRef<
                     发消息
                   </Button>
                 )}
-                {contact.allowedActions.includes("request") && (
+                {contact.identity.kind !== "personal_agent" && contact.allowedActions.includes("request") && (
                   <Button
                     loading={busy}
                     onClick={() =>
@@ -285,7 +293,7 @@ export const ResearchUserCard = forwardRef<
                     添加联系人
                   </Button>
                 )}
-                <ContactRemovalButton contact={contact} active={isOverlayOpen} onRemoved={close} />
+                {!visitingAgent && <ContactRemovalButton contact={contact} active={isOverlayOpen} onRemoved={close} />}
                 {!assistant && contact.allowedActions.includes("edit_profile") && (
                   <Button onClick={edit}>{contact.identity.kind === "human" ? "编辑资料" : "编辑角色"}</Button>
                 )}

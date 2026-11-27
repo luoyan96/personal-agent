@@ -88,6 +88,43 @@ async function setup(configured=true){
 }
 
 describe('OpenIM bridge with explicit synthetic management adapter, not live server verification',{timeout:20000},()=>{
+  it('provisions a visitor-only consultation mapping and sends canonical pointers without importing a friend', async () => {
+    const s = await setup(), target = s.agent('member_A')
+    expect((await s.request('updateAgentConsultation', { expectedVersion: 0, mode: 'free' }, { id: target.id })).status).toBe(200)
+    const direct = await s.request('createDirectConversation', { contactId: target.id }, {}, 1)
+    expect(direct.status, direct.raw).toBe(200)
+    const id = direct.value.data.id
+    const sync = await s.request('imSyncConversation', {}, { id }, 1)
+    expect(sync.status, sync.raw).toBe(200)
+    const mapping = sync.value.data
+    const self = s.identity(s.human('member_B').id, 1), peer = s.identity(target.id, 1)
+    expect(mapping).toMatchObject({ transportStatus: 'ready', peerUserID: peer })
+    expect(s.calls.filter(call => call.path === '/conversation/set_conversations')).toMatchObject([
+      { body: { userIDs: [self], conversation: { conversationID: mapping.imConversationID, userID: peer } } },
+    ])
+    expect(s.calls.some(call => call.path === '/friend/import_friend')).toBe(false)
+    expect((await s.request('createPersonalModel', {
+      name: '访客合成模型', provider: 'deepseek', model: 'deepseek-flash', enabled: true, apiKey: 'synthetic-visitor-model-key',
+    }, {}, 1)).status).toBe(201)
+    const sent = await s.request('agentChatMessage', { text: '访客咨询' }, { id }, 1)
+    expect(sent.status, sent.raw).toBe(201)
+    const model = new ChatWorker(s.db, s.config, async () => ({
+      text: '合成咨询回复', failure: null, inputTokens: 20, outputTokens: 8, elapsedMs: 5,
+    }))
+    expect(await model.tick()).toBe(true)
+    const worker = new OpenImWorker(s.db, s.config, s.client)
+    expect(await worker.tick()).toBe(true)
+    expect(await worker.tick()).toBe(true)
+    expect(s.sent).toMatchObject([
+      { sendID: self, recvID: peer, contentType: 110 },
+      { sendID: peer, recvID: self, contentType: 110 },
+    ])
+    expect(String(s.sent[0]!.content)).not.toContain('访客咨询')
+    expect(String(s.sent[1]!.content)).not.toContain('合成咨询回复')
+    expect(s.db.prepare('SELECT status FROM im_message_outbox WHERE message_id=?').get(sent.value.data.message.id)).toMatchObject({ status: 'sent' })
+    expect((await s.request('imSyncConversation', {}, { id })).status).toBe(404)
+  })
+
   it('welcomes new and existing users once in their own private assistant history, even while IM is unavailable',async()=>{
     vi.useFakeTimers({toFake:['Date']})
     cleanup.push(()=>vi.useRealTimers())
@@ -543,7 +580,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     const names=['001-foundation.sql','002-collaboration.sql','003-invitation-decisions.sql','004-discovery.sql','005-coordination.sql','006-execution.sql','007-authorized-reuse.sql','008-pilot-operations.sql','009-invite-registration.sql','010-lab-invite-management.sql','011-lab-ai-settings.sql','012-research-chat.sql','013-chat-viewer-state.sql','014-agent-contacts.sql']
     for(const [index,name] of names.entries()){const sql=readFileSync(new URL(`../migrations/${name}`,import.meta.url),'utf8');db.exec(sql);db.prepare('INSERT INTO schema_migrations VALUES (?,?,?)').run(index+1,createHash('sha256').update(sql).digest('hex'),'2026-01-01T00:00:00Z')}
     seed(db,'test');db.prepare("INSERT INTO chat_conversations VALUES ('old','lab_synthetic','member_A','personal','old_scope','{}')").run();db.prepare("INSERT INTO chat_messages VALUES ('old_message','old',1,'{}')").run()
-    migrate(db);migrate(db);checkDatabase(db);expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(42)
+    migrate(db);migrate(db);checkDatabase(db);expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(43)
     expect(db.prepare('SELECT count(*) n FROM chat_messages').get()!.n).toBe(1);expect(db.prepare('SELECT count(*) n FROM im_message_outbox').get()!.n).toBe(0)
   })
 })

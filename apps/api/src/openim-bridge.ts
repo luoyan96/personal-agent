@@ -13,6 +13,7 @@ import type { Config } from './config.js'
 import { ImUnavailable, imConfiguration, OpenImClient } from './openim-client.js'
 import { fail } from './errors.js'
 import { welcomeAssistantOwner } from './assistant-greetings.js'
+import { consultationAgent, visitorAgent } from './agent-consultation.js'
 
 export type ImMapping=z.infer<typeof OpenImConversation>
 const now=()=>new Date().toISOString()
@@ -78,7 +79,7 @@ export class OpenImBridge {
     if(!Array.isArray(remote.friendsInfo))throw new ImUnavailable('provisioning_failed')
     for(const friend of remote.friendsInfo as {friendUser?:{userID?:string}}[]){
       const userID=friend.friendUser?.userID;if(typeof userID!=='string')throw new ImUnavailable('provisioning_failed')
-      const authorized=transaction(this.db,()=>{const chat=this.chat(reauthorize()),row=this.db.prepare('SELECT contact_id FROM im_identities WHERE user_id=?').get(userID);if(!row)return false;try{chat.directory.requireDirect(chat.contact(String(row.contact_id)));return true}catch{return false}})
+      const authorized=transaction(this.db,()=>{const chat=this.chat(reauthorize()),row=this.db.prepare('SELECT contact_id FROM im_identities WHERE user_id=?').get(userID);if(!row)return false;try{chat.directory.requireFriendTransport(chat.contact(String(row.contact_id)));return true}catch{return false}})
       if(!authorized){transaction(this.db,reauthorize);await this.client.request('/friend/delete_friend',{ownerUserID:self,friendUserID:userID})}
     }
     return Number(remote.total??remote.friendsInfo.length)>1000
@@ -93,7 +94,7 @@ export class OpenImBridge {
   }
   membersHash(chat:ChatService,group:ReturnType<ChatService['conversation']>){return hash(JSON.stringify([this.config.openIm.adminID,...this.activeContacts(chat,group).map(c=>c.userID)].sort()))}
   async syncConversation(actor:Actor,id:string,reauthorize:()=>Actor=()=>actor){
-    const snapshot=transaction(this.db,()=>{const chat=this.chat(reauthorize()),group=chat.conversation(id,false),mapping=this.mapping(chat,id),contacts=this.activeContacts(chat,group);return {group,mapping,contacts}})
+    const snapshot=transaction(this.db,()=>{const chat=this.chat(reauthorize()),group=chat.conversation(id,false),mapping=this.mapping(chat,id),contacts=this.activeContacts(chat,group);return {group,mapping,contacts,consultation:!!consultationAgent(chat,group)}})
     try{
       imConfiguration(this.config)
       for(const contact of snapshot.contacts)await this.provision(reauthorize(),contact.contact.id)
@@ -116,8 +117,8 @@ export class OpenImBridge {
         if(!Array.isArray(verified.members)||verified.members.length!==expected.size||verified.members.some((member:{userID:string;roleLevel:number})=>!expected.has(member.userID)||member.roleLevel!==(member.userID===ownerID?100:20)))throw new ImUnavailable('provisioning_failed')
       }else{
         const self=snapshot.contacts.find(value=>value.contact.identity.kind==='human'&&value.contact.identity.memberId===actor.id)!
-        await this.importMissingFriends(self.userID,[snapshot.mapping.peerUserID!],live)
-        if(snapshot.mapping.kind==='personal')await this.client.request('/conversation/set_conversations',{userIDs:[self.userID],conversation:{conversationID:snapshot.mapping.imConversationID,conversationType:1,userID:snapshot.mapping.peerUserID,isPinned:true,ex:JSON.stringify({researchConversationId:id})}})
+        if (!snapshot.consultation) await this.importMissingFriends(self.userID,[snapshot.mapping.peerUserID!],live)
+        if(snapshot.mapping.kind==='personal'||(snapshot.consultation&&snapshot.mapping.transportStatus==='pending'))await this.client.request('/conversation/set_conversations',{userIDs:[self.userID],conversation:{conversationID:snapshot.mapping.imConversationID,conversationType:1,userID:snapshot.mapping.peerUserID,...(snapshot.mapping.kind==='personal'?{isPinned:true}:{}),ex:JSON.stringify({researchConversationId:id})}})
       }
       return transaction(this.db,()=>{const chat=checkLive(this.chat(reauthorize()));this.db.prepare("UPDATE im_conversations SET status='ready',synced_version=?,members_hash=?,updated_at=? WHERE conversation_id=?").run(snapshot.group.version,this.membersHash(chat,chat.conversation(id,false)),now(),id);return this.mapping(chat,id)})
     }catch(error){if(!(error instanceof ImUnavailable))throw error;return transaction(this.db,()=>{const current=this.mapping(this.chat(reauthorize()),id);return {...current,transportStatus:'unavailable' as const,reason:error.reason}})}
@@ -127,11 +128,14 @@ export class OpenImBridge {
     let contactsSynced=0,reason:z.infer<typeof OpenImSession>['reason']=null,truncated=initial.truncated
     const deadline=Date.now()+7000
     try{imConfiguration(this.config);const self=transaction(this.db,()=>this.chat(reauthorize()).human().id);await this.provision(reauthorize(),self);contactsSynced++
-      const accepted=transaction(this.db,()=>this.contacts(this.chat(reauthorize())).contacts.filter(value=>value.contact.allowedActions.includes('chat')&&value.contact.identity.kind!=='human'||value.contact.relationship.status==='accepted'))
+      const accepted=transaction(this.db,()=>{
+        const chat=this.chat(reauthorize())
+        return this.contacts(chat).contacts.filter(({contact})=>!visitorAgent(chat,contact)&&(contact.allowedActions.includes('chat')&&contact.identity.kind!=='human'||contact.relationship.status==='accepted'))
+      })
       const friendContacts:typeof accepted=[]
-      for(const contact of accepted){if(Date.now()>=deadline){truncated=true;break};await this.provision(reauthorize(),contact.contact.id);transaction(this.db,()=>this.chat(reauthorize()).directory.requireDirect(this.chat(reauthorize()).contact(contact.contact.id)));friendContacts.push(contact);contactsSynced++}
+      for(const contact of accepted){if(Date.now()>=deadline){truncated=true;break};await this.provision(reauthorize(),contact.contact.id);transaction(this.db,()=>{const chat=this.chat(reauthorize());chat.directory.requireFriendTransport(chat.contact(contact.contact.id))});friendContacts.push(contact);contactsSynced++}
       const selfID=transaction(this.db,()=>this.identity(this.chat(reauthorize()),self).userID)
-      const liveFriends=()=>transaction(this.db,()=>{const chat=this.chat(reauthorize());if(this.identity(chat,chat.human().id).userID!==selfID)fail('VERSION_CONFLICT');for(const contact of friendContacts){const current=this.identity(chat,contact.contact.id);chat.directory.requireDirect(current.contact);if(current.userID!==contact.userID||current.contact.profile.version!==contact.contact.profile.version)fail('VERSION_CONFLICT')}})
+      const liveFriends=()=>transaction(this.db,()=>{const chat=this.chat(reauthorize());if(this.identity(chat,chat.human().id).userID!==selfID)fail('VERSION_CONFLICT');for(const contact of friendContacts){const current=this.identity(chat,contact.contact.id);chat.directory.requireFriendTransport(current.contact);if(current.userID!==contact.userID||current.contact.profile.version!==contact.contact.profile.version)fail('VERSION_CONFLICT')}})
       if(friendContacts.length)await this.importMissingFriends(selfID,friendContacts.map(contact=>contact.userID),liveFriends)
       truncated=(await this.reconcileFriends(reauthorize(),reauthorize))||truncated
     }catch(error){if(!(error instanceof ImUnavailable))throw error;reason=error.reason}

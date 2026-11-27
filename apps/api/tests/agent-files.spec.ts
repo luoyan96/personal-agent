@@ -1,10 +1,11 @@
+import {fork} from 'node:child_process'
 import {randomUUID,randomBytes} from 'node:crypto'
 import {mkdirSync,mkdtempSync,rmSync,writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {createServer as createHttpServer} from 'node:http'
 import {z} from 'zod'
-import {afterEach,describe,it,expect,vi} from 'vitest'
+import {afterEach,beforeAll,describe,it,expect,vi} from 'vitest'
 import {routes,Id,Text,Budget,Version,Instant,ChatAvailability,ModelUsage,ChatResource,Mention,AgentFileMessage,type RouteName} from '@research-agent-platform/contracts'
 import {readConfig} from '../src/config.js'
 import {openDatabase,migrate} from '../src/database.js'
@@ -72,6 +73,28 @@ async function setup(){
 
 
 describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{timeout:30000},()=>{
+ beforeAll(async()=>{
+  if(!process.env.CI||process.platform!=='win32')return
+  // Warm the pinned dependency before measuring requests on a cold hosted runner.
+  // Each PDF test still starts a new parser with the production request deadline.
+  const started=performance.now()
+  const env=Object.fromEntries(['PATH','SystemRoot','TEMP','TMP'].flatMap(key=>process.env[key]?[[key,process.env[key]!]]:[]))
+  const child=fork(new URL('../src/agent-file-parser-child.ts',import.meta.url),[],{
+   env,execArgv:['--max-old-space-size=128','--max-semi-space-size=8'],stdio:['ignore','ignore','inherit','ipc'],
+   signal:AbortSignal.timeout(30_000),
+  })
+  try{
+   const parsed=await new Promise<unknown>((resolve,reject)=>{
+    child.once('message',resolve)
+    child.once('error',reject)
+    child.once('exit',(code,signal)=>reject(new Error(`PDF parser preflight exited before replying (${code ?? signal})`)))
+    child.send({base64:syntheticPdf(['Synthetic preflight.']).toString('base64')},error=>{if(error)reject(error)})
+   })
+   expect(parsed).toEqual({pages:[{pageNumber:1,text:'Synthetic preflight.'}]})
+   console.info(`Windows CI PDF parser preflight completed in ${Math.round(performance.now()-started)} ms`)
+  }finally{child.kill()}
+ },35_000)
+
  it('ends automatic attachment scope for a new task but preserves explicit file references after restart',async()=>{
   const s=await setup(),own=await s.own(),sent=await s.call('agentFileMessage',uploadBody(Buffer.from('OLD_PAPER_SOURCE_42'),'previous-paper.txt','text/plain'),{id:own.conversation.id})
   await s.tick(async()=>result('OLD_PAPER_RECEIPT_42：仅按旧附件要求输出 END_PAGE_42。'))
@@ -94,7 +117,7 @@ describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{ti
   expect(ambiguous.turn.fileRead).toBeUndefined()
  })
  it('saves real adapter plain file replies, preserves ordinary defaults and rejects truncated output with actual usage',async()=>{
-  const s=await setup(),own=await s.own(),seen:{thinking:unknown;maxTokens:number}[]=[],reply='依据提供的两页文字：第一页说明合成研究目的，第二页补充合成结果。',truncated='合成不完整正文'
+  const s=await setup(),own=await s.own(),seen:{thinking:unknown;maxTokens:number}[]=[],reply='附件说明了合成研究目的，并补充了合成结果。',truncated='合成不完整正文'
   let limit=false
   const server=createHttpServer((request,response)=>{
     let raw='';request.on('data',chunk=>{raw+=String(chunk)});request.on('end',()=>{
@@ -107,10 +130,13 @@ describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{ti
   const address=server.address();if(!address||typeof address==='string')throw Error('Expected loopback address')
   const original=process.env.DEEPSEEK_BASE_URL;process.env.DEEPSEEK_BASE_URL=`http://127.0.0.1:${address.port}/anthropic`;cleanup.push(()=>{if(original===undefined)delete process.env.DEEPSEEK_BASE_URL;else process.env.DEEPSEEK_BASE_URL=original})
   const ordinary=await s.send(own.conversation.id,'你好');await s.tick(callHarness);expect((await s.turn(ordinary.turn.id)).status).toBe('succeeded');expect(seen[0]!.thinking).toEqual({type:'enabled'})
-  const sent=await s.call('agentFileMessage',uploadBody(),{id:own.conversation.id});expect(sent.status,sent.text).toBe(201)
+  // This test exercises the pinned adapter; the PDF tests below run the isolated PDF parser.
+  const attachment=uploadBody(Buffer.from('Synthetic study purpose.\nSynthetic study results.'),'adapter-study.txt','text/plain')
+  const sent=await s.call('agentFileMessage',attachment,{id:own.conversation.id});expect(sent.status,sent.text).toBe(201)
   await s.tick(callHarness);expect(await s.turn(sent.value.data.turn.id)).toMatchObject({status:'succeeded',usage:{inputTokens:840,outputTokens:100},fileRead:{partial:false}});expect(seen[1]!.thinking).toEqual({type:'disabled'})
-  const messages=(await s.call('chatMessages',null,{id:own.conversation.id})).value.data;expect(messages.at(-1).text).toBe(reply);expect(messages.at(-2).files[0].pageCount).toBe(2)
-  const follow=await s.send(own.conversation.id,'请解释第二页');limit=true;await s.tick(callHarness)
+  const messages=(await s.call('chatMessages',null,{id:own.conversation.id})).value.data;expect(messages.at(-1).text).toBe(reply);expect(messages.at(-2).files[0]).toMatchObject({filename:attachment.filename,mediaType:attachment.mediaType,pageCount:1})
+  const follow=await s.send(own.conversation.id,'请解释第一页');expect(follow.turn.fileRead.messageId).toBe(sent.value.data.message.id)
+  limit=true;await s.tick(callHarness)
   expect(await s.turn(follow.turn.id)).toMatchObject({status:'failed',failure:'BUDGET_EXCEEDED',outputMessageId:null,usage:{inputTokens:840,outputTokens:seen[2]!.maxTokens}});expect(seen[2]!.thinking).toEqual({type:'disabled'})
   expect((await s.call('chatMessages',null,{id:own.conversation.id})).text).not.toContain(truncated)
   const input=JSON.parse(String(s.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(follow.turn.id)!.request_json))
@@ -118,10 +144,12 @@ describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{ti
   expect(JSON.stringify(input.modelOutputDiagnostic)).not.toContain('synthetic-owner');expect(JSON.stringify(input.modelOutputDiagnostic)).not.toContain(truncated)
   s.legacyStored();expect(s.count('chat_actions')).toBe(0);expect(s.count('tasks')).toBe(0)
   for(const row of s.db.prepare('SELECT document FROM chat_messages').all())expect(LegacyMessage.safeParse(JSON.parse(String(row.document))).success).toBe(true)
-  const evidence=process.env.AGENT_FILES_EVIDENCE_ROOT;if(evidence)writeFileSync(join(evidence,'file-reply-runtime-proof.json'),JSON.stringify({synthetic:true,realParser:true,actualPinnedAdapter:true,realVendor:false,seen,turnStatus:'BUDGET_EXCEEDED',diagnostic:input.modelOutputDiagnostic},null,2))
+  const evidence=process.env.AGENT_FILES_EVIDENCE_ROOT;if(evidence)writeFileSync(join(evidence,'file-reply-runtime-proof.json'),JSON.stringify({synthetic:true,realParser:true,fixtureMediaType:attachment.mediaType,actualPinnedAdapter:true,realVendor:false,seen,turnStatus:'BUDGET_EXCEEDED',diagnostic:input.modelOutputDiagnostic},null,2))
  })
  it('distinguishes a real SQLite save failure from malformed model output without retaining reply text in diagnostics',async()=>{
-  const s=await setup(),own=await s.own(),sent=await s.call('agentFileMessage',uploadBody(),{id:own.conversation.id})
+  const s=await setup(),own=await s.own()
+  const attachment=uploadBody(Buffer.from('Synthetic persistence check.'),'persistence.txt','text/plain')
+  const sent=await s.call('agentFileMessage',attachment,{id:own.conversation.id});expect(sent.status,sent.text).toBe(201)
   s.db.exec("CREATE TRIGGER synthetic_reject_model BEFORE INSERT ON chat_messages WHEN json_extract(NEW.document,'$.origin')='model' BEGIN SELECT RAISE(ABORT,'synthetic refusal'); END")
   const reply='合成有效文字，但数据库写入被测试触发器拒绝。';await s.tick(async()=>result(reply))
   expect(await s.turn(sent.value.data.turn.id)).toMatchObject({status:'failed',failure:'MODEL_FAILED',outputMessageId:null,usage:{inputTokens:200,outputTokens:100}});expect(s.count('chat_messages')).toBe(1)
@@ -167,14 +195,16 @@ describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{ti
   expect((await s.call('agentFileMessage',uploadBody(),{id:a.conversation.id},1)).status).toBe(404)
   expect((await s.call('chatTurn',null,{id:sent.value.data.turn.id},1)).status).toBe(404)
   expect((await s.call('agentChatMessage',{text:'read',fileSelection:{messageId:sent.value.data.message.id}},{id:b.conversation.id},1)).status).toBe(404)
-  const request=(await s.call('requestContact',{}, {id:a.agent.id},1)).value.data.relationship
-  await s.call('decideContactRequest',{expectedVersion:request.version,decision:'accept'},{id:request.requestId})
+  expect((await s.call('updateAgentConsultation',{expectedVersion:0,mode:'free'},{id:a.agent.id})).status).toBe(200)
   const direct=(await s.call('createDirectConversation',{contactId:a.agent.id},{},1)).value.data
-  const uploaded=await s.call('agentFileMessage',uploadBody(Buffer.from('REQUESTER_FILE'),'mine.csv','text/csv'),{id:direct.id},1);expect(uploaded.status,uploaded.text).toBe(201)
-  await s.tick(async(input,_signal,credential)=>{expect(credential.apiKey).toBe('synthetic-owner-1-only');expect(input.prompt).toContain('REQUESTER_FILE');expect(input.prompt).not.toContain('OWNER_ONLY_MEMORY');expect(input.prompt).not.toContain('PRIVATE_FILE_MARKER');return result()})
+  const uploaded=await s.call('agentFileMessage',uploadBody(Buffer.from('REQUESTER_FILE'),'mine.csv','text/csv'),{id:direct.id},1);expect(uploaded.status,uploaded.text).toBe(403)
+  const asked=await s.call('agentChatMessage',{text:'REQUESTER_TEXT'},{id:direct.id},1);expect(asked.status,asked.text).toBe(201)
+  expect(await s.tick(async(input,_signal,credential)=>{expect(credential.apiKey).toBe('synthetic-owner-1-only');expect(input.prompt).toContain('REQUESTER_TEXT');expect(input.prompt).not.toMatch(/OWNER_ONLY_MEMORY|PRIVATE_FILE_MARKER|REQUESTER_FILE/);return result()})).toBe(true)
+  expect((await s.turn(asked.value.data.turn.id,1)).status).toBe('succeeded')
   expect((await s.call('chatMessages',null,{id:direct.id},0)).status).toBe(404)
-  expect((await s.call('agentChatMessage',{text:'read',fileSelection:{messageId:sent.value.data.message.id}},{id:direct.id},1)).status).toBe(404)
-  await s.call('revokeContactRequest',{expectedVersion:request.version+1},{id:request.requestId});expect((await s.call('agentFileMessage',uploadBody(Buffer.from('REQUESTER_FILE'),'mine.csv','text/csv'),{id:direct.id},1)).status).toBe(404)
+  expect((await s.call('agentChatMessage',{text:'read',fileSelection:{messageId:sent.value.data.message.id}},{id:direct.id},1)).status).toBe(403)
+  expect((await s.call('updateAgentConsultation',{expectedVersion:1,mode:'closed'},{id:a.agent.id})).status).toBe(200)
+  expect((await s.call('agentFileMessage',uploadBody(),{id:direct.id},1)).status).toBe(403)
  })
  it('reauthorizes after real parsing, leaves no records on logout, and fences cancelled late model output',async()=>{
   const s=await setup(),own=await s.own(),original=files.extractAgentFile

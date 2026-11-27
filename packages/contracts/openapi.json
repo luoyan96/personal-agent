@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.52.0"
+    "version": "0.53.0"
   },
   "paths": {
     "/api/v1/library/repository": {
@@ -52643,7 +52643,7 @@
     "/api/v1/chat/agents/{id}/connection": {
       "get": {
         "operationId": "agentConnection",
-        "description": "Owned specialist only. Exact endpoint/model/options and hasApiKey; no key or ciphertext. Platform contacts retain legacy shape; external public runtime reveals only service origin, consent, caller policy and who pays.",
+        "description": "Owned specialist only. Exact endpoint/model/options and hasApiKey; no key or ciphertext. External runtime metadata is visible to the owner.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -53031,7 +53031,7 @@
       },
       "post": {
         "operationId": "updateAgentConnection",
-        "description": "Owned specialist only, expectedVersion0 for initial configuration. Fixed chat-completions protocol, HTTPS443 public DNS pinned per request, no redirects/proxy/URL credentials. Endpoint change requires fresh key or explicit removal. Enabled configuration is not a proven connection. Default owner-only; allowAcceptedContacts explicitly authorizes accepted callers to spend this owner external credential. No fallback to another model.",
+        "description": "Owned specialist only, expectedVersion0 for initial configuration. Fixed chat-completions protocol, HTTPS443 public DNS pinned per request, no redirects/proxy/URL credentials. Endpoint change requires fresh key or explicit removal. Only the owner can use the external connection. allowAcceptedContacts is retained for schema compatibility.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -58801,6 +58801,490 @@
                       "pinned": false,
                       "version": 1
                     }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/contacts/{id}/consultation": {
+      "get": {
+        "operationId": "agentConsultation",
+        "description": "Current personal Agent consultation policy. The default is closed; a free consultation creates no friendship, group or private owner access.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "contactId": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "closed",
+                            "free"
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "canEdit": {
+                          "type": "boolean"
+                        },
+                        "canChat": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "contactId",
+                        "mode",
+                        "version",
+                        "canEdit",
+                        "canChat"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "contactId": "synthetic",
+                    "mode": "closed",
+                    "version": 0,
+                    "canEdit": false,
+                    "canChat": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See error.code mapping and retry rules in protocol.md.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateAgentConsultation",
+        "description": "Only the personal Agent owner can set its policy. Closing prevents new consultation messages and fences in-flight replies; the visitor retains their own history.",
+        "x-stage": "CHAT1",
+        "x-implemented": true,
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,128}$"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "closed",
+                      "free"
+                    ]
+                  }
+                },
+                "required": [
+                  "expectedVersion",
+                  "mode"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "expectedVersion": 0,
+                "mode": "closed"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "CHAT1 contract; implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "contactId": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "closed",
+                            "free"
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "canEdit": {
+                          "type": "boolean"
+                        },
+                        "canChat": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "contactId",
+                        "mode",
+                        "version",
+                        "canEdit",
+                        "canChat"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                },
+                "example": {
+                  "data": {
+                    "contactId": "synthetic",
+                    "mode": "closed",
+                    "version": 0,
+                    "canEdit": false,
+                    "canChat": false
                   }
                 }
               }
@@ -66653,7 +67137,7 @@
     "/api/v1/chat/contacts/{id}/relationship": {
       "post": {
         "operationId": "requestContact",
-        "description": "Request human acceptance or private-agent owner approval; published same-lab public agents become accepted directly. Owned agents already own. Exact duplicate cannot create repeated requests. Relationship does not grant private owner memories, group history or task commitment.",
+        "description": "Request human acceptance. Published same-lab public agents become accepted directly. Other accounts’ personal Agents use consultation settings. Exact duplicate cannot create repeated requests.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -67232,7 +67716,7 @@
     "/api/v1/chat/contact-requests": {
       "get": {
         "operationId": "contactRequests",
-        "description": "Current requester or decider only; pending default, newest request first. Agent-owner decision has no implicit group/history/memory grant.",
+        "description": "Current requester or decider only; pending default, newest request first. Legacy personal Agent requests are excluded.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -67537,7 +68021,7 @@
     "/api/v1/chat/contact-requests/{id}/decision": {
       "post": {
         "operationId": "decideContactRequest",
-        "description": "Target human or private agent owner only; exact pending version required. Accept establishes contact relationship only. Human relationship is symmetric, agent relationship belongs only to requester.",
+        "description": "Target human only; exact pending version required. Acceptance establishes a symmetric contact relationship.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -67849,7 +68333,7 @@
     "/api/v1/chat/contacts/{id}/relationship/revoke": {
       "post": {
         "operationId": "revokeContact",
-        "description": "Requester or human peer may revoke current relationship with version; owner may revoke private-agent requester relation through contact request decision revoke API. Removes direct chat authority and fences turns, but does not silently withdraw group membership or task commitments.",
+        "description": "Requester or human peer may revoke a current relationship by version. Removes direct chat authority and fences turns. Group membership and task rights are independently enforced.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -68439,7 +68923,7 @@
     "/api/v1/chat/contact-requests/{id}/revoke": {
       "post": {
         "operationId": "revokeContactRequest",
-        "description": "Requester or decider may revoke a pending/accepted relationship, including private-agent owner. Fence direct turns; group membership and task rights stay independently enforced.",
+        "description": "Requester or decider may revoke a pending or accepted relationship. Group membership and task rights stay independently enforced.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -73293,7 +73777,7 @@
     "/api/v1/chat/direct-conversations": {
       "post": {
         "operationId": "createDirectConversation",
-        "description": "Human pair requires accepted relationship, migration-013-existing pairs backfilled accepted. Own coordinator resolves personal conversation; owned specialists or accepted private/public agent create unique requester-agent direct. Other owners never join requester-agent direct and private owner memory is not shared.",
+        "description": "Human pair requires an accepted relationship. An owned coordinator resolves to the personal conversation. A foreign personal Agent requires free consultation and uses a unique visitor-Agent conversation. Other Agent owners never join that conversation.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -84884,7 +85368,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.52.0"
+                          "const": "0.53.0"
                         },
                         "checks": {
                           "type": "object",
@@ -84943,7 +85427,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.52.0",
+                    "contractVersion": "0.53.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -85117,7 +85601,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.52.0"
+                          "const": "0.53.0"
                         },
                         "checks": {
                           "type": "object",
@@ -85176,7 +85660,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.52.0",
+                    "contractVersion": "0.53.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -85328,7 +85812,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.52.0"
+                          "const": "0.53.0"
                         },
                         "checks": {
                           "type": "object",
@@ -85387,7 +85871,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.52.0",
+                    "contractVersion": "0.53.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",

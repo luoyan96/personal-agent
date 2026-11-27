@@ -13,6 +13,8 @@ import { ContactRemovalButton } from './useContactRemoval';
 import { AgentResources, type OpenAgentSkills } from './AgentResources';
 import { canManageDirectoryAgent } from './contact-directory';
 import { useContactRequestCache, usePendingContactRequests } from "./contact-requests";
+import { AgentConsultation, readAgentConsultation } from "./AgentConsultation";
+import { isVisitingPersonalAgent } from "./agent-consultation";
 
 export const contactRelationshipLabel: Record<
   Contact["relationship"]["status"],
@@ -67,7 +69,7 @@ export function WorkspaceContactCard({
   const c = read.data?.data;
   const requests = usePendingContactRequests();
   const requestCache = useContactRequestCache();
-  const request = c?.relationship.status === "pending_inbound"
+  const request = c?.identity.kind !== "personal_agent" && c?.relationship.status === "pending_inbound"
     ? requests.data?.find((r) => r.id === c.relationship.requestId)
     : undefined;
   const currentAction = action?.scope === operation.scope ? action : undefined;
@@ -114,6 +116,7 @@ export function WorkspaceContactCard({
       </div>
     );
   const human = c.identity.kind === "human";
+  const visitingAgent = isVisitingPersonalAgent(c, actor?.member.id);
   const ownerId =
     !human && c.identity.kind !== "human" ? c.identity.ownerMemberId : undefined;
   const ownerName =
@@ -124,7 +127,11 @@ export function WorkspaceContactCard({
             entry.contact.identity.kind === "human" &&
             entry.contact.identity.memberId === ownerId,
         )?.contact.displayName;
-  const primaryActions = (
+  const primaryActions = visitingAgent ? (
+    <div className="workspace-card-actions">
+      <AgentConsultation contactId={c.id} />
+    </div>
+  ) : (
       <div className="workspace-card-actions">
         {c.allowedActions.includes("chat") && (
           <Button
@@ -155,7 +162,14 @@ export function WorkspaceContactCard({
                   entry.profile.role === "coordinator"
                 );
                 if (!assistant) throw Error("暂时找不到这位联系人的个人助理。");
-                if (assistant.allowedActions.includes("chat")) await openChat(assistant.id, isCurrent);
+                if (!isVisitingPersonalAgent(assistant, actor?.member.id)) {
+                  if (assistant.allowedActions.includes("chat")) await openChat(assistant.id, isCurrent);
+                  else onOpenContact(assistant.id);
+                  return;
+                }
+                const consultation = await readAgentConsultation(assistant.id);
+                if (!isCurrent()) return;
+                if (consultation.mode === "free" && consultation.canChat) await openChat(assistant.id, isCurrent);
                 else onOpenContact(assistant.id);
               })
             }
@@ -163,7 +177,7 @@ export function WorkspaceContactCard({
             联系 TA 的助理
           </Button>
         )}
-        {c.allowedActions.includes("request") && (
+        {c.identity.kind !== "personal_agent" && c.allowedActions.includes("request") && (
           <Button
             type="primary"
             icon={directory ? <UserAddOutlined aria-hidden="true" /> : undefined}
@@ -270,11 +284,13 @@ export function WorkspaceContactCard({
             </dd>
           </div>
         )}
-        <div>
-          <dt>关系</dt>
-          <dd>{contactRelationshipLabel[c.relationship.status]}</dd>
-        </div>
-        {!human && (
+        {!visitingAgent && (
+          <div>
+            <dt>关系</dt>
+            <dd>{contactRelationshipLabel[c.relationship.status]}</dd>
+          </div>
+        )}
+        {!human && !visitingAgent && (
           <div>
             <dt>运行方式</dt>
             <dd>
@@ -316,7 +332,7 @@ export function WorkspaceContactCard({
             {c.allowedActions.includes("edit_profile") ? "资料与管理" : "更多资料"}
           </Button>
         )}
-        <ContactRemovalButton contact={c} onRemoved={async () => { await read.refresh(); await onChanged?.(); }} />
+        {!visitingAgent && <ContactRemovalButton contact={c} onRemoved={async () => { await read.refresh(); await onChanged?.(); }} />}
       </div>
       {onOpenSkills && canManageDirectoryAgent(c, actor?.member.id) && (
         <AgentResources key={c.id} agentId={c.id} onOpenSkills={onOpenSkills} />

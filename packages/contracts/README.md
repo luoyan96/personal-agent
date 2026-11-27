@@ -1,4 +1,6 @@
-# 当前契约 0.52.0
+# 当前契约 0.53.0
+
+0.53.0 支持个人 Agent 的免费咨询。所有者通过 `GET/PATCH /api/v1/chat/contacts/{id}/consultation` 查看和修改策略，默认关闭。开放后，访客可直接发起文字私聊，由访客自己的默认模型处理。关闭后停止新的咨询和未完成回复，访客可继续查看自己的历史。迁移 043 撤回旧的个人 Agent 好友关系。聊天协议为 1.15.0。
 
 0.52.0 允许 `closed` 话题恢复。`POST /api/v1/me/assistant-topics/{id}/resume` 接受 `paused` 与 `closed`，恢复时暂停该助理当前的 `active` 话题，仍只有一个 `active`。`closed` 的 `allowedActions` 从空改为 `['resume']`；`closed` 仍不可编辑、不进入注入。响应形状与 `allowedActions` 枚举不变，无数据库迁移。
 
