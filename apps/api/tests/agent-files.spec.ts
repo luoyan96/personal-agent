@@ -94,7 +94,7 @@ describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{ti
   expect(ambiguous.turn.fileRead).toBeUndefined()
  })
  it('saves real adapter plain file replies, preserves ordinary defaults and rejects truncated output with actual usage',async()=>{
-  const s=await setup(),own=await s.own(),seen:{thinking:unknown;maxTokens:number}[]=[],reply='依据提供的两页文字：第一页说明合成研究目的，第二页补充合成结果。',truncated='合成不完整正文'
+  const s=await setup(),own=await s.own(),seen:{thinking:unknown;maxTokens:number}[]=[],reply='附件说明了合成研究目的，并补充了合成结果。',truncated='合成不完整正文'
   let limit=false
   const server=createHttpServer((request,response)=>{
     let raw='';request.on('data',chunk=>{raw+=String(chunk)});request.on('end',()=>{
@@ -107,10 +107,13 @@ describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{ti
   const address=server.address();if(!address||typeof address==='string')throw Error('Expected loopback address')
   const original=process.env.DEEPSEEK_BASE_URL;process.env.DEEPSEEK_BASE_URL=`http://127.0.0.1:${address.port}/anthropic`;cleanup.push(()=>{if(original===undefined)delete process.env.DEEPSEEK_BASE_URL;else process.env.DEEPSEEK_BASE_URL=original})
   const ordinary=await s.send(own.conversation.id,'你好');await s.tick(callHarness);expect((await s.turn(ordinary.turn.id)).status).toBe('succeeded');expect(seen[0]!.thinking).toEqual({type:'enabled'})
-  const sent=await s.call('agentFileMessage',uploadBody(),{id:own.conversation.id});expect(sent.status,sent.text).toBe(201)
+  // This test exercises the pinned adapter; the PDF tests below run the isolated PDF parser.
+  const attachment=uploadBody(Buffer.from('Synthetic study purpose.\nSynthetic study results.'),'adapter-study.txt','text/plain')
+  const sent=await s.call('agentFileMessage',attachment,{id:own.conversation.id});expect(sent.status,sent.text).toBe(201)
   await s.tick(callHarness);expect(await s.turn(sent.value.data.turn.id)).toMatchObject({status:'succeeded',usage:{inputTokens:840,outputTokens:100},fileRead:{partial:false}});expect(seen[1]!.thinking).toEqual({type:'disabled'})
-  const messages=(await s.call('chatMessages',null,{id:own.conversation.id})).value.data;expect(messages.at(-1).text).toBe(reply);expect(messages.at(-2).files[0].pageCount).toBe(2)
-  const follow=await s.send(own.conversation.id,'请解释第二页');limit=true;await s.tick(callHarness)
+  const messages=(await s.call('chatMessages',null,{id:own.conversation.id})).value.data;expect(messages.at(-1).text).toBe(reply);expect(messages.at(-2).files[0]).toMatchObject({filename:attachment.filename,mediaType:attachment.mediaType,pageCount:1})
+  const follow=await s.send(own.conversation.id,'请解释第一页');expect(follow.turn.fileRead.messageId).toBe(sent.value.data.message.id)
+  limit=true;await s.tick(callHarness)
   expect(await s.turn(follow.turn.id)).toMatchObject({status:'failed',failure:'BUDGET_EXCEEDED',outputMessageId:null,usage:{inputTokens:840,outputTokens:seen[2]!.maxTokens}});expect(seen[2]!.thinking).toEqual({type:'disabled'})
   expect((await s.call('chatMessages',null,{id:own.conversation.id})).text).not.toContain(truncated)
   const input=JSON.parse(String(s.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(follow.turn.id)!.request_json))
@@ -118,7 +121,7 @@ describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{ti
   expect(JSON.stringify(input.modelOutputDiagnostic)).not.toContain('synthetic-owner');expect(JSON.stringify(input.modelOutputDiagnostic)).not.toContain(truncated)
   s.legacyStored();expect(s.count('chat_actions')).toBe(0);expect(s.count('tasks')).toBe(0)
   for(const row of s.db.prepare('SELECT document FROM chat_messages').all())expect(LegacyMessage.safeParse(JSON.parse(String(row.document))).success).toBe(true)
-  const evidence=process.env.AGENT_FILES_EVIDENCE_ROOT;if(evidence)writeFileSync(join(evidence,'file-reply-runtime-proof.json'),JSON.stringify({synthetic:true,realParser:true,actualPinnedAdapter:true,realVendor:false,seen,turnStatus:'BUDGET_EXCEEDED',diagnostic:input.modelOutputDiagnostic},null,2))
+  const evidence=process.env.AGENT_FILES_EVIDENCE_ROOT;if(evidence)writeFileSync(join(evidence,'file-reply-runtime-proof.json'),JSON.stringify({synthetic:true,realParser:true,fixtureMediaType:attachment.mediaType,actualPinnedAdapter:true,realVendor:false,seen,turnStatus:'BUDGET_EXCEEDED',diagnostic:input.modelOutputDiagnostic},null,2))
  })
  it('distinguishes a real SQLite save failure from malformed model output without retaining reply text in diagnostics',async()=>{
   const s=await setup(),own=await s.own(),sent=await s.call('agentFileMessage',uploadBody(),{id:own.conversation.id})
