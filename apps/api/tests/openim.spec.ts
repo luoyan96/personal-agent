@@ -13,6 +13,7 @@ import { OpenImClient, ImUnavailable } from '../src/openim-client.js'
 import type { ImCall } from '../src/openim-client.js'
 import { OpenImBridge } from '../src/openim-bridge.js'
 import { OpenImWorker } from '../src/openim-worker.js'
+import { AssistantGreetingWorker } from '../src/assistant-greetings.js'
 import { ChatWorker } from '../src/chat-worker.js'
 import { backup,restore } from '../src/recovery.js'
 
@@ -74,8 +75,8 @@ async function setup(configured=true){
   const client=new OpenImClient(config,call);app=createServer(config,{imClient:client});cleanup.push(()=>app.close())
   const clients:{cookie:string;csrf:string;token:string}[]=[]
   for(const account of accounts){const login=await app.inject({method:'POST',url:'/api/v1/auth/login',headers:{origin:config.origin},payload:{username:account.username,password:account.password}});expect(login.statusCode).toBe(200);const cookie=String(login.headers['set-cookie']).split(';')[0]!,session=await app.inject({url:'/api/v1/auth/session',headers:{cookie}});clients.push({cookie,csrf:session.json().data.csrfToken,token:cookie.slice('rap_session='.length)})}
-  async function request(name:RouteName,body:unknown=null,params:Record<string,string>={},actor=0,keyValue=randomUUID()){
-    const route=routes[name],response=await app.inject({method:route.method,url:route.path.replace(/\{(\w+)\}/g,(_,k:string)=>params[k]!),headers:{origin:config.origin,cookie:clients[actor]!.cookie,'x-csrf-token':clients[actor]!.csrf,'idempotency-key':keyValue},...(route.method==='GET'?{}:{payload:body as B})})
+  async function request(name:RouteName,body:unknown=null,params:Record<string,string>={},actor=0,keyValue=randomUUID(),headers:Record<string,string>={}){
+    const route=routes[name],response=await app.inject({method:route.method,url:route.path.replace(/\{(\w+)\}/g,(_,k:string)=>params[k]!),headers:{origin:config.origin,cookie:clients[actor]!.cookie,'x-csrf-token':clients[actor]!.csrf,'idempotency-key':keyValue,...headers},...(route.method==='GET'?{}:{payload:body as B})})
     return {status:response.statusCode,value:response.json(),raw:response.body}
   }
   const contacts=(await request('chatContacts')).value.data as Contact[]
@@ -87,6 +88,81 @@ async function setup(configured=true){
 }
 
 describe('OpenIM bridge with explicit synthetic management adapter, not live server verification',{timeout:20000},()=>{
+  it('welcomes new and existing users once in their own private assistant history, even while IM is unavailable',async()=>{
+    vi.useFakeTimers({toFake:['Date']})
+    cleanup.push(()=>vi.useRealTimers())
+    vi.setSystemTime(new Date('2026-10-31T15:00:00Z'))
+    const s=await setup(false)
+    const personal=(await s.request('personalConversation',{})).value.data.conversation
+    const manual=await s.request('sendChatMessage',{text:'原有聊天内容'},{id:personal.id})
+    expect(manual.status,manual.raw).toBe(201)
+    const requests=await Promise.all([
+      s.request('imSession',{platformID:5},{},0,undefined,{'x-acceptcat-time-zone':'America/Los_Angeles'}),
+      s.request('imSession',{platformID:3},{},0,undefined,{'x-acceptcat-time-zone':'Asia/Invalid'}),
+      s.request('imSession',{platformID:5},{},1),
+    ])
+    expect(requests.map(request=>request.value.data.status)).toEqual(['unavailable','unavailable','unavailable'])
+    expect(requests[0]!.value.data.coordinator.researchConversationId).toBe(personal.id)
+    const state=s.db.prepare('SELECT * FROM assistant_greetings WHERE member_id=?')
+    expect(state.get('member_A')).toMatchObject({device_time_zone:'America/Los_Angeles',last_greeting_date:'2026-10-31',next_daily_at:'2026-11-01T17:00:00.000Z'})
+    expect(state.get('member_B')).toMatchObject({device_time_zone:null,last_greeting_date:'2026-10-31',next_daily_at:'2026-11-01T01:00:00.000Z'})
+    expect(state.get('member_C')).toBeUndefined()
+    const {data:messages}=(await s.request('chatMessages',null,{id:personal.id})).value
+    expect(messages).toMatchObject([
+      {id:manual.value.data.message.id,origin:'human',text:'原有聊天内容',sequence:1},
+      {id:state.get('member_A')!.welcome_message_id,origin:'service',senderContactId:s.agent('member_A').id,text:expect.stringContaining('你好，我是你的个人助理'),sequence:2,turnId:null},
+    ])
+    expect((await s.request('chatMessages',null,{id:personal.id},1)).status).toBe(404)
+    expect(s.db.prepare('SELECT status FROM im_message_outbox WHERE message_id=?').get(messages[1].id)?.status).toBe('pending')
+    expect(s.db.prepare('SELECT count(*) n FROM chat_turns').get()!.n).toBe(0)
+    const settings=await s.request('updatePersonalMemorySettings',{expectedVersion:1,candidateLearning:false,timeZone:'Asia/Tokyo',quietHours:null})
+    expect(settings.status,settings.raw).toBe(200)
+    expect(state.get('member_A')?.next_daily_at).toBe('2026-11-01T00:00:00.000Z')
+    await s.request('imSession',{platformID:5},{},0,undefined,{'x-acceptcat-time-zone':'Europe/Paris'})
+    expect(state.get('member_A')).toMatchObject({welcome_message_id:messages[1].id,device_time_zone:'Europe/Paris',next_daily_at:'2026-11-01T00:00:00.000Z'})
+  })
+
+  it('sends the daily greeting at local 09:00 through the durable IM outbox with no active login',async()=>{
+    vi.useFakeTimers({toFake:['Date']})
+    cleanup.push(()=>vi.useRealTimers())
+    vi.setSystemTime(new Date('2026-10-31T15:00:00Z'))
+    const s=await setup()
+    const session=(await s.request('imSession',{platformID:5},{},0,undefined,{'x-acceptcat-time-zone':'America/Los_Angeles'})).value.data
+    expect(session.status).toBe('available')
+    const id=session.coordinator.researchConversationId
+    const imWorker=new OpenImWorker(s.db,s.config,s.client)
+    const offline=new AssistantGreetingWorker(s.db,s.config)
+    expect(await imWorker.tick()).toBe(true)
+    expect((await s.request('logout',{})).status).toBe(200)
+    expect(await imWorker.tick()).toBe(true)
+    expect(s.db.prepare('SELECT count(*) n FROM im_token_leases').get()!.n).toBe(0)
+    const received=()=>s.db.prepare('SELECT id,document FROM chat_messages WHERE conversation_id=? ORDER BY sequence').all(id)
+    vi.setSystemTime(new Date('2026-11-01T16:59:59Z'))
+    expect(await offline.tick()).toBe(false)
+    vi.setSystemTime(new Date('2026-11-01T17:00:00Z'))
+    s.db.exec("CREATE TEMP TRIGGER fail_greeting_schedule BEFORE UPDATE ON assistant_greetings BEGIN SELECT RAISE(ABORT,'synthetic schedule write fault'); END")
+    await expect(offline.tick()).rejects.toThrow('synthetic schedule write fault')
+    expect(received()).toHaveLength(1)
+    expect(s.db.prepare('SELECT count(*) n FROM im_message_outbox').get()!.n).toBe(1)
+    s.db.exec('DROP TRIGGER fail_greeting_schedule')
+    const reopened=openDatabase(s.config.databasePath)
+    cleanup.push(()=>reopened.close())
+    expect(await Promise.all([offline.tick(),new AssistantGreetingWorker(reopened,s.config).tick()])).toEqual([true,false])
+    expect(received()).toHaveLength(2)
+    const greeting=JSON.parse(String(received()[1]!.document))
+    expect(greeting).toMatchObject({origin:'service',senderContactId:s.agent('member_A').id,text:expect.stringMatching(/^早上好/),turnId:null,sequence:2})
+    expect(await imWorker.tick()).toBe(true)
+    expect(s.sent).toHaveLength(2)
+    expect(s.sent[1]).toMatchObject({sendID:session.coordinator.peerUserID,recvID:session.user.userID,isOnlineOnly:false,sessionType:1})
+    expect(JSON.parse(JSON.parse(s.sent[1]!.content).data)).toMatchObject({conversationId:id,messageId:greeting.id,sequence:2})
+    expect(s.db.prepare('SELECT status FROM im_message_outbox WHERE message_id=?').get(greeting.id)?.status).toBe('sent')
+    expect(await imWorker.tick()).toBe(false)
+    vi.setSystemTime(new Date('2026-11-03T05:00:00Z')) // 21:00 on Nov 2 in Los Angeles.
+    expect(await offline.tick()).toBe(true)
+    expect(received()).toHaveLength(2)
+    expect(s.db.prepare('SELECT next_daily_at FROM assistant_greetings WHERE member_id=?').get('member_A')?.next_daily_at).toBe('2026-11-03T17:00:00.000Z')
+  })
+
   it('reconciles native withdrawals after and before send callbacks without trusting another actor',async()=>{
     const s=await setup(),session=(await s.request('imSession',{platformID:5})).value.data
     await s.request('imSession',{platformID:5},{},1)
@@ -94,7 +170,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     const send={sendID:operator.userID,recvID:session.coordinator.peerUserID,senderPlatformID:5,msgFrom:100,contentType:101,content:JSON.stringify({content:'撤回的普通 IM 消息'}),clientMsgID:'native-revoke-1'}
     const revoke={userID:operator.userID,sendID:operator.userID,conversationID,seq:12,clientMsgID:send.clientMsgID}
     await s.callback('callbackAfterSendSingleMsgCommand',send)
-    const message=JSON.parse(String(s.db.prepare('SELECT document FROM chat_messages').get()!.document))
+    const message=JSON.parse(String(s.db.prepare("SELECT document FROM chat_messages WHERE json_extract(document,'$.origin')='human'").get()!.document))
     for(const [body,op] of [[revoke,{userID:s.identity(s.human('member_B').id),platform:'Web'}],[{...revoke,conversationID:'unknown'},operator],[{...revoke,sendID:session.coordinator.peerUserID},operator]] as const)await s.callback('callbackBeforeAfterMsgCommand',body,undefined,op)
     expect(s.db.prepare('SELECT count(*) n FROM chat_message_retractions').get()!.n).toBe(0)
     for(let i=0;i<2;i++)expect((await s.callback('callbackBeforeAfterMsgCommand',revoke,undefined,operator)).value).toEqual({errCode:0,errMsg:''})
@@ -106,7 +182,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     await s.callback('callbackAfterSendSingleMsgCommand',{...send,clientMsgID:'native-revoke-2'})
     expect(s.db.prepare('SELECT count(*) n FROM chat_message_retractions').get()!.n).toBe(2)
     await s.callback('callbackAfterSendSingleMsgCommand',{...send,clientMsgID:'native-revoke-2'})
-    expect(s.db.prepare('SELECT count(*) n FROM chat_messages').get()!.n).toBe(2)
+    expect(s.db.prepare("SELECT count(*) n FROM chat_messages WHERE json_extract(document,'$.origin')='human'").get()!.n).toBe(2)
     // An upstream-only callback without the trusted original ID cannot retract by sequence.
     await s.callback('callbackAfterSendSingleMsgCommand',{...send,clientMsgID:'native-keep'})
     await s.callback('callbackBeforeAfterMsgCommand',{...revoke,clientMsgID:undefined},undefined,operator)
@@ -131,11 +207,11 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     expect((await s.callback('callbackBeforeMsgModifyCommand',message)).value.nextCode).toBe(0)
     expect((await s.callback('callbackAfterSendSingleMsgCommand',message)).status).toBe(200)
     await s.callback('callbackAfterSendSingleMsgCommand',message)
-    expect(s.db.prepare('SELECT count(*) n FROM chat_messages').get()!.n).toBe(1);expect(s.db.prepare('SELECT count(*) n FROM chat_turns').get()!.n).toBe(0)
+    expect(s.db.prepare("SELECT count(*) n FROM chat_messages WHERE json_extract(document,'$.origin')='human'").get()!.n).toBe(1);expect(s.db.prepare('SELECT count(*) n FROM chat_turns').get()!.n).toBe(0)
     expect((await s.callback('callbackAfterSendSingleMsgCommand',{...message,content:'{"content":"different"}'})).status).toBe(409)
     await s.callback('callbackAfterSendSingleMsgCommand',{...message,clientMsgID:'ordinary_at_1',contentType:106,content:'{"text":"@助理 普通提及","atUserList":[]}'});expect(s.db.prepare('SELECT count(*) n FROM chat_turns').get()!.n).toBe(0)
     for(const type of [102,103,105])await s.callback('callbackAfterSendSingleMsgCommand',{...message,clientMsgID:`media_${type}`,contentType:type,content:'{}'})
-    expect(s.db.prepare('SELECT count(*) n FROM artifacts').get()!.n).toBe(0);expect(s.db.prepare('SELECT count(*) n FROM chat_messages').get()!.n).toBe(2)
+    expect(s.db.prepare('SELECT count(*) n FROM artifacts').get()!.n).toBe(0);expect(s.db.prepare("SELECT count(*) n FROM chat_messages WHERE json_extract(document,'$.origin')='human'").get()!.n).toBe(2)
     const reopened=openDatabase(s.config.databasePath);expect(reopened.prepare('SELECT count(*) n FROM im_conversations').get()!.n).toBe(1);reopened.close()
     expect((await s.request('logout',{})).status).toBe(200)
     expect((await s.callback('callbackBeforeSendSingleMsgCommand',message)).value).toMatchObject({nextCode:1,errCode:1002})
@@ -174,7 +250,9 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
       expect((await s.request('imSync',{})).value.data.status).toBe('available')
     }
     await s.request('sendChatMessage',{text:'科研记录并不重复添加好友',intent:'chat',agentContactId:null,budget:null,context:[]},{id:personal.id})
-    expect(await new OpenImWorker(s.db,s.config,s.client).tick()).toBe(true)
+    const worker=new OpenImWorker(s.db,s.config,s.client)
+    expect(await worker.tick()).toBe(true)
+    expect(await worker.tick()).toBe(true)
     expect(imports()).toHaveLength(count)
     const self=s.identity(s.human('member_A').id),coordinator=s.identity(s.agent('member_A').id)
     s.friends.set(self,s.friends.get(self)!.filter(id=>id!==coordinator))
@@ -267,7 +345,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     await s.callback('callbackAfterDisMissGroupCommand',{groupID:mapped.groupID});expect(s.db.prepare('SELECT status FROM im_conversations WHERE conversation_id=?').get(group.id)!.status).toBe('pending')
   })
   it('mirrors controlled research messages as authorized pointers, never copies AI private answer, and handles unknown send outcomes',async()=>{
-    const s=await setup();await s.request('imSession',{platformID:5})
+    const s=await setup()
     const settings=await s.request('updateLabAiSettings',{expectedVersion:0,enabled:true,model:'deepseek-flash',apiKey:'sk-synthetic-only'}, {id:'lab_synthetic'})
     expect(settings.status,settings.raw).toBe(200)
     const personal=(await s.request('personalConversation',{})).value.data.conversation
@@ -297,7 +375,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     expect(s.db.prepare("SELECT status FROM im_message_outbox").get()!.status).toBe('pending')
   })
   it('does not submit when operation persistence fails and releases only its unsubmitted claim',async()=>{
-    const s=await setup();await s.request('imSession',{platformID:5})
+    const s=await setup()
     const group=(await s.request('personalConversation',{})).value.data.conversation
     await s.request('sendChatMessage',{text:'合成未提交消息'},{id:group.id})
     s.db.exec("CREATE TEMP TRIGGER fail_im_operation BEFORE UPDATE OF operation_id ON im_message_outbox WHEN NEW.operation_id IS NOT NULL BEGIN SELECT RAISE(ABORT,'synthetic persistence fault'); END")
@@ -310,7 +388,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     expect(s.db.prepare('SELECT status,attempts FROM im_message_outbox').get()).toMatchObject({status:'sent',attempts:2})
   })
   it('propagates a transient snapshot database busy without permanently denying the pending message',async()=>{
-    const s=await setup();await s.request('imSession',{platformID:5})
+    const s=await setup()
     const group=(await s.request('personalConversation',{})).value.data.conversation
     await s.request('sendChatMessage',{text:'合成快照忙'},{id:group.id})
     const worker=new OpenImWorker(s.db,s.config,s.client),busy=Object.assign(new Error('synthetic SQLite busy'),{code:'ERR_SQLITE_ERROR',errcode:5})
@@ -320,7 +398,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     expect(s.sent).toHaveLength(0)
   })
   it('preserves the positive callback server ID when the send response omits it',async()=>{
-    const s=await setup();await s.request('imSession',{platformID:5})
+    const s=await setup()
     const group=(await s.request('personalConversation',{})).value.data.conversation
     await s.request('sendChatMessage',{text:'合成空响应编号'},{id:group.id})
     const request=s.client.request.bind(s.client)
@@ -329,7 +407,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     expect(s.db.prepare('SELECT status,server_message_id FROM im_message_outbox').get()).toMatchObject({status:'sent',server_message_id:s.sent[0]!.serverMsgID})
   })
   it('recovers an expired no-operation claim after a real SQLite write lock prevented cleanup',async()=>{
-    const s=await setup();await s.request('imSession',{platformID:5})
+    const s=await setup()
     const group=(await s.request('personalConversation',{})).value.data.conversation
     await s.request('sendChatMessage',{text:'合成领取后写锁'},{id:group.id})
     const lock=openDatabase(s.config.databasePath);cleanup.push(()=>lock.close());s.db.exec('PRAGMA busy_timeout=1')
@@ -344,7 +422,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     expect(s.db.prepare('SELECT status,attempts FROM im_message_outbox').get()).toMatchObject({status:'sent',attempts:2})
   })
   it('fences a suspended worker before HTTP after another worker reclaims its expired unsubmitted lease',async()=>{
-    const s=await setup();await s.request('imSession',{platformID:5})
+    const s=await setup()
     const group=(await s.request('personalConversation',{})).value.data.conversation
     await s.request('sendChatMessage',{text:'合成并发领取'},{id:group.id})
     const second=openDatabase(s.config.databasePath);cleanup.push(()=>second.close())
@@ -360,7 +438,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     expect(s.db.prepare('SELECT status,attempts,operation_id,server_message_id FROM im_message_outbox').get()).toMatchObject({status:'sent',attempts:2,operation_id:s.sent[0]!.operationID,server_message_id:s.sent[0]!.serverMsgID})
   })
   it('keeps an expired submitted request uncertain and never replays an unknown HTTP outcome',async()=>{
-    const s=await setup();await s.request('imSession',{platformID:5});s.setAfterSend(false)
+    const s=await setup();s.setAfterSend(false)
     const group=(await s.request('personalConversation',{})).value.data.conversation
     await s.request('sendChatMessage',{text:'合成响应丢失'},{id:group.id})
     const request=s.client.request.bind(s.client)
@@ -379,7 +457,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     expect(s.db.prepare('SELECT status FROM im_message_outbox').get()!.status).toBe('sent')
   })
   it('never reactivates restored or historical uncertain rows with missing submission IDs',async()=>{
-    const s=await setup();await s.request('imSession',{platformID:5})
+    const s=await setup()
     const group=(await s.request('personalConversation',{})).value.data.conversation
     for(const status of ['pending','sending','uncertain']){
       await s.request('sendChatMessage',{text:`合成恢复隔离${status}`},{id:group.id})
@@ -430,7 +508,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     const names=['001-foundation.sql','002-collaboration.sql','003-invitation-decisions.sql','004-discovery.sql','005-coordination.sql','006-execution.sql','007-authorized-reuse.sql','008-pilot-operations.sql','009-invite-registration.sql','010-lab-invite-management.sql','011-lab-ai-settings.sql','012-research-chat.sql','013-chat-viewer-state.sql','014-agent-contacts.sql']
     for(const [index,name] of names.entries()){const sql=readFileSync(new URL(`../migrations/${name}`,import.meta.url),'utf8');db.exec(sql);db.prepare('INSERT INTO schema_migrations VALUES (?,?,?)').run(index+1,createHash('sha256').update(sql).digest('hex'),'2026-01-01T00:00:00Z')}
     seed(db,'test');db.prepare("INSERT INTO chat_conversations VALUES ('old','lab_synthetic','member_A','personal','old_scope','{}')").run();db.prepare("INSERT INTO chat_messages VALUES ('old_message','old',1,'{}')").run()
-    migrate(db);migrate(db);checkDatabase(db);expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(41)
+    migrate(db);migrate(db);checkDatabase(db);expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(42)
     expect(db.prepare('SELECT count(*) n FROM chat_messages').get()!.n).toBe(1);expect(db.prepare('SELECT count(*) n FROM im_message_outbox').get()!.n).toBe(0)
   })
 })

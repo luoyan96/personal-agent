@@ -233,7 +233,7 @@ export function createServer(config: Config, options:{imClient?:OpenImClient;ext
         const actor=transaction(connection,()=>{const value=reauthorize();if(route.method!=='GET')requireCsrf(value,request.headers['x-csrf-token']);return value})
         const bridge=new OpenImBridge(connection,config,imClient)
         let result:unknown
-        if(name==='imSession')result={data:await bridge.session(token,(parsed.data as RequestFor<'imSession'>).body.platformID)}
+        if(name==='imSession')result={data:await bridge.session(token,(parsed.data as RequestFor<'imSession'>).body.platformID,request.headers['x-acceptcat-time-zone'])}
         else if(name==='imSync')result={data:await bridge.sync(actor,reauthorize)}
         else if(name==='imSyncConversation')result={data:await bridge.syncConversation(actor,(parsed.data.params as {id:string}).id,reauthorize)}
         else result=transaction(connection,()=>{const chat=bridge.chat(reauthorize());return {data:name==='imContacts'?bridge.contacts(chat):bridge.conversations(chat,(parsed.data.query as {imConversationID?:string}).imConversationID)}})

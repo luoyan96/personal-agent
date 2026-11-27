@@ -252,6 +252,6 @@ it('migrates the deployed 039 schema twice while preserving every old table and 
  const after=snapshot();delete before.schema_migrations;delete after.schema_migrations
  expect(after).toEqual(before)
  expect(db.prepare('SELECT count(*) n FROM schema_migrations WHERE version<=39 AND applied_at=?').get('2026-11-16T00:00:00Z')!.n).toBe(39)
- expect(db.prepare('SELECT max(version) n FROM schema_migrations').get()!.n).toBe(41)
+ expect(db.prepare('SELECT max(version) n FROM schema_migrations').get()!.n).toBe(42)
  expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
 },20000)

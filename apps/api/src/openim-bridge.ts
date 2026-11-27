@@ -12,6 +12,7 @@ import { labAiRuntime } from './lab-ai-settings.js'
 import type { Config } from './config.js'
 import { ImUnavailable, imConfiguration, OpenImClient } from './openim-client.js'
 import { fail } from './errors.js'
+import { welcomeAssistantOwner } from './assistant-greetings.js'
 
 export type ImMapping=z.infer<typeof OpenImConversation>
 const now=()=>new Date().toISOString()
@@ -138,9 +139,14 @@ export class OpenImBridge {
     for(const mapping of initial.conversations){if(Date.now()>=deadline){truncated=true;conversations.push(mapping);continue};const value=await this.syncConversation(reauthorize(),mapping.researchConversationId,reauthorize);conversations.push(value);reason??=value.reason}
     return {status:reason?'unavailable' as const:'available' as const,reason,contactsSynced,conversations,truncated}
   }
-  async session(token:string,platformID:3|5){
+  async session(token:string,platformID:3|5,deviceTimeZone?:unknown){
     const reauthorize=()=>authenticate(this.db,token),actor=transaction(this.db,reauthorize)
-    const personal=transaction(this.db,()=>{const chat=this.chat(reauthorize());return (chat.handle('personalConversation',{params:{},query:{},headers:{},body:{}}) as {data:{conversation:{id:string}}}).data.conversation.id})
+    const personal=transaction(this.db,()=>{
+      const chat=this.chat(reauthorize())
+      const {data:{conversation,agent}}=chat.handle('personalConversation',{params:{},query:{},headers:{},body:{}}) as {data:{conversation:{id:string};agent:{id:string}}}
+      welcomeAssistantOwner(chat,conversation.id,agent.id,deviceTimeZone)
+      return conversation.id
+    })
     let coordinator=transaction(this.db,()=>this.mapping(this.chat(reauthorize()),personal))
     try{
       const configuration=imConfiguration(this.config)
