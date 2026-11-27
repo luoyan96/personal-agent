@@ -124,7 +124,9 @@ describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{ti
   const evidence=process.env.AGENT_FILES_EVIDENCE_ROOT;if(evidence)writeFileSync(join(evidence,'file-reply-runtime-proof.json'),JSON.stringify({synthetic:true,realParser:true,fixtureMediaType:attachment.mediaType,actualPinnedAdapter:true,realVendor:false,seen,turnStatus:'BUDGET_EXCEEDED',diagnostic:input.modelOutputDiagnostic},null,2))
  })
  it('distinguishes a real SQLite save failure from malformed model output without retaining reply text in diagnostics',async()=>{
-  const s=await setup(),own=await s.own(),sent=await s.call('agentFileMessage',uploadBody(),{id:own.conversation.id})
+  const s=await setup(),own=await s.own()
+  const attachment=uploadBody(Buffer.from('Synthetic persistence check.'),'persistence.txt','text/plain')
+  const sent=await s.call('agentFileMessage',attachment,{id:own.conversation.id});expect(sent.status,sent.text).toBe(201)
   s.db.exec("CREATE TRIGGER synthetic_reject_model BEFORE INSERT ON chat_messages WHEN json_extract(NEW.document,'$.origin')='model' BEGIN SELECT RAISE(ABORT,'synthetic refusal'); END")
   const reply='合成有效文字，但数据库写入被测试触发器拒绝。';await s.tick(async()=>result(reply))
   expect(await s.turn(sent.value.data.turn.id)).toMatchObject({status:'failed',failure:'MODEL_FAILED',outputMessageId:null,usage:{inputTokens:200,outputTokens:100}});expect(s.count('chat_messages')).toBe(1)

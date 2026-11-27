@@ -236,6 +236,7 @@ describe('durable assistant project coordination; synthetic local inputs',()=>{
  })
 })
 
+// Hosted Windows disk latency can delay setup and two file-backed upgrades.
 it('migrates the deployed 039 schema twice while preserving every old table and migration record',()=>{
  const folder=mkdtempSync(join(tmpdir(),'assistant-project-upgrade-039-'));cleanup.push(()=>rmSync(folder,{recursive:true,force:true}))
  const db=openDatabase(join(folder,'db.sqlite'),true);cleanup.push(()=>db.close())
@@ -254,4 +255,4 @@ it('migrates the deployed 039 schema twice while preserving every old table and 
  expect(db.prepare('SELECT count(*) n FROM schema_migrations WHERE version<=39 AND applied_at=?').get('2026-11-16T00:00:00Z')!.n).toBe(39)
  expect(db.prepare('SELECT max(version) n FROM schema_migrations').get()!.n).toBe(43)
  expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
-},20000)
+}, process.env.CI && process.platform === 'win32' ? 45_000 : 30_000)

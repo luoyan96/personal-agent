@@ -292,6 +292,7 @@ describe('public accounts and owned models over real local HTTP, synthetic crede
  })
 })
 
+// Hosted Windows disk latency can delay setup and two file-backed upgrades.
 it('upgrades exact populated015 twice, preserving IFRC accounts, sessions, chat documents, keys and IM identity; changes only relationship/scope indexes',async()=>{
  const dir=mkdtempSync(join(tmpdir(),'rap-personal-migrate-'));cleanup.push(()=>rmSync(dir,{recursive:true,force:true}));const db=openDatabase(join(dir,'old.sqlite'),true);cleanup.push(()=>db.close())
  db.exec('CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY,checksum TEXT NOT NULL,applied_at TEXT NOT NULL) STRICT')
@@ -312,6 +313,4 @@ it('upgrades exact populated015 twice, preserving IFRC accounts, sessions, chat 
  expect(db.prepare('SELECT relation_key FROM chat_contact_requests').get()!.relation_key).toBe('human:member_old_A:member_old_B')
  expect(db.prepare('SELECT scope_key FROM chat_conversations').get()!.scope_key).toBe('direct:member_old_A:member_old_B')
  expect(db.prepare('SELECT count(*) n FROM personal_spaces').get()!.n).toBe(0);expect(db.prepare('SELECT count(*) n FROM personal_model_configurations').get()!.n).toBe(0)
-// This integration check runs fifteen file-backed migrations, password hashing,
-// and two upgrades; Windows hosted-runner disk latency can exceed the 5s default.
-},20000)
+}, process.env.CI && process.platform === 'win32' ? 45_000 : 30_000)
