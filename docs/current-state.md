@@ -1,5 +1,9 @@
 # 新 AI 接手：当前项目状态
 
+## 大肥鱼娘聊天贴图（开发分支）
+
+聊天面板提供 24 张本地贴图（4 张动图）与 6 个工作表情。个人助理在日常私聊里可以从 6 张贴图中选一张，可搭配文字；已自定义的角色设定继续生效。此改动待正式发布，官网安装包仍为 1.0.3。
+
 ## 官网与 Windows 下载
 
 [产品官网](https://deepchat.acceptcat.com/) 与 [Windows 1.0.3 安装包](https://deepchat.acceptcat.com/download/DeepChat_1.0.3.exe) 使用广州 ECS 的独立静态目录。[原官网地址](https://chat.acceptcat.com/deepchat/) 仍可访问。网站源码位于 `site/deepchat`。发布新版本时需同步已校验的安装包、官网按钮和下载路由。

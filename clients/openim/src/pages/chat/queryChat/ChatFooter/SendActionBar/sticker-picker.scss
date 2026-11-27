@@ -1,0 +1,90 @@
+.chat-sticker-picker {
+  width: min(354px, calc(100vw - 16px));
+  padding: 12px;
+  border: 1px solid #e6edf3;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 6px 22px rgb(33 58 81 / 14%);
+  color: #263747;
+  outline: 0;
+
+  h2 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 20px;
+  }
+
+  button {
+    display: grid;
+    place-items: center;
+    border-radius: 6px;
+  }
+
+  button:hover {
+    background: #eef6fd;
+  }
+
+  button:focus-visible {
+    outline: 2px solid #1677ff;
+    outline-offset: -2px;
+  }
+}
+
+.chat-sticker-picker-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+
+  span {
+    color: #546678;
+    font-size: 12px;
+  }
+}
+
+.chat-sticker-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  max-height: min(244px, 43vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+
+  button {
+    width: 100%;
+    aspect-ratio: 1;
+    min-width: 0;
+    padding: 3px;
+  }
+
+  img {
+    width: 100%;
+    max-width: 52px;
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: contain;
+    pointer-events: none;
+  }
+}
+
+.chat-sticker-picker-work {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e6edf3;
+}
+
+.chat-sticker-picker-emoji {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 4px;
+
+  button {
+    min-height: 32px;
+    font-size: 20px;
+    line-height: 1;
+  }
+}

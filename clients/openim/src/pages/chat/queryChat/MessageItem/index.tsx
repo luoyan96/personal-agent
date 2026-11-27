@@ -44,6 +44,8 @@ import TextMessageRender from "./TextMessageRender";
 import FileMessageRender from "./FileMessageRender";
 import SoundMessageRender from "./SoundMessageRender";
 import ResearchMessageRender from "@/research/ResearchMessageRender";
+import ChatSticker from "@/research/ChatSticker";
+import { readStickerId } from "@/research/chat-sticker-message";
 import { useConversationStore } from "@/store";
 import { useResearchStore } from "@/research/store";
 import { selectedMessageText } from "@/research/chat-message-copy";
@@ -70,6 +72,12 @@ const components: Record<number, FC<IMessageItemProps>> = {
   [MessageType.TextMessage]: TextMessageRender,
   [MessageType.AtTextMessage]: TextMessageRender,
   [MessageType.PictureMessage]: MediaMessageRender,
+  [MessageType.FaceMessage]: ({ message }) => (
+    <ChatSticker
+      stickerId={readStickerId(message)}
+      fallback={<div className={styles.bubble}>[贴纸]</div>}
+    />
+  ),
   [MessageType.FileMessage]: FileMessageRender,
   [MessageType.VoiceMessage]: SoundMessageRender,
   [MessageType.CustomMessage]: ResearchMessageRender,

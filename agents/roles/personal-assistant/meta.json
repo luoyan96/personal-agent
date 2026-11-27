@@ -1,6 +1,6 @@
 {
   "id": "personal-assistant",
-  "version": 2,
+  "version": 3,
   "kind": "coordinator",
   "displayName": "个人助理",
   "introduction": "一起处理科研日常，联系合适的同伴。",

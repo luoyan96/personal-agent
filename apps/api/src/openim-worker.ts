@@ -1,4 +1,4 @@
-import { OpenImResearchPointer } from '@research-agent-platform/contracts'
+import { AssistantStickerId, OpenImResearchPointer } from '@research-agent-platform/contracts'
 import { randomUUID } from 'node:crypto'
 import { transaction } from './database.js'
 import { serviceFor } from './execution-worker.js'
@@ -18,11 +18,16 @@ export class OpenImWorker {
   snapshot(id:string){
     if(this.db.prepare("SELECT 1 FROM personal_followups WHERE fired_message_id=? AND status IN ('completed','cancelled')").get(id))throw new Error('Followup delivery stopped')
     const row=this.db.prepare('SELECT m.document,c.owner_id FROM chat_messages m JOIN chat_conversations c ON c.id=m.conversation_id WHERE m.id=?').get(id)!
-    const document=JSON.parse(String(row.document)),turn=document.turnId?this.db.prepare('SELECT owner_id FROM chat_turns WHERE id=?').get(document.turnId):null
+    const document=JSON.parse(String(row.document)),turn=document.turnId?this.db.prepare(`SELECT owner_id,
+      json_extract(request_json,'$.assistantSticker.messageId') sticker_message_id,
+      json_extract(request_json,'$.assistantSticker.id') sticker_id FROM chat_turns WHERE id=?`).get(document.turnId):null
     const contact=document.senderContactId?this.db.prepare('SELECT owner_id,kind FROM chat_contacts WHERE id=?').get(document.senderContactId):null
     const owner=String(turn?.owner_id??(document.origin==='human'?contact?.owner_id:null)??row.owner_id),actor=serviceFor(this.db,owner,this.config).c.actor,chat=this.bridge.chat(actor),message=chat.projectedMessage(id),mapping=this.bridge.mapping(chat,message.conversationId)
     const senderContact=message.senderContactId??chat.human().id,sender=this.bridge.identity(chat,senderContact),pointer=OpenImResearchPointer.parse({type:'research_message',bridgeVersion:'1.0.0',conversationId:message.conversationId,messageId:id,sequence:message.sequence})
-    return {actor,mapping,sender,pointer}
+    const stickerId=message.origin==='model'&&message.turnId&&turn?.sticker_message_id===message.id
+      ? AssistantStickerId.safeParse(turn.sticker_id).data : undefined
+    const extension=stickerId ? JSON.stringify({type:'dafeiyu_sticker',version:1,id:stickerId}) : ''
+    return {actor,mapping,sender,pointer,extension}
   }
   async tick(){
     if(Date.now()<this.retryAfter)return false
@@ -65,13 +70,13 @@ export class OpenImWorker {
       const synced=await this.bridge.syncConversation(value.actor,value.mapping.researchConversationId)
       if(synced.transportStatus!=='ready')throw new Error('Transport not ready')
       value=transaction(this.db,()=>this.snapshot(id))
-      const {mapping,sender,pointer}=value
+      const {mapping,sender,pointer,extension}=value
       const self=transaction(this.db,()=>{const chat=this.bridge.chat(value.actor);return this.bridge.identity(chat,chat.human().id).userID})
       operationID=randomUUID()
       const changed=transaction(this.db,()=>this.db.prepare("UPDATE im_message_outbox SET operation_id=? WHERE message_id=? AND status='sending' AND attempts=? AND lease_until=? AND lease_until>? AND operation_id IS NULL").run(operationID,id,attempt,leaseUntil,Date.now()))
       if(changed.changes!==1)throw new Error('IM claim no longer owned')
       sending=true
-      const response=await this.bridge.client.request('/msg/send_msg',{sendID:sender.userID,recvID:mapping.groupID?'':sender.userID===self?mapping.peerUserID:self,groupID:mapping.groupID??'',senderNickname:sender.contact.displayName,senderFaceURL:'',senderPlatformID:10,sessionType:mapping.groupID?3:1,contentType:110,content:{data:JSON.stringify(pointer),description:'科研协作记录',extension:''},isOnlineOnly:false,notOfflinePush:true},operationID)
+      const response=await this.bridge.client.request('/msg/send_msg',{sendID:sender.userID,recvID:mapping.groupID?'':sender.userID===self?mapping.peerUserID:self,groupID:mapping.groupID??'',senderNickname:sender.contact.displayName,senderFaceURL:'',senderPlatformID:10,sessionType:mapping.groupID?3:1,contentType:110,content:{data:JSON.stringify(pointer),description:extension?'大肥鱼表情':'科研协作记录',extension},isOnlineOnly:false,notOfflinePush:true},operationID)
       transaction(this.db,()=>this.db.prepare("UPDATE im_message_outbox SET status='sent',lease_until=NULL,server_message_id=coalesce(nullif(?,''),server_message_id),updated_at=? WHERE message_id=? AND attempts=? AND operation_id=? AND status IN ('sending','uncertain','sent')").run(String(response.serverMsgID??''),new Date().toISOString(),id,attempt,operationID))
     }catch{
       // A lost send response is not proof of failure: never blindly replay and duplicate an IM message.

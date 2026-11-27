@@ -2,7 +2,7 @@ import { Alert, Button } from "antd";
 import clsx from "clsx";
 import { ChatSourceQuote } from "./ChatSourceQuote";
 import {GroupNoticeCard} from './GroupNoticeCard';
-import { OpenImResearchPointer } from "@research-agent-platform/contracts";
+import { AssistantStickerExtension, assistantStickerFallback, OpenImResearchPointer, type AssistantStickerId } from "@research-agent-platform/contracts";
 import { IMessageItemProps } from "@/pages/chat/queryChat/MessageItem";
 import { researchApi, supportsTranscriptSync } from "./api";
 import { useResearchRead } from "./useResearchRead";
@@ -41,6 +41,7 @@ import { readChatMessage, readChatTurn, activeChatTurn } from "./chat-message-re
 import { useChatRecordChanges } from './useChatRecordChanges';
 import { watchTranscriptMessage } from './chat-transcript-sync';
 import { locateMessage, researchPointer, timelineScope } from "./chat-timeline";
+import ChatSticker, { getChatSticker, getPersonalStickerId } from "./ChatSticker";
 
 const readProjectNotice=createProjectNoticeReader(async(conversationId,messageId)=>
   (await researchApi('chatProjectNotice',{params:{id:conversationId,messageId}})).data,
@@ -122,12 +123,14 @@ export default function ResearchMessageRender({
   const coordinatorSender = useResearchStore((state) =>
     isCoordinatorChatContact(read.data?.fact.senderContactId, state),
   );
-  const ownAssistantMessage = useResearchStore(({ session }) => {
+  const ownAssistantSide = useResearchStore(({ session }) => {
     const coordinator = session?.coordinator;
-    return !!coordinator && coordinator.imConversationID === imID &&
-      coordinator.researchConversationId === pointer?.conversationId &&
-      coordinator.peerUserID === message.sendID;
+    if (!coordinator || coordinator.imConversationID !== imID ||
+      coordinator.researchConversationId !== pointer?.conversationId) return;
+    if (coordinator.peerUserID === message.sendID) return "assistant";
+    if (session?.user?.userID === message.sendID) return "owner";
   });
+  const ownAssistantMessage = ownAssistantSide === "assistant";
   const projectNotice=useResearchRead(
     ()=>readProjectNotice(actorGeneration,pointer!.conversationId,pointer!.messageId),
     `project-message:${pointer?.conversationId}:${pointer?.messageId}`,
@@ -266,6 +269,20 @@ export default function ResearchMessageRender({
     );
   }
   const fact = read.data?.fact;
+  const withdrawn = !!read.data?.details?.withdrawn;
+  const ownerStickerId = ownAssistantSide === "owner" && fact?.origin === "human" && !withdrawn
+    ? getPersonalStickerId(fact.text) : undefined;
+  let assistantStickerId: AssistantStickerId | undefined;
+  if (ownAssistantMessage && fact?.origin === "model" && !withdrawn) {
+    try {
+      const sticker = AssistantStickerExtension.safeParse(JSON.parse(message.customElem?.extension || "null"));
+      if (sticker.success && getChatSticker(sticker.data.id)) assistantStickerId = sticker.data.id;
+    } catch {
+      // Legacy and unknown extensions keep the authorized text readable.
+    }
+  }
+  const stickerId = ownerStickerId ?? assistantStickerId;
+  const stickerOnly = !!ownerStickerId || (assistantStickerId !== undefined && text === assistantStickerFallback(assistantStickerId));
   const serviceNoticeSummary = fact?.origin === "service" && fact.text &&
     !fact.resources.length && !fact.actionIds.length && !fact.turnId && !projectNotice.data
     ? serviceNoticePreview(fact.text)
@@ -291,7 +308,7 @@ export default function ResearchMessageRender({
   return (
     <div
       data-canonical-message={read.data?.fact.id}
-      className={clsx(styles.bubble, plainMessage && "chat-plain-message", plainAssistantReply && "chat-assistant-reply")}
+      className={clsx(!stickerOnly && styles.bubble, !stickerOnly && plainMessage && "chat-plain-message", !stickerOnly && plainAssistantReply && "chat-assistant-reply")}
     >
       {!pointer && <Alert type="warning" message="这条消息暂无法显示" />}
       {read.error && (
@@ -356,7 +373,12 @@ export default function ResearchMessageRender({
               {read.data.fact.noticeId ? <GroupNoticeCard id={read.data.fact.noticeId}/> : legacyInvite && read.data.fact.text ? (
                 <LegacyTaskInviteCard text={read.data.fact.text} />
               ) : (
-                read.data.fact.text && (
+                stickerId ? (
+                  <div className="flex flex-col items-start gap-2">
+                    {!stickerOnly && <SafeMessageMarkdown text={text} />}
+                    <ChatSticker stickerId={stickerId} />
+                  </div>
+                ) : read.data.fact.text && (
                   serviceNoticeSummary && !plainAssistantMessage ? (
                     <details className="chat-system-notice">
                       <summary title={serviceNoticeSummary}>{serviceNoticeSummary}</summary>

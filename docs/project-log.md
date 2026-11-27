@@ -3534,3 +3534,8 @@ PR #268 四项 CI 通过。Windows x64 正式包已公开发布，四个发布�
 ## 2026-11-27 · DeepChat 官网独立域名
 
 README 和当前状态改用 [产品官网](https://deepchat.acceptcat.com/) 与 [Windows 1.0.3 安装包](https://deepchat.acceptcat.com/download/DeepChat_1.0.3.exe) 的独立域名链接。广州 ECS 验证了新域名的 DNS、HTTPS 和下载安装包的范围请求。新地址返回的安装包大小为 421,760,272 字节，与 GitHub Release 一致。[原官网地址](https://chat.acceptcat.com/deepchat/) 返回 HTTP 200。
+
+## 2026-11-27 大肥鱼娘聊天贴图与个人助理
+
+- 开发分支基于 5ab8056，接入 24 张贴图、6 个工作表情和个人助理日常私聊贴图回复。完整逐图来源随客户端分发。
+- 已逐帧解码 24 张素材，其中 4 张为动图。使用合成模型验证助理选择、正文、兼容显示和消息投递。真实模型、生产 OpenIM 与正式安装包待发布验收。
