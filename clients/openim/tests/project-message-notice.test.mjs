@@ -48,7 +48,7 @@ test('a whole page of eligible legacy history performs only one capability404',a
  await read(2,'personal','different-account');assert.equal(count,2);
 });
 
-async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage,{replyTo=reply,kind='personal',sessionOnly=false}={}){
+async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage,{replyTo=reply,kind='personal',sessionOnly=false,stoppedInTimeline=false}={}){
  const jsx=(type,props)=>({type,props}),queries=[],locations=[],readable=[],registered=[];
  const mapping={imConversationID:'im',researchConversationId:'personal',peerUserID:'sdk-coordinator',kind};
  const store={generation:1,contacts:[{contact:{id:'coordinator',profile:{role:'coordinator'}}}],mappings:[mapping]};
@@ -68,7 +68,7 @@ async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage
   }},
   './store':{useResearchStore:selector=>selector(store)},
   '@/store':{useConversationStore:selector=>selector({currentConversation:{conversationID:'im'}})},
-  './agent-progress':{AgentProgressHistory:'History',acknowledgeAgentReply(){},registerAgentProgress:(_generation,_imID,value)=>registered.push(value)},
+  './agent-progress':{AgentProgressHistory:'History',acknowledgeAgentReply(){},useStoppedReplyInTimeline:()=>stoppedInTimeline,registerAgentProgress:(_generation,_imID,value)=>registered.push(value)},
   './agent-progress-state':agentProgressState,
   './task-notice':taskNotice,
   './project-message-notice':{createProjectNoticeReader,isProjectNoticeCandidate},
@@ -104,6 +104,9 @@ test('direct-chat input registers active progress, while historical failures ret
    assert.deepEqual(registered,[turn]);
   }
  }
+ const turn={id:'turn',status:'cancelled',agentContactId:'coordinator',conversationId:fact.conversationId};
+ const {tree}=await renderMessage(null,outgoing,turn,undefined,{replyTo:null,stoppedInTimeline:true});
+ assert.equal(nodes(tree).some(node=>node.type==='ResearchTurnStatus'),false);
 });
 
 test('host project questions and deadline notices render a single card with their original text and task',async()=>{

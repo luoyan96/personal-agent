@@ -19,7 +19,7 @@ import { useResearchContactChat } from "./useResearchContactChat";
 import { CreatedAgentChatButton } from "./CreatedAgentChatButton";
 import { PersonalReceiptCard } from "./PersonalReceiptCard";
 import { peerChatRequest } from "./peer-library-runtime";
-import { registerAgentProgress } from "./agent-progress";
+import { registerAgentProgress, useStoppedReplyInTimeline } from "./agent-progress";
 import { isPendingAgentReply } from "./agent-progress-state";
 import { groupMessageBody, type SelectedMention } from "./group-mentions";
 import { useGroupChatRoster, groupContactDescription } from "./GroupChatRoster";
@@ -125,6 +125,7 @@ export function useResearchComposer() {
     !!turn && turn.conversationId === mapping?.researchConversationId,
   );
   const currentTurn = turnRead.data?.data || turn;
+  const stoppedReplyInTimeline = useStoppedReplyInTimeline(actorGeneration, imID, currentTurn);
   useEffect(() => {
     const fresh = freshCreation.current;
     if (
@@ -532,6 +533,7 @@ export function useResearchComposer() {
         {mapping.kind !== "group" &&
           currentTurn &&
           (advanced || currentTurn.status !== "succeeded") &&
+          !stoppedReplyInTimeline &&
           !isPendingAgentReply(currentTurn.status) &&
           turn?.conversationId === mapping.researchConversationId && (
             <div className="mx-3 mt-1">
@@ -546,8 +548,10 @@ export function useResearchComposer() {
                 compact
                 onRetried={
                   turnRead.data && !turnRead.error
-                    ? (next) =>
-                        setTurn({ generation: actorGeneration, imID, turn: next })
+                    ? (next) => {
+                        setTurn({ generation: actorGeneration, imID, turn: next });
+                        if (imID) registerAgentProgress(actorGeneration, imID, next);
+                      }
                     : undefined
                 }
               />

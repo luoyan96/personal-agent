@@ -22,6 +22,7 @@ import {
   registerAgentProgress,
   acknowledgeAgentReply,
   AgentProgressHistory,
+  useStoppedReplyInTimeline,
 } from "./agent-progress";
 import { isPendingAgentReply } from "./agent-progress-state";
 import type { AgentTurn } from "@research-agent-platform/contracts";
@@ -178,6 +179,7 @@ export default function ResearchMessageRender({
   );
   useChatRecordChanges(pointer?.conversationId, 'turn', turnId ?? undefined, turn.refresh, turn.invalidate);
   const currentTurn = turn.data?.data || currentRetry;
+  const stoppedReplyInTimeline = useStoppedReplyInTimeline(actorGeneration, imID, currentTurn);
   const ownReceipt = currentTurn && currentTurn.outputMessageId === read.data?.fact.id
     ? currentTurn : undefined;
   const hasTaskReceipt = ownReceipt?.assistantReceipt?.kind === "work_task";
@@ -441,6 +443,7 @@ export default function ResearchMessageRender({
       {!isGroup &&
         currentTurn &&
         currentTurn.status !== "succeeded" &&
+        !stoppedReplyInTimeline &&
         !isPendingAgentReply(currentTurn.status) && (
           <ResearchTurnStatus
             turn={currentTurn}

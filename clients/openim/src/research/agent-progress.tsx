@@ -30,6 +30,20 @@ type Entry = {
   validation?: string;
 };
 const useProgress = create<{ entries: Entry[] }>(() => ({ entries: [] }));
+const progressLimit = 8;
+
+function recentProgress(entries: Entry[], generation: number, imID: string, conversationId?: string) {
+  return entries.filter(entry => entry.generation === generation && entry.imID === imID &&
+    entry.conversationId === conversationId && !entry.canonicalSeen &&
+    (entry.error || (entry.progress && entry.progress.phase !== "superseded"))).slice(-progressLimit);
+}
+
+export function useStoppedReplyInTimeline(generation: number, imID: string | undefined, turn: AgentTurn | undefined) {
+  return useProgress(({ entries }) => Boolean(turn && imID &&
+    recentProgress(entries, generation, imID, turn.conversationId).some(entry =>
+      entry.turnId === turn.id && entry.progress?.phase === "stopped")));
+}
+
 export const AgentProgressHistory = createContext<{
   messageIds: Set<string>;
   latestOwnId?: string;
@@ -148,7 +162,7 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
               e.imID === imID &&
               progressNeedsRead(e, token),
           )
-          .slice(-8);
+          .slice(-progressLimit);
         await Promise.all(
           pending.map(async (entry) => {
             try {
@@ -241,18 +255,10 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
       document.removeEventListener("visibilitychange", resume);
     };
   }, [scope, generation, imID, token]);
-  const visible = entries
-    .filter(
-      (e) =>
-        e.generation === generation &&
-        e.imID === imID &&
-        e.conversationId === mapping?.researchConversationId &&
-        !e.canonicalSeen &&
-        !history.messageIds.has(e.progress?.finalMessageId || "") &&
-        (e.validation === token || e.progress?.phase === "stopped") &&
-        (e.error || (e.progress && e.progress.phase !== "superseded")),
-    )
-    .slice(-8);
+  const visible = recentProgress(entries, generation, imID, mapping?.researchConversationId).filter(
+    (entry) => !history.messageIds.has(entry.progress?.finalMessageId || "") &&
+      (entry.validation === token || entry.progress?.phase === "stopped"),
+  );
   return (
     <div ref={container} data-agent-progress className="desktop-agent-progress space-y-2 px-5 pb-4">
       {receipts.filter(item => !history.messageIds.has(item.receipt!.message.id)).map(item => <div key={item.id} className="chat-acknowledged-input" data-acknowledged-message={item.receipt!.message.id}>
@@ -279,7 +285,7 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
           data-progress-turn={turnId}
           className={`desktop-streaming-row text-sm${group ? "" : " desktop-streaming-row-direct"}`}
         >
-          <OIMAvatar contact={groupContact || contact?.contact} userID={group ? contact?.userID : conversation?.userID} size={30} src={group ? undefined : conversation?.faceURL} text={name} />
+          <OIMAvatar contact={groupContact || contact?.contact} userID={group ? contact?.userID : conversation?.userID} size={36} src={group ? undefined : conversation?.faceURL} text={name} />
           <div className="desktop-streaming-content">
           {group && <div className="chat-agent-identity"><strong>{name}</strong>{groupContact && <span>{groupContactDescription(groupContact, roster.data?.data || [], actorId)}</span>}</div>}
           {group && inputText && <p className="chat-agent-question" title={inputText}>回复：{inputText}</p>}
