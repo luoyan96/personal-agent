@@ -196,7 +196,6 @@ export class ChatWorker {
       if(selectedSkill)system+=skillSystem
       const library=retrieveResearchContext(s,input,currentTurnText(s,turn.id))
       assistantStickers=Boolean(input.assistantProjectEntry&&input.dailyChat&&!input.workTaskId&&!input.scheduledFollowupId&&!input.fileSource&&!input.context.length&&!library)
-      if(assistantStickers)system+='\n'+assistantStickerSystem
       let libraryExcerpts:AgentResearchContext['excerpts']=[]
       if(library)system+='\n'+researchLibrarySystem
       const document=input.fileSource?s.fileDocument(input.fileSource.messageId,group.id):undefined
@@ -278,6 +277,13 @@ export class ChatWorker {
           if(fitted){prompt=fitted.prompt;system=fitted.system;console.log(`${topicIndexReceipt(fitted)} conversation=${group.id}`)}
           else console.log(`CHAT_TOPIC mode=index-skip entries=${reference.index.entries.length} budget=${input.budget.maxTokens} conversation=${group.id}`)
         }
+      }
+      // Use only spare budget after selecting context and allowing the full ordinary reply.
+      if(assistantStickers){
+        const stickerSystem=system+'\n'+assistantStickerSystem
+        const replyReserve=Math.min(4096,input.budget.maxTokens-chatInputTokenBound(system,prompt))
+        assistantStickers=input.budget.maxTokens-chatInputTokenBound(stickerSystem,prompt)>=replyReserve
+        if(assistantStickers)system=stickerSystem
       }
       const inputTokenBound=chatInputTokenBound(system,prompt),remainingOutput=input.budget.maxTokens-inputTokenBound
       const admitted=prompt.length <= (input.skill?256000:100000) && remainingOutput>=(input.intakeOutputLimitRecovery?1024:64)
