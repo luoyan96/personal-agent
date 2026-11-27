@@ -18,6 +18,7 @@ import { PersonalFollowupWorker,outsideQuiet } from '../src/personal-followups.j
 import { reminderRequest } from '../src/personal-time.js'
 import { nextRecurring,scheduledRequest } from '../src/recurring-time.js'
 import { personalWorkRequest } from '../src/personal-assistant.js'
+import { readAssistantStickerReply } from '../src/assistant-sticker.js'
 import { agentCreationBoundary } from '../src/agent-creation.js'
 import { chatInputTokenBound } from '../src/chat-model-input.js'
 import { researchConversationPolicy } from '../src/conversation-policy.js'
@@ -104,6 +105,54 @@ describe('personal assistant actual HTTP/SQLite; model callbacks are synthetic',
   })
   expect((await s.turn(next.turn.id)).status).toBe('succeeded')
   expect(s.count('personal_memories')).toBe(0)
+ })
+ it('reads only an assistant sticker envelope, keeping unknown IDs and malformed output away from transport',()=>{
+  const invalid={id:undefined,answer:null}
+  expect(readAssistantStickerReply('{"kind":"dafeiyu_sticker","id":"heart","answer":null')).toEqual(invalid)
+  expect(readAssistantStickerReply('```json\n{"kind":"dafeiyu_sticker","id":"heart","answer":\n```')).toEqual(invalid)
+  expect(readAssistantStickerReply('```json\n{"kind":"dafeiyu_stic')).toEqual(invalid)
+  expect(readAssistantStickerReply(JSON.stringify({kind:'dafeiyu_sticker',id:'unknown',answer:null}))).toEqual(invalid)
+  expect(readAssistantStickerReply(JSON.stringify({kind:'dafeiyu_sticker',id:'heart',answer:'晚安。',extra:'untrusted'}))).toEqual({id:undefined,answer:'晚安。'})
+  expect(readAssistantStickerReply(JSON.stringify({kind:'dafeiyu_sticker',id:'unknown',answer:'先核对报错对应的版本。'}))).toEqual({id:undefined,answer:'先核对报错对应的版本。'})
+  expect(readAssistantStickerReply('```json\n{"status":"ok"}\n```')).toBeUndefined()
+  expect(readAssistantStickerReply('优先考虑混合效应模型，并明确被试内的相关性。')).toBeUndefined()
+ })
+ it('preserves custom tone and readable replies for invalid sticker output and scientific answers',async()=>{
+  const s=await setup(),own=await s.own(),id=own.conversation.id
+  const personality='语气直接，严肃讨论不发表情。'
+  const edited=await s.call('updateContactProfile',{displayName:own.agent.displayName,introduction:'',capabilityDescription:'',personality,expectedVersion:own.agent.profile.version},{id:own.agent.id})
+  expect(edited.status,edited.text).toBe(200)
+  const invalid='这张大肥鱼表情暂时发不了。'
+  const cases=[
+   ['发表情吧。','```json\n{"kind":"dafeiyu_sticker","id":"heart","answer":\n```',invalid],
+   ['写个 JSON 示例。','```json\n{"status":"ok"}\n```','```json\n{"status":"ok"}\n```'],
+   ['讨论一下重复测量的分析。','优先考虑混合效应模型，并明确被试内的相关性。','优先考虑混合效应模型，并明确被试内的相关性。'],
+  ] as const
+  for(const [request,output,expected] of cases){
+   const sent=await s.send(id,request)
+   await s.tick(async(input)=>{
+    expect(JSON.parse(input.prompt).requestedAgent.profile.personality).toBe(personality)
+    expect(input.system).toContain('Use plain text for serious discussion')
+    return modelResult(output)
+   })
+   const progress=(await s.call('chatTurnProgress',null,{id:sent.turn.id})).value.data
+   expect(progress).toMatchObject({phase:'final',text:expected})
+   const row=s.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(sent.turn.id)!
+   expect(JSON.parse(String(row.request_json))).not.toHaveProperty('assistantSticker')
+  }
+ })
+ it('keeps sticker delivery scoped to the owned personal assistant in ordinary chat',async()=>{
+  const s=await setup(),agent=(await s.call('createPersonalAgent',profile)).value.data
+  const direct=(await s.call('createDirectConversation',{contactId:agent.id})).value.data
+  const sent=await s.send(direct.id,'发个大肥鱼表情打招呼。')
+  await s.tick(async(input)=>{
+   expect(input.system).not.toContain('dafeiyu_sticker')
+   return modelResult(JSON.stringify({kind:'dafeiyu_sticker',id:'wave',answer:'你好。'}))
+  })
+  const progress=(await s.call('chatTurnProgress',null,{id:sent.turn.id})).value.data
+  expect(progress).toMatchObject({phase:'final',text:'你好。'})
+  const row=s.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(sent.turn.id)!
+  expect(JSON.parse(String(row.request_json))).not.toHaveProperty('assistantSticker')
  })
  it('revises a directly stated conversation preference under the same topic', async () => {
   const s = await setup(), own = await s.own()

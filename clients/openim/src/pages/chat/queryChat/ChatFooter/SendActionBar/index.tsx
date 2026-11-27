@@ -1,36 +1,21 @@
-import { FolderOpenOutlined, SmileOutlined } from "@ant-design/icons";
-import { Popover } from "antd";
+import { FolderOpenOutlined } from "@ant-design/icons";
 import { memo, useEffect, useRef } from "react";
 import { useAgentChatOperation } from "@/research/useAgentChatOperation";
 import type { AgentChatOperation } from "@/research/useAgentChatOperation";
 import ScreenshotAction from "./ScreenshotAction";
-const emojis = [
-  "🙂",
-  "😊",
-  "👍",
-  "👏",
-  "🙏",
-  "🤝",
-  "💡",
-  "✅",
-  "🎉",
-  "❤️",
-  "🤔",
-  "👀",
-  "📚",
-  "📝",
-  "🔬",
-  "🌱",
-];
+import StickerPicker from "./StickerPicker";
+
 const SendActionBar = ({
   insertEmoji,
   textOnly = false,
+  sendSticker,
   stageFiles,
   stageImages,
   pasteImages,
 }: {
   insertEmoji: (emoji: string) => void;
   textOnly?: boolean;
+  sendSticker: (id: string, label: string) => void;
   stageFiles: (files: File[]) => void;
   stageImages: (files: File[]) => void;
   pasteImages: () => void;
@@ -42,33 +27,7 @@ const SendActionBar = ({
   return (
     <div className="px-3 pt-1">
       <div className="flex items-center gap-1" role="toolbar" aria-label="聊天工具栏">
-        <Popover
-          trigger="click"
-          placement="topLeft"
-          content={
-            <div className="grid grid-cols-4 gap-1" aria-label="选择表情">
-              {emojis.map((emoji) => (
-                <button
-                  type="button"
-                  key={emoji}
-                  aria-label={`插入表情 ${emoji}`}
-                  onClick={() => insertEmoji(emoji)}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          }
-        >
-          <button
-            type="button"
-            className="chat-tool-button"
-            aria-label="表情"
-            title="表情"
-          >
-            <SmileOutlined />
-          </button>
-        </Popover>
+        <StickerPicker insertEmoji={insertEmoji} sendSticker={sendSticker} />
         {!textOnly && (
           <>
             <button

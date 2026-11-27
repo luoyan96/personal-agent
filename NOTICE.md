@@ -105,3 +105,5 @@ B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `
 个人项目委派与跟进机制参考了 [DeepSeek dsh-superagent-prototype](https://github.com/deepseek-ai/dsh-superagent-prototype/tree/8c32a9dc5d72c033816c6a8110b37f40cf94fba4) 的持久任务、事件送达和执行者分工设计。AcceptCat 使用自己的个人任务、聊天权限和 SQLite worker 实现。
 
 2026-11-18 产品更名为 DeepChat，继续使用上文记录的大肥鱼图标、来源和许可。历史条目沿用发布当时的名称。
+
+聊天贴图来自大肥鱼娘社区作者，逐图来源、作者和许可见[贴图署名](clients/openim/public/third-party/dafeiyu/STICKERS.md)。

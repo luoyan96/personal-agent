@@ -46,6 +46,7 @@ import {
   sendSubmissionFile,
 } from "@/research/chat-file-submission";
 import { useAgentChatOperation } from "@/research/useAgentChatOperation";
+import { personalStickerText, stickerFace } from "@/research/chat-sticker-message";
 import type { AgentChatOperation } from "@/research/useAgentChatOperation";
 import { assertRequestActive, withRequestDeadline } from "@/research/request-deadline";
 import emitter from "@/utils/events";
@@ -70,6 +71,20 @@ i18n.on("languageChanged", () => {
   sendActions[0].label = t("placeholder.sendWithEnter");
   sendActions[1].label = t("placeholder.sendWithShiftEnter");
 });
+
+async function createNativeMessage(item: ChatSubmission) {
+  if (item.nativeMessage) return item.nativeMessage;
+  if (item.stickerId)
+    return (await IMSDK.createFaceMessage(stickerFace(item.stickerId))).data;
+  if (item.quoteMessage)
+    return (
+      await IMSDK.createQuoteMessage({
+        text: item.text,
+        message: JSON.stringify(item.quoteMessage),
+      })
+    ).data;
+  return (await IMSDK.createTextMessage(item.text)).data;
+}
 
 const ChatFooter = () => {
   const imID = useConversationStore((s) => s.currentConversation?.conversationID || "");
@@ -189,7 +204,13 @@ const ChatFooter = () => {
         updateSubmission(item.id, { state: "sending", error: undefined });
         try {
           let request = item.request;
-          if (composer.consultation && (request?.route !== "agentChatMessage" || item.files?.length || item.images?.length))
+          if (
+            composer.consultation &&
+            (request?.route !== "agentChatMessage" ||
+              item.stickerId ||
+              item.files?.length ||
+              item.images?.length)
+          )
             throw new Error("助理咨询只支持文字。请将文字重新发到当前会话。");
           if (item.files?.length && !item.fileAgentConversationId && directImageAgent())
             throw new Error(
@@ -325,16 +346,7 @@ const ChatFooter = () => {
               );
             await withRequestDeadline(
               async (signal) => {
-                const message =
-                  item.nativeMessage ||
-                  (item.quoteMessage
-                    ? (
-                        await IMSDK.createQuoteMessage({
-                          text: item.text,
-                          message: JSON.stringify(item.quoteMessage),
-                        })
-                      ).data
-                    : (await IMSDK.createTextMessage(item.text)).data);
+                const message = await createNativeMessage(item);
                 assertRequestActive(signal);
                 updateSubmission(item.id, { nativeMessage: message });
                 if (!tracked.operation.isCurrent())
@@ -390,6 +402,64 @@ const ChatFooter = () => {
     }
   };
   wake.current = pump;
+  const queueSticker = (stickerId: string, label: string) => {
+    const conversation = useConversationStore.getState().currentConversation;
+    const research = useResearchStore.getState();
+    if (
+      !conversation ||
+      conversation.conversationID !== imID ||
+      generation !== research.generation
+    )
+      return;
+    try {
+      assertSubmissionCapacity(useChatOutbox.getState().items, generation, imID);
+      const caption = personalStickerText(label);
+      const coordinator = research.session?.coordinator;
+      const ownAssistant =
+        coordinator?.kind === "personal" &&
+        coordinator.imConversationID === imID &&
+        coordinator.peerUserID === conversation.userID &&
+        !conversation.groupID &&
+        !!actor &&
+        research.sessionActorId === actor;
+      const request: ChatSubmission["request"] =
+        composer.consultation
+          ? composer.prepareResearch(caption)
+          : ownAssistant
+          ? {
+              route: "agentChatMessage",
+              conversationId: coordinator.researchConversationId,
+              body: { text: caption, continuous: true },
+            }
+          : undefined;
+      if (composer.consultation && request?.route !== "agentChatMessage")
+        throw new Error("正在同步咨询会话，请稍后再试。");
+      const id = crypto.randomUUID();
+      const operation = captureSend();
+      operations.current.set(id, {
+        operation,
+        intent: request ? composer.acceptSendIntent() : 0,
+      });
+      const item: ChatSubmission = {
+        id,
+        generation,
+        conversationID: imID,
+        recvID: conversation.userID,
+        groupID: conversation.groupID,
+        html: "",
+        text: request?.body.text || `[贴纸] ${label}`,
+        ...(request ? { request } : { stickerId }),
+        state: "queued",
+      };
+      useChatOutbox.setState((s) => ({ items: [...s.items, item] }));
+      void pump();
+    } catch (error) {
+      feedbackToast({
+        error,
+        msg: error instanceof Error ? error.message : "贴纸未发送，请稍后重试。",
+      });
+    }
+  };
   const enterToSend = () => {
     const cleanText = getCleanText(latestHtml.current);
     const conversation = useConversationStore.getState().currentConversation;
@@ -514,7 +584,7 @@ const ChatFooter = () => {
     operations.current.get(item.id)?.operation.dispose();
     operations.current.set(item.id, {
       operation: captureSend(),
-      intent: composer.acceptSendIntent(),
+      intent: item.stickerId ? 0 : composer.acceptSendIntent(),
     });
     updateSubmission(item.id, { state: "queued", error: undefined });
     void pump();
@@ -781,8 +851,10 @@ const ChatFooter = () => {
           />
           <div className="desktop-composer-bottom flex items-center justify-between px-3 py-2">
             <SendActionBar
+              key={scope}
               insertEmoji={(emoji) => editor.current?.insertText(emoji)}
               textOnly={composer.consultation}
+              sendSticker={queueSticker}
               stageFiles={droppedFiles}
               stageImages={(files) => imageTray.current?.stage(files)}
               pasteImages={() => imageTray.current?.readClipboard()}

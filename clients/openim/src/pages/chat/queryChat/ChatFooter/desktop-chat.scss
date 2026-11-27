@@ -89,7 +89,7 @@ body:has(.personal-agent-desktop) .desktop-chat-drawer { top: 36px; }
   .personal-agent-desktop .desktop-chat-footer.is-native-desktop { width: calc(100% - 16px); margin: 8px 8px 10px; }
 }
 .chat-tool-button { display: flex; flex: 0 0 auto; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: 4px; color: #60666b; font-size: 19px; }
-.chat-tool-button:hover, .chat-tool-button:focus-visible { background: var(--ac-chat-hover, #eef6fd); color: var(--ac-chat-link, #155187); }
+.chat-tool-button:hover, .chat-tool-button:focus-visible, .chat-tool-button[aria-expanded="true"] { background: var(--ac-chat-hover, #eef6fd); color: var(--ac-chat-link, #155187); }
 .chat-tool-button:focus-visible { outline: 2px solid #1677ff; outline-offset: 2px; }
 .chat-tool-button:disabled { opacity: .45; cursor: not-allowed; }
 .chat-screenshot-tools { display: flex; gap: 0; align-items: center; }

@@ -256,6 +256,8 @@ export const formatMessageByType = (message?: MessageItem): string => {
         return message.textElem!.content;
       case MessageType.PictureMessage:
         return t("messageDescription.imageMessage");
+      case MessageType.FaceMessage:
+        return "[贴纸]";
       case MessageType.FriendAdded:
         return t("messageDescription.alreadyFriendMessage");
       case MessageType.MemberEnter:

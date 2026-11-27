@@ -4,6 +4,7 @@ import type { PreparedResearchSend } from "./ResearchComposer";
 import { useResearchStore } from "./store";
 import { routes, ChatMessage, AgentTurn } from "@research-agent-platform/contracts";
 import type { ComposerImage } from "./chat-image-submission";
+import { isStickerId, readStickerId } from "./chat-sticker-message";
 
 export type ChatSubmission = {
   id: string;
@@ -19,6 +20,7 @@ export type ChatSubmission = {
   imageAgentConversationId?: string;
   fileAgentConversationId?: string;
   nativeMessage?: MessageItem;
+  stickerId?: string;
   quoteMessage?: MessageItem;
   state: "queued" | "sending" | "failed" | "paused" | "acknowledged";
   receipt?: { message: ChatMessage; turns: AgentTurn[] };
@@ -285,15 +287,24 @@ function restore(actor: ReturnType<typeof useResearchStore.getState>) {
       )
         throw new Error("Invalid quote source");
       if (
+        item.stickerId !== undefined &&
+        (!isStickerId(item.stickerId) || !item.text || item.html ||
+          item.request || item.quoteMessage || item.images || item.files)
+      )
+        throw new Error("Invalid sticker draft");
+      if (
         item.nativeMessage &&
-        (![101, 114].includes(item.nativeMessage.contentType) ||
-          typeof item.nativeMessage.clientMsgID !== "string" ||
-          (item.nativeMessage.contentType === 114
-            ? !item.quoteMessage ||
-              item.nativeMessage.quoteElem?.text !== item.text ||
-              item.nativeMessage.quoteElem?.quoteMessage?.clientMsgID !==
-                item.quoteMessage.clientMsgID
-            : item.nativeMessage.textElem?.content !== item.text))
+        (typeof item.nativeMessage.clientMsgID !== "string" ||
+          (item.stickerId
+            ? item.nativeMessage.contentType !== 115 ||
+              readStickerId(item.nativeMessage) !== item.stickerId
+            : ![101, 114].includes(item.nativeMessage.contentType) ||
+              (item.nativeMessage.contentType === 114
+                ? !item.quoteMessage ||
+                  item.nativeMessage.quoteElem?.text !== item.text ||
+                  item.nativeMessage.quoteElem?.quoteMessage?.clientMsgID !==
+                    item.quoteMessage.clientMsgID
+                : item.nativeMessage.textElem?.content !== item.text)))
       )
         throw new Error("Invalid native draft");
       items.push({
