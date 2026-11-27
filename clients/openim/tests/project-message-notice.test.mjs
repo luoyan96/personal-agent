@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import ts from 'typescript';
-import {assistantReplyText} from '@research-agent-platform/contracts';
+import {assistantReplyText,OpenImResearchPointer} from '@research-agent-platform/contracts';
 
 async function load(file,imports={}){
  const source=await readFile(new URL(file,import.meta.url),'utf8'),module={exports:{}};
@@ -14,6 +14,7 @@ async function load(file,imports={}){
  return module.exports;
 }
 const {createProjectNoticeReader,isProjectNoticeCandidate}=await load('../src/research/project-message-notice.ts');
+const taskNotice=await load('../src/research/task-notice.ts');
 const fact={id:'decision',conversationId:'personal',sequence:5,senderContactId:'coordinator',origin:'service',text:'本轮实验数量具体是多少？',turnId:null,resources:[],actionIds:[],mentions:[]};
 const reply={messageId:'owner-request',sequence:1,senderContactId:'owner',text:'持续跟进这次研究',withdrawn:false};
 const notice={projectId:'project',taskId:'work',kind:'decision'};
@@ -46,25 +47,28 @@ test('a whole page of eligible legacy history performs only one capability404',a
  await read(2,'personal','different-account');assert.equal(count,2);
 });
 
-async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage){
+async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage,{replyTo=reply,kind='personal',sessionOnly=false}={}){
  const jsx=(type,props)=>({type,props}),queries=[],locations=[],readable=[];
- const store={generation:1,contacts:[{contact:{id:'coordinator',profile:{role:'coordinator'}}}],mappings:[{imConversationID:'im',kind:'personal'}]};
+ const mapping={imConversationID:'im',researchConversationId:'personal',peerUserID:'sdk-coordinator',kind};
+ const store={generation:1,contacts:[{contact:{id:'coordinator',profile:{role:'coordinator'}}}],mappings:[mapping]};
+ if(sessionOnly)Object.assign(store,{session:{coordinator:mapping},contacts:[],mappings:[]});
+ const pointer={type:'research_message',bridgeVersion:'1.0.0',conversationId:messageFact.conversationId,messageId:messageFact.id,sequence:messageFact.sequence};
  const imports={
   react:{useContext:()=>({messageIds:new Set()}),useEffect(effect){effect();},useState:()=>[undefined,()=>{}]},
   'react/jsx-runtime':{jsx,jsxs:jsx,Fragment:'Fragment'},
   antd:{Alert:'Alert',Button:'Button'},
   clsx:(...classNames)=>classNames.filter(Boolean).join(' '),
-  '@research-agent-platform/contracts':{OpenImResearchPointer:{safeParse:()=>({success:true,data:{conversationId:'personal',messageId:'decision',sequence:5}})}},
+  '@research-agent-platform/contracts':{OpenImResearchPointer},
   './api':{researchApi:async()=>({data:projectNotice}),supportsTranscriptSync:()=>true},
   './ChatSourceQuote':{ChatSourceQuote:'ChatSourceQuote'},
   './useResearchRead':{useResearchRead(_read,identity,enabled,options){
    queries.push({identity,enabled,options});
-   return {data:identity.startsWith('project-message:')?projectNotice:identity==='im:personal:decision:5'?{fact:messageFact,details:{replyTo:reply}}:turn&&identity===`im:${turn.id}`?{data:turn}:undefined,refresh(){},invalidate(){}};
+   return {data:identity.startsWith('project-message:')?projectNotice:identity===`im:${pointer.conversationId}:${pointer.messageId}:${pointer.sequence}`?{fact:messageFact,details:{replyTo}}:turn&&identity===`im:${turn.id}`?{data:turn}:undefined,refresh(){},invalidate(){}};
   }},
   './store':{useResearchStore:selector=>selector(store)},
   '@/store':{useConversationStore:selector=>selector({currentConversation:{conversationID:'im'}})},
   './agent-progress':{AgentProgressHistory:'History',acknowledgeAgentReply(){}},
-  './task-notice':{isTaskNotice:()=>false,legacyTaskInvitation:()=>undefined,serviceNoticePreview:text=>text,splitTaskResources:()=>({tasks:[],others:[]})},
+  './task-notice':taskNotice,
   './project-message-notice':{createProjectNoticeReader,isProjectNoticeCandidate},
   './chat-message-read':{},'./useChatRecordChanges':{useChatRecordChanges(){}},'./chat-transcript-sync':{watchTranscriptMessage(){}},
   './chat-timeline':{researchPointer:message=>message.pointer,timelineScope:(generation,imId)=>`${generation}:${imId}`,locateMessage:(scope,locator)=>locations.push({scope,locator})},
@@ -72,7 +76,7 @@ async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage
   './PersonalReceiptCard':{PersonalReceiptCard:'PersonalReceiptCard',WorkTaskReceipt:'WorkTaskReceipt'},
   './ChatProjectDelivery':{ChatProjectDelivery:'ChatProjectDelivery'},
   './chat-reply':{
-   isCoordinatorChatContact: id => id==='coordinator',
+   isCoordinatorChatContact: (id,state) => state.contacts.some(({contact})=>contact.id===id),
    canonicalChatText: (message,coordinator) => message.origin==='model'&&coordinator?assistantReplyText(message.text):message.text,
    coordinatorChatText: text => text,
   },
@@ -80,7 +84,7 @@ async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage
  };
  for(const name of ['./GroupNoticeCard','./ResearchActionCard','./ResearchTaskCard','./ResearchTurnStatus','./CreatedAgentChatButton','./AgentFileReadSummary','./ContinueAgentFileReadingButton','./ResearchReadSummary','./GroupMessageStatuses'])imports[name]={};
  const component=(await load('../src/research/ResearchMessageRender.tsx',imports)).default;
- return {tree:component({message:{clientMsgID:'sdk-decision',customElem:{data:'{}'}},previousMessage,onReadableText:text=>readable.push(text)}),queries,locations,readable};
+ return {tree:component({message:{clientMsgID:'sdk-decision',contentType:110,sendID:'sdk-coordinator',customElem:{data:JSON.stringify(pointer)}},previousMessage,onReadableText:text=>readable.push(text)}),queries,locations,readable};
 }
 
 test('host project questions and deadline notices render a single card with their original text and task',async()=>{
@@ -153,6 +157,38 @@ test('an ordinary system notice keeps its existing folded presentation',async()=
  assert.equal(all.some(node=>node.type==='details'&&node.props.className==='chat-system-notice'),true);
  assert.equal(all.some(node=>node.type==='WorkTaskReceipt'),false);
  assert.equal(all.some(node=>node.type==='ChatProjectDelivery'),false);
+});
+
+test('released welcome and morning greetings render and copy once as ordinary personal assistant messages',async()=>{
+ const greetings=[
+  '你好，我是你的个人助理。很高兴在 DeepChat 见到你！想聊聊手头的研究，或理一理接下来要做的事，随时给我发消息。',
+  '早上好！今天想先从哪件事开始？有需要的话，我们可以一起理一理。',
+  '早上好！祝你今天研究顺利。手头有什么想法，随时和我聊聊。',
+  '早上好！如果今天有件事想推进，我们可以先聊聊第一步。',
+ ];
+ for(const text of greetings)for(const sessionOnly of [false,true]){
+  const {tree,queries,readable}=await renderMessage(null,{...fact,text},undefined,undefined,{replyTo:null,sessionOnly});
+  const all=nodes(tree);
+  assert.match(tree.props.className,/chat-plain-message.*chat-assistant-reply/);
+  assert.deepEqual(all.filter(node=>node.type==='SafeMessageMarkdown').map(node=>node.props.text),[text]);
+  assert.equal(all.some(node=>['details','summary','ChatSourceQuote','ChatProjectDelivery'].includes(node.type)),false);
+  assert.equal(readable.at(-1),text);
+  assert.equal(queries.find(query=>query.identity.startsWith('project-message:')).enabled,false);
+ }
+});
+
+test('personal reminders with a separate summary and group or system notices stay folded',async()=>{
+ for(const [messageFact,kind,summary] of [
+  [{...fact,text:'提醒：会议\n请准备数据。'},'personal','提醒：会议'],
+  [{...fact,text:'群主已变更。'},'group','群主已变更。'],
+  [{...fact,senderContactId:null,text:'服务通知。'},'personal','服务通知。'],
+ ]){
+  const {tree}=await renderMessage(null,messageFact,undefined,undefined,{replyTo:null,kind});
+  const all=nodes(tree);
+  assert.equal(all.find(node=>node.type==='details').props.className,'chat-system-notice');
+  assert.equal(all.find(node=>node.type==='summary').props.children,summary);
+  assert.equal(all.find(node=>node.type==='SafeMessageMarkdown').props.text,messageFact.text);
+ }
 });
 
 test('actual task receipt opens its exact personal task without pretending model completion',async()=>{

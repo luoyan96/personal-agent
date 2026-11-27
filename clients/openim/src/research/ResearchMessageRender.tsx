@@ -55,9 +55,10 @@ export default function ResearchMessageRender({
   const imID = useConversationStore((s) => s.currentConversation?.conversationID);
   const manager = useResearchStore((s) => s.actor?.isLabManager || false);
   const actorGeneration = useResearchStore((s) => s.generation);
-  const isGroup = useResearchStore(
-    (s) => s.mappings.find((m) => m.imConversationID === imID)?.kind === "group",
+  const mapping = useResearchStore(
+    (s) => s.mappings.find((m) => m.imConversationID === imID),
   );
+  const isGroup = mapping?.kind === "group";
   const [retried, setRetried] = useState<{
     generation: number;
     imID?: string;
@@ -119,6 +120,12 @@ export default function ResearchMessageRender({
   const coordinatorSender = useResearchStore((state) =>
     isCoordinatorChatContact(read.data?.fact.senderContactId, state),
   );
+  const ownAssistantMessage = useResearchStore(({ session }) => {
+    const coordinator = session?.coordinator;
+    return !!coordinator && coordinator.imConversationID === imID &&
+      coordinator.researchConversationId === pointer?.conversationId &&
+      coordinator.peerUserID === message.sendID;
+  });
   const projectNotice=useResearchRead(
     ()=>readProjectNotice(actorGeneration,pointer!.conversationId,pointer!.messageId),
     `project-message:${pointer?.conversationId}:${pointer?.messageId}`,
@@ -259,10 +266,22 @@ export default function ResearchMessageRender({
       </div>
     );
   }
-  const plainMessage = read.data?.fact.origin !== "service" && !!text &&
+  const fact = read.data?.fact;
+  const serviceNoticeSummary = fact?.origin === "service" && fact.text &&
+    !fact.resources.length && !fact.actionIds.length && !fact.turnId && !projectNotice.data
+    ? serviceNoticePreview(fact.text)
+    : undefined;
+  // Greetings already stored by 1.0.0 have no separate title or notice ID.
+  // A disclosure is useful when there is a distinct title or an attached context.
+  const plainAssistantMessage = !!serviceNoticeSummary && serviceNoticeSummary === text &&
+    !!fact?.senderContactId && !fact.noticeId && !fact.files?.length && !source &&
+    (ownAssistantMessage || (mapping?.kind === "personal" &&
+      mapping.researchConversationId === fact.conversationId && coordinatorSender));
+  const plainMessage = (fact?.origin !== "service" || plainAssistantMessage) && !!text &&
     !hasTaskReceipt && !taskNotice && !taskResources.length && !otherResources.length &&
-    !actionIds.length && !read.data?.fact.files?.length && !fileRead && !ownReceipt?.libraryRead;
-  const plainAssistantReply = plainMessage && !isGroup && read.data?.fact.origin === "model";
+    !actionIds.length && !fact?.files?.length && !fileRead && !ownReceipt?.libraryRead;
+  const plainAssistantReply = plainMessage && !isGroup &&
+    (fact?.origin === "model" || plainAssistantMessage);
   const previousPointer = source && plainAssistantReply && previousMessage
     ? researchPointer(previousMessage)
     : undefined;
@@ -339,9 +358,9 @@ export default function ResearchMessageRender({
                 <LegacyTaskInviteCard text={read.data.fact.text} />
               ) : (
                 read.data.fact.text && (
-                  read.data.fact.origin === "service" && !read.data.fact.resources.length && !read.data.fact.actionIds.length && !read.data.fact.turnId && !projectNotice.data ? (
+                  serviceNoticeSummary && !plainAssistantMessage ? (
                     <details className="chat-system-notice">
-                      <summary title={serviceNoticePreview(read.data.fact.text)}>{serviceNoticePreview(read.data.fact.text)}</summary>
+                      <summary title={serviceNoticeSummary}>{serviceNoticeSummary}</summary>
                       <SafeMessageMarkdown text={read.data.fact.text} />
                     </details>
                   ) : <SafeMessageMarkdown text={text} />
