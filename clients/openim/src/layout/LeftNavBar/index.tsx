@@ -40,6 +40,7 @@ import { PersonalAssistantPanel } from "@/research/PersonalAssistantPanel";
 import { AcceptCatAccountNumber } from "@/research/AcceptCatAccountNumber";
 import { useResearchStore } from "@/research/store";
 import { squareEnabled } from "@/research/square-feature";
+import { pendingFriendRequestColor, pendingFriendRequestLabel, usePendingContactRequests } from "@/research/contact-requests";
 
 const { Sider } = Layout;
 
@@ -108,9 +109,11 @@ type NavItemType = (typeof NavList)[0];
 const NavItem = ({
   nav: { icon, icon_active, title, path },
   dot = false,
+  researchFriendCount,
 }: {
   nav: NavItemType;
   dot?: boolean;
+  researchFriendCount?: number;
 }) => {
   const navigate = useNavigate();
   const locationPathname = useLocation().pathname;
@@ -138,16 +141,28 @@ const NavItem = ({
       return unReadCount;
     }
     if (path === "/contact") {
-      return unHandleFriendApplicationCount + unHandleGroupApplicationCount;
+      return (researchFriendCount ?? unHandleFriendApplicationCount) + unHandleGroupApplicationCount;
     }
     return 0;
   };
 
+  const label = [title];
+  if (researchFriendCount !== undefined) {
+    if (researchFriendCount) label.push(pendingFriendRequestLabel(researchFriendCount));
+    if (unHandleGroupApplicationCount) label.push(`${unHandleGroupApplicationCount} 条待处理的群通知`);
+  }
   return (
-    <Badge size="small" count={getBadge()} dot={dot} offset={[-6, 5]} overflowCount={99}>
+    <Badge
+      size="small"
+      count={getBadge()}
+      dot={dot}
+      offset={[-6, 5]}
+      overflowCount={99}
+      color={researchFriendCount ? pendingFriendRequestColor : undefined}
+    >
       <button
         type="button"
-        aria-label={title}
+        aria-label={label.join("，")}
         aria-current={isActive ? "page" : undefined}
         className={clsx(
           "desktop-nav-item mb-3 flex h-[52px] w-12 cursor-pointer flex-col items-center justify-center rounded-md",
@@ -217,6 +232,7 @@ i18n.on("languageChanged", () => {
 
 function ResearchLeftNav() {
   const navigate = useNavigate();
+  const pendingFriends = usePendingContactRequests(true).data?.length ?? 0;
   const avatarUrl = useUserStore((s) => s.selfInfo.faceURL);
   const nickname = useUserStore((s) => s.selfInfo.nickname);
   const displayName = useResearchStore((s) => s.actor?.member.displayName);
@@ -249,7 +265,12 @@ function ResearchLeftNav() {
           />
         </button>
         {NavList.map((nav) => (
-          <NavItem nav={nav} key={nav.path} dot={nav.path === "/me" && hasUpdate} />
+          <NavItem
+            nav={nav}
+            key={nav.path}
+            dot={nav.path === "/me" && hasUpdate}
+            researchFriendCount={nav.path === "/contact" ? pendingFriends : undefined}
+          />
         ))}
       </nav>
     </Sider>

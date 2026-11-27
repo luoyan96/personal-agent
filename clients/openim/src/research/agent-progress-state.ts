@@ -1,4 +1,8 @@
-import type { AgentTurnProgress } from "@research-agent-platform/contracts";
+import type { AgentTurn, AgentTurnProgress } from "@research-agent-platform/contracts";
+
+export function isPendingAgentReply(status: AgentTurn["status"] | undefined) {
+  return status === "queued" || status === "running";
+}
 
 export type ProgressReadState = {
   canonicalSeen?: string;

@@ -100,6 +100,27 @@
       &:hover { background: var(--directory-hover); color: var(--directory-heading); }
       &:focus-visible { outline: 2px solid var(--directory-blue); outline-offset: -2px; }
     }
+
+    .directory-shortcut-end {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--directory-muted);
+      font-size: 10px;
+    }
+
+    .directory-request-count {
+      display: inline-grid;
+      min-width: 18px;
+      height: 18px;
+      padding-inline: 4px;
+      place-items: center;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+    }
   }
 
   .directory-list-heading {

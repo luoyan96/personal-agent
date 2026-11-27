@@ -1,0 +1,213 @@
+.friend-requests {
+  --request-blue: #0968b4;
+  --request-heading: #0a385b;
+  --request-muted: #536679;
+  --request-border: #dce8f3;
+  --request-hover: #eaf4ff;
+
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: #f8fbff;
+  color: #171d24;
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--request-blue);
+    outline-offset: 2px;
+  }
+}
+
+.friend-requests-content {
+  max-width: 880px;
+  margin-inline: auto;
+  padding: clamp(20px, 4vw, 44px) clamp(16px, 4vw, 40px);
+
+  > .ant-alert {
+    margin-block: 0 12px;
+  }
+}
+
+.friend-requests-heading {
+  margin-bottom: 18px;
+
+  h1 {
+    margin: 9px 0 0;
+    color: var(--request-heading);
+    font-size: clamp(24px, 3vw, 32px);
+    font-weight: 730;
+    line-height: 1.25;
+  }
+}
+
+.friend-requests-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  border-radius: 5px;
+  color: var(--request-blue);
+  font-size: 13px;
+}
+
+.friend-requests-filters {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 3px;
+  border: 1px solid var(--request-border);
+  border-radius: 9px;
+  background: #edf4fb;
+
+  button {
+    min-height: 34px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    color: var(--request-muted);
+    font-weight: 600;
+    font-size: 13px;
+
+    &:hover {
+      color: var(--request-blue);
+    }
+    &[aria-pressed="true"] {
+      background: #fff;
+      box-shadow: 0 1px 3px #0a385b1e;
+      color: var(--request-heading);
+    }
+  }
+}
+
+.friend-requests-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.friend-request-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 76px;
+  padding: 10px 14px;
+  border: 1px solid var(--request-border);
+  border-radius: 10px;
+  background: #fff;
+
+  &[data-actionable="true"] {
+    background: #f0f7ff;
+  }
+}
+
+.friend-request-avatar.ant-avatar {
+  border-radius: 10px !important;
+}
+
+.friend-request-copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+
+  strong {
+    color: var(--request-heading);
+    font-size: 15px;
+    font-weight: 680;
+  }
+  p {
+    margin: 1px 0;
+    color: var(--request-muted);
+    font-size: 13px;
+  }
+  .friend-request-meta {
+    color: var(--request-muted);
+    font-size: 12px;
+  }
+}
+
+.friend-request-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 8px;
+}
+
+.friend-request-actions button,
+.friend-requests-more,
+.friend-requests .ant-alert-action button {
+  min-height: 34px;
+  padding: 4px 10px;
+  border: 1px solid var(--request-border);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--request-blue);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &:hover:enabled:not([aria-disabled="true"]) {
+    background: var(--request-hover);
+  }
+  &:disabled,
+  &[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: wait;
+  }
+}
+
+.friend-request-actions .friend-request-accept {
+  border-color: #c4def7;
+  background: #dceeff;
+  color: var(--request-heading);
+
+  &:hover:enabled:not([aria-disabled="true"]) {
+    background: #c7e4ff;
+  }
+}
+
+.friend-request-status {
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: #edf2f7;
+  color: var(--request-muted);
+  font-size: 12px;
+  white-space: nowrap;
+
+  &[data-status="accepted"],
+  &[data-status="pending"] {
+    background: var(--request-hover);
+    color: var(--request-heading);
+  }
+}
+
+.friend-requests-more {
+  margin-top: 14px;
+}
+
+.friend-requests-empty {
+  margin: 0;
+  padding: 24px 12px;
+  border: 1px solid var(--request-border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--request-muted);
+  text-align: center;
+  font-size: 13px;
+}
+
+@media (max-width: 520px) {
+  .friend-request-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 10px;
+    row-gap: 8px;
+  }
+
+  .friend-request-actions {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+}

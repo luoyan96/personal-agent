@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 import ts from "typescript";
 
-async function fixture() {
+async function fixture(pendingCount = 0) {
   const state = [];
   let cursor = 0, params = new URLSearchParams();
   const jsx = (type, props) => ({ type, props });
@@ -28,6 +28,11 @@ async function fixture() {
     "./usePersonalOperation": { usePersonalOperation: () => ({ capture: () => ({ isCurrent: () => true }) }) },
     "./useResearchContactChat": { useResearchContactChat: () => () => {} },
     "./contact-directory": { sortDirectoryContacts: value => value },
+    "./contact-requests": {
+      pendingFriendRequestColor: "#b52732",
+      pendingFriendRequestLabel: count => `${count} 条待处理的好友申请`,
+      usePendingContactRequests: () => ({ data: Array.from({ length: pendingCount }) }),
+    },
   };
   const source = await readFile(new URL("../src/research/ResearchContacts.tsx", import.meta.url), "utf8");
   const module = { exports: {} };
@@ -62,4 +67,49 @@ test("directory opens people search without specialist tabs or creation", async 
   const modal = find(f.render(), node => node.type === "Modal");
   assert.equal(modal.props.open, true);
   assert.equal(modal.props.children.props.kind, "people");
+});
+
+test("the friend request shortcut exposes the count only while pending requests exist", async () => {
+  const locate = tree => find(tree, node => node.type === "Link" && node.props.to === "/contact/newFriends");
+  const empty = locate((await fixture()).render());
+  assert.equal(empty.props["aria-label"], undefined);
+  assert.equal(text(empty), "好友申请");
+  const pending = locate((await fixture(105)).render());
+  assert.equal(pending.props["aria-label"], "好友申请，105 条待处理的好友申请");
+  assert.equal(text(pending), "好友申请99+");
+});
+
+async function pendingReader() {
+  const source = await readFile(new URL("../src/research/contact-requests.ts", import.meta.url), "utf8");
+  const module = { exports: {} };
+  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: {
+    module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
+  } }).outputText, { module, exports: module.exports, require: () => ({}) });
+  return module.exports.readPendingRequests;
+}
+
+test("the pending count spans authenticated cursor pages, excluding sent and processed records", async () => {
+  const read = await pendingReader();
+  const request = (id, status, deciderMemberId) => ({ id, status, deciderMemberId });
+  const first = request("one", "pending", "me");
+  const second = request("two", "pending", "me");
+  const cursors = [];
+  const value = await read("me", async cursor => {
+    cursors.push(cursor);
+    return cursor ? { data: [first, second], nextCursor: null } : {
+      data: [first, request("sent", "pending", "them"), request("done", "accepted", "me")],
+      nextCursor: "page-two",
+    };
+  });
+  assert.deepEqual(cursors, [undefined, "page-two"]);
+  assert.deepEqual(Array.from(value), [first, second]);
+});
+
+test("a repeated continuation or later page failure cannot publish a partial badge", async () => {
+  const read = await pendingReader();
+  await assert.rejects(read("me", async () => ({ data: [], nextCursor: "duplicate" })), /分页暂不可用/);
+  await assert.rejects(read("me", async cursor => {
+    if (cursor) throw new Error("service unavailable");
+    return { data: [{ id: "one", status: "pending", deciderMemberId: "me" }], nextCursor: "page-two" };
+  }), /service unavailable/);
 });

@@ -6,9 +6,11 @@ import { researchApi } from './api';
 import { useResearchStore } from './store';
 import { usePersonalOperation } from './usePersonalOperation';
 import { contactRemoval, executeContactRemoval } from './contact-removal';
+import { useContactRequestCache } from './contact-requests';
 
 export function useContactRemoval(contact?: Contact, active = true, onRemoved?: () => void | Promise<void>) {
   const actorId = useResearchStore(s => s.actor?.member.id);
+  const requestCache = useContactRequestCache();
   const operation = usePersonalOperation(active, `remove-contact:${contact?.id ?? ''}`);
   const inFlight = useRef(false);
   const dialog = useRef<ReturnType<typeof Modal.confirm>>();
@@ -32,7 +34,11 @@ export function useContactRemoval(contact?: Contact, active = true, onRemoved?: 
         inFlight.current = true; if (isCurrent()) setBusy(true);
         try {
           const result = await executeContactRemoval(reviewed, key, {
-            isCurrent, request: researchApi,
+            isCurrent, request: async (name, options) => {
+              const result = await researchApi(name, options);
+              if (name === 'revokeContact') requestCache.refresh();
+              return result;
+            },
             refresh: () => useResearchStore.getState().refresh(),
           });
           if (!result.current) return;

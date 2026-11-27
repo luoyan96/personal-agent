@@ -23,6 +23,7 @@ import { readCombinedDirectoryPage, sortDirectoryContacts, type DirectoryCursor 
 import { useContactStars } from "./useContactStars";
 import { usePersonalOperation } from "./usePersonalOperation";
 import { WorkspaceContactCard } from "./WorkspaceContactCard";
+import { pendingFriendRequestColor, pendingFriendRequestLabel, usePendingContactRequests } from "./contact-requests";
 import "./workspace.scss";
 import "./contact-directory.scss";
 import "./directory-skills.scss";
@@ -39,6 +40,7 @@ export function ResearchContacts() {
   const [selectedContact, setSelected] = useState<string>();
   const generation = useResearchStore((s) => s.generation);
   const actorId = useResearchStore((s) => s.actor?.member.id);
+  const pendingFriends = usePendingContactRequests().data?.length ?? 0;
   const filterKey = `${generation}:${search}`;
   const [paging, setPaging] = useState<{ key: string; cursors: (DirectoryCursor | undefined)[] }>();
   const pages = paging?.key === filterKey ? paging.cursors : [undefined];
@@ -150,8 +152,20 @@ export function ResearchContacts() {
             />
           </div>
           <nav className="workspace-contact-shortcuts" aria-label="通讯录入口">
-            <Link to="/contact/newFriends">
-              <UserAddOutlined aria-hidden="true" /><span>好友申请</span><RightOutlined aria-hidden="true" />
+            <Link
+              to="/contact/newFriends"
+              aria-label={pendingFriends ? `好友申请，${pendingFriendRequestLabel(pendingFriends)}` : undefined}
+            >
+              <UserAddOutlined aria-hidden="true" />
+              <span>好友申请</span>
+              <span className="directory-shortcut-end" aria-hidden="true">
+                {pendingFriends > 0 && (
+                  <span className="directory-request-count" style={{ backgroundColor: pendingFriendRequestColor }}>
+                    {pendingFriends > 99 ? "99+" : pendingFriends}
+                  </span>
+                )}
+                <RightOutlined />
+              </span>
             </Link>
             <Link to="/contact/groupNotifications">
               <MailOutlined aria-hidden="true" /><span>群邀请</span><RightOutlined aria-hidden="true" />

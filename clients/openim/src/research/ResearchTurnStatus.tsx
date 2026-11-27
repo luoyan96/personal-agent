@@ -1,3 +1,4 @@
+import { InfoCircleOutlined, StopOutlined } from "@ant-design/icons";
 import { Alert, Button, Modal } from "antd";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
@@ -22,12 +23,14 @@ export function ResearchTurnStatus({
   manager = false,
   compact = false,
   hideLabel = false,
+  iconActions = false,
   onRetried,
 }: {
   turn: AgentTurn;
   manager?: boolean;
   compact?: boolean;
   hideLabel?: boolean;
+  iconActions?: boolean;
   onRetried?: (turn: AgentTurn) => void;
 }) {
   const guidance = turnGuidance(turn, manager);
@@ -212,7 +215,7 @@ export function ResearchTurnStatus({
     </Button>
   ) : null;
   return (
-    <div className="min-w-0 break-words text-xs" role="status" data-ai-turn-status>
+    <div className="min-w-0 break-words text-xs" role={iconActions ? undefined : "status"} data-ai-turn-status>
       {compact ? (
         <div className="flex min-w-0 items-center gap-2">
           {!hideLabel && <span
@@ -229,15 +232,31 @@ export function ResearchTurnStatus({
           >
             {turn.failure === "BUDGET_EXCEEDED" ? "本次请求超出预算" : guidance.title}
           </span>}
-          {turn.allowedActions.includes("cancel") && <Button size="small" type="text" disabled={busy} onClick={() => void cancel()}>停止回复</Button>}
+          {turn.allowedActions.includes("cancel") && (
+            <Button
+              className={iconActions ? "chat-reply-control" : undefined}
+              size={iconActions ? "middle" : "small"}
+              type="text"
+              icon={iconActions ? <StopOutlined aria-hidden /> : undefined}
+              aria-label={iconActions ? "停止回复" : undefined}
+              title={iconActions ? "停止回复" : undefined}
+              disabled={busy}
+              onClick={() => void cancel()}
+            >
+              {!iconActions && "停止回复"}
+            </Button>
+          )}
           {retryButton}
           <Button
-            className="shrink-0"
-            size="small"
+            className={iconActions ? "chat-reply-control" : "shrink-0"}
+            size={iconActions ? "middle" : "small"}
             type="text"
+            icon={iconActions ? <InfoCircleOutlined aria-hidden /> : undefined}
+            aria-label={iconActions ? "查看回复详情" : undefined}
+            title={iconActions ? "查看回复详情" : undefined}
             onClick={() => setDetailsOpen(true)}
           >
-            查看详情
+            {!iconActions && "查看详情"}
           </Button>
         </div>
       ) : (

@@ -15,6 +15,7 @@ async function load(file,imports={}){
 }
 const {createProjectNoticeReader,isProjectNoticeCandidate}=await load('../src/research/project-message-notice.ts');
 const taskNotice=await load('../src/research/task-notice.ts');
+const agentProgressState=await load('../src/research/agent-progress-state.ts');
 const fact={id:'decision',conversationId:'personal',sequence:5,senderContactId:'coordinator',origin:'service',text:'本轮实验数量具体是多少？',turnId:null,resources:[],actionIds:[],mentions:[]};
 const reply={messageId:'owner-request',sequence:1,senderContactId:'owner',text:'持续跟进这次研究',withdrawn:false};
 const notice={projectId:'project',taskId:'work',kind:'decision'};
@@ -47,8 +48,8 @@ test('a whole page of eligible legacy history performs only one capability404',a
  await read(2,'personal','different-account');assert.equal(count,2);
 });
 
-async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage,{replyTo=reply,kind='personal',sessionOnly=false}={}){
- const jsx=(type,props)=>({type,props}),queries=[],locations=[],readable=[];
+async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage,{replyTo=reply,kind='personal',sessionOnly=false,stoppedInTimeline=false}={}){
+ const jsx=(type,props)=>({type,props}),queries=[],locations=[],readable=[],registered=[];
  const mapping={imConversationID:'im',researchConversationId:'personal',peerUserID:'sdk-coordinator',kind};
  const store={generation:1,contacts:[{contact:{id:'coordinator',profile:{role:'coordinator'}}}],mappings:[mapping]};
  if(sessionOnly)Object.assign(store,{session:{coordinator:mapping},contacts:[],mappings:[]});
@@ -67,7 +68,8 @@ async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage
   }},
   './store':{useResearchStore:selector=>selector(store)},
   '@/store':{useConversationStore:selector=>selector({currentConversation:{conversationID:'im'}})},
-  './agent-progress':{AgentProgressHistory:'History',acknowledgeAgentReply(){}},
+  './agent-progress':{AgentProgressHistory:'History',acknowledgeAgentReply(){},useStoppedReplyInTimeline:()=>stoppedInTimeline,registerAgentProgress:(_generation,_imID,value)=>registered.push(value)},
+  './agent-progress-state':agentProgressState,
   './task-notice':taskNotice,
   './project-message-notice':{createProjectNoticeReader,isProjectNoticeCandidate},
   './chat-message-read':{},'./useChatRecordChanges':{useChatRecordChanges(){}},'./chat-transcript-sync':{watchTranscriptMessage(){}},
@@ -82,10 +84,30 @@ async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage
   },
   './SafeMessageMarkdown':{__esModule:true,default:'SafeMessageMarkdown'},
  };
- for(const name of ['./GroupNoticeCard','./ResearchActionCard','./ResearchTaskCard','./ResearchTurnStatus','./CreatedAgentChatButton','./AgentFileReadSummary','./ContinueAgentFileReadingButton','./ResearchReadSummary','./GroupMessageStatuses'])imports[name]={};
+ for(const name of ['./GroupNoticeCard','./ResearchActionCard','./ResearchTaskCard','./ResearchTurnStatus','./CreatedAgentChatButton','./AgentFileReadSummary','./ContinueAgentFileReadingButton','./ResearchReadSummary','./GroupMessageStatuses'])imports[name]={[name.slice(2)]:name.slice(2)};
  const component=(await load('../src/research/ResearchMessageRender.tsx',imports)).default;
- return {tree:component({message:{clientMsgID:'sdk-decision',contentType:110,sendID:'sdk-coordinator',customElem:{data:JSON.stringify(pointer)}},previousMessage,onReadableText:text=>readable.push(text)}),queries,locations,readable};
+ return {tree:component({message:{clientMsgID:'sdk-decision',contentType:110,sendID:'sdk-coordinator',customElem:{data:JSON.stringify(pointer)}},previousMessage,onReadableText:text=>readable.push(text)}),queries,locations,readable,registered};
 }
+
+test('direct-chat input registers active progress, while historical failures retain details and retry',async()=>{
+ const outgoing={...fact,origin:'human',senderContactId:'owner',turnId:'turn'};
+ for(const status of ['queued','running','failed']) {
+  const turn={id:'turn',status,agentContactId:'coordinator',conversationId:fact.conversationId};
+  const {tree,registered}=await renderMessage(null,outgoing,turn,undefined,{replyTo:null});
+  const details=nodes(tree).find(node=>node.type==='ResearchTurnStatus');
+  if(status==='failed') {
+   assert.equal(details.props.turn,turn);
+   assert.equal(typeof details.props.onRetried,'function');
+   assert.deepEqual(registered,[]);
+  } else {
+   assert.equal(details,undefined);
+   assert.deepEqual(registered,[turn]);
+  }
+ }
+ const turn={id:'turn',status:'cancelled',agentContactId:'coordinator',conversationId:fact.conversationId};
+ const {tree}=await renderMessage(null,outgoing,turn,undefined,{replyTo:null,stoppedInTimeline:true});
+ assert.equal(nodes(tree).some(node=>node.type==='ResearchTurnStatus'),false);
+});
 
 test('host project questions and deadline notices render a single card with their original text and task',async()=>{
  for(const kind of ['decision','update']){
