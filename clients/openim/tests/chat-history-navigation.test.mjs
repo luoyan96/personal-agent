@@ -13,6 +13,7 @@ async function load(file, substitutes = {}) {
   vm.runInNewContext(code, {
     module, exports: module.exports, DOMException, AbortController, setTimeout, clearTimeout,
     navigator: { onLine: true },
+    window: { addEventListener() {}, removeEventListener() {} },
     require: name => {
       if (!Object.hasOwn(substitutes, name)) throw Error(`Unexpected import: ${name}`);
       return substitutes[name];
@@ -42,15 +43,28 @@ async function fixture() {
     sdk: async () => ({ data: { messageList: page(21, 40), isEnd: false } }),
     cache: async () => ({ messages: page(1, 20), reachedStart: true }),
   };
+  const effects = [], states = [], refs = [];
+  let stateIndex = 0, refIndex = 0, mounted = false;
+  const useRef = value => {
+    const index = refIndex++;
+    return refs[index] ??= { current: value };
+  };
   const code = await load("../src/pages/chat/queryChat/useHistoryMessageList.tsx", {
     react: {
-      useCallback: fn => fn, useEffect() {}, useRef: value => ({ current: value }),
+      useCallback: fn => fn, useRef,
+      useEffect: effect => { if (!mounted) effects.push(effect); },
       useState: initial => {
-        let current = initial;
-        return [current, update => { current = typeof update === "function" ? update(current) : update; }];
+        const index = stateIndex++;
+        if (!(index in states)) states[index] = initial;
+        return [states[index], update => {
+          states[index] = typeof update === "function" ? update(states[index]) : update;
+        }];
       },
     },
-    ahooks: { useLatest: value => ({ current: value }), useRequest: fn => ({ loading: false, runAsync: fn }) },
+    ahooks: {
+      useLatest: value => Object.assign(useRef(value), { current: value }),
+      useRequest: fn => ({ loading: false, runAsync: fn }),
+    },
     "react-router-dom": { useParams: () => ({ conversationID: "synthetic-group" }) },
     "@openim/wasm-client-sdk": { MessageViewType: { History: 0 } },
     "@/layout/MainContentWrap": { IMSDK: { getAdvancedHistoryMessageList: options => {
@@ -60,15 +74,55 @@ async function fixture() {
     "@/research/request-deadline": deadline,
     "@/research/store": { useResearchStore: researchStore },
     "@/store": { useUserStore: userStore, useConversationStore: { getState: () => ({}) } },
-    "@/utils/events": { default: {}, emit() {} },
+    "@/utils/events": { default: { on() {}, off() {} }, emit() {} },
     "./chat-history-cache": {
       readCachedHistory: (...args) => { f.cacheCalls.push(args); return f.cache(...args); },
       saveCachedHistory: async (...args) => { f.saved.push(args); },
     },
   });
-  f.hook = code.useHistoryMessageList();
+  f.render = () => {
+    stateIndex = refIndex = 0;
+    return code.useHistoryMessageList();
+  };
+  f.hook = f.render();
+  f.mount = () => {
+    mounted = true;
+    for (const effect of effects) effect();
+  };
   return f;
 }
+
+test("a fresh online transcript stays silent while the SDK history read is pending", async t => {
+  const f = await fixture();
+  const sdk = deferred();
+  const history = { data: { messageList: [], isEnd: true } };
+  t.after(() => sdk.resolve(history));
+  f.cache = async () => null;
+  f.sdk = () => sdk.promise;
+  f.mount();
+  await tick();
+  assert.equal(f.sdkCalls.length, 1);
+  assert.equal(f.render().historySource, "");
+  sdk.resolve(history);
+  await tick();
+});
+
+test("a late cache miss cannot replace a successful friend-notice history page", async t => {
+  const f = await fixture();
+  const cache = deferred();
+  t.after(() => cache.resolve(null));
+  const friendNotice = { ...page(1, 1)[0], contentType: 1201 };
+  f.cache = () => cache.promise;
+  f.sdk = async () => ({ data: { messageList: [friendNotice], isEnd: true } });
+  f.mount();
+  await tick();
+  assert.equal(f.render().loadState.messageList[0]?.clientMsgID, friendNotice.clientMsgID);
+  assert.equal(f.render().historySource, "");
+  cache.resolve(null);
+  await tick();
+  assert.equal(f.render().historySource, "");
+  assert.equal(f.render().loadState.messageList[0]?.contentType, friendNotice.contentType);
+});
 
 test("explicit location waits for a pending latest page, then finds the older cached target", async t => {
   const f = await fixture(), pending = deferred();

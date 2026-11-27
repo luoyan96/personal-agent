@@ -119,6 +119,18 @@ test("handoff capability follows the backend version and is cleared with the acc
   assert.equal(api.supportsTranscriptSync(), false);
 });
 
+test("the IM session sends the desktop timezone without adding it to other requests", async (t) => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Shanghai";
+  const calls = [];
+  isolated(t, async (url, options) => {
+    calls.push([url, options.headers["X-AcceptCat-Time-Zone"]]);
+    if (url.endsWith("/auth/session")) return json(session);
+    return json({ data: { bridgeVersion: "1.0.0", status: "unavailable", reason: "not_configured", user: null, configuration: null, coordinator: null } });
+  });
+  await api.researchApi("imSession", { body: { platformID: 3 } });
+  assert.deepEqual(calls, [["/api/v1/auth/session", undefined], ["/api/v1/im/session", timezone]]);
+});
+
 test("a missing session response is bounded and never dispatches the mutation", async (t) => {
   let signal,
     requests = 0;

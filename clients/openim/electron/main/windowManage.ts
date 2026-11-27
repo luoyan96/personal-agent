@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { app, BrowserWindow, dialog, shell } from "electron";
+import { IpcMainToRender } from "../constants";
 import { isLinux, isMac, isWin } from "../utils";
 import { destroyTray } from "./trayManage";
 import { getIsForceQuit } from "./appManage";
@@ -143,6 +144,14 @@ export function createMainWindow() {
 
   mainWindow.on("blur", () => {
     unregisterShortcuts();
+  });
+
+  const { webContents } = mainWindow;
+  mainWindow.on("maximize", () => {
+    webContents.send(IpcMainToRender.windowMaximizedChanged, true);
+  });
+  mainWindow.on("unmaximize", () => {
+    webContents.send(IpcMainToRender.windowMaximizedChanged, false);
   });
 
   mainWindow.on("close", (e) => {

@@ -6,6 +6,7 @@ import type {
   RouteName,
 } from "@research-agent-platform/contracts";
 import { clearIMProfile } from "@/utils/storage";
+import { currentTimeZone } from "./personal-time";
 import {
   assertRequestActive,
   RequestTimeoutError,
@@ -107,6 +108,7 @@ async function requestResearchApi<K extends RouteName>(
   headers['X-AcceptCat-Task-Workflow'] = 'handoff-v1';
   headers['X-AcceptCat-Work-Rules'] = 'layers-v1';
   headers['X-AcceptCat-Task-Files'] = 'files-v1';
+  if (name === "imSession") headers["X-AcceptCat-Time-Zone"] = currentTimeZone();
   if (route.method !== "GET") headers["Content-Type"] = "application/json";
   if (csrfToken && route.method !== "GET" && route.access === "session")
     headers["X-CSRF-Token"] = csrfToken;

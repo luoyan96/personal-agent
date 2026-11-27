@@ -49,7 +49,7 @@ it('upgrades the deployed 036 schema twice without losing habits, revocations, o
     checkDatabase(db)
     expect(snapshot()).toEqual(before)
     expect(db.prepare('SELECT * FROM schema_migrations WHERE version<=36 ORDER BY version').all()).toEqual(history)
-    expect(db.prepare('SELECT max(version) version FROM schema_migrations').get()!.version).toBe(41)
+    expect(db.prepare('SELECT max(version) version FROM schema_migrations').get()!.version).toBe(42)
     expect(db.prepare('SELECT count(*) n FROM assistant_memories').get()!.n).toBe(0)
     expect(db.prepare("SELECT name FROM sqlite_master WHERE name='assistant_memory_settings'").get()).toBeUndefined()
     expect(currentHabit(db, 'member_A')).toMatchObject({ content: '先列证据，再讲判断。', revoked: false, version: 4 })
