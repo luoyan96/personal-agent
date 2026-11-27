@@ -8,9 +8,9 @@
 <p align="center">老师在群里交代的事，学生点开就能接着做。交上来的文件、老师的意见和下一版修改，都留在同一项任务里。</p>
 
 <p align="center">
-  <a href="https://github.com/luoyan96/personal-agent/releases/download/v1.0.1/DeepChat_1.0.1.exe">下载 Windows 版 · 1.0.1</a>
+  <a href="https://github.com/luoyan96/personal-agent/releases/download/v1.0.2/DeepChat_1.0.2.exe">下载 Windows 版 · 1.0.2</a>
   · <a href="#第一次使用">第一次使用</a>
-  · <a href="https://github.com/luoyan96/personal-agent/releases/tag/v1.0.1">发布说明</a>
+  · <a href="https://github.com/luoyan96/personal-agent/releases/tag/v1.0.2">发布说明</a>
 </p>
 
 ## 下周组会，汇报一下项目进展
