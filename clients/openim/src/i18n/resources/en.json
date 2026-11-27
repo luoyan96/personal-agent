@@ -10,6 +10,13 @@
   "pieces": "Pieces",
   "open": "Open",
   "close": "Close",
+  "windowControls": {
+    "label": "Window controls",
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore Down",
+    "close": "Close"
+  },
   "clear": "Clear",
   "answer": "Answer",
   "hangUp": "Hang up",

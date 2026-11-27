@@ -123,6 +123,9 @@ export const setIpcMainListener = () => {
   ipcMain.handle(IpcRenderToMain.maxmizeWindow, () => {
     updateMaximize();
   });
+  ipcMain.handle(IpcRenderToMain.isWindowMaximized, ({ sender }) => {
+    return BrowserWindow.fromWebContents(sender)?.isMaximized() ?? false;
+  });
   ipcMain.handle(IpcRenderToMain.closeWindow, () => {
     closeWindow();
   });
