@@ -81,7 +81,7 @@ describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{ti
   const env=Object.fromEntries(['PATH','SystemRoot','TEMP','TMP'].flatMap(key=>process.env[key]?[[key,process.env[key]!]]:[]))
   const child=fork(new URL('../src/agent-file-parser-child.ts',import.meta.url),[],{
    env,execArgv:['--max-old-space-size=128','--max-semi-space-size=8'],stdio:['ignore','ignore','inherit','ipc'],
-   signal:AbortSignal.timeout(30_000),windowsHide:true,
+   signal:AbortSignal.timeout(30_000),
   })
   try{
    const parsed=await new Promise<unknown>((resolve,reject)=>{
