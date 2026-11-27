@@ -1,6 +1,6 @@
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { Button, Layout } from "antd";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { matchPath, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import ContactSider from "@/pages/contact/ContactSider";
 import { researchMode } from "@/research/api";
@@ -10,6 +10,7 @@ export const Contact = () => {
   const navigate = useNavigate();
   if (researchMode) {
     const main = location.pathname === "/contact" || location.pathname === "/contact/";
+    const requests = matchPath("/contact/newFriends", location.pathname);
     return (
       <section
         className="desktop-contact-page"
@@ -22,7 +23,7 @@ export const Contact = () => {
           background: "#fff",
         }}
       >
-        {!main && (
+        {!main && !requests && (
           <header
             style={{
               padding: "16px 22px",

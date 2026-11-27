@@ -12,6 +12,7 @@ import { AcceptCatAccountNumber } from "./AcceptCatAccountNumber";
 import { ContactRemovalButton } from './useContactRemoval';
 import { AgentResources, type OpenAgentSkills } from './AgentResources';
 import { canManageDirectoryAgent } from './contact-directory';
+import { useContactRequestCache, usePendingContactRequests } from "./contact-requests";
 
 export const contactRelationshipLabel: Record<
   Contact["relationship"]["status"],
@@ -64,15 +65,11 @@ export function WorkspaceContactCard({
     inFlight.current = false;
   }, [operation.scope]);
   const c = read.data?.data;
-  const requests = useResearchRead(
-    () =>
-      researchApi("contactRequests", {
-        query: { direction: "incoming", status: "pending", limit: 100 },
-      }),
-    `workspace-incoming:${contactId}`,
-    c?.relationship.status === "pending_inbound",
-  );
-  const request = requests.data?.data.find((r) => r.id === c?.relationship.requestId);
+  const requests = usePendingContactRequests();
+  const requestCache = useContactRequestCache();
+  const request = c?.relationship.status === "pending_inbound"
+    ? requests.data?.find((r) => r.id === c.relationship.requestId)
+    : undefined;
   const currentAction = action?.scope === operation.scope ? action : undefined;
   const command = async (
     run: (isCurrent: () => boolean) => Promise<unknown>,
@@ -173,7 +170,10 @@ export function WorkspaceContactCard({
             loading={currentAction?.busy}
             onClick={() =>
               void command(
-                () => researchApi("requestContact", { params: { id: c.id }, body: {} }),
+                async () => {
+                  await researchApi("requestContact", { params: { id: c.id }, body: {} });
+                  requestCache.refresh();
+                },
                 "申请已发送，等待对方同意。",
               )
             }
@@ -187,11 +187,18 @@ export function WorkspaceContactCard({
             loading={currentAction?.busy}
             onClick={() =>
               void command(
-                () =>
-                  researchApi("decideContactRequest", {
-                    params: { id: request.id },
-                    body: { expectedVersion: request.version, decision: "accept" },
-                  }),
+                async () => {
+                  try {
+                    const { data } = await researchApi("decideContactRequest", {
+                      params: { id: request.id },
+                      body: { expectedVersion: request.version, decision: "accept" },
+                    });
+                    await requestCache.acknowledge(data);
+                  } catch (error) {
+                    requestCache.refresh();
+                    throw error;
+                  }
+                },
                 "已同意添加，可以开始聊天。",
               )
             }
