@@ -20,6 +20,7 @@ import { CreatedAgentChatButton } from "./CreatedAgentChatButton";
 import { PersonalReceiptCard } from "./PersonalReceiptCard";
 import { peerChatRequest } from "./peer-library-runtime";
 import { registerAgentProgress } from "./agent-progress";
+import { isPendingAgentReply } from "./agent-progress-state";
 import { groupMessageBody, type SelectedMention } from "./group-mentions";
 import { useGroupChatRoster, groupContactDescription } from "./GroupChatRoster";
 
@@ -85,7 +86,6 @@ export function useResearchComposer() {
       generation: number;
       imID?: string;
       turn: AgentTurn;
-      continuous?: boolean;
     }>(),
     [context, setContext] = useState<ChatResource[]>([]),
     [open, setOpen] = useState(false);
@@ -396,9 +396,6 @@ export function useResearchComposer() {
                 generation,
                 imID,
                 turn: result.data.turn,
-                continuous:
-                  prepared.route === "agentChatMessage" &&
-                  prepared.body.continuous === true,
               }
             : undefined,
         );
@@ -533,14 +530,9 @@ export function useResearchComposer() {
             </div>
           )}
         {mapping.kind !== "group" &&
-          (turnRead.data?.data || turn) &&
-          (advanced || (turnRead.data?.data || turn)?.status !== "succeeded") &&
-          !(
-            turnSnapshot?.continuous &&
-            !advanced &&
-            currentTurn?.purpose !== "create_agent" &&
-            (currentTurn?.status === "queued" || currentTurn?.status === "running")
-          ) &&
+          currentTurn &&
+          (advanced || currentTurn.status !== "succeeded") &&
+          !isPendingAgentReply(currentTurn.status) &&
           turn?.conversationId === mapping.researchConversationId && (
             <div className="mx-3 mt-1">
               {turnRead.error && (
@@ -549,7 +541,7 @@ export function useResearchComposer() {
                 </p>
               )}
               <ResearchTurnStatus
-                turn={turnRead.data?.data || turn!}
+                turn={currentTurn}
                 manager={manager}
                 compact
                 onRetried={

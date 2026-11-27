@@ -130,6 +130,24 @@
   .desktop-streaming-row .ant-avatar { width: 30px; height: 30px; border-radius: 50%; }
   .desktop-streaming-content { max-width: calc(100% - 42px); min-width: 0; border-radius: 23px; background: var(--ac-soft); padding: 14px 18px; font-size: 15px; line-height: 1.65; }
   .desktop-streaming-status { margin-bottom: 7px; color: var(--ac-muted); font-size: 11px; }
+  .desktop-streaming-row-direct {
+    padding-bottom: 0;
+    .desktop-streaming-content { background: transparent; padding: 0; }
+    .desktop-streaming-prose { padding: 10px 12px; font-size: var(--chat-prose-size, 15px); }
+    .chat-reply-control.ant-btn { width: 30px; height: 30px; padding: 0; color: var(--ac-muted); border-radius: 6px; }
+    .chat-reply-control.ant-btn:hover:enabled { background: var(--ac-chat-hover); color: var(--ac-chat-link); }
+  }
+  .desktop-reply-waiting { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .desktop-reply-typing { display: grid; place-items: center; min-width: 46px; height: 30px; border-radius: 12px; background: var(--ac-soft); }
+  .desktop-reply-dots {
+    display: flex; align-items: center; gap: 4px; color: var(--ac-muted);
+    > i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .desktop-reply-dots > i { animation: desktop-reply-pulse 1.2s ease-in-out infinite; }
+    .desktop-reply-dots > i:nth-child(2) { animation-delay: .14s; }
+    .desktop-reply-dots > i:nth-child(3) { animation-delay: .28s; }
+  }
   .desktop-work-in-chat { margin-left: 42px; max-width: 580px; }
   .desktop-work-card { background: var(--ac-card); border: 1px solid var(--ac-line); border-radius: 23px; overflow: hidden; padding: 18px 18px 0; }
   .desktop-work-card-heading { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
@@ -151,6 +169,11 @@
   .desktop-work-details dd { overflow-wrap: anywhere; min-width: 0; }
   .desktop-work-details > p { margin: 4px 18px 13px; font-size: 11px; line-height: 1.6; }
   .desktop-work-details > button { margin: 0 0 8px 18px; }
+}
+
+@keyframes desktop-reply-pulse {
+  0%, 60%, 100% { opacity: .62; }
+  30% { opacity: 1; }
 }
 .desktop-chat-drawer {
   .ant-drawer-content { background: #fcfcfc; }

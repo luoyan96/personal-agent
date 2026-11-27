@@ -23,6 +23,7 @@ import {
   acknowledgeAgentReply,
   AgentProgressHistory,
 } from "./agent-progress";
+import { isPendingAgentReply } from "./agent-progress-state";
 import type { AgentTurn } from "@research-agent-platform/contracts";
 import styles from "@/pages/chat/queryChat/MessageItem/message-item.module.scss";
 import { CreatedAgentChatButton } from "./CreatedAgentChatButton";
@@ -203,7 +204,7 @@ export default function ResearchMessageRender({
     // manufacture a fresh temporary reply at the bottom of the conversation.
     if (
       currentTurn &&
-      (["queued", "running"].includes(currentTurn.status) ||
+      (isPendingAgentReply(currentTurn.status) ||
         (read.data.fact.origin === "human" &&
           read.data.fact.id === history.latestOwnId &&
           currentTurn.outputMessageId &&
@@ -212,11 +213,7 @@ export default function ResearchMessageRender({
       registerAgentProgress(
         actorGeneration,
         imID,
-        {
-          id: read.data.fact.turnId,
-          conversationId: read.data.fact.conversationId,
-          agentContactId: currentTurn.agentContactId,
-        },
+        currentTurn,
         {
           inputText:
             read.data.fact.origin === "human"
@@ -442,10 +439,11 @@ export default function ResearchMessageRender({
         </>
       )}
       {!isGroup &&
-        (turn.data?.data || currentRetry) &&
-        (turn.data?.data || currentRetry)?.status !== "succeeded" && (
+        currentTurn &&
+        currentTurn.status !== "succeeded" &&
+        !isPendingAgentReply(currentTurn.status) && (
           <ResearchTurnStatus
-            turn={turn.data?.data || currentRetry!}
+            turn={currentTurn}
             manager={manager}
             compact
             onRetried={

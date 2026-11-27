@@ -2,15 +2,16 @@ import { createContext, useContext, useEffect, useRef } from "react";
 import { create } from "zustand";
 import type { AgentTurn, AgentTurnProgress } from "@research-agent-platform/contracts";
 import { useConversationStore } from "@/store";
-import { researchApi } from "./api";
+import { researchApi, supportsTranscriptSync } from "./api";
 import { useResearchStore } from "./store";
 import SafeMessageMarkdown from "./SafeMessageMarkdown";
 import OIMAvatar from "@/research/ResearchAvatar";
 import DesktopWorkCard from "./DesktopWorkCard";
 import { useGroupChatRoster, groupContactDescription } from "./GroupChatRoster";
 import { useChatOutbox, reconcileAcknowledgedMessages } from "./chat-outbox";
-import { progressNeedsRead } from "./agent-progress-state";
+import { isPendingAgentReply, progressNeedsRead } from "./agent-progress-state";
 import { useResearchRead } from "./useResearchRead";
+import { useChatRecordChanges } from "./useChatRecordChanges";
 import { ResearchTurnStatus } from "./ResearchTurnStatus";
 import { coordinatorChatText } from "./chat-reply";
 
@@ -76,25 +77,33 @@ useResearchStore.subscribe((next, previous) => {
   if (next.generation !== previous.generation) useProgress.setState({ entries: [] });
 });
 
-function StoppedReplyRecovery({ entry }: { entry: Entry }) {
+function ReplyTurnControls({ entry, active = false, icons = false }: { entry: Entry; active?: boolean; icons?: boolean }) {
+  const manager = useResearchStore(s => s.actor?.isLabManager || false);
   const read = useResearchRead(
     signal => researchApi("chatTurn", { params: { id: entry.turnId }, signal }),
     `${entry.generation}:${entry.imID}:${entry.turnId}`,
     true,
-    { poll: false },
+    { poll: value => active && !supportsTranscriptSync() && (!value || isPendingAgentReply(value.data.status)) },
   );
+  useChatRecordChanges(entry.conversationId, "turn", entry.turnId, read.refresh, read.invalidate);
+  useEffect(() => { void read.refresh(); }, [entry.progress?.phase, read.refresh]);
   const turn = read.data?.data;
   if (read.error) return <p className="desktop-chat-error" role="alert">回复详情暂时无法读取。<button onClick={() => void read.refresh()}>重新读取</button></p>;
-  if (!turn || turn.id !== entry.turnId || turn.conversationId !== entry.conversationId)
-    return <p role="status" className="text-xs text-slate-500">正在核对回复详情…</p>;
-  return <ResearchTurnStatus turn={turn} compact onRetried={next => {
+  if (!turn || turn.id !== entry.turnId || turn.conversationId !== entry.conversationId ||
+      (entry.agentContactId && turn.agentContactId !== entry.agentContactId))
+    return active ? null : <p role="status" className="text-xs text-slate-500">正在核对回复详情…</p>;
+  if (active && entry.progress && !isPendingAgentReply(turn.status)) return null;
+  if (entry.progress?.phase === "stopped" && isPendingAgentReply(turn.status))
+    return <p role="status" className="text-slate-600">本次回复已停止。</p>;
+  const pending = active && isPendingAgentReply(turn.status);
+  return <ResearchTurnStatus turn={turn} manager={manager} compact hideLabel={pending} iconActions={icons && pending} onRetried={next => {
     registerAgentProgress(entry.generation, entry.imID, next, { displayName: entry.displayName, inputText: entry.inputText });
     if (next.id !== entry.turnId) useProgress.setState(s => ({ entries: s.entries.map(e => e.turnId === entry.turnId && e.imID === entry.imID && e.generation === entry.generation ? { ...e, progress: e.progress ? { ...e.progress, phase: "superseded", supersededByTurnId: next.id } : e.progress } : e) }));
     else void read.refresh();
   }} />;
 }
 
-/** Only authorized server progress; no simulated typing or native SDK messages. */
+/** Present progress confirmed by the service until its canonical message arrives. */
 export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
   const history = useContext(AgentProgressHistory);
   const container = useRef<HTMLDivElement>(null);
@@ -254,20 +263,28 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
         const { turnId, progress: p, error, agentContactId, displayName, inputText } = entry;
         const contact = contacts.find(c => c.contact.id === agentContactId);
         const groupContact = roster.data?.data.find(c => c.id === agentContactId);
-        const name = groupContact?.displayName || displayName || contact?.contact.displayName || (mapping?.kind === "group" ? "助手" : conversation?.showName);
+        const group = mapping?.kind === "group";
+        const name = groupContact?.displayName || displayName || contact?.contact.displayName || (group ? "助手" : conversation?.showName) || "助手";
         const text = p?.phase === "final" ? coordinatorChatText(p.text, agentContactId) : p?.text;
+        const active = p?.phase === "queued" || p?.phase === "streaming";
+        const typing = active && !text?.trim();
+        const status = p?.phase === "queued"
+          ? `等待${name}回复`
+          : p?.phase === "streaming"
+            ? `${name}正在回复`
+            : "回复已生成，等待消息同步";
         return (
         <div
           key={turnId}
           data-progress-turn={turnId}
-          className="desktop-streaming-row text-sm"
+          className={`desktop-streaming-row text-sm${group ? "" : " desktop-streaming-row-direct"}`}
         >
-          <OIMAvatar contact={groupContact || contact?.contact} userID={mapping?.kind === "group" ? contact?.userID : conversation?.userID} size={36} src={mapping?.kind === "group" ? undefined : conversation?.faceURL} text={name} />
+          <OIMAvatar contact={groupContact || contact?.contact} userID={group ? contact?.userID : conversation?.userID} size={30} src={group ? undefined : conversation?.faceURL} text={name} />
           <div className="desktop-streaming-content">
-          <div className="chat-agent-identity"><strong>{name}</strong><span>{groupContact ? groupContactDescription(groupContact, roster.data?.data || [], actorId) : "助手"}</span></div>
-          {mapping?.kind === "group" && inputText && <p className="chat-agent-question" title={inputText}>回复：{inputText}</p>}
+          {group && <div className="chat-agent-identity"><strong>{name}</strong>{groupContact && <span>{groupContactDescription(groupContact, roster.data?.data || [], actorId)}</span>}</div>}
+          {group && inputText && <p className="chat-agent-question" title={inputText}>回复：{inputText}</p>}
           {error ? (
-            <div className="text-xs text-slate-600">
+            <div className="text-slate-600" role="status">
               回复状态暂时无法读取。
               <button
                 className="ml-2 text-blue-600"
@@ -285,21 +302,28 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
               >
                 重新读取
               </button>
+              {!group && <ReplyTurnControls entry={entry} active icons />}
             </div>
           ) : (
-            <>
+            group ? <>
               <p className="desktop-streaming-status mb-1 text-xs text-slate-500" role="status">
                 {p!.phase === "queued"
                   ? "等待回复"
                   : p!.phase === "streaming"
-                  ? "正在回复 · 尚未结束"
+                  ? "正在回复"
                   : p!.phase === "final"
                   ? "回复已生成 · 等待消息同步"
                   : "本次回复已停止"}
               </p>
               {text && <SafeMessageMarkdown text={text} />}
-              {p!.phase === "stopped" && <StoppedReplyRecovery entry={entry} />}
-            </>
+              {p!.phase === "stopped" && <ReplyTurnControls entry={entry} />}
+            </> : <div className={typing ? "desktop-reply-waiting" : undefined}>
+              {p!.phase !== "stopped" && <div role="status" className={typing ? "desktop-reply-typing" : !text ? "desktop-streaming-status" : "sr-only"}>
+                {typing ? <><span className="sr-only">{status}</span><span className="desktop-reply-dots" aria-hidden="true"><i /><i /><i /></span></> : status}
+              </div>}
+              {text && <SafeMessageMarkdown className="desktop-streaming-prose" text={text} />}
+              {(active || p!.phase === "stopped") && <ReplyTurnControls entry={entry} active={active} icons={active} />}
+            </div>
           )}
           </div>
         </div>
