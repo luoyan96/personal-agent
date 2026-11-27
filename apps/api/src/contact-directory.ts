@@ -187,7 +187,7 @@ export class ContactDirectory {
       return {data:this.contact(id)}
     }
     if(name==='contactRequests') {
-      const rows=this.db.prepare('SELECT r.id FROM chat_contact_requests r JOIN chat_contacts c ON c.id=r.target_contact_id WHERE (r.requester_id=? OR r.decider_id=?) AND c.kind<>\'personal_agent\' ORDER BY r.created_at DESC,r.id DESC').all(this.actor.id,this.actor.id).map(row=>String(row.id))
+      const rows=this.db.prepare("SELECT r.id FROM chat_contact_requests r JOIN chat_contacts c ON c.id=r.target_contact_id WHERE (r.requester_id=? OR r.decider_id=?) AND c.kind<>'personal_agent' ORDER BY r.created_at DESC,r.id DESC").all(this.actor.id,this.actor.id).map(row=>String(row.id))
       const project=(id:string)=>{const r=this.request(id);if(this.chat.baseContact(r.targetContactId).identity.kind==='personal_agent'||(req.query.status!=='all'&&r.status!=='pending')||(req.query.direction!=='all'&&(req.query.direction==='incoming'?r.deciderMemberId!==this.actor.id:r.requesterMemberId!==this.actor.id)))fail('NOT_FOUND');return r}
       return this.chat.page(name,req.query,rows,project)
     }

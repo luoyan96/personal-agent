@@ -278,7 +278,7 @@ export const ResearchUserCard = forwardRef<
                     发消息
                   </Button>
                 )}
-                {!assistant && contact.allowedActions.includes("request") && (
+                {contact.identity.kind !== "personal_agent" && contact.allowedActions.includes("request") && (
                   <Button
                     loading={busy}
                     onClick={() =>

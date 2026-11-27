@@ -52643,7 +52643,7 @@
     "/api/v1/chat/agents/{id}/connection": {
       "get": {
         "operationId": "agentConnection",
-        "description": "Owned specialist only. Exact endpoint/model/options and hasApiKey; no key or ciphertext. Platform contacts retain legacy shape; external public runtime reveals only service origin, consent, caller policy and who pays.",
+        "description": "Owned specialist only. Exact endpoint/model/options and hasApiKey; no key or ciphertext. External runtime metadata is visible to the owner.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [
@@ -53031,7 +53031,7 @@
       },
       "post": {
         "operationId": "updateAgentConnection",
-        "description": "Owned specialist only, expectedVersion0 for initial configuration. Fixed chat-completions protocol, HTTPS443 public DNS pinned per request, no redirects/proxy/URL credentials. Endpoint change requires fresh key or explicit removal. Enabled configuration is not a proven connection. Default owner-only; allowAcceptedContacts explicitly authorizes accepted callers to spend this owner external credential. No fallback to another model.",
+        "description": "Owned specialist only, expectedVersion0 for initial configuration. Fixed chat-completions protocol, HTTPS443 public DNS pinned per request, no redirects/proxy/URL credentials. Endpoint change requires fresh key or explicit removal. Only the owner can use the external connection. allowAcceptedContacts is retained for schema compatibility.",
         "x-stage": "CHAT1",
         "x-implemented": true,
         "security": [

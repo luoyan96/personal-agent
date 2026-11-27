@@ -69,7 +69,7 @@ export function WorkspaceContactCard({
   const c = read.data?.data;
   const requests = usePendingContactRequests();
   const requestCache = useContactRequestCache();
-  const request = c?.identity.kind === "human" && c.relationship.status === "pending_inbound"
+  const request = c?.identity.kind !== "personal_agent" && c?.relationship.status === "pending_inbound"
     ? requests.data?.find((r) => r.id === c.relationship.requestId)
     : undefined;
   const currentAction = action?.scope === operation.scope ? action : undefined;
@@ -127,9 +127,13 @@ export function WorkspaceContactCard({
             entry.contact.identity.kind === "human" &&
             entry.contact.identity.memberId === ownerId,
         )?.contact.displayName;
-  const primaryActions = (
+  const primaryActions = visitingAgent ? (
+    <div className="workspace-card-actions">
+      <AgentConsultation contactId={c.id} />
+    </div>
+  ) : (
       <div className="workspace-card-actions">
-        {!visitingAgent && c.allowedActions.includes("chat") && (
+        {c.allowedActions.includes("chat") && (
           <Button
             type="primary"
             icon={directory ? <MessageOutlined aria-hidden="true" /> : undefined}
@@ -173,7 +177,7 @@ export function WorkspaceContactCard({
             联系 TA 的助理
           </Button>
         )}
-        {human && c.allowedActions.includes("request") && (
+        {c.identity.kind !== "personal_agent" && c.allowedActions.includes("request") && (
           <Button
             type="primary"
             icon={directory ? <UserAddOutlined aria-hidden="true" /> : undefined}
@@ -235,7 +239,6 @@ export function WorkspaceContactCard({
         {directory && primaryActions}
       </header>
       {!directory && primaryActions}
-      {visitingAgent && <AgentConsultation contactId={c.id} />}
       {(currentAction?.error || currentAction?.notice) && (
         <Alert
           className="workspace-action-feedback"
@@ -281,7 +284,7 @@ export function WorkspaceContactCard({
             </dd>
           </div>
         )}
-        {human && (
+        {!visitingAgent && (
           <div>
             <dt>关系</dt>
             <dd>{contactRelationshipLabel[c.relationship.status]}</dd>

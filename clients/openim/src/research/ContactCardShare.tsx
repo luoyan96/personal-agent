@@ -72,8 +72,8 @@ export function ContactCardShare({
         </Button>
       </div>
       <p>
-        发给同事后，对方在“通讯录 → 添加”粘贴即可查找。
-        {contact.identity.kind === "personal_agent" && "添加 Agent 需要主人单独同意。"}
+        发给同事后，对方可在“通讯录 → 添加联系人”粘贴名片。
+        {contact.identity.kind === "personal_agent" && "打开名片可查看助理的咨询状态。"}
         {contact.identity.kind === "public_agent" && "公开能力按课题组实际权限使用。"}
       </p>
       {current?.state === "error" && <p role="alert">{current.error}</p>}
@@ -83,6 +83,8 @@ export function ContactCardShare({
             {current.state === "copied"
               ? contact.identity.kind === "public_agent"
                 ? "名片已复制；可用范围以课题组授权为准。"
+                : contact.identity.kind === "personal_agent"
+                ? "助理名片已复制。"
                 : "名片已复制；添加仍需对方同意。"
               : "未能自动复制，名片已选中，请按 Ctrl+C 复制。"}
           </p>

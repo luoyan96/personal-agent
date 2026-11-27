@@ -19,7 +19,7 @@ export function connectionState(s:ChatService,id:string){
 }
 export function externalContact(s:ChatService,contact:Contact){
  const row=connectionRow(s,contact.id);if(row?.configured!==1)return contact
- const callerAllowed=contact.identity.kind==='personal_agent'&&(contact.identity.ownerMemberId===s.c.actor.id||(row.allow_accepted_contacts===1&&contact.relationship.status==='accepted'))
+ const callerAllowed=contact.identity.kind==='personal_agent'&&contact.identity.ownerMemberId===s.c.actor.id
  const probe=row.last_probe_json?AgentConnectionProbe.parse(JSON.parse(row.last_probe_json)):null
  contact.agentRuntime={kind:'external',protocol:'chat_completions',serviceOrigin:new URL(row.endpoint).origin,scope:'current_message',credentialPayer:'agent_owner',allowAcceptedContacts:row.allow_accepted_contacts===1,callerAllowed,requiresConsent:true,verification:probe?.version===row.version&&probe.status!=='uncertain'?probe.status==='passed'?'passed':'failed':'unverified'}
  contact.availability=!callerAllowed?{status:'unavailable',reason:'owner_authorization_required'}:row.enabled!==1?{status:'disabled',reason:null}:!s.config.aiEnabled?{status:'unavailable',reason:'platform_disabled'}:!row.encrypted_api_key||!masterAvailable(s.config)?{status:'unavailable',reason:'missing_credentials'}:{status:'available',reason:null}

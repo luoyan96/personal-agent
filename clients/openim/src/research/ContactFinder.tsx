@@ -7,6 +7,7 @@ import { ContactRow } from "./ContactRow";
 import { AcceptCatAccountNumber } from "./AcceptCatAccountNumber";
 import type { Contact } from "@research-agent-platform/contracts";
 import { contactDirectoryKind, type DirectoryKind } from './contact-directory';
+import { isPersonalConsultationContact } from "./agent-consultation";
 import {
   parseContactLookup,
   readContactServiceOrigin,
@@ -34,7 +35,7 @@ export function ContactFinder({
       )?.contact,
   );
   const { data, error, loading, refresh } = useResearchRead(
-    async (signal): Promise<{ data: Contact[] }> => {
+    async (signal): Promise<{ data: Contact[]; fromCard?: boolean }> => {
       const lookup = parseContactLookup(query);
       if (lookup.kind === "card") {
         const origin = await readContactServiceOrigin();
@@ -44,7 +45,7 @@ export function ContactFinder({
           params: { id: lookup.contactId },
           signal,
         });
-        return { data: [found.data] };
+        return { data: [found.data], fromCard: true };
       }
       return researchApi("chatContacts", {
         query: {
@@ -65,7 +66,9 @@ export function ContactFinder({
     else setQuery(next);
   };
   const contacts = data?.data.filter(
-    (contact) => contact.profile.role !== "coordinator" && contactDirectoryKind(contact) === kind,
+    (contact) =>
+      (data?.fromCard && kind === "people" && isPersonalConsultationContact(contact)) ||
+      (contact.profile.role !== "coordinator" && contactDirectoryKind(contact) === kind),
   );
   return (
     <div className="space-y-3">

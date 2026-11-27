@@ -118,7 +118,7 @@ export class OpenImBridge {
       }else{
         const self=snapshot.contacts.find(value=>value.contact.identity.kind==='human'&&value.contact.identity.memberId===actor.id)!
         if (!snapshot.consultation) await this.importMissingFriends(self.userID,[snapshot.mapping.peerUserID!],live)
-        if(snapshot.mapping.kind==='personal'||(snapshot.consultation&&snapshot.mapping.transportStatus==='pending'))await this.client.request('/conversation/set_conversations',{userIDs:[self.userID],conversation:{conversationID:snapshot.mapping.imConversationID,conversationType:1,userID:snapshot.mapping.peerUserID,isPinned:snapshot.mapping.kind==='personal',ex:JSON.stringify({researchConversationId:id})}})
+        if(snapshot.mapping.kind==='personal'||(snapshot.consultation&&snapshot.mapping.transportStatus==='pending'))await this.client.request('/conversation/set_conversations',{userIDs:[self.userID],conversation:{conversationID:snapshot.mapping.imConversationID,conversationType:1,userID:snapshot.mapping.peerUserID,...(snapshot.mapping.kind==='personal'?{isPinned:true}:{}),ex:JSON.stringify({researchConversationId:id})}})
       }
       return transaction(this.db,()=>{const chat=checkLive(this.chat(reauthorize()));this.db.prepare("UPDATE im_conversations SET status='ready',synced_version=?,members_hash=?,updated_at=? WHERE conversation_id=?").run(snapshot.group.version,this.membersHash(chat,chat.conversation(id,false)),now(),id);return this.mapping(chat,id)})
     }catch(error){if(!(error instanceof ImUnavailable))throw error;return transaction(this.db,()=>{const current=this.mapping(this.chat(reauthorize()),id);return {...current,transportStatus:'unavailable' as const,reason:error.reason}})}

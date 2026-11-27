@@ -131,9 +131,9 @@ function ConsultationPanel({
                 })
               }
             >
-              开始聊天
+              免费联系
             </Button>
-            <p>免费联系。对话使用你自己的模型 API，模型调用费用由你承担。</p>
+            <p>使用你的模型 API，调用费用由你承担。</p>
           </>
         ) : (
           <p role="status">这位助理暂不开放咨询。</p>
