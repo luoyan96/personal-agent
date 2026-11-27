@@ -3562,3 +3562,10 @@ README 和当前状态改用 [产品官网](https://deepchat.acceptcat.com/) 与
 随后两次 Windows Foundation 运行分别触及 039 和 015 迁移测试的 20 秒时限，后一次持久化诊断用例也因附件响应缺少正文而失败。旧库迁移用例在托管 Windows 上使用 45 秒测试时限，其他环境使用测试套件默认的 30 秒。持久化诊断改用真实文本附件，并显式核对上传 HTTP 状态。运行时限、迁移断言和专门的 PDF 用例保持原样。
 
 后续 Windows Foundation 通过迁移与持久化诊断，首个专门的 PDF 用例仍触及解析子进程的 8 秒时限，后续 PDF 用例通过。Windows CI 在该套件启动时先用独立子进程解析一页合成 PDF，核对内容并记录启动时间。实际 PDF 请求继续使用生产的 8 秒时限。原失败日志一并保留。
+
+## 2026-11-28 · DeepChat 1.0.4 发布与服务部署
+
+- PR #274 合并提交为 `4f829eb`。两组 Linux、Windows Foundation 和 Windows 打包均通过。Windows Foundation 通过 1,147 项测试，跳过 1 项可选真实模型验证。
+- Windows x64 安装包从产品源码 `641c7f2` 构建，后续合并变动仅涉及测试与文档。已核对解包启动、安装载荷以及 24 张贴图。安装包大小为 423,738,043 字节，SHA-256 为 `8b3f8e9db5e9b4539fcd5352c943aaf9ffc26fa767384314d81207a69204685b`，未签署 Authenticode。GitHub Latest 指向 1.0.4，四项附件摘要与本机记录一致，稳定版更新清单核对通过。[发布说明](https://github.com/luoyan96/personal-agent/releases/tag/v1.0.4)
+- 广州 ECS 官网已切换到 1.0.4，匿名范围请求返回 HTTP 206，安装包实际大小与发布记录一致。[产品官网](https://deepchat.acceptcat.com/) · [Windows 安装包](https://deepchat.acceptcat.com/download/DeepChat_1.0.4.exe)
+- 生产 API 和 worker 使用 `641c7f2`，数据库从 042 升级到 043，完整性与外键检查通过。公网就绪检查返回契约 0.53.0，数据库、存储和身份验证为正常，真实模型尚未验证。发布、测试和部署证据位于 `D:/deepseek-agent/.runtime/deepchat-release-1.0.4/`。

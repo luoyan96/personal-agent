@@ -1,20 +1,20 @@
 # 新 AI 接手：当前项目状态
 
-## DeepChat 1.0.4 发布准备
+## DeepChat 1.0.4 已发布
 
-客户端和官网源码已切换到 1.0.4。公开稳定版仍为 1.0.3。正式安装包和更新清单通过校验后发布，再切换官网页面和下载入口。免费咨询依赖生产 API、worker 和数据库迁移 043。
+Windows x64 正式版提供聊天贴图和 Agent 免费咨询。已核对 GitHub Latest、安装包、稳定版更新清单和官网下载入口。[发布说明](https://github.com/luoyan96/personal-agent/releases/tag/v1.0.4)
 
-## Agent 免费咨询（开发分支）
+## Agent 免费咨询
 
-个人助理与个人创建的 Agent 由主人设置免费联系或暂不开放，默认关闭。访客的文字咨询使用发起人自己的模型，主人关闭后访客仍可查看自己的历史。真人仍走好友申请。契约 0.53.0，数据库迁移 043，尚待生产部署。
+个人助理与个人创建的 Agent 由主人设置免费咨询或暂不开放，默认关闭。访客的文字咨询使用发起人自己的模型，主人关闭后访客仍可查看自己的历史。真人仍走好友申请。生产 API 和 worker 已更新到 `641c7f2`，契约 0.53.0，数据库迁移 043。
 
-## 大肥鱼娘聊天贴图（开发分支）
+## 大肥鱼娘聊天贴图
 
 聊天面板提供 24 张本地贴图（4 张动图）与 6 个工作表情。个人助理在日常私聊里可以从 6 张贴图中选一张，可搭配文字；已自定义的角色设定继续生效。访客咨询中选中的贴纸以文字说明发送，需要主人开放咨询和访客配置自己的模型。
 
 ## 官网与 Windows 下载
 
-[产品官网](https://deepchat.acceptcat.com/) 与 [Windows 1.0.3 安装包](https://deepchat.acceptcat.com/download/DeepChat_1.0.3.exe) 使用广州 ECS 的独立静态目录。[原官网地址](https://chat.acceptcat.com/deepchat/) 仍可访问。网站源码位于 `site/deepchat`。发布新版本时需同步已校验的安装包、官网按钮和下载路由。
+[产品官网](https://deepchat.acceptcat.com/) 与 [Windows 1.0.4 安装包](https://deepchat.acceptcat.com/download/DeepChat_1.0.4.exe) 使用广州 ECS 的独立静态目录。[原官网地址](https://chat.acceptcat.com/deepchat/) 仍可访问。网站源码位于 `site/deepchat`。发布新版本时需同步已校验的安装包、官网按钮和下载路由。
 
 ## DeepChat 1.0.3 已发布
 
