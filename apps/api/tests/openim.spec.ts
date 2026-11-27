@@ -366,7 +366,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     const model=await s.request('createPersonalModel',{name:'合成模型',provider:'deepseek',model:'deepseek-flash',apiKey:'synthetic-sticker-model',enabled:true})
     expect(model.status,model.raw).toBe(201)
     const personal=(await s.request('personalConversation',{})).value.data.conversation
-    const stickerInput=`${personalStickerInputPrefix}打招呼`
+    const stickerInput=`${personalStickerInputPrefix}挥手打招呼`
     const request=await s.request('agentChatMessage',{text:stickerInput},{id:personal.id})
     expect(request.status,request.raw).toBe(201)
     const turnId=request.value.data.turn.id

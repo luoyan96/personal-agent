@@ -83,7 +83,7 @@ async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage
    coordinatorChatText: text => text,
   },
   './SafeMessageMarkdown':{__esModule:true,default:'SafeMessageMarkdown'},
-  './ChatSticker':{__esModule:true,default:'ChatSticker',getChatSticker:id=>id==='wave'?{id}:undefined,getPersonalStickerId:text=>text===`${personalStickerInputPrefix}打招呼`?'wave':undefined},
+  './ChatSticker':{__esModule:true,default:'ChatSticker',getChatSticker:id=>id==='wave'?{id}:undefined,getPersonalStickerId:text=>text===`${personalStickerInputPrefix}挥手打招呼`?'wave':undefined},
  };
  for(const name of ['./GroupNoticeCard','./ResearchActionCard','./ResearchTaskCard','./ResearchTurnStatus','./CreatedAgentChatButton','./AgentFileReadSummary','./ContinueAgentFileReadingButton','./ResearchReadSummary','./GroupMessageStatuses'])imports[name]={[name.slice(2)]:name.slice(2)};
  const component=(await load('../src/research/ResearchMessageRender.tsx',imports)).default;
@@ -176,7 +176,7 @@ test('an authorized assistant sticker renders once and keeps readable text for c
 });
 
 test('the owner sticker appears once only in the canonical personal assistant history',async()=>{
- const text=`${personalStickerInputPrefix}打招呼`;
+ const text=`${personalStickerInputPrefix}挥手打招呼`;
  const message={...fact,origin:'human',senderContactId:'owner',text};
  const options={replyTo:null,sessionOnly:true,sendID:'sdk-owner'};
  const {tree,readable}=await renderMessage(null,message,undefined,undefined,options);
