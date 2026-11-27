@@ -4,7 +4,6 @@ import { useRequest } from "ahooks";
 import { App, Button, Divider, Form, Input, Modal, Space, Spin } from "antd";
 import { t } from "i18next";
 import { forwardRef, ForwardRefRenderFunction, memo, useEffect, useState } from "react";
-import { useCopyToClipboard } from "react-use";
 
 import logo from "@/assets/images/profile/logo.png";
 import { APP_NAME, APP_VERSION, SDK_VERSION } from "@/config";
@@ -63,10 +62,8 @@ export const AboutContent = ({
   closeOverlay?: () => void;
   embedded?: boolean;
 }) => {
-  const { modal } = App.useApp();
+  const { modal, message } = App.useApp();
   const [progress, setProgress] = useState(0);
-
-  const [, copyToClipboard] = useCopyToClipboard();
 
   const { loading, runAsync } = useRequest(IMSDK.uploadLogs, {
     manual: true,
@@ -143,31 +140,49 @@ export const AboutContent = ({
     });
   };
 
-  const handleCopy = () => {
-    copyToClipboard(`${`${APP_NAME} ${APP_VERSION}`}/${SDK_VERSION}`);
-    feedbackToast({ msg: t("toast.copySuccess") });
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(`${APP_NAME} ${APP_VERSION}/${SDK_VERSION}`);
+      void message.success(t("toast.copySuccess"));
+    } catch {
+      void message.error("复制版本信息未完成，请重试。");
+    }
   };
+
+  if (embedded) {
+    return (
+      <Spin spinning={loading} tip={`${progress}%`}>
+        <p>{SDK_VERSION}</p>
+        <Space wrap>
+          <Button onClick={handleCopy}>复制版本信息</Button>
+          {window.electronAPI && (
+            <>
+              <Button onClick={() => void tryLogReport(10000)}>
+                {t("placeholder.reportLog")}
+              </Button>
+              <Button onClick={openSelectLine}>
+                {t("placeholder.reportSpecificLog")}
+              </Button>
+            </>
+          )}
+        </Space>
+      </Spin>
+    );
+  }
 
   return (
     <Spin spinning={loading} tip={`${progress}%`}>
       <div className="bg-[var(--chat-bubble)]">
-        {!embedded && (
-          <div className="app-drag flex items-center justify-between bg-[var(--gap-text)] p-5">
-            <span className="text-base font-medium">{t("placeholder.about")}</span>
-            <CloseOutlined
-              className="app-no-drag cursor-pointer text-[#8e9aaf]"
-              rev={undefined}
-              onClick={closeOverlay}
-            />
-          </div>
-        )}
-        <div className="flex flex-col items-center justify-center">
-          <img
-            className="mb-2 mt-7"
-            width={56}
-            src={embedded ? "/icons/icon.png" : logo}
-            alt=""
+        <div className="app-drag flex items-center justify-between bg-[var(--gap-text)] p-5">
+          <span className="text-base font-medium">{t("placeholder.about")}</span>
+          <CloseOutlined
+            className="app-no-drag cursor-pointer text-[#8e9aaf]"
+            rev={undefined}
+            onClick={closeOverlay}
           />
+        </div>
+        <div className="flex flex-col items-center justify-center">
+          <img className="mb-2 mt-7" width={56} src={logo} alt="" />
           <div
             className="mb-5 flex cursor-pointer flex-col items-center"
             onClick={handleCopy}

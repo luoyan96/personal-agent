@@ -11,6 +11,7 @@ import { PersonalModelInput } from "@research-agent-platform/contracts";
 import { researchApi } from "./api";
 import { useResearchStore } from "./store";
 import { useResearchRead } from "./useResearchRead";
+import { SettingsDisclosure } from "./SettingsDisclosure";
 import "./model-settings.scss";
 
 type Configuration = ResponseFor<"personalModels">["data"]["configurations"][number];
@@ -405,8 +406,7 @@ export function ModelSettings({
                     )}
                   </label>
                 </div>
-                <details className="model-api-details">
-                  <summary>接口信息</summary>
+                <SettingsDisclosure className="model-api-details" label="查看接口地址">
                   <Input
                     aria-label="接口地址"
                     value={
@@ -417,7 +417,7 @@ export function ModelSettings({
                     readOnly
                     title="官方服务的固定接口地址"
                   />
-                </details>
+                </SettingsDisclosure>
                 <div>
                   <label>
                     API Key

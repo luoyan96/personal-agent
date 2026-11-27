@@ -89,6 +89,7 @@ async function fixture(file) {
       useNavigate: () => (path) => f.opened.push(path),
     },
     "./RecordWorkspace": { RecordWorkspace: "RecordWorkspace" },
+    "./library-workspace.scss": {},
     "./SafeMessageMarkdown": { default: "SafeMessageMarkdown" },
     "./LocalLibraryPicker": { LocalLibraryPicker: "LocalLibraryPicker" },
     "./WorkspaceUnavailable": { WorkspaceUnavailable: "WorkspaceUnavailable" },
@@ -124,6 +125,8 @@ async function fixture(file) {
         },
         data: !enabled
           ? undefined
+          : id === "personal-work-rules"
+          ? { data: { records: f.records } }
           : id === "lab-work-rules"
           ? {
               data: {
@@ -207,6 +210,33 @@ const text = (n) =>
     : String(n);
 const button = (tree, label) =>
   nodes(tree).find((n) => n.type === "Button" && text(n) === label);
+
+test("personal rules show an actionable empty state and save without a scope disclosure", async () => {
+  const f = await fixture("PersonalRules.tsx");
+  f.records = [];
+  let tree = f.render();
+  assert(nodes(tree).some((n) => n.type === "h3" && text(n) === "还没有固定要求"));
+  assert(!nodes(tree).some((n) => n.type === "details"));
+  button(tree, "新增要求").props.onClick();
+  tree = f.render();
+  for (const [label, value] of [
+    ["规则标题", "研究记录"],
+    ["规则正文", "先列原始证据。"],
+  ]) {
+    nodes(tree)
+      .find((n) => n.props?.["aria-label"] === label)
+      .props.onChange({ target: { value } });
+  }
+  button(f.render(), "保存").props.onClick();
+  await new Promise(setImmediate);
+  const { name, options } = f.writes[0];
+  assert.equal(name, "savePersonalWorkRule");
+  assert.equal(options.body.action, "save");
+  assert.equal(options.body.expectedVersion, 0);
+  assert.equal(options.body.title, "研究记录");
+  assert.equal(options.body.content, "先列原始证据。");
+  assert.equal(f.requests, 1);
+});
 
 test("active rules never offer confirm again, candidate confirms its exact id/version", async () => {
   const f = await fixture("LabStandards.tsx");

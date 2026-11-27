@@ -8,6 +8,7 @@ import type {
   RouteName,
 } from "@research-agent-platform/contracts";
 import { researchApi, ResearchApiError } from "./api";
+import { SettingsDisclosure } from "./SettingsDisclosure";
 import { useResearchRead } from "./useResearchRead";
 import { useResearchStore } from "./store";
 import { usePersonalOperation } from "./usePersonalOperation";
@@ -156,17 +157,13 @@ export function LabWorkspace() {
     });
   };
   const preview = async () => {
-    const result = await run(
-      "previewLabCode",
-      { body: { inviteCode: code.trim() } },
-      "",
-    );
+    const inviteCode = code.trim();
+    const result = await run("previewLabCode", { body: { inviteCode } }, "");
     if (result)
       confirm(
         `加入「${result.data.name}」？`,
-        "加入后可以使用该课题组明确共享的资料和任务。你的私人资料、模型 Key 和飞书授权不会自动共享。",
-        () =>
-          run("joinLab", { body: { inviteCode: code.trim() } }, "已加入课题组。", true),
+        "加入后可访问该组共享的资料和任务。",
+        () => run("joinLab", { body: { inviteCode } }, "已加入课题组。", true),
       );
   };
   const pending = (invite: { status: string; expiresAt: string }) =>
@@ -228,7 +225,7 @@ export function LabWorkspace() {
                   onClick={() =>
                     confirm(
                       `加入「${i.labName}」？`,
-                      "只开放课题组已共享的资料和任务；不会共享你的私人资料、模型 Key 或飞书账号。",
+                      "加入后可访问该组共享的资料和任务。",
                       () =>
                         run(
                           "decideLabInvitation",
@@ -290,6 +287,7 @@ export function LabWorkspace() {
           <h3>成员管理</h3>
           {current.role === "manager" && (
             <Button
+              className="lab-rename-action"
               disabled={busy}
               onClick={() => {
                 let edited = current.name;
@@ -357,11 +355,11 @@ export function LabWorkspace() {
                   邀请加入
                 </Button>
               </Space.Compact>
-              <p className="workspace-muted">
-                {friends.error
-                  ? "联系人暂时无法读取，可以输入完整 DeepChat 号邀请。"
-                  : "对方接受后加入课题组。"}
-              </p>
+              {friends.error && (
+                <p className="workspace-muted">
+                  联系人暂时无法读取，可以输入完整 DeepChat 号邀请。
+                </p>
+              )}
             </>
           ) : (
             <Button
@@ -459,8 +457,11 @@ export function LabWorkspace() {
             </div>
           ))}
           {detail.data?.data.invitations.some((i) => !pending(i)) && (
-            <details className="lab-secondary">
-              <summary>历史成员邀请</summary>
+            <SettingsDisclosure
+              key={`history:${current.id}`}
+              className="lab-secondary"
+              label="查看历史成员邀请"
+            >
               {detail.data.data.invitations
                 .filter((i) => !pending(i))
                 .map((i) => (
@@ -472,12 +473,14 @@ export function LabWorkspace() {
                     </span>
                   </div>
                 ))}
-            </details>
+            </SettingsDisclosure>
           )}
           {current.role === "manager" && (
-            <details className="lab-secondary" open={Boolean(issued)}>
-              <summary>邀请码与邀请记录</summary>
-              <p>没有账号的人可在注册时填写；已有账号可在本页输入同一个邀请码加入。</p>
+            <SettingsDisclosure
+              key={`codes:${current.id}`}
+              className="lab-secondary"
+              label="邀请码与邀请记录"
+            >
               <Button
                 disabled={busy}
                 onClick={async () => {
@@ -504,7 +507,7 @@ export function LabWorkspace() {
               {issued && (
                 <div className="lab-issued-code">
                   <Input.TextArea
-                    aria-label="课题组邀请码"
+                    aria-label="已生成的邀请码"
                     readOnly
                     autoSize
                     value={issued.code}
@@ -521,7 +524,7 @@ export function LabWorkspace() {
                   >
                     复制邀请码
                   </Button>
-                  <p>发给希望加入的人。关闭页面后不再显示，请妥善保管。</p>
+                  <p>离开此页前请复制，之后无法再次查看此码。</p>
                 </div>
               )}
               {invites.error && (
@@ -559,59 +562,61 @@ export function LabWorkspace() {
                 </div>
               ))}
               {invites.data?.data.truncated && <p>仅展示最近50个邀请码。</p>}
-              <p className="workspace-muted">
-                负责人暂不支持直接退出；需要解散或交接时联系维护者处理。
-              </p>
-            </details>
+            </SettingsDisclosure>
           )}
         </section>
       )}
-      <details className="lab-secondary lab-join">
-        <summary>通过邀请码加入课题组</summary>
-        <Space.Compact style={{ width: "100%" }}>
+      <section aria-label="通过邀请码加入课题组">
+        <h3>通过邀请码加入课题组</h3>
+        <form
+          className="lab-entry-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!busy && code.trim()) void preview();
+          }}
+        >
           <Input
             aria-label="课题组邀请码"
             placeholder="粘贴负责人发来的邀请码"
             value={code}
             onChange={(e) => setCode(e.target.value)}
           />
-          <Button disabled={busy || !code.trim()} onClick={preview}>
+          <Button htmlType="submit" disabled={busy || !code.trim()}>
             查看并加入
           </Button>
-        </Space.Compact>
-      </details>
+        </form>
+      </section>
       {!labs.data.data.groups.some((g) => g.role === "manager") && (
-        <details className="lab-secondary lab-create">
-          <summary>创建课题组</summary>
-          <p>创建后你将成为负责人，可以邀请成员和管理共享范围。</p>
-          <Space.Compact style={{ width: "100%" }}>
-            <Input
-              aria-label="课题组名称"
-              maxLength={100}
-              placeholder="例如：智能计算课题组"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <Button
-              type="primary"
-              disabled={busy || !name.trim()}
-              onClick={() =>
-                run(
+        <section aria-label="创建课题组">
+          <h3>创建课题组</h3>
+          <form
+            className="lab-entry-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!busy && name.trim())
+                void run(
                   "createLab",
                   { body: { name: name.trim() } },
                   "课题组已创建。",
                   true,
-                )
-              }
-            >
+                );
+            }}
+          >
+            <Input
+              aria-label="课题组名称"
+              maxLength={100}
+              placeholder="课题组名称"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <Button type="primary" htmlType="submit" disabled={busy || !name.trim()}>
               创建课题组
             </Button>
-          </Space.Compact>
-        </details>
+          </form>
+        </section>
       )}
       {labs.data.data.invitations.some((i) => !pending(i)) && (
-        <details className="lab-secondary">
-          <summary>收到邀请的历史记录</summary>
+        <SettingsDisclosure className="lab-secondary" label="查看收到的历史邀请">
           {labs.data.data.invitations
             .filter((i) => !pending(i))
             .map((i) => (
@@ -625,12 +630,8 @@ export function LabWorkspace() {
                 </span>
               </div>
             ))}
-        </details>
+        </SettingsDisclosure>
       )}
-      <p className="workspace-muted">
-        加入课题组不会开放私人论文库、模型 Key
-        或飞书账号。资料仍由库主人明确选择共享；飞书原表的网页访问继续受飞书权限控制。
-      </p>
     </div>
   );
 }

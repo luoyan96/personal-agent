@@ -21,7 +21,7 @@
     color: white;
     &:hover { background: var(--my-blue-hover); color: #fff; }
   }
-  :is(button, a, summary, select):focus-visible {
+  :is(button, a, select):focus-visible {
     outline: 2px solid var(--my-blue);
     outline-offset: 2px;
   }
@@ -125,7 +125,7 @@
   container: my-content / inline-size;
 
   > :is(.my-profile, .personal-memory, .my-rules, .my-preferences, .lab-workspace,
-    .desktop-version-panel, .my-about, .my-section-heading, .model-settings-page) {
+    .desktop-version-panel, .my-version-help-actions, .my-section-heading, .model-settings-page) {
     max-width: 1060px;
     margin-inline: auto;
   }
@@ -240,27 +240,15 @@
 .my-profile-share {
   border-top: 1px solid var(--my-line);
   background: #fff;
-  summary {
+  > .settings-disclosure-button {
     display: flex;
     align-items: center;
-    gap: 8px;
     min-height: 44px;
     padding: 9px clamp(16px, 3cqw, 25px);
-    color: var(--my-blue);
-    font-size: 14px;
     font-weight: 600;
-    cursor: pointer;
-    list-style: none;
-    &::-webkit-details-marker { display: none; }
-    &:hover { background: var(--my-soft); }
     &:focus-visible { outline-offset: -3px; }
   }
-  .my-profile-share-arrow {
-    margin-inline-start: auto;
-    font-size: 11px;
-  }
-  &[open] .my-profile-share-arrow { transform: rotate(180deg); }
-  > .acceptcat-contact-share {
+  .acceptcat-contact-share {
     margin: 0 clamp(12px, 3cqw, 25px) 16px;
     border-color: var(--my-line);
     background: var(--my-canvas);
@@ -407,7 +395,6 @@
   > .my-section-heading { margin-bottom: 9px; }
   .workspace-standards-heading { margin: 0; }
   .workspace-standards-heading h3 { color: var(--my-heading); font-size: 16px; }
-  .workspace-standards-heading p { margin-top: 4px; color: var(--my-muted); }
   .workspace-standards-editor { margin: 12px 16px 16px; }
   .workspace-standards-record {
     margin: 0;
@@ -430,22 +417,10 @@
   > p[role="status"] { padding: 12px 16px; }
 }
 .my-rules-empty {
-  border-top: 1px solid var(--my-line);
-  padding: 32px 16px;
+  padding: 40px 16px;
   text-align: center;
-  .anticon { margin-bottom: 7px; color: var(--my-blue); font-size: 22px; }
+  svg { display: block; margin: 0 auto 9px; color: var(--my-blue); }
   h3 { color: var(--my-heading); }
-  p { margin-top: 3px; }
-}
-.my-workspace .personal-rules-scope {
-  color: var(--my-muted);
-  font-size: 13px;
-  summary {
-    width: fit-content;
-    color: var(--my-blue);
-    cursor: pointer;
-  }
-  p { margin-top: 8px; }
 }
 
 .my-workspace .my-general-settings {
@@ -475,21 +450,38 @@
     small { color: var(--my-muted); }
   }
 }
-.my-workspace .desktop-version-panel,
-.my-workspace .my-about {
+.my-workspace .desktop-version-panel-compact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
   padding: 16px clamp(16px, 3cqw, 25px);
+  > * { grid-column: 1 / -1; }
+  .desktop-version-heading { grid-column: 1; grid-row: 1; padding: 0; border: 0; }
+  .desktop-version-actions { grid-column: 2; grid-row: 1; margin: 0; }
+  .desktop-version-status { margin: 14px 0 0; }
+  .desktop-version-status:empty { margin: 0; }
+  .ant-alert, .ant-progress { margin-top: 12px; }
 }
-.my-workspace .desktop-version-icon { color: var(--my-blue); }
-.my-about {
-  margin-top: 16px;
-  border: 1px solid var(--my-line);
-  border-radius: 14px;
-  background: #fff;
-  h3 { margin: 0 0 6px; color: var(--my-heading); font-weight: 650; }
-  p { color: var(--my-muted); overflow-wrap: anywhere; }
-  a { color: var(--my-blue); }
-  details { margin-top: 11px; }
-  summary { cursor: pointer; }
+.my-version-help-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 22px;
+  margin-top: 11px;
+  > a { display: inline-flex; align-items: center; min-height: 32px; }
+  > :is(a, .ant-btn-link) { padding-inline: 0; color: var(--my-blue); }
+  > :is(a, .ant-btn-link):hover { color: var(--my-blue-hover); text-decoration: underline; }
+}
+.my-version-attribution {
+  display: grid;
+  gap: 8px;
+  overflow-wrap: anywhere;
+  a {
+    justify-self: start;
+    color: #0968b4;
+    text-decoration: underline;
+  }
 }
 
 @container my-content (max-width: 560px) {

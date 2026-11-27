@@ -17,6 +17,7 @@ import { workspaceApi } from "./workspace-api";
 import { readWorkspaceAvailability } from "./workspace-availability";
 import { WorkspaceUnavailable } from "./WorkspaceUnavailable";
 import { ResearchTeamAccountHint } from "./ResearchTeamAccountHint";
+import { SettingsDisclosure } from "./SettingsDisclosure";
 import { CapabilityTemplates, matchingStarterTemplates } from "./CapabilityTemplates";
 import { CommunityDiscovery } from "./CommunityDiscovery";
 import { AgentCapabilityFeedCard } from "./AgentCapabilityFeedCard";
@@ -481,17 +482,22 @@ function CapabilityBrowser({
                           <ul aria-label="成员的专业能力">
                             {capabilities.map((contact) => (
                               <li key={contact.id}>
-                                <details>
-                                  <summary>
-                                    <strong>{contact.displayName}</strong>
-                                    <span>{capabilityCategory(contact)}</span>
-                                  </summary>
+                                <SettingsDisclosure
+                                  label={
+                                    <>
+                                      <strong>{contact.displayName}</strong>
+                                      <span className="lab-capability-type">
+                                        {capabilityCategory(contact)}
+                                      </span>
+                                    </>
+                                  }
+                                >
                                   <p>
                                     {contact.profile.capabilityDescription ||
                                       contact.profile.introduction ||
                                       "暂无能力说明"}
                                   </p>
-                                </details>
+                                </SettingsDisclosure>
                               </li>
                             ))}
                           </ul>
