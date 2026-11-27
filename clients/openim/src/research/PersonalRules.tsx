@@ -1,9 +1,5 @@
 import { Alert, Button, Input } from "antd";
-import {
-  LockOutlined,
-  PlusOutlined,
-  SafetyCertificateOutlined,
-} from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import { useLayoutEffect, useState } from "react";
 
 import { researchApi } from "./api";
@@ -112,7 +108,7 @@ export function PersonalRules() {
       <header className="my-section-heading">
         <div>
           <h2>固定要求</h2>
-          <p>为个人助理和本机任务设定需要持续遵守的要求。</p>
+          <p>用于个人助理私聊和本机任务。</p>
         </div>
         <Button
           type="primary"
@@ -134,18 +130,17 @@ export function PersonalRules() {
       {notice && <Alert type="success" message={notice} />}
       {failure && <Alert type="error" message={failure} />}
       <div className="my-rules-panel">
-        <div className="workspace-standards-heading">
-          <div>
+        {records.length > 0 && (
+          <div className="workspace-standards-heading">
             <h3>已保存的要求</h3>
-            <p>确认后立即生效；撤回后保留历史，不再进入新对话。</p>
           </div>
-        </div>
+        )}
         {editing && (
           <div className="workspace-standards-editor" aria-label="编辑个人规则">
             <Input
               aria-label="规则标题"
               maxLength={80}
-              placeholder="一句话说明这条规则，例如：回答先给结论"
+              placeholder="要求标题"
               value={editing.title}
               disabled={busy}
               onChange={(e) => setEditing((s) => s && { ...s, title: e.target.value })}
@@ -154,7 +149,7 @@ export function PersonalRules() {
               aria-label="规则正文"
               rows={3}
               maxLength={2000}
-              placeholder="写清要求本身，例如：先给结论，再给证据；不确定的地方直接说不确定。"
+              placeholder="要求内容"
               value={editing.content}
               disabled={busy}
               onChange={(e) =>
@@ -179,9 +174,44 @@ export function PersonalRules() {
         {!read.data && !read.error && <p role="status">正在读取固定要求…</p>}
         {read.data && !records.length && !editing && !read.error && (
           <div className="my-rules-empty">
-            <SafetyCertificateOutlined aria-hidden="true" />
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <ellipse
+                cx="4.6"
+                cy="10.1"
+                rx="2.2"
+                ry="3.1"
+                transform="rotate(-27 4.6 10.1)"
+              />
+              <ellipse
+                cx="9.2"
+                cy="6.1"
+                rx="2.2"
+                ry="3.2"
+                transform="rotate(-10 9.2 6.1)"
+              />
+              <ellipse
+                cx="14.8"
+                cy="6.1"
+                rx="2.2"
+                ry="3.2"
+                transform="rotate(10 14.8 6.1)"
+              />
+              <ellipse
+                cx="19.4"
+                cy="10.1"
+                rx="2.2"
+                ry="3.1"
+                transform="rotate(27 19.4 10.1)"
+              />
+              <path d="M12 11c-2 0-3 1.7-4.7 3.2-1.4 1.3-2.1 2.2-2.1 3.6 0 1.8 1.2 3 3 3 1.5 0 2.5-.9 3.8-.9s2.3.9 3.8.9c1.8 0 3-1.2 3-3 0-1.4-.7-2.3-2.1-3.6C15 12.7 14 11 12 11Z" />
+            </svg>
             <h3>还没有固定要求</h3>
-            <p>例如：所有交付物都在首页注明版本与日期。</p>
           </div>
         )}
         {records.map((record) => (
@@ -227,15 +257,6 @@ export function PersonalRules() {
           </article>
         ))}
       </div>
-      <details className="personal-rules-scope">
-        <summary>
-          <LockOutlined aria-hidden="true" /> 查看使用范围
-        </summary>
-        <p>
-          由你明确设定，和聊天中形成的习惯分别保存。用于本人私聊、个人会话及本机任务工作区。
-          群聊和共享个人任务不加载，不能覆盖平台或团队要求。
-        </p>
-      </details>
     </section>
   );
 }

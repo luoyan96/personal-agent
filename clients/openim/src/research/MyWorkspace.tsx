@@ -1,4 +1,4 @@
-import { Alert, App, Button, ConfigProvider } from "antd";
+import { Alert, App, Button, ConfigProvider, Modal } from "antd";
 import {
   ApiOutlined,
   BookOutlined,
@@ -12,12 +12,15 @@ import {
 } from "@ant-design/icons";
 import { useLayoutEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { APP_NAME } from "@/config/brand";
 import { useUserStore } from "@/store";
 import { AboutContent } from "@/layout/LeftNavBar/About";
 import { PersonalSettingsContent } from "@/layout/LeftNavBar/PersonalSettings";
-import { DesktopVersionPanel } from "@/layout/LeftNavBar/DesktopVersionPanel";
+import {
+  DesktopVersionDetails,
+  DesktopVersionPanel,
+} from "@/layout/LeftNavBar/DesktopVersionPanel";
 import { useDesktopUpdates } from "@/layout/LeftNavBar/useDesktopUpdates";
+import type { DesktopUpdateController } from "@/layout/LeftNavBar/useDesktopUpdates";
 import { relocatedMyWorkspace } from "./workspace-navigation";
 import { WorkbenchCapabilities } from "./CapabilitySquare";
 import { ModelSettings } from "./ModelSettings";
@@ -68,6 +71,79 @@ const myTheme = {
     borderRadius: 9,
   },
 };
+
+function MyVersionHelp({ updates }: { updates: DesktopUpdateController }) {
+  const [dialog, setDialog] = useState<"attribution" | "diagnostics">();
+  const [open, setOpen] = useState(false);
+  const openDialog = (kind: NonNullable<typeof dialog>) => {
+    setDialog(kind);
+    setOpen(true);
+  };
+
+  return (
+    <>
+      <header className="my-section-heading">
+        <h2>版本与帮助</h2>
+      </header>
+      <DesktopVersionPanel updates={updates} compact />
+      <div className="my-version-help-actions">
+        <a
+          href="https://github.com/luoyan96/personal-agent/issues"
+          target="_blank"
+          rel="noreferrer"
+        >
+          反馈问题与建议
+        </a>
+        <Button
+          type="link"
+          aria-haspopup="dialog"
+          onClick={() => openDialog("attribution")}
+        >
+          头像素材署名与许可
+        </Button>
+        <Button
+          type="link"
+          aria-haspopup="dialog"
+          onClick={() => openDialog("diagnostics")}
+        >
+          版本详情与诊断
+        </Button>
+      </div>
+      <Modal
+        title={dialog === "attribution" ? "头像素材署名与许可" : "版本详情与诊断"}
+        open={open}
+        onCancel={() => setOpen(false)}
+        footer={null}
+        destroyOnClose
+      >
+        {dialog === "attribution" ? (
+          <div className="my-version-attribution">
+            <p>应用图标与私人助理「大肥鱼」头像</p>
+            <a
+              href="https://github.com/YunYueSama/codex-deepseek-pet"
+              target="_blank"
+              rel="noreferrer"
+            >
+              YunYueSama / codex-deepseek-pet
+            </a>
+            <a
+              href="https://github.com/luoyan96/personal-agent/blob/main/clients/openim/public/third-party/dafeiyu/LICENSE.txt"
+              target="_blank"
+              rel="noreferrer"
+            >
+              大肥鱼项目署名许可 1.0
+            </a>
+          </div>
+        ) : (
+          <>
+            <DesktopVersionDetails updates={updates} />
+            <AboutContent embedded />
+          </>
+        )}
+      </Modal>
+    </>
+  );
+}
 
 export function MyWorkspace() {
   const [params, setParams] = useSearchParams();
@@ -184,40 +260,7 @@ export function MyWorkspace() {
                 <PersonalSettingsContent embedded />
               </section>
             ) : view === "version" ? (
-              <>
-                <header className="my-section-heading">
-                  <h2>版本与帮助</h2>
-                </header>
-                <DesktopVersionPanel updates={updates} />
-                <section className="my-about">
-                  <h3>关于 {APP_NAME}</h3>
-                  <p>面向教师、科研工作者与实验室团队的科研协作工具。</p>
-                  <a
-                    href="https://github.com/luoyan96/personal-agent/issues"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    反馈问题与建议
-                  </a>
-                  <details className="my-about-diagnostics">
-                    <summary>头像素材署名</summary>
-                    <p>
-                      应用图标与私人助理「大肥鱼」头像：
-                      <a
-                        href="https://github.com/YunYueSama/codex-deepseek-pet"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        YunYueSama / codex-deepseek-pet
-                      </a>
-                    </p>
-                  </details>
-                  <details className="my-about-diagnostics">
-                    <summary>版本详情与诊断</summary>
-                    <AboutContent embedded />
-                  </details>
-                </section>
-              </>
+              <MyVersionHelp updates={updates} />
             ) : (
               <MyProfile />
             )}

@@ -1,10 +1,11 @@
 import { Alert, Button, Input } from "antd";
-import { DownOutlined, EditOutlined, IdcardOutlined } from "@ant-design/icons";
+import { EditOutlined, IdcardOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import OIMAvatar from "@/components/OIMAvatar";
 import { useUserStore } from "@/store";
 import { AcceptCatAccountNumber } from "./AcceptCatAccountNumber";
 import { ContactCardShare } from "./ContactCardShare";
+import { SettingsDisclosure } from "./SettingsDisclosure";
 import { researchApi } from "./api";
 import { useResearchRead } from "./useResearchRead";
 import { useResearchStore } from "./store";
@@ -150,14 +151,13 @@ export function MyProfile() {
               </div>
               <AcceptCatAccountNumber username={contact.username} isSelf compact />
             </div>
-            <details className="my-profile-share">
-              <summary>
-                <IdcardOutlined aria-hidden="true" />
-                分享我的名片
-                <DownOutlined className="my-profile-share-arrow" aria-hidden="true" />
-              </summary>
+            <SettingsDisclosure
+              className="my-profile-share"
+              label="分享我的名片"
+              icon={<IdcardOutlined aria-hidden="true" />}
+            >
               <ContactCardShare contact={contact} active />
-            </details>
+            </SettingsDisclosure>
           </div>
           <section className="my-profile-details" aria-labelledby="my-profile-fields">
             <h3 id="my-profile-fields">{draft ? "编辑个人资料" : "名片资料"}</h3>

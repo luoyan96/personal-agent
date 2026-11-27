@@ -3,7 +3,44 @@ import { Alert, Button, Progress } from "antd";
 import { APP_NAME } from "@/config/brand";
 import type { DesktopUpdateController } from "./useDesktopUpdates";
 const releasePage = "https://github.com/luoyan96/personal-agent/releases/latest";
-export function DesktopVersionPanel({ updates }: { updates: DesktopUpdateController }) {
+
+export function DesktopVersionDetails({
+  updates,
+}: {
+  updates: DesktopUpdateController;
+}) {
+  const { state, loadError } = updates;
+  if (!state?.supported || loadError) return null;
+
+  return (
+    <dl className="desktop-version-check">
+      <div>
+        <dt>更新通道</dt>
+        <dd>{state.channel === "stable" ? "正式版" : "暂不可读取"}</dd>
+      </div>
+      <div>
+        <dt>最近一次检查</dt>
+        <dd>
+          {state.lastCheckedAt ? (
+            <time dateTime={state.lastCheckedAt}>
+              {new Date(state.lastCheckedAt).toLocaleString()}
+            </time>
+          ) : (
+            "本次启动后尚未完成检查"
+          )}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
+export function DesktopVersionPanel({
+  updates,
+  compact = false,
+}: {
+  updates: DesktopUpdateController;
+  compact?: boolean;
+}) {
   const { state, busy, loading, loadError, actionError } = updates;
   const hasUpdate =
     !!state?.supported &&
@@ -33,7 +70,9 @@ export function DesktopVersionPanel({ updates }: { updates: DesktopUpdateControl
   const status = !state
     ? "正在读取版本信息…"
     : !state.supported
-    ? "自动更新适用于 Windows 安装版，请从安装后的快捷方式启动。"
+    ? compact
+      ? "自动更新适用于 Windows 安装版。"
+      : "自动更新适用于 Windows 安装版，请从安装后的快捷方式启动。"
     : state.phase === "current"
     ? "本次检查未发现可用更新"
     : state.phase === "available"
@@ -48,40 +87,30 @@ export function DesktopVersionPanel({ updates }: { updates: DesktopUpdateControl
     ? "正在安装更新…"
     : state.phase === "error"
     ? "更新未完成，当前版本可以继续使用"
+    : compact
+    ? ""
     : "可以检查是否有新版本";
 
   return (
-    <section className="desktop-version-panel" aria-label="版本信息">
+    <section
+      className={
+        compact
+          ? "desktop-version-panel desktop-version-panel-compact"
+          : "desktop-version-panel"
+      }
+      aria-label="版本信息"
+    >
       <div className="desktop-version-heading">
         <div>
           <h2>{APP_NAME}</h2>
           <p>当前版本：{state?.currentVersion || "读取中"}</p>
         </div>
-        <CloudDownloadOutlined className="desktop-version-icon" />
+        {!compact && <CloudDownloadOutlined className="desktop-version-icon" />}
       </div>
       <p role="status" className="desktop-version-status">
         {loadError ? "版本信息读取失败" : status}
       </p>
-      {state?.supported && !loadError && (
-        <dl className="desktop-version-check">
-          <div>
-            <dt>更新通道</dt>
-            <dd>{state.channel === "stable" ? "正式版" : "暂不可读取"}</dd>
-          </div>
-          <div>
-            <dt>最近一次检查</dt>
-            <dd>
-              {state.lastCheckedAt ? (
-                <time dateTime={state.lastCheckedAt}>
-                  {new Date(state.lastCheckedAt).toLocaleString()}
-                </time>
-              ) : (
-                "本次启动后尚未完成检查"
-              )}
-            </dd>
-          </div>
-        </dl>
-      )}
+      {!compact && <DesktopVersionDetails updates={updates} />}
       {(loadError || actionError || state?.phase === "error") && (
         <Alert
           type="error"
@@ -124,7 +153,7 @@ export function DesktopVersionPanel({ updates }: { updates: DesktopUpdateControl
           )
         )}
       </div>
-      {state?.supported && (
+      {!compact && state?.supported && (
         <p className="desktop-version-help">
           启动后、每 6 小时及电脑唤醒时自动检查。发现新版会提示，下载和重启由你决定。
         </p>

@@ -299,10 +299,7 @@
 .model-api-details {
   color: var(--model-muted);
   font-size: 12px;
-  summary {
-    cursor: pointer;
-    padding: 3px 0;
-  }
+  > .settings-disclosure-button { padding-inline: 0; }
   .ant-input {
     margin-top: 8px;
     font-size: 12px;
