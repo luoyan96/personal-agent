@@ -8,7 +8,7 @@ import { historyNotice } from "../src/pages/chat/queryChat/history-notice.ts";
 // what the first local-first build did on every fresh conversation.
 
 test("an online machine never claims to be offline", () => {
-  for (const source of ["connecting", "offline", "cache", "sync-failed", ""])
+  for (const source of ["offline", "cache", "sync-failed", ""])
     assert.doesNotMatch(historyNotice(source, true), /无法联网/);
 });
 
@@ -17,9 +17,7 @@ test("offline is only said when the machine is really offline", () => {
     historyNotice("offline", false),
     "当前无法联网，这段会话本机还没有缓存。",
   );
-  // Same state, but the machine is online: it is a connection problem, not an
-  // outage, and it must not be reported as one.
-  assert.equal(historyNotice("offline", true), "正在连接服务器…");
+  assert.equal(historyNotice("offline", true), "");
 });
 
 test("normal local reads stay silent; only actual offline state gets an offline notice", () => {

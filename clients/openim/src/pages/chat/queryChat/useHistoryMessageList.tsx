@@ -220,11 +220,12 @@ export function useHistoryMessageList() {
       if (!mounted.current || generation !== loadGeneration.current) return;
       setCacheChecked(true);
       if (!cached?.messages.length) {
-        // Nothing cached. A slow login is not an outage, so say only what is
-        // true: offline only when the machine really is, "connecting" otherwise.
+        // A cache miss says nothing about the connection. Leave a completed
+        // SDK read or its error in place when the cache finishes later.
+        if (verifiedFor.current === conversationID || latestPageFailed.current) return;
         if (!latestCanRead.current)
           setLoadState((previous) => ({ ...previous, initLoading: false }));
-        setHistorySource(navigator.onLine === false ? "offline" : "connecting");
+        if (navigator.onLine === false) setHistorySource("offline");
         return;
       }
       const preState = latestLoadState.current;
