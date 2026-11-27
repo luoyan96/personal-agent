@@ -14,6 +14,7 @@ import { useResearchRead } from "./useResearchRead";
 import { useChatRecordChanges } from "./useChatRecordChanges";
 import { ResearchTurnStatus } from "./ResearchTurnStatus";
 import { coordinatorChatText } from "./chat-reply";
+import ChatSticker, { getPersonalStickerId } from "./ChatSticker";
 
 type Entry = {
   generation: number;
@@ -261,10 +262,14 @@ export function AgentReplyProgress({ onResize }: { onResize?: () => void }) {
   );
   return (
     <div ref={container} data-agent-progress className="desktop-agent-progress space-y-2 px-5 pb-4">
-      {receipts.filter(item => !history.messageIds.has(item.receipt!.message.id)).map(item => <div key={item.id} className="chat-acknowledged-input" data-acknowledged-message={item.receipt!.message.id}>
-        <div>{item.receipt!.message.text || item.text}</div>
-        <span role="status">请求已保存 · 等待聊天记录同步</span>
-      </div>)}
+      {receipts.filter(item => !history.messageIds.has(item.receipt!.message.id)).map(item => {
+        const text = item.receipt!.message.text || item.text;
+        const stickerId = mapping?.kind === "personal" ? getPersonalStickerId(text) : undefined;
+        return <div key={item.id} className="chat-acknowledged-input" data-acknowledged-message={item.receipt!.message.id}>
+          <div>{stickerId ? <ChatSticker stickerId={stickerId} /> : text}</div>
+          <span role="status">请求已保存 · 等待聊天记录同步</span>
+        </div>;
+      })}
       {visible.map(entry => {
         const { turnId, progress: p, error, agentContactId, displayName, inputText } = entry;
         const contact = contacts.find(c => c.contact.id === agentContactId);

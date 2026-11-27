@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import ts from 'typescript';
-import {assistantReplyText,OpenImResearchPointer} from '@research-agent-platform/contracts';
+import {AssistantStickerExtension,assistantReplyText,assistantStickerFallback,OpenImResearchPointer,personalStickerInputPrefix} from '@research-agent-platform/contracts';
 
 async function load(file,imports={}){
  const source=await readFile(new URL(file,import.meta.url),'utf8'),module={exports:{}};
@@ -48,23 +48,23 @@ test('a whole page of eligible legacy history performs only one capability404',a
  await read(2,'personal','different-account');assert.equal(count,2);
 });
 
-async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage,{replyTo=reply,kind='personal',sessionOnly=false,stoppedInTimeline=false}={}){
+async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage,{replyTo=reply,kind='personal',sessionOnly=false,stoppedInTimeline=false,extension,withdrawn=false,sendID='sdk-coordinator'}={}){
  const jsx=(type,props)=>({type,props}),queries=[],locations=[],readable=[],registered=[];
  const mapping={imConversationID:'im',researchConversationId:'personal',peerUserID:'sdk-coordinator',kind};
  const store={generation:1,contacts:[{contact:{id:'coordinator',profile:{role:'coordinator'}}}],mappings:[mapping]};
- if(sessionOnly)Object.assign(store,{session:{coordinator:mapping},contacts:[],mappings:[]});
+ if(sessionOnly)Object.assign(store,{session:{coordinator:mapping,user:{userID:'sdk-owner'}},contacts:[],mappings:[]});
  const pointer={type:'research_message',bridgeVersion:'1.0.0',conversationId:messageFact.conversationId,messageId:messageFact.id,sequence:messageFact.sequence};
  const imports={
   react:{useContext:()=>({messageIds:new Set()}),useEffect(effect){effect();},useState:()=>[undefined,()=>{}]},
   'react/jsx-runtime':{jsx,jsxs:jsx,Fragment:'Fragment'},
   antd:{Alert:'Alert',Button:'Button'},
   clsx:(...classNames)=>classNames.filter(Boolean).join(' '),
-  '@research-agent-platform/contracts':{OpenImResearchPointer},
+  '@research-agent-platform/contracts':{AssistantStickerExtension,assistantStickerFallback,OpenImResearchPointer},
   './api':{researchApi:async()=>({data:projectNotice}),supportsTranscriptSync:()=>true},
   './ChatSourceQuote':{ChatSourceQuote:'ChatSourceQuote'},
   './useResearchRead':{useResearchRead(_read,identity,enabled,options){
    queries.push({identity,enabled,options});
-   return {data:identity.startsWith('project-message:')?projectNotice:identity===`im:${pointer.conversationId}:${pointer.messageId}:${pointer.sequence}`?{fact:messageFact,details:{replyTo}}:turn&&identity===`im:${turn.id}`?{data:turn}:undefined,refresh(){},invalidate(){}};
+   return {data:identity.startsWith('project-message:')?projectNotice:identity===`im:${pointer.conversationId}:${pointer.messageId}:${pointer.sequence}`?{fact:messageFact,details:{replyTo,withdrawn}}:turn&&identity===`im:${turn.id}`?{data:turn}:undefined,refresh(){},invalidate(){}};
   }},
   './store':{useResearchStore:selector=>selector(store)},
   '@/store':{useConversationStore:selector=>selector({currentConversation:{conversationID:'im'}})},
@@ -83,10 +83,11 @@ async function renderMessage(projectNotice,messageFact=fact,turn,previousMessage
    coordinatorChatText: text => text,
   },
   './SafeMessageMarkdown':{__esModule:true,default:'SafeMessageMarkdown'},
+  './ChatSticker':{__esModule:true,default:'ChatSticker',getChatSticker:id=>id==='wave'?{id}:undefined,getPersonalStickerId:text=>text===`${personalStickerInputPrefix}挥手打招呼`?'wave':undefined},
  };
  for(const name of ['./GroupNoticeCard','./ResearchActionCard','./ResearchTaskCard','./ResearchTurnStatus','./CreatedAgentChatButton','./AgentFileReadSummary','./ContinueAgentFileReadingButton','./ResearchReadSummary','./GroupMessageStatuses'])imports[name]={[name.slice(2)]:name.slice(2)};
  const component=(await load('../src/research/ResearchMessageRender.tsx',imports)).default;
- return {tree:component({message:{clientMsgID:'sdk-decision',contentType:110,sendID:'sdk-coordinator',customElem:{data:JSON.stringify(pointer)}},previousMessage,onReadableText:text=>readable.push(text)}),queries,locations,readable,registered};
+ return {tree:component({message:{clientMsgID:'sdk-decision',contentType:110,sendID,customElem:{data:JSON.stringify(pointer),extension}},previousMessage,onReadableText:text=>readable.push(text)}),queries,locations,readable,registered};
 }
 
 test('direct-chat input registers active progress, while historical failures retain details and retry',async()=>{
@@ -148,6 +149,46 @@ test('ordinary assistant history renders and copies the reply body with one comp
  assert.equal(readable.at(-1),answer);
  assert.match(tree.props.className,/chat-assistant-reply/);
  assert.equal(queries.find(query=>query.identity.startsWith('project-message:')).enabled,false);
+});
+
+test('an authorized assistant sticker renders once and keeps readable text for copying and fallback',async()=>{
+ const extension=JSON.stringify({type:'dafeiyu_sticker',version:1,id:'wave'});
+ const fallback=assistantStickerFallback('wave');
+ for(const text of [fallback,'你好，看到你啦。']){
+  const {tree,readable}=await renderMessage(null,{...fact,origin:'model',text},undefined,undefined,{replyTo:null,sessionOnly:true,extension});
+  const all=nodes(tree);
+  assert.deepEqual(all.filter(node=>node.type==='ChatSticker').map(node=>node.props.stickerId),['wave']);
+  assert.deepEqual(all.filter(node=>node.type==='SafeMessageMarkdown').map(node=>node.props.text),text===fallback?[]:[text]);
+  assert.equal(readable.at(-1),text);
+ }
+ for(const overrides of [
+  {extension:'{broken'},
+  {extension:JSON.stringify({type:'dafeiyu_sticker',version:1,id:'not-supported'})},
+  {extension:JSON.stringify({type:'dafeiyu_sticker',version:1,id:'heart'})},
+  {sendID:'sdk-owner'},
+  {withdrawn:true},
+ ]){
+  const {tree}=await renderMessage(null,{...fact,origin:'model',text:fallback},undefined,undefined,{replyTo:null,sessionOnly:true,extension,...overrides});
+  const all=nodes(tree);
+  assert.equal(all.some(node=>node.type==='ChatSticker'),false);
+  assert.equal(all.find(node=>node.type==='SafeMessageMarkdown').props.text,fallback);
+ }
+});
+
+test('the owner sticker appears once only in the canonical personal assistant history',async()=>{
+ const text=`${personalStickerInputPrefix}挥手打招呼`;
+ const message={...fact,origin:'human',senderContactId:'owner',text};
+ const options={replyTo:null,sessionOnly:true,sendID:'sdk-owner'};
+ const {tree,readable}=await renderMessage(null,message,undefined,undefined,options);
+ const all=nodes(tree);
+ assert.deepEqual(all.filter(node=>node.type==='ChatSticker').map(node=>node.props.stickerId),['wave']);
+ assert.equal(all.some(node=>node.type==='SafeMessageMarkdown'),false);
+ assert.equal(readable.at(-1),text);
+ for(const override of [{sendID:'sdk-other'},{sessionOnly:false},{withdrawn:true}]){
+  const {tree}=await renderMessage(null,message,undefined,undefined,{...options,...override});
+  assert.equal(nodes(tree).some(node=>node.type==='ChatSticker'),false);
+  assert.equal(nodes(tree).find(node=>node.type==='SafeMessageMarkdown').props.text,text);
+ }
 });
 
 test('only an adjacent automatic assistant reply omits its inline source',async()=>{

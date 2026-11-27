@@ -162,6 +162,23 @@ describe('continuous local chat: actual HTTP/SQLite, synthetic ModelCall only',{
   await s.restart();expect((await s.progress(sent[0].turn.id)).finalMessageId).toBe(final.finalMessageId)
   expect((await s.call('chatTurnProgress',null,sent[0].turn.id,1)).status).toBe(404)
  })
+ it('publishes only the readable final for a streamed sticker reply',async()=>{
+  const s=await setup(),sent=await s.send('发个大肥鱼打招呼吧。')
+  let release!:(value:ModelResult)=>void,enter!:()=>void
+  const ready=new Promise<void>(resolve=>{enter=resolve})
+  const response=JSON.stringify({kind:'dafeiyu_sticker',id:'wave',answer:'嗨！'})
+  const pending=s.tick(async(_input,_signal,_credential,onDelta)=>{
+   onDelta?.(response.slice(0,18))
+   onDelta?.(response.slice(18))
+   enter()
+   return new Promise(resolve=>{release=resolve})
+  })
+  await ready
+  const streaming=await s.progress(sent.turn.id)
+  release(result(response));await pending
+  expect(streaming).toMatchObject({phase:'streaming',text:'',finalMessageId:null})
+  expect(await s.progress(sent.turn.id)).toMatchObject({phase:'final',text:'嗨！'})
+ })
  it('uses bounded monotonic sliding deadlines and re-evaluates pending creation when supplemented or withdrawn',async()=>{
   let c=startContinuous('a',1000);for(let i=1;i<6;i++)c=extendContinuous(c,`a${i}`,1000+i*700);expect(c.dueAt).toBe(5000);expect(extendContinuous(c,'clock-back',100).dueAt).toBe(5000)
   const s=await setup(),first=await s.send('帮我创建一个研究区块链的 Agent。');await s.send('擅长分析项目，说话直接一点。')

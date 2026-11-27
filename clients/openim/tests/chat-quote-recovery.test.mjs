@@ -29,11 +29,19 @@ await esbuild.build({
           namespace: "fixture",
         }));
         build.onLoad({ filter: /^chat-contracts$/, namespace: "fixture" }, () => ({
-          contents: 'export { chatRoutes as routes, ChatMessage, AgentTurn } from "production-chat-contract";',
+          contents: `
+            export { chatRoutes as routes, ChatMessage, AgentTurn } from "production-chat-contract";
+            export { personalStickerInputPrefix } from "production-sticker-contract";
+          `,
         }));
         build.onResolve({ filter: /^production-chat-contract$/ }, () => ({
           path: fileURLToPath(
             new URL("../../../packages/contracts/src/chat.ts", import.meta.url),
+          ),
+        }));
+        build.onResolve({ filter: /^production-sticker-contract$/ }, () => ({
+          path: fileURLToPath(
+            new URL("../../../packages/contracts/src/dafeiyu-sticker.ts", import.meta.url),
           ),
         }));
         build.onResolve({ filter: /^\.\/store$/ }, () => ({

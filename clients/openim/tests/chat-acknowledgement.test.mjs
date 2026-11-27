@@ -5,6 +5,7 @@ import vm from "node:vm";
 import { createRequire } from "node:module";
 import ts from "typescript";
 import * as contracts from "@research-agent-platform/contracts";
+import * as stickerMessage from "../src/research/chat-sticker-message.ts";
 
 const require = createRequire(import.meta.url);
 const { create } = require("zustand");
@@ -25,7 +26,7 @@ async function compiled(file, imports, globals = {}) {
 async function fixture(quotaBytes = Infinity) {
   const storage = new Map();
   const actor = create(() => ({ generation: 1, actor: { member: { id: "synthetic_A" } }, sessionActorId: "synthetic_A" }));
-  const load = () => compiled("../src/research/chat-outbox.ts", { zustand: { create }, "./store": { useResearchStore: actor }, "@research-agent-platform/contracts": contracts }, { sessionStorage: { getItem: id => storage.get(id), setItem: (id, value) => {
+  const load = () => compiled("../src/research/chat-outbox.ts", { zustand: { create }, "./store": { useResearchStore: actor }, "@research-agent-platform/contracts": contracts, "./chat-sticker-message": stickerMessage }, { sessionStorage: { getItem: id => storage.get(id), setItem: (id, value) => {
     if (new TextEncoder().encode(value).byteLength > quotaBytes) throw Error("Synthetic storage quota");
     storage.set(id, value);
   }, removeItem: id => storage.delete(id) } });
@@ -42,6 +43,21 @@ test("delayed pointer keeps exact acknowledgement and queue can send the next se
   assert.equal(outbox.useChatOutbox.getState().items.length, 2);
   outbox.reconcileAcknowledgedMessages(1, "synthetic_im", new Set([message.id]));
   assert.equal(outbox.useChatOutbox.getState().items.length, 1);
+});
+
+test("a failed sticker survives reload with its original SDK message ID", async () => {
+  const f = await fixture();
+  const sticker = {
+    id: "sticker_request", generation: 1, conversationID: "synthetic_im",
+    recvID: "synthetic_agent", groupID: "", html: "", text: "[贴纸] 挥手打招呼",
+    stickerId: "wave", state: "failed",
+    nativeMessage: { contentType: 115, clientMsgID: "original_face_id", faceElem: stickerMessage.stickerFace("wave") },
+  };
+  f.outbox.useChatOutbox.setState({ items: [sticker] });
+  const [restored] = (await f.load()).useChatOutbox.getState().items;
+  assert.equal(restored.stickerId, "wave");
+  assert.equal(restored.nativeMessage.clientMsgID, "original_face_id");
+  assert.equal(restored.state, "paused");
 });
 
 test("acknowledgement survives reload as acknowledged, while uncertain/cancelled wait stays paused", async () => {

@@ -49,6 +49,7 @@ export function readableMessage(message: MessageItem, coordinator?: boolean): st
   if (message.contentType === MessageType.FileMessage)
     return `[文件] ${message.fileElem?.fileName || "文件"}`;
   if (message.contentType === MessageType.PictureMessage) return "[图片]";
+  if (message.contentType === MessageType.FaceMessage) return "[贴纸]";
   if (message.contentType === MessageType.VoiceMessage) return "[语音]";
   return "";
 }

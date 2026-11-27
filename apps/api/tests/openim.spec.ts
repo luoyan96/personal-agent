@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, it, expect, vi } from 'vitest'
-import { routes } from '@research-agent-platform/contracts'
+import { AssistantStickerExtension, OpenImResearchPointer, personalStickerInputPrefix, routes } from '@research-agent-platform/contracts'
 import type { Contact, Conversation, RouteName } from '@research-agent-platform/contracts'
 import { readConfig } from '../src/config.js'
 import { openDatabase, migrate, seed, transaction, checkDatabase } from '../src/database.js'
@@ -360,6 +360,41 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     s.setFailSend(true);await worker.tick();const last=s.sent.at(-1)!;expect(s.db.prepare("SELECT count(*) n FROM im_message_outbox WHERE status='uncertain'").get()!.n).toBe(1)
     const sends=s.sent.length;expect(await worker.tick()).toBe(false);expect(s.sent).toHaveLength(sends)
     await s.callback('callbackAfterSendSingleMsgCommand',last);expect(s.db.prepare("SELECT count(*) n FROM im_message_outbox WHERE status='uncertain'").get()!.n).toBe(0)
+  })
+  it('delivers one assistant sticker through the authorized pointer with readable legacy history',async()=>{
+    const s=await setup()
+    const model=await s.request('createPersonalModel',{name:'合成模型',provider:'deepseek',model:'deepseek-flash',apiKey:'synthetic-sticker-model',enabled:true})
+    expect(model.status,model.raw).toBe(201)
+    const personal=(await s.request('personalConversation',{})).value.data.conversation
+    const stickerInput=`${personalStickerInputPrefix}挥手打招呼`
+    const request=await s.request('agentChatMessage',{text:stickerInput},{id:personal.id})
+    expect(request.status,request.raw).toBe(201)
+    const turnId=request.value.data.turn.id
+    await new ChatWorker(s.db,s.config,async input=>{
+      expect(input.system).toContain('wave=打招呼')
+      expect(input.system).toContain(personalStickerInputPrefix.trim())
+      expect(input.prompt).toContain(stickerInput)
+      return {text:JSON.stringify({kind:'dafeiyu_sticker',id:'wave',answer:null}),failure:null,inputTokens:100,outputTokens:40,elapsedMs:10}
+    }).tick()
+    const progress=(await s.request('chatTurnProgress',null,{id:turnId})).value.data
+    expect(progress).toMatchObject({phase:'final',text:'[大肥鱼表情] 打招呼'})
+    const history=(await s.request('chatMessages',null,{id:personal.id})).value.data
+    expect(history).toHaveLength(2)
+    expect(history[0]).toMatchObject({origin:'human',text:stickerInput})
+    expect(history[1]).toMatchObject({id:progress.finalMessageId,origin:'model',text:progress.text})
+    expect(history[1]).not.toHaveProperty('assistantSticker')
+    expect((await s.request('chatMessages',null,{id:personal.id},1)).status).toBe(404)
+
+    const worker=new OpenImWorker(s.db,s.config,s.client)
+    expect(await worker.tick()).toBe(true)
+    expect(await worker.tick()).toBe(true)
+    expect(await worker.tick()).toBe(false)
+    expect(s.sent).toHaveLength(2)
+    const [original,reply]=s.sent.map(message=>JSON.parse(message.content))
+    expect(original.extension).toBe('')
+    expect(OpenImResearchPointer.parse(JSON.parse(reply.data))).toMatchObject({conversationId:personal.id,messageId:history[1].id,sequence:history[1].sequence})
+    expect(AssistantStickerExtension.parse(JSON.parse(reply.extension))).toEqual({type:'dafeiyu_sticker',version:1,id:'wave'})
+    expect(s.db.prepare('SELECT status FROM im_message_outbox WHERE message_id=?').get(progress.finalMessageId)?.status).toBe('sent')
   })
   it('reauthorizes after asynchronous token calls and prevents transaction-held callback deadlocks',async()=>{
     const s=await setup();s.setOnToken(async()=>{expect((await s.request('logout',{})).status).toBe(200)})

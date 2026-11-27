@@ -99,7 +99,7 @@ function MyVersionHelp({ updates }: { updates: DesktopUpdateController }) {
           aria-haspopup="dialog"
           onClick={() => openDialog("attribution")}
         >
-          头像素材署名与许可
+          图标、头像与贴纸署名
         </Button>
         <Button
           type="link"
@@ -110,7 +110,7 @@ function MyVersionHelp({ updates }: { updates: DesktopUpdateController }) {
         </Button>
       </div>
       <Modal
-        title={dialog === "attribution" ? "头像素材署名与许可" : "版本详情与诊断"}
+        title={dialog === "attribution" ? "图标、头像与贴纸署名" : "版本详情与诊断"}
         open={open}
         onCancel={() => setOpen(false)}
         footer={null}
@@ -132,6 +132,14 @@ function MyVersionHelp({ updates }: { updates: DesktopUpdateController }) {
               rel="noreferrer"
             >
               大肥鱼项目署名许可 1.0
+            </a>
+            <p>大肥鱼娘贴纸</p>
+            <a
+              href="https://github.com/luoyan96/personal-agent/blob/main/clients/openim/public/third-party/dafeiyu/STICKERS.md"
+              target="_blank"
+              rel="noreferrer"
+            >
+              YunYueSama、1cyberlangke1、MX1951 的作品来源与许可
             </a>
           </div>
         ) : (

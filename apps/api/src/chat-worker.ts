@@ -1,5 +1,5 @@
 import { currentHabit } from './feedback-queue.js'
-import {assistantReplyText,GroupAssistantOutput} from '@research-agent-platform/contracts'
+import {assistantReplyText,assistantStickerFallback,GroupAssistantOutput} from '@research-agent-platform/contracts'
 import {groupAssistantSystem,groupPublicContext} from './group-assistant-context.js'
 import {queueGroupNotice} from './group-notices.js'
 import { skillContext,skillSystem } from './skills.js'
@@ -32,6 +32,7 @@ import { personalAssistantSystem,PersonalAssistantOutput,assistantCandidates,ass
 import {createAssistantProject,resolveAssistantProjectDecision} from './assistant-projects.js'
 import {projectExecutionInput,projectExecutionSystem} from './assistant-project-actions.js'
 import {intakeRecoverySystem,queueIntakeOutputRecovery} from './intake-output-recovery.js'
+import { assistantStickerSystem, readAssistantStickerReply } from './assistant-sticker.js'
 import {createWork,recordAssistantAnswerWork} from './workspace.js'
 import {recentDialogue,olderDialogue,dialogueTaskState,packDialogueLayers,saveDialogueSelection,dialogueSources,memoryContextSources,dialogueContextSystem,type DialogueLayers} from './dialogue-context.js'
 import { modelAgentProfile } from './agent-roles.js'
@@ -89,7 +90,7 @@ export class ChatWorker {
       let shownProjectSpecialistIds:string[]=[],shownProjectHumanIds:string[]=[]
       let projectSources=allProjectSources?minimalProjectEntrySources(allProjectSources,input):undefined
       const projectDecisionSuffix=()=> (input.assistantMode==='coordinate'||input.fileSource)&&projectSources?.projects.some(p=>p.commitments.some(c=>['blocked','waiting'].includes(c.status)))?'\n'+assistantProjectDecisionSystem:''
-      let system:string,prompt:string
+      let system:string,prompt:string,assistantStickers=false
       const external=input.externalAgent?externalForChat(s,turn.agentContactId):null
       if(input.externalAgent&&!external)throw new ApiError('FORBIDDEN')
       if(external){
@@ -194,6 +195,7 @@ export class ChatWorker {
       const selectedSkill=input.skill?skillContext(s,input.skill,turn.agentContactId):undefined
       if(selectedSkill)system+=skillSystem
       const library=retrieveResearchContext(s,input,currentTurnText(s,turn.id))
+      assistantStickers=Boolean(input.assistantProjectEntry&&input.dailyChat&&!input.workTaskId&&!input.scheduledFollowupId&&!input.fileSource&&!input.context.length&&!library)
       let libraryExcerpts:AgentResearchContext['excerpts']=[]
       if(library)system+='\n'+researchLibrarySystem
       const document=input.fileSource?s.fileDocument(input.fileSource.messageId,group.id):undefined
@@ -276,6 +278,13 @@ export class ChatWorker {
           else console.log(`CHAT_TOPIC mode=index-skip entries=${reference.index.entries.length} budget=${input.budget.maxTokens} conversation=${group.id}`)
         }
       }
+      // Use only spare budget after selecting context and allowing the full ordinary reply.
+      if(assistantStickers){
+        const stickerSystem=system+'\n'+assistantStickerSystem
+        const replyReserve=Math.min(4096,input.budget.maxTokens-chatInputTokenBound(system,prompt))
+        assistantStickers=input.budget.maxTokens-chatInputTokenBound(stickerSystem,prompt)>=replyReserve
+        if(assistantStickers)system=stickerSystem
+      }
       const inputTokenBound=chatInputTokenBound(system,prompt),remainingOutput=input.budget.maxTokens-inputTokenBound
       const admitted=prompt.length <= (input.skill?256000:100000) && remainingOutput>=(input.intakeOutputLimitRecovery?1024:64)
       // Counts only, private to the requester-side runtime. Never copy prompt,
@@ -296,7 +305,7 @@ export class ChatWorker {
       const selected=personalModelRuntime(this.db,s.c.actor,this.config)
       // Bounded file/project text work needs visible output: provider-default
       // reasoning can otherwise consume the entire 4096-token output cap.
-      return { id: turn.id, ownerId: String(row.owner_id), fence, input,externalEndpoint:external?.endpoint, modelInput: { provider:selected.provider,...(selected.provider==='deepseek'&&input.dailyChat&&(input.fileSource||input.projectExecution||input.intakeOutputLimitRecovery)?{reasoningEffort:'off' as const}:{}),system, prompt, model:external?.model??selected.model, maxTokens: Math.min(4096,remainingOutput), timeoutMs: input.budget.maxSeconds * 1000 }, credential: { apiKey } }
+      return { id: turn.id, ownerId: String(row.owner_id), fence, input,assistantStickers,externalEndpoint:external?.endpoint, modelInput: { provider:selected.provider,...(selected.provider==='deepseek'&&input.dailyChat&&(input.fileSource||input.projectExecution||input.intakeOutputLimitRecovery)?{reasoningEffort:'off' as const}:{}),system, prompt, model:external?.model??selected.model, maxTokens: Math.min(4096,remainingOutput), timeoutMs: input.budget.maxSeconds * 1000 }, credential: { apiKey } }
     }))
     if (!job) return false
     const controller = new AbortController(), started = Date.now(),unregister=registerChatCall(job.id,controller)
@@ -360,7 +369,12 @@ export class ChatWorker {
             const message=s.message(group.id,{senderContactId:turn.agentContactId,origin:'service',text,mentions:[],resources:[],actionIds:[],turnId:turn.id})
             turn.outputMessageId=message.id;turn.failure=null;s.saveTurn(turn)
           } else {
-          const projectOutput=job.input.assistantProjectEntry&&/^\s*\{/.test(result.text)?JSON.parse(result.text):null
+          const stickerReply = job.input.dailyChat && group.kind !== 'group' && !job.input.assistantMode && !job.externalEndpoint
+            ? readAssistantStickerReply(result.text) : undefined
+          const stickerId = job.assistantStickers ? stickerReply?.id : undefined
+          const stickerText = stickerReply && (stickerReply.answer ?? (stickerId
+            ? assistantStickerFallback(stickerId) : '这张大肥鱼表情暂时发不了。'))
+          const projectOutput=!stickerReply&&job.input.assistantProjectEntry&&/^\s*\{/.test(result.text)?JSON.parse(result.text):null
           const coordinated=['project','project_decision','reply'].includes(projectOutput?.kind)?PersonalAssistantOutput.parse(projectOutput):job.input.assistantMode==='coordinate'?PersonalAssistantOutput.parse(JSON.parse(result.text)):null
           if(coordinated?.kind==='project_decision'){
             const sources=job.input.projectEntryInventory!,p=sources.projects.find(p=>p.id===coordinated.projectId)
@@ -403,7 +417,7 @@ export class ChatWorker {
             turn.outputMessageId=message.id;turn.failure=null
           }else{
           const groupOutput=group.kind==='group'?GroupAssistantOutput.parse(JSON.parse(result.text)):null
-          const output = groupOutput?{answer:groupOutput.answer,waitingInput:false,group:null,actions:[]}:coordinated?.kind==='reply'?{answer:coordinated.answer,waitingInput:false,group:null,actions:[]}:coordinated?.kind==='collaborate'?{answer:coordinated.answer,waitingInput:false,group:coordinated.group,actions:[]}:job.input.dailyChat?{answer:Text.parse(job.input.assistantProjectEntry?assistantReplyText(result.text):result.text),waitingInput:false,group:null,actions:[]}:ChatModelOutput.parse(JSON.parse(result.text))
+          const output = groupOutput?{answer:groupOutput.answer,waitingInput:false,group:null,actions:[]}:coordinated?.kind==='reply'?{answer:coordinated.answer,waitingInput:false,group:null,actions:[]}:coordinated?.kind==='collaborate'?{answer:coordinated.answer,waitingInput:false,group:coordinated.group,actions:[]}:job.input.dailyChat?{answer:Text.parse(stickerText??(job.input.assistantProjectEntry?assistantReplyText(result.text):result.text)),waitingInput:false,group:null,actions:[]}:ChatModelOutput.parse(JSON.parse(result.text))
           if(job.input.dailyChat&&!output.answer.trim())throw new Error('INVALID_MODEL_OUTPUT')
           if(job.input.libraryRead){
             const allowed=new Set(job.input.libraryRead.sources.map(source=>source.label))
@@ -429,6 +443,9 @@ export class ChatWorker {
           if(groupOutput)for(const request of groupOutput.requests)queueGroupNotice(s,group.id,turn.inputMessageId,turn.agentContactId,request)
           outputStage='persistence'
           const message = s.message(group.id, { senderContactId: turn.agentContactId, origin: 'model', text: output.answer, mentions: [], resources: [], actionIds: [], turnId: turn.id })
+          // Keep the transport metadata private and bound to this exact canonical message.
+          if (stickerId) this.db.prepare("UPDATE chat_turns SET request_json=json_set(request_json,'$.assistantSticker',json(?)) WHERE id=?")
+            .run(JSON.stringify({ messageId: message.id, id: stickerId }), turn.id)
           const actions = payloads.map(payload => s.addAction(turn, message.id, payload)); message.actionIds = actions.map(a => a.id)
           this.db.prepare('UPDATE chat_messages SET document=? WHERE id=?').run(JSON.stringify(message), message.id)
           turn.status = output.waitingInput ? 'waiting_input' : 'succeeded'; turn.outputMessageId = message.id; turn.failure = null

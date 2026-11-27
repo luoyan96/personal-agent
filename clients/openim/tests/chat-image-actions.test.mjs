@@ -673,6 +673,8 @@ async function messageComponent(message, { group = false, pointer } = {}) {
   ])
     imports["./" + name] = () => null;
   imports["@/research/ResearchMessageRender"] = () => null;
+  imports["@/research/ChatSticker"] = () => null;
+  imports["@/research/chat-sticker-message"] = {};
   const code = await load(
     "../src/pages/chat/queryChat/MessageItem/index.tsx",
     imports,

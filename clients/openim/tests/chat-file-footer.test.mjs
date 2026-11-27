@@ -3,10 +3,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 import ts from "typescript";
+import * as stickerMessage from "../src/research/chat-sticker-message.ts";
 
 // Exercise the actual composer events and asynchronous pump with controlled
 // stores/SDK/API. The document preparation module is also the real source.
-async function fixture({ failOnce = false, agent = true } = {}) {
+async function fixture({ failOnce = false, failStickerOnce = false, agent = true, group = false, ownAssistant = false } = {}) {
   const state = [],
     refs = [],
     dependencies = [],
@@ -32,11 +33,18 @@ async function fixture({ failOnce = false, agent = true } = {}) {
       setState: (patch) =>
         Object.assign(value, typeof patch === "function" ? patch(value) : patch),
     });
-  const actor = { actor: { member: { id: "synthetic-actor" } }, generation: 1 };
+  const actor = {
+    actor: { member: { id: "synthetic-actor" } }, generation: 1,
+    ...(ownAssistant ? {
+      sessionActorId: "synthetic-actor",
+      session: { coordinator: { kind: "personal", imConversationID: "synthetic-im",
+        peerUserID: "assistant", researchConversationId: "synthetic-agent" } },
+    } : {}),
+  };
   const conversation = {
     conversationID: "synthetic-im",
-    userID: "assistant",
-    groupID: "",
+    userID: group ? "" : agent ? "assistant" : "colleague",
+    groupID: group ? "synthetic-group" : "",
   };
   const outbox = store({ items: [], notice: "" });
   const calls = [],
@@ -86,7 +94,7 @@ async function fixture({ failOnce = false, agent = true } = {}) {
     turn: { id: "canonical-file-turn" },
   };
   const composer = {
-    isGroup: false,
+    isGroup: group,
     mentionContacts: [],
     invalid: false,
     prepareResearch: (text) => (agent ? { ...prepared, body: { text } } : undefined),
@@ -127,7 +135,13 @@ async function fixture({ failOnce = false, agent = true } = {}) {
     "@/research/chat-message-read": { hasMessageDetails: () => false },
     "@/i18n": { default: { on() {} } },
     "@/layout/MainContentWrap": {
-      IMSDK: { createTextMessage: async (text) => ({ data: { text } }) },
+      IMSDK: {
+        createTextMessage: async (text) => ({ data: { text } }),
+        createFaceMessage: async (faceElem) => {
+          calls.push({ kind: "make-sticker" });
+          return { data: { clientMsgID: "stable-sdk-sticker", contentType: 115, faceElem } };
+        },
+      },
     },
     "@/store": { useConversationStore: store({ currentConversation: conversation }) },
     "@/utils/common": { feedbackToast: (value) => notices.push(value) },
@@ -147,7 +161,13 @@ async function fixture({ failOnce = false, agent = true } = {}) {
     },
     "./useSendMessage": {
       useSendMessage: () => ({
-        sendMessage: async (args) => calls.push({ kind: "sdk", args }),
+        sendMessage: async (args) => {
+          calls.push({ kind: "sdk", args });
+          if (args.message.contentType === 115 && failStickerOnce) {
+            failStickerOnce = false;
+            throw Error("synthetic sticker acknowledgement lost");
+          }
+        },
       }),
     },
     "@/research/useAgentFileReading": {
@@ -167,6 +187,7 @@ async function fixture({ failOnce = false, agent = true } = {}) {
       },
     },
     "@/research/useAgentChatOperation": { useAgentChatOperation: () => capture },
+    "@/research/chat-sticker-message": stickerMessage,
     "@/research/request-deadline": {
       withRequestDeadline: (run, _, signal) => run(signal),
       assertRequestActive() {},
@@ -250,6 +271,9 @@ async function fixture({ failOnce = false, agent = true } = {}) {
     send() {
       find((node) => node.props?.["aria-label"] === "发送消息").props.onClick();
     },
+    sendSticker() {
+      find((node) => node.type === "Actions").props.sendSticker("wave", "挥手打招呼");
+    },
   };
 }
 const settle = async () => {
@@ -331,4 +355,58 @@ test("real Footer file-only message requests one document reading rather than dr
   );
   assert.equal(f.calls[2].request.route, "agentFileMessage");
   assert.equal(f.calls[2].request.body.text, undefined);
+});
+
+test("one sticker sends through OpenIM in other assistant and human DMs and groups with the draft untouched", async () => {
+  for (const [options, recvID, groupID] of [
+    [{ agent: true }, "assistant", ""],
+    [{ agent: false }, "colleague", ""],
+    [{ agent: false, group: true }, "", "synthetic-group"],
+  ]) {
+    const f = await fixture(options);
+    f.type("待发草稿");
+    f.sendSticker();
+    await settle();
+    f.render();
+    assert.deepEqual(f.calls.map((call) => call.kind), ["make-sticker", "sdk"]);
+    assert.equal(f.calls[1].args.recvID, recvID);
+    assert.equal(f.calls[1].args.groupID, groupID);
+    assert.equal(stickerMessage.readStickerId(f.calls[1].args.message), "wave");
+    assert.equal(f.find((node) => node.type === "Editor").props.value, "待发草稿");
+    assert.equal(f.outbox.getState().items.length, 0);
+  }
+});
+
+test("failed SDK sticker send reuses its original message ID without calling the assistant API", async () => {
+  const f = await fixture({ failStickerOnce: true });
+  f.sendSticker();
+  await settle();
+  f.render();
+  const retry = f.find((node) => node.type === "Button" && node.props.children === "重试原消息");
+  assert.ok(retry);
+  retry.props.onClick();
+  await settle();
+  assert.deepEqual(f.calls.map((call) => call.kind), ["make-sticker", "sdk", "sdk"]);
+  assert.equal(f.calls[1].args.message.clientMsgID, f.calls[2].args.message.clientMsgID);
+  assert.equal(f.outbox.getState().items.length, 0);
+});
+
+test("own assistant sticker creates one labeled canonical input and retries with the original idempotency key", async () => {
+  const f = await fixture({ ownAssistant: true, failOnce: true });
+  f.type("待发草稿");
+  f.sendSticker();
+  await settle();
+  f.render();
+  const retry = f.find((node) => node.type === "Button" && node.props.children === "重试原消息");
+  assert.ok(retry);
+  retry.props.onClick();
+  await settle();
+  f.render();
+  assert.deepEqual(f.calls.map((call) => call.kind), ["api", "api"]);
+  assert.deepEqual(f.calls[0], f.calls[1]);
+  assert.equal(f.calls[1].request.conversationId, "synthetic-agent");
+  assert.equal(f.calls[1].request.route, "agentChatMessage");
+  assert.deepEqual(f.calls[1].request.body, { text: "[大肥鱼娘贴纸] 挥手打招呼", continuous: true });
+  assert.equal(f.outbox.getState().items[0].state, "acknowledged");
+  assert.equal(f.find((node) => node.type === "Editor").props.value, "待发草稿");
 });
