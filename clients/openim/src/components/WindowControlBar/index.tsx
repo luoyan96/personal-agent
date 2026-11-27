@@ -3,7 +3,6 @@ import { useKeyPress } from "ahooks";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { IpcMainToRender, IpcRenderToMain } from "../../../electron/constants";
 import styles from "./index.module.scss";
 
 const icons = {
@@ -20,7 +19,7 @@ const WindowControlBar = () => {
   const [maximized, setMaximized] = useState(false);
 
   useKeyPress("esc", () => {
-    void electron?.ipcInvoke(IpcRenderToMain.minimizeWindow);
+    void electron?.ipcInvoke("minimizeWindow");
   });
 
   useEffect(() => {
@@ -28,15 +27,12 @@ const WindowControlBar = () => {
 
     // A native change can arrive while the initial state is being read.
     let needsSnapshot = true;
-    const unsubscribe = electron.subscribe(
-      IpcMainToRender.windowMaximizedChanged,
-      (value) => {
-        if (typeof value !== "boolean") return;
-        needsSnapshot = false;
-        setMaximized(value);
-      },
-    );
-    void electron.ipcInvoke<boolean>(IpcRenderToMain.isWindowMaximized).then(
+    const unsubscribe = electron.subscribe("windowMaximizedChanged", (value) => {
+      if (typeof value !== "boolean") return;
+      needsSnapshot = false;
+      setMaximized(value);
+    });
+    void electron.ipcInvoke<boolean>("isWindowMaximized").then(
       (value) => {
         if (needsSnapshot) setMaximized(value);
       },
@@ -52,9 +48,9 @@ const WindowControlBar = () => {
   if (!showControls) return null;
 
   const buttons = [
-    { action: IpcRenderToMain.minimizeWindow, icon: "minimize" },
-    { action: IpcRenderToMain.maxmizeWindow, icon: maximized ? "restore" : "maximize" },
-    { action: IpcRenderToMain.closeWindow, icon: "close" },
+    { action: "minimizeWindow", icon: "minimize" },
+    { action: "maxmizeWindow", icon: maximized ? "restore" : "maximize" },
+    { action: "closeWindow", icon: "close" },
   ] as const;
 
   return (
