@@ -171,6 +171,6 @@ describe('research group membership: real HTTP and isolated SQLite, synthetic ac
   expect(s.db.prepare('SELECT * FROM effective_lab_memberships').all()).toContainEqual({member_id:'A',lab_id:'home_A'})
   expect(s.db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
   expect(s.db.prepare('PRAGMA integrity_check').get()!.integrity_check).toBe('ok')
-  expect(s.db.prepare('SELECT max(version) v FROM schema_migrations').get()!.v).toBe(41)
+  expect(s.db.prepare('SELECT max(version) v FROM schema_migrations').get()!.v).toBe(42)
  })
 })

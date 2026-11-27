@@ -110,11 +110,8 @@ describe('continuous local chat: actual HTTP/SQLite, synthetic ModelCall only',{
   await s.tick(async input=>{
    const prompt=JSON.parse(input.prompt)
    expect(prompt.currentTopic).toMatchObject({title:'Active marker',next:['Active next step']})
-   expect(prompt.topicIndex).toHaveLength(2)
-   expect(prompt.topicIndex).toEqual(expect.arrayContaining([
-    expect.objectContaining({title:'Active marker',state:'active'}),
-    {id:paused.value.data.id,title:'Paused marker',summary:'Paused unique summary',state:'paused'},
-   ]))
+   // The active topic travels as currentTopic, so the index carries only the paused one.
+   expect(prompt.topicIndex).toEqual([{id:paused.value.data.id,title:'Paused marker',summary:'Paused unique summary',state:'paused'}])
    expect(input.prompt).not.toContain(closed.value.data.id)
    expect(input.prompt).not.toContain('Archived')
    return result('第三个合成回复。')

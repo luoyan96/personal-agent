@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite'
 import { z } from 'zod'
-import { AssistantTopicBody } from '@research-agent-platform/contracts'
+import { AssistantTopicBody, AssistantTopicBodyInput } from '@research-agent-platform/contracts'
 import type { Config } from './config.js'
 import { transaction } from './database.js'
 import { ChatService, type TurnInput } from './chat.js'
@@ -15,24 +15,38 @@ import { waitForWorkerDatabase } from './worker-database.js'
 type Job = { id: string; owner_id: string; assistant_id: string; conversation_id: string; turn_id: string; attempts: number }
 
 const BodyPatch = z.strictObject({
-  context: AssistantTopicBody.shape.context.removeDefault().optional(),
-  decisions: AssistantTopicBody.shape.decisions.removeDefault().optional(),
-  openQuestions: AssistantTopicBody.shape.openQuestions.removeDefault().optional(),
-  next: AssistantTopicBody.shape.next.removeDefault().optional(),
-  constraints: AssistantTopicBody.shape.constraints.removeDefault().optional(),
+  decisions: AssistantTopicBodyInput.shape.decisions.removeDefault().optional(),
+  openQuestions: AssistantTopicBodyInput.shape.openQuestions.removeDefault().optional(),
+  next: AssistantTopicBodyInput.shape.next.removeDefault().optional(),
+  constraints: AssistantTopicBodyInput.shape.constraints.removeDefault().optional(),
 })
 const CuratorOutput = z.strictObject({
   action: z.enum(['update_topic', 'new_topic', 'no_change']),
   topicId: z.string().min(1).max(96).optional(),
   baseVersion: z.number().int().nonnegative().optional(),
   title: z.string().trim().min(1).max(60).optional(),
-  summary: z.string().trim().min(1).max(300).optional(),
+  summary: z.string().trim().min(1).max(600).optional(),
   body: BodyPatch.optional(),
+  /** Decision ids the patch retires; the bodies of retired entries are not resent. */
+  retire: z.array(z.string().min(1).max(96)).max(8).optional(),
   reason: z.enum(['smalltalk', 'duplicate', 'no_increment']).optional(),
   hint: z.literal('preference').optional(),
 })
 type CuratorOutput = z.infer<typeof CuratorOutput>
-type Result = { action: string; topicId?: string; version?: number; reason?: string; hint?: string; shaped?: ShapeCounts; bytes?: number }
+type Result = {
+  action: string
+  topicId?: string
+  version?: number
+  reason?: string
+  hint?: string
+  shaped?: ShapeCounts
+  bytes?: number
+  limit?: number
+  bytesBefore?: number
+  bytesAfter?: number
+  sections?: number
+  unmatched?: string[]
+}
 type ShapeCounts = { trimmed: number; dropped: number }
 
 const leaseMs = 60_000
@@ -69,7 +83,7 @@ function shapeList(value: unknown, limit: number, existing: Set<string> | null, 
   const seen = new Set<string>(), out: string[] = []
   let fresh = 0
   for (const entry of value) {
-    const text = clip(entry, 300)
+    const text = clip(entry, 150)
     const key = text ? textKey(text) : ''
     const added = existing !== null && !existing.has(key)
     if (!text || seen.has(key) || (added && fresh >= 3)) { counts.dropped += 1; continue }
@@ -80,25 +94,21 @@ function shapeList(value: unknown, limit: number, existing: Set<string> | null, 
   return out
 }
 
+/** Decision entries carry only text: the service assigns ids and retires by id. */
 function shapeDecisions(value: unknown, existing: Set<string> | null, counts: ShapeCounts) {
   if (!Array.isArray(value)) return undefined
-  const seen = new Set<string>(), out: { text: string; status: 'confirmed' | 'superseded' }[] = []
+  const seen = new Set<string>(), out: { text: string }[] = []
   let fresh = 0
   for (const entry of value) {
-    const record: { text?: unknown; status?: unknown } = entry && typeof entry === 'object' ? entry as { text?: unknown; status?: unknown } : {}
-    const text = clip(record.text, 300)
-    const status = record.status === 'superseded' ? 'superseded' as const : record.status === 'confirmed' || record.status === undefined ? 'confirmed' as const : undefined
+    const record: { text?: unknown } = entry && typeof entry === 'object' ? entry as { text?: unknown } : {}
+    const text = clip(record.text, 150)
     const key = text ? textKey(text) : ''
     const added = existing !== null && !existing.has(key)
-    if (!text || !status || seen.has(key) || (added && fresh >= 3)) { counts.dropped += 1; continue }
+    if (!text || seen.has(key) || (added && fresh >= 3)) { counts.dropped += 1; continue }
     if (added) fresh += 1
-    seen.add(key); out.push({ text, status })
+    seen.add(key); out.push({ text })
   }
-  // Over the cap, superseded entries leave first; the rest drop oldest first.
-  while (out.length > 20) {
-    const at = out.findIndex(entry => entry.status === 'superseded')
-    out.splice(at < 0 ? 0 : at, 1); counts.dropped += 1
-  }
+  if (out.length > 8) { counts.dropped += out.length - 8; return out.slice(-8) }
   return out
 }
 
@@ -106,7 +116,7 @@ function shapeTopic(value: unknown, body: unknown, capNew: boolean) {
   const counts: ShapeCounts = { trimmed: 0, dropped: 0 }
   if (!value || typeof value !== 'object' || Array.isArray(value)) return { value, counts }
   const output = { ...(value as Record<string, unknown>) }
-  for (const [name, limit] of [['title', 60], ['summary', 300]] as const) {
+  for (const [name, limit] of [['title', 60], ['summary', 600]] as const) {
     if (output[name] === undefined) continue
     const next = clip(output[name], limit)
     if (next === undefined) { delete output[name]; counts.dropped += 1; continue }
@@ -116,10 +126,6 @@ function shapeTopic(value: unknown, body: unknown, capNew: boolean) {
   const patch = output.body
   if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return { value: output, counts }
   const section = { ...(patch as Record<string, unknown>) }
-  if (typeof section.context === 'string') {
-    const next = Array.from(section.context).slice(0, 1000).join('')
-    if (next !== section.context) { section.context = next; counts.trimmed += 1 }
-  }
   if (section.decisions !== undefined) {
     const decisions = shapeDecisions(section.decisions, capNew ? existingTexts(body, 'decisions') : null, counts)
     if (decisions) section.decisions = decisions
@@ -220,14 +226,17 @@ export class TopicCuratorWorker {
       if (!topic || topic.state === 'closed') return { action: 'stale', topicId: output.topicId }
       // A newer patch already won; the model output is dropped rather than replayed.
       if (Number(topic.version) !== output.baseVersion) return { action: 'stale', topicId: output.topicId }
-      const value = applyTopicPatch(service, { topicId: output.topicId, baseVersion: output.baseVersion, title: output.title, summary: output.summary, body: output.body }, { agent: 'assistant' })
-      return { action: 'update_topic', topicId: value.id, version: value.version }
+      const applied = applyTopicPatch(service, { topicId: output.topicId, baseVersion: output.baseVersion, title: output.title, summary: output.summary, body: output.body, retire: output.retire }, { agent: 'assistant' })
+      const detail = { ...(applied.unmatched.length ? { unmatched: applied.unmatched } : {}), bytesBefore: applied.bytesBefore, bytesAfter: applied.bytesAfter, sections: applied.sections }
+      // A patch with no substantive change is reported as such instead of bumping a version.
+      if (!applied.changed) return { action: 'no_change', reason: 'duplicate', topicId: applied.value.id, ...detail }
+      return { action: 'update_topic', topicId: applied.value.id, version: applied.value.version, ...detail }
     }
     if (!output.title || !output.summary) throw new Error('INVALID_MODEL_OUTPUT')
     pauseActiveTopic(service, job.assistant_id, { agent: 'assistant' })
     const created = createTopic(service, {
       assistantId: job.assistant_id, title: output.title, summary: output.summary,
-      body: AssistantTopicBody.parse(output.body ?? {}),
+      body: AssistantTopicBodyInput.parse(output.body ?? {}),
     }, 'curator', { agent: 'assistant' }, 'provisional')
     return { action: 'new_topic', topicId: created.id, version: created.version }
   }
@@ -303,7 +312,7 @@ export class TopicCuratorWorker {
         if (!(error instanceof ApiError) || error.code !== 'PAYLOAD_TOO_LARGE') throw error
         // The transaction has rolled back topic and revision writes. Record the split signal separately.
         const bytes = Buffer.byteLength(JSON.stringify(output.body ?? {}), 'utf8')
-        return waitForWorkerDatabase(() => this.fail(job, 'PAYLOAD_TOO_LARGE', { action: 'over_limit', bytes }))
+        return waitForWorkerDatabase(() => this.fail(job, 'PAYLOAD_TOO_LARGE', { action: 'over_limit', bytes, limit: 4000 }))
       })
     } catch {
       await waitForWorkerDatabase(() => this.fail(job, phase === 'apply' ? 'CURATOR_APPLY_FAILED' : 'INVALID_MODEL_OUTPUT'))

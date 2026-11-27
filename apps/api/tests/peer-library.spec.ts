@@ -57,7 +57,7 @@ describe('peer local-library coordination (real HTTP/SQLite, no file relay)',()=
   const before=snapshot(),history=s.db.prepare('SELECT * FROM schema_migrations').all();migrate(s.db);migrate(s.db)
   expect(readFileSync(join(s.config.blobRoot,'synthetic-retained.blob'),'utf8')).toBe('synthetic immutable original');expect(snapshot()).toEqual(before);expect(s.db.prepare('SELECT * FROM schema_migrations WHERE version<=25').all()).toEqual(history)
   expect(s.db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);expect(s.db.prepare('PRAGMA integrity_check').get()!.integrity_check).toBe('ok')
-  expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(41)
+  expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(42)
  })
  it('queues while provider offline, returns only approved metadata and binds the selected attempt to both devices',async()=>{
   const s=await pair(),key=randomUUID(),request=await s.ok('createPeerRequest',{deviceId:'device_A',providerId:'B',query:'record'},{},'A',key)

@@ -1,4 +1,6 @@
-# 当前契约 0.52.0
+# 当前契约 0.53.0
+
+0.53.0 重定话题正文形状。`body` 由六段改为四段，删除 `context`；`decisions` 条目改为 `{id, text}`，`id` 由服务端分配、响应必填、输入可省略，删除 `status`，上限 8 条；`openQuestions`/`next`/`constraints` 单条上限 300 字降为 150 字；`summary` 上限 300 字提到 600 字。响应形状随之为破坏性变更，配套迁移 042：删除存量 `body.context`，按顺序补 `decisions[].id`，话题表加 `next_decision_id` 计数器，并按新上限截断存量文本。
 
 0.52.0 允许 `closed` 话题恢复。`POST /api/v1/me/assistant-topics/{id}/resume` 接受 `paused` 与 `closed`，恢复时暂停该助理当前的 `active` 话题，仍只有一个 `active`。`closed` 的 `allowedActions` 从空改为 `['resume']`；`closed` 仍不可编辑、不进入注入。响应形状与 `allowedActions` 枚举不变，无数据库迁移。
 

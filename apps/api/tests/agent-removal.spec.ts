@@ -59,7 +59,7 @@ describe('owner Agent deletion and contact removal: actual HTTP/SQLite, syntheti
     const after = snapshot(); expect(after.schema_migrations).not.toEqual(before.schema_migrations)
     delete after.schema_migrations; delete before.schema_migrations; expect(after).toEqual(before)
     expect(readFileSync(blob, 'utf8')).toBe('retained synthetic material')
-    expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(41)
+    expect(s.db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(42)
     expect(s.db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
   })
   it('requires owner and exact reviewed version, rejects human/system deletion and reauthorizes cached receipts', async () => {

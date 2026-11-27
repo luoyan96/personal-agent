@@ -131,5 +131,5 @@ it('migration 016 to 017 preserves every populated old table row and is repeatab
  const tables=db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name<>'schema_migrations' ORDER BY name").all().map(r=>String(r.name))
  const digest=()=>Object.fromEntries(tables.map(table=>[table,createHash('sha256').update(JSON.stringify(db.prepare(`SELECT * FROM "${table}" ORDER BY rowid`).all())).digest('hex')]))
  const count=tables.reduce((n,t)=>n+Number(db.prepare(`SELECT count(*) n FROM "${t}"`).get()!.n),0);expect(count).toBeGreaterThan(30)
- const before=digest();migrate(db);migrate(db);expect(digest()).toEqual(before);expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(41);expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+ const before=digest();migrate(db);migrate(db);expect(digest()).toEqual(before);expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(42);expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
 })

@@ -11,9 +11,18 @@ export const AssistantTopicState = z.enum(['active', 'paused', 'closed'])
 export const AssistantTopicTitleStatus = z.enum(['provisional', 'final'])
 export const AssistantTopicOrigin = z.enum(['curator', 'owner'])
 
+const EntryText = z.string().trim().min(1).max(150)
+
+/** Stored decisions carry a server-assigned id so a patch can retire one by id. */
 export const AssistantTopicDecision = z.strictObject({
-  text: z.string().trim().min(1).max(300),
-  status: z.enum(['confirmed', 'superseded']).default('confirmed'),
+  id: Id,
+  text: EntryText,
+})
+
+/** Input decisions may omit the id; the service assigns one and never reuses it. */
+export const AssistantTopicDecisionInput = z.strictObject({
+  id: Id.optional(),
+  text: EntryText,
 })
 
 export const AssistantTopicNote = z.strictObject({
@@ -24,23 +33,33 @@ export const AssistantTopicNote = z.strictObject({
   sourceRefs: z.array(Id).max(5).default([]),
 })
 
-/** Fixed six sections; notes stays semi-open. Byte limits are enforced by the service. */
+/** Stored body: four current-state sections. `context` is gone; notes stays unopened.
+ *  Byte limits are enforced by the service. */
 export const AssistantTopicBody = z.strictObject({
-  context: z.string().trim().max(1000).default(''),
-  decisions: z.array(AssistantTopicDecision).max(20).default([]),
-  openQuestions: z.array(z.string().trim().min(1).max(300)).max(10).default([]),
-  next: z.array(z.string().trim().min(1).max(300)).max(10).default([]),
-  constraints: z.array(z.string().trim().min(1).max(300)).max(10).default([]),
+  decisions: z.array(AssistantTopicDecision).max(8).default([]),
+  openQuestions: z.array(EntryText).max(10).default([]),
+  next: z.array(EntryText).max(10).default([]),
+  constraints: z.array(EntryText).max(10).default([]),
   notes: z.array(AssistantTopicNote).max(10).default([]),
 })
 export const emptyAssistantTopicBody = AssistantTopicBody.parse({})
+
+/** Input body: same sections, decision ids optional because the service owns them. */
+export const AssistantTopicBodyInput = z.strictObject({
+  decisions: z.array(AssistantTopicDecisionInput).max(8).default([]),
+  openQuestions: z.array(EntryText).max(10).default([]),
+  next: z.array(EntryText).max(10).default([]),
+  constraints: z.array(EntryText).max(10).default([]),
+  notes: z.array(AssistantTopicNote).max(10).default([]),
+})
+const emptyAssistantTopicBodyInput = AssistantTopicBodyInput.parse({})
 
 export const AssistantTopic = z.strictObject({
   id: Id,
   assistantId: Id,
   title: z.string().trim().min(1).max(60),
   titleStatus: AssistantTopicTitleStatus,
-  summary: z.string().trim().min(1).max(300),
+  summary: z.string().trim().min(1).max(600),
   body: AssistantTopicBody,
   state: AssistantTopicState,
   origin: AssistantTopicOrigin,
@@ -57,7 +76,7 @@ export const AssistantTopicIndex = z.strictObject({
   assistantId: Id,
   title: z.string().min(1).max(60),
   titleStatus: AssistantTopicTitleStatus,
-  summary: z.string().min(1).max(300),
+  summary: z.string().min(1).max(600),
   state: AssistantTopicState,
   origin: AssistantTopicOrigin,
   version: Version,
@@ -68,15 +87,15 @@ export const AssistantTopicIndex = z.strictObject({
 export const AssistantTopicInput = z.strictObject({
   assistantId: Id,
   title: z.string().trim().min(1).max(60),
-  summary: z.string().trim().min(1).max(300),
-  body: AssistantTopicBody.default(emptyAssistantTopicBody),
+  summary: z.string().trim().min(1).max(600),
+  body: AssistantTopicBodyInput.default(emptyAssistantTopicBodyInput),
 })
 
 export const AssistantTopicUpdate = z.strictObject({
   expectedVersion: Version,
   title: z.string().trim().min(1).max(60).optional(),
-  summary: z.string().trim().min(1).max(300).optional(),
-  body: AssistantTopicBody.optional(),
+  summary: z.string().trim().min(1).max(600).optional(),
+  body: AssistantTopicBodyInput.optional(),
 })
 
 export const AssistantTopicHistory = z.strictObject({
@@ -86,6 +105,8 @@ export const AssistantTopicHistory = z.strictObject({
 
 export type AssistantTopicState = z.infer<typeof AssistantTopicState>
 export type AssistantTopicBody = z.infer<typeof AssistantTopicBody>
+export type AssistantTopicBodyInput = z.infer<typeof AssistantTopicBodyInput>
+export type AssistantTopicDecision = z.infer<typeof AssistantTopicDecision>
 export type AssistantTopic = z.infer<typeof AssistantTopic>
 export type AssistantTopicIndex = z.infer<typeof AssistantTopicIndex>
 export type AssistantTopicInput = z.infer<typeof AssistantTopicInput>

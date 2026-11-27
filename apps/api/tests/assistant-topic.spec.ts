@@ -50,7 +50,7 @@ async function fixture() {
 
 it('creates one active topic, versions edits and keeps closed topics readable', { timeout: 30000 }, async () => {
   const s = await fixture(), owner = await s.member('owner')
-  const empty = { context: '', decisions: [], openQuestions: [], next: [], constraints: [], notes: [] }
+  const empty = { decisions: [], openQuestions: [], next: [], constraints: [], notes: [] }
   const created = await s.call('createAssistantTopic', owner, { assistantId: owner.agentId, title: '实验讨论', summary: '讨论实验现象', body: empty })
   expect(created.status, created.text).toBe(201)
   const topic = created.value.data
@@ -68,14 +68,14 @@ it('creates one active topic, versions edits and keeps closed topics readable', 
   expect(renamed.status, renamed.text).toBe(200)
   expect(renamed.value.data).toMatchObject({ titleStatus: 'provisional', version: 2 })
 
-  const decided = await s.call('updateAssistantTopic', owner, { expectedVersion: 2, body: { ...empty, decisions: [{ text: '采用方案 A', status: 'confirmed' }] } }, { id: topic.id })
+  const decided = await s.call('updateAssistantTopic', owner, { expectedVersion: 2, body: { ...empty, decisions: [{ text: '采用方案 A' }] } }, { id: topic.id })
   expect(decided.value.data.titleStatus).toBe('final')
 
   const stale = await s.call('updateAssistantTopic', owner, { expectedVersion: 2, summary: '过期版本' }, { id: topic.id })
   expect(stale.status, stale.text).toBe(409)
   expect(stale.value.error.code).toBe('VERSION_CONFLICT')
 
-  const oversized = await s.call('updateAssistantTopic', owner, { expectedVersion: 3, body: { ...empty, decisions: Array.from({ length: 20 }, (_, index) => ({ text: `${index}`.padEnd(300, 'x'), status: 'confirmed' })) } }, { id: topic.id })
+  const oversized = await s.call('updateAssistantTopic', owner, { expectedVersion: 3, body: { ...empty, decisions: Array.from({ length: 8 }, (_, index) => ({ text: `${index}${'约'.repeat(149)}` })), constraints: ['约'.repeat(150), '约'.repeat(150), '约'.repeat(150)] } }, { id: topic.id })
   expect(oversized.status, oversized.text).toBe(413)
   expect(oversized.value.error.code).toBe('PAYLOAD_TOO_LARGE')
 
@@ -173,7 +173,7 @@ it('replaces current sections, keeps decisions and ignores punctuation-only rena
   const s = await fixture(), owner = await s.member('owner')
   const created = (await s.call('createAssistantTopic', owner, {
     assistantId: owner.agentId, title: '蛋炒饭', summary: '蛋炒饭的做法',
-    body: { constraints: ['少油'], next: ['先炒蛋'], decisions: [{ text: '用隔夜饭', status: 'confirmed' }] },
+    body: { constraints: ['少油'], next: ['先炒蛋'], decisions: [{ text: '用隔夜饭' }] },
   })).value.data
   const service = new ChatService(serviceFor(s.db, owner.id, s.config).c, s.config)
   const curate = (body: Record<string, unknown>, extra: Record<string, unknown>) =>
@@ -184,14 +184,45 @@ it('replaces current sections, keeps decisions and ignores punctuation-only rena
   expect(topic.body.next).toEqual(['先备菜'])
   expect(topic.body.decisions.map((entry: { text: string }) => entry.text)).toEqual(['用隔夜饭'])
   expect(topic).toMatchObject({ title: '健康午餐', titleStatus: 'provisional' })
-  curate({ decisions: [{ text: '用隔夜饭', status: 'superseded' }, { text: '用杂粮饭', status: 'confirmed' }] }, { baseVersion: 2 })
+  curate({ decisions: [{ text: '用杂粮饭' }] }, { baseVersion: 2, retire: ['d1'] })
   topic = (await s.call('assistantTopic', owner, null, { id: created.id })).value.data
-  expect(topic.body.decisions).toMatchObject([{ text: '用隔夜饭', status: 'superseded' }, { text: '用杂粮饭', status: 'confirmed' }])
+  expect(topic.body.decisions).toMatchObject([{ id: 'd2', text: '用杂粮饭' }])
   expect(topicReference(service, owner.agentId, 'personal')?.topic?.decisions).toEqual(['用杂粮饭'])
-  curate({ context: '健康午餐的流程', next: ['先备菜', '按人份定量'] }, { baseVersion: 3, title: '健康午餐。' })
+  curate({ next: ['先备菜', '按人份定量'] }, { baseVersion: 3, title: '健康午餐。' })
   topic = (await s.call('assistantTopic', owner, null, { id: created.id })).value.data
   expect(topic.title).toBe('健康午餐')
   expect(topic.titleStatus).toBe('final')
+})
+
+it('rejects duplicate decision ids and retires only the targeted decision', { timeout: 30000 }, async () => {
+  const s = await fixture(), owner = await s.member('owner')
+  const created = await s.call('createAssistantTopic', owner, {
+    assistantId: owner.agentId, title: '实验讨论', summary: '确定实验条件',
+    body: { decisions: [{ text: '采用方案 A' }, { text: '保留对照组' }] },
+  })
+  expect(created.status, created.text).toBe(201)
+  const topic = created.value.data
+  const decisions = [{ id: 'd1', text: '采用方案 A' }, { id: 'd2', text: '保留对照组' }]
+  expect(topic.body.decisions).toEqual(decisions)
+
+  const duplicate = await s.call('updateAssistantTopic', owner, {
+    expectedVersion: 1,
+    body: { decisions: [decisions[0], { ...decisions[1], id: 'd1' }] },
+  }, { id: topic.id })
+  expect(duplicate.status, duplicate.text).toBe(400)
+  expect(duplicate.value.error.code).toBe('VALIDATION_ERROR')
+
+  const service = new ChatService(serviceFor(s.db, owner.id, s.config).c, s.config)
+  const retired = applyTopicPatch(service, { topicId: topic.id, baseVersion: 1, retire: ['d1'] }, { agent: 'assistant' })
+  expect(retired).toMatchObject({ changed: true, unmatched: [] })
+
+  const history = await s.call('assistantTopicHistory', owner, null, { id: topic.id })
+  expect(history.status, history.text).toBe(200)
+  expect(history.value.data.topic).toMatchObject({ version: 2, body: { decisions: [decisions[1]] } })
+  expect(history.value.data.revisions).toMatchObject([
+    { version: 1, body: { decisions } },
+    { version: 2, body: { decisions: [decisions[1]] } },
+  ])
 })
 
 it('fits the topic index under its own budget and the reply reserve', { timeout: 30000 }, async () => {

@@ -1,5 +1,13 @@
 # 新 AI 接手：当前项目状态
 
+## 2026-11-27 · 话题正文重定（本地分支，契约 0.53）
+
+分支 `feat/topic-curator-refactor` 基于 main `70b97e5`。正文由六段改四段：删除 `context`；`decisions` 改为 `{id, text}`，id 由服务端分配、输入可省略、响应必填，删除 `status`，上限 8 条、单条 150 字；`constraints`/`next`/`openQuestions` 单条降到 150 字、整段替换、顺序即优先级；`summary` 上限提到 600 字并每次重写。注入改为 `summary` 全文加四段各 3 条，索引剔除当前 `active`。整理器按 `retire` 里的 id 退役条目，未知 id 记 `unmatched` 不写库；没有实质变化的 patch 不再升版本、不落 revision。
+
+迁移 042 删除存量 `body.context`、按顺序补 `decisions[].id`、给话题表加 `next_decision_id`、按新上限截断。旧 revision 文档不重写，因此 0.53 之前的历史从新版本开始。
+
+本地通过契约包编译、`export-contracts --check`、`apps/api` 类型检查（含 `tests`）与 `check-content`；另用临时库跑通 42 条迁移链、`pragma integrity_check` 与空 body 迁移。vitest 受沙盒限制未在本地执行，单测由 CI 运行。未部署，生产仍是契约 0.52 / 迁移 041。
+
 ## DeepChat 0.10.124 Windows 正式发布
 
 2026-11-27 · [v0.10.124](https://github.com/luoyan96/personal-agent/releases/tag/v0.10.124) 来自 PR #260 的合并提交 30903082f022c93a733b532011c64e5bc3cb13f0。任务页缩小字号，计划与资料讨论统一进入本人的个人助理私聊。743 项客户端测试和四项托管检查通过。
@@ -110,7 +118,7 @@ Windows x64 0.10.119 已公开并设为最新稳定版。改版经 PR #247 合�
 
 本地真实 HTTP、SQLite 与两类 worker 使用合成模型通过「创建组会话题 → 切换论文话题 → 恢复组会 → 重启后续聊」用例。确认旧聊天和本人习惯仍可读取，下一轮输入包含恢复话题的决定和下一步。生产恢复副本、正式包与部署有独立回执。
 
-更新日期：2026-11-26（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
+更新日期：2026-11-27（北京时间）。这是快速交接入口；历史报告保留各自受测版本，不能直接当成当前线上状态。
 
 ## 2026-11-18 · DeepChat 0.10.117 正式发布
 

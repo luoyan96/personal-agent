@@ -48,9 +48,11 @@ const contextOf = (row: ActiveRow): TopicContext => {
     version: Number(row.version),
     title: String(row.title),
     summary: String(row.summary),
-    decisions: (body.decisions ?? []).filter(decision => decision.status === 'confirmed').slice(-3).map(decision => decision.text),
-    constraints: (body.constraints ?? []).slice(-3),
-    next: (body.next ?? []).slice(0, 5),
+    // Decisions are a time-ordered record, so the newest three are the live conclusions.
+    decisions: (body.decisions ?? []).slice(-3).map(decision => decision.text),
+    // The three current-state sections are ordered by priority, so the first three win.
+    constraints: (body.constraints ?? []).slice(0, 3),
+    next: (body.next ?? []).slice(0, 3),
     openQuestions: (body.openQuestions ?? []).slice(0, 3),
   }
 }
@@ -76,7 +78,9 @@ export function topicReference(s: ChatService, assistantId: string, conversation
     const rows = s.db.prepare("SELECT id,title,summary,state,count(*) OVER () AS total FROM assistant_topics WHERE owner_id=? AND assistant_id=? AND state IN ('active','paused') ORDER BY last_active_at DESC,id DESC LIMIT ?")
       .all(s.c.actor.id, assistantId, indexLimit) as (TopicIndexEntry & { total: number })[]
     if (rows.length) {
+      // The active topic already travels as the body, so the index skips it.
       const entries = rows.map(({ id, title, summary, state }) => ({ id, title, summary: clipSummary(summary), state }))
+        .filter(entry => entry.id !== reference.topic?.id)
       reference.index = { entries, omitted: rows[0]!.total - entries.length }
     }
   }

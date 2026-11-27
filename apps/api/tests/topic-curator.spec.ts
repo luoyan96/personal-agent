@@ -16,6 +16,13 @@ import { TopicCuratorWorker } from '../src/topic-curator-worker.js'
 const cleanup: (() => void)[] = []
 afterEach(() => { for (const fn of cleanup.splice(0).reverse()) fn() })
 const result = (value: unknown): ModelResult => ({ text: JSON.stringify(value), failure: null, inputTokens: 1, outputTokens: 1, elapsedMs: 1 })
+// Shape-valid but over the 4 KB body cap: twelve 150-character Chinese entries.
+const overLimitBody = {
+  decisions: Array.from({ length: 3 }, (_, index) => ({ text: `${index}${'约'.repeat(149)}` })),
+  constraints: Array.from({ length: 3 }, (_, index) => `${index}${'约'.repeat(149)}`),
+  next: Array.from({ length: 3 }, (_, index) => `${index}${'约'.repeat(149)}`),
+  openQuestions: Array.from({ length: 3 }, (_, index) => `${index}${'约'.repeat(149)}`),
+}
 async function fixture(enabled = true) {
   const root = mkdtempSync(join(tmpdir(), 'acceptcat-topic-curator-'))
   cleanup.push(() => rmSync(root, { recursive: true, force: true }))
@@ -28,7 +35,7 @@ async function fixture(enabled = true) {
   const call = (name: RouteName, body: unknown = null, id?: string) => transaction(db, () => service.run(name as never, routes[name].request.parse({ body, params: id ? { id } : {}, query: {}, headers: routes[name].method === 'GET' ? {} : { 'Idempotency-Key': randomUUID() } }) as never)) as { data: any }
   if (enabled) transaction(db, () => runPersonalModel(db, service.c.actor, 'createPersonalModel', { body: { name: 'Synthetic model', provider: 'deepseek', model: 'synthetic-model', enabled: true, apiKey: 'SYNTHETIC_API_KEY' }, params: {}, query: {}, headers: { 'Idempotency-Key': randomUUID() } } as never, config))
   const { agent, conversation } = call('personalConversation', {}).data
-  const topic = call('createAssistantTopic', { assistantId: agent.id, title: '初始话题', summary: '初始摘要', body: { context: '原来的背景' } }).data
+  const topic = call('createAssistantTopic', { assistantId: agent.id, title: '初始话题', summary: '初始摘要', body: { openQuestions: ['原来的问题'] } }).data
   const message = (text: string, origin: 'human' | 'model', turnId: string | null = null) => service.message(conversation.id, {
     senderContactId: origin === 'human' ? service.human().id : agent.id, origin, text, mentions: [], resources: [], actionIds: [], turnId,
   })
@@ -60,7 +67,7 @@ it('applies an update_topic patch and consumes one job', { timeout: 30000 }, asy
   expect(f.job(turnId)).toMatchObject({ status: 'succeeded' })
   expect(JSON.parse(f.job(turnId).result_json!)).toMatchObject({ action: 'update_topic', version: 2 })
   expect(f.current()).toMatchObject({ version: 2, title: '新标题', summary: '新摘要', title_status: 'provisional' })
-  expect(f.call('assistantTopic', null, f.topic.id).data.body.context).toBe('原来的背景')
+  expect(f.call('assistantTopic', null, f.topic.id).data.body.openQuestions).toEqual(['原来的问题'])
   expect(prompt).toContain('上一轮合成回复')
 })
 
@@ -85,6 +92,22 @@ it('drops a stale patch and keeps the newer topic', { timeout: 30000 }, async ()
   expect(f.current()).toMatchObject({ version: 1, summary: '初始摘要' })
 })
 
+it('skips the write when a patch changes nothing', { timeout: 30000 }, async () => {
+  const f = await fixture(), turnId = f.queue()
+  const worker = new TopicCuratorWorker(f.db, f.config, Date.now, async () => result({ action: 'update_topic', topicId: f.topic.id, baseVersion: 1, body: { openQuestions: ['原来的问题'] } }))
+  expect(await worker.tick()).toBe(true)
+  expect(JSON.parse(f.job(turnId).result_json!)).toMatchObject({ action: 'no_change', reason: 'duplicate', sections: 0 })
+  expect(f.current()).toMatchObject({ version: 1 })
+})
+
+it('reports unknown retire ids instead of writing them', { timeout: 30000 }, async () => {
+  const f = await fixture(), turnId = f.queue()
+  const worker = new TopicCuratorWorker(f.db, f.config, Date.now, async () => result({ action: 'update_topic', topicId: f.topic.id, baseVersion: 1, retire: ['d9'] }))
+  expect(await worker.tick()).toBe(true)
+  expect(JSON.parse(f.job(turnId).result_json!)).toMatchObject({ action: 'no_change', unmatched: ['d9'] })
+  expect(f.current()).toMatchObject({ version: 1 })
+})
+
 it('fails invalid model output and unavailable models without touching the topic', { timeout: 30000 }, async () => {
   const f = await fixture(), turnId = f.queue()
   expect(await new TopicCuratorWorker(f.db, f.config, Date.now, async () => ({ text: 'not json', failure: null, inputTokens: 1, outputTokens: 1, elapsedMs: 1 })).tick()).toBe(true)
@@ -99,16 +122,16 @@ it('shapes over-long output instead of rejecting the patch', { timeout: 30000 },
   const f = await fixture(), turnId = f.queue()
   const worker = new TopicCuratorWorker(f.db, f.config, Date.now, async () => result({
     action: 'update_topic', topicId: f.topic.id, baseVersion: 1,
-    title: 't'.repeat(70), summary: 's'.repeat(320),
-    body: { context: 'c'.repeat(1200), decisions: Array.from({ length: 6 }, (_, index) => ({ text: `${index}`.padEnd(320, 'd'), status: 'confirmed' })) },
+    title: 't'.repeat(70), summary: 's'.repeat(700),
+    body: { decisions: Array.from({ length: 6 }, (_, index) => ({ text: `${index}${'d'.repeat(199)}` })) },
   }))
   expect(await worker.tick()).toBe(true)
   expect(f.job(turnId)).toMatchObject({ status: 'succeeded' })
   const saved = f.call('assistantTopic', null, f.topic.id).data
   expect(saved.title.length).toBe(60)
-  expect(saved.summary.length).toBe(300)
-  expect(saved.body.context.length).toBe(1000)
+  expect(saved.summary.length).toBe(600)
   expect(saved.body.decisions.length).toBe(3)
+  expect(saved.body.decisions[0].text.length).toBe(150)
   expect(JSON.parse(f.job(turnId).result_json!).shaped.trimmed).toBeGreaterThan(0)
 })
 
@@ -116,7 +139,7 @@ it('records an over-cap body and passes the split signal to the next turn', { ti
   const f = await fixture(), first = f.queue()
   const worker = new TopicCuratorWorker(f.db, f.config, Date.now, async () => result({
     action: 'update_topic', topicId: f.topic.id, baseVersion: 1,
-    body: { context: '背景'.repeat(500), constraints: Array.from({ length: 5 }, (_, index) => `${index}`.padEnd(300, '约')) },
+    body: { ...overLimitBody },
   }))
   expect(await worker.tick()).toBe(true)
   expect(f.job(first)).toMatchObject({ status: 'failed', failure: 'PAYLOAD_TOO_LARGE' })
@@ -138,7 +161,7 @@ it('rolls back the active topic and its history when a new topic is too large', 
   const before = f.call('assistantTopicHistory', null, f.topic.id).data
   const worker = new TopicCuratorWorker(f.db, f.config, Date.now, async () => result({
     action: 'new_topic', title: '另一个话题', summary: '新的话题摘要',
-    body: { context: '背景'.repeat(500), constraints: Array.from({ length: 5 }, (_, index) => `${index}`.padEnd(300, '约')) },
+    body: { ...overLimitBody },
   }))
   expect(await worker.tick()).toBe(true)
   const job = f.job(turnId)

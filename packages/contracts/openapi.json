@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Research Agent Platform B0 contract",
-    "version": "0.52.0"
+    "version": "0.53.0"
   },
   "paths": {
     "/api/v1/library/repository": {
@@ -34881,7 +34881,7 @@
                           "summary": {
                             "type": "string",
                             "minLength": 1,
-                            "maxLength": 300
+                            "maxLength": 600
                           },
                           "state": {
                             "type": "string",
@@ -35136,11 +35136,10 @@
                   "summary": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 300
+                    "maxLength": 600
                   },
                   "body": {
                     "default": {
-                      "context": "",
                       "decisions": [],
                       "openQuestions": [],
                       "next": [],
@@ -35149,35 +35148,25 @@
                     },
                     "type": "object",
                     "properties": {
-                      "context": {
-                        "default": "",
-                        "type": "string",
-                        "maxLength": 1000
-                      },
                       "decisions": {
                         "default": [],
-                        "maxItems": 20,
+                        "maxItems": 8,
                         "type": "array",
                         "items": {
                           "type": "object",
                           "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
                             "text": {
                               "type": "string",
                               "minLength": 1,
-                              "maxLength": 300
-                            },
-                            "status": {
-                              "default": "confirmed",
-                              "type": "string",
-                              "enum": [
-                                "confirmed",
-                                "superseded"
-                              ]
+                              "maxLength": 150
                             }
                           },
                           "required": [
-                            "text",
-                            "status"
+                            "text"
                           ],
                           "additionalProperties": false
                         }
@@ -35189,7 +35178,7 @@
                         "items": {
                           "type": "string",
                           "minLength": 1,
-                          "maxLength": 300
+                          "maxLength": 150
                         }
                       },
                       "next": {
@@ -35199,7 +35188,7 @@
                         "items": {
                           "type": "string",
                           "minLength": 1,
-                          "maxLength": 300
+                          "maxLength": 150
                         }
                       },
                       "constraints": {
@@ -35209,7 +35198,7 @@
                         "items": {
                           "type": "string",
                           "minLength": 1,
-                          "maxLength": 300
+                          "maxLength": 150
                         }
                       },
                       "notes": {
@@ -35275,7 +35264,6 @@
                       }
                     },
                     "required": [
-                      "context",
                       "decisions",
                       "openQuestions",
                       "next",
@@ -35298,7 +35286,6 @@
                 "title": "synthetic",
                 "summary": "synthetic",
                 "body": {
-                  "context": "",
                   "decisions": [],
                   "openQuestions": [],
                   "next": [],
@@ -35344,40 +35331,31 @@
                         "summary": {
                           "type": "string",
                           "minLength": 1,
-                          "maxLength": 300
+                          "maxLength": 600
                         },
                         "body": {
                           "type": "object",
                           "properties": {
-                            "context": {
-                              "default": "",
-                              "type": "string",
-                              "maxLength": 1000
-                            },
                             "decisions": {
                               "default": [],
-                              "maxItems": 20,
+                              "maxItems": 8,
                               "type": "array",
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
                                   "text": {
                                     "type": "string",
                                     "minLength": 1,
-                                    "maxLength": 300
-                                  },
-                                  "status": {
-                                    "default": "confirmed",
-                                    "type": "string",
-                                    "enum": [
-                                      "confirmed",
-                                      "superseded"
-                                    ]
+                                    "maxLength": 150
                                   }
                                 },
                                 "required": [
-                                  "text",
-                                  "status"
+                                  "id",
+                                  "text"
                                 ],
                                 "additionalProperties": false
                               }
@@ -35389,7 +35367,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "next": {
@@ -35399,7 +35377,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "constraints": {
@@ -35409,7 +35387,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "notes": {
@@ -35475,7 +35453,6 @@
                             }
                           },
                           "required": [
-                            "context",
                             "decisions",
                             "openQuestions",
                             "next",
@@ -35563,7 +35540,6 @@
                     "titleStatus": "provisional",
                     "summary": "synthetic",
                     "body": {
-                      "context": "",
                       "decisions": [],
                       "openQuestions": [],
                       "next": [],
@@ -35772,40 +35748,31 @@
                         "summary": {
                           "type": "string",
                           "minLength": 1,
-                          "maxLength": 300
+                          "maxLength": 600
                         },
                         "body": {
                           "type": "object",
                           "properties": {
-                            "context": {
-                              "default": "",
-                              "type": "string",
-                              "maxLength": 1000
-                            },
                             "decisions": {
                               "default": [],
-                              "maxItems": 20,
+                              "maxItems": 8,
                               "type": "array",
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
                                   "text": {
                                     "type": "string",
                                     "minLength": 1,
-                                    "maxLength": 300
-                                  },
-                                  "status": {
-                                    "default": "confirmed",
-                                    "type": "string",
-                                    "enum": [
-                                      "confirmed",
-                                      "superseded"
-                                    ]
+                                    "maxLength": 150
                                   }
                                 },
                                 "required": [
-                                  "text",
-                                  "status"
+                                  "id",
+                                  "text"
                                 ],
                                 "additionalProperties": false
                               }
@@ -35817,7 +35784,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "next": {
@@ -35827,7 +35794,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "constraints": {
@@ -35837,7 +35804,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "notes": {
@@ -35903,7 +35870,6 @@
                             }
                           },
                           "required": [
-                            "context",
                             "decisions",
                             "openQuestions",
                             "next",
@@ -35991,7 +35957,6 @@
                     "titleStatus": "provisional",
                     "summary": "synthetic",
                     "body": {
-                      "context": "",
                       "decisions": [],
                       "openQuestions": [],
                       "next": [],
@@ -36202,40 +36167,30 @@
                   "summary": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 300
+                    "maxLength": 600
                   },
                   "body": {
                     "type": "object",
                     "properties": {
-                      "context": {
-                        "default": "",
-                        "type": "string",
-                        "maxLength": 1000
-                      },
                       "decisions": {
                         "default": [],
-                        "maxItems": 20,
+                        "maxItems": 8,
                         "type": "array",
                         "items": {
                           "type": "object",
                           "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                            },
                             "text": {
                               "type": "string",
                               "minLength": 1,
-                              "maxLength": 300
-                            },
-                            "status": {
-                              "default": "confirmed",
-                              "type": "string",
-                              "enum": [
-                                "confirmed",
-                                "superseded"
-                              ]
+                              "maxLength": 150
                             }
                           },
                           "required": [
-                            "text",
-                            "status"
+                            "text"
                           ],
                           "additionalProperties": false
                         }
@@ -36247,7 +36202,7 @@
                         "items": {
                           "type": "string",
                           "minLength": 1,
-                          "maxLength": 300
+                          "maxLength": 150
                         }
                       },
                       "next": {
@@ -36257,7 +36212,7 @@
                         "items": {
                           "type": "string",
                           "minLength": 1,
-                          "maxLength": 300
+                          "maxLength": 150
                         }
                       },
                       "constraints": {
@@ -36267,7 +36222,7 @@
                         "items": {
                           "type": "string",
                           "minLength": 1,
-                          "maxLength": 300
+                          "maxLength": 150
                         }
                       },
                       "notes": {
@@ -36333,7 +36288,6 @@
                       }
                     },
                     "required": [
-                      "context",
                       "decisions",
                       "openQuestions",
                       "next",
@@ -36389,40 +36343,31 @@
                         "summary": {
                           "type": "string",
                           "minLength": 1,
-                          "maxLength": 300
+                          "maxLength": 600
                         },
                         "body": {
                           "type": "object",
                           "properties": {
-                            "context": {
-                              "default": "",
-                              "type": "string",
-                              "maxLength": 1000
-                            },
                             "decisions": {
                               "default": [],
-                              "maxItems": 20,
+                              "maxItems": 8,
                               "type": "array",
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
                                   "text": {
                                     "type": "string",
                                     "minLength": 1,
-                                    "maxLength": 300
-                                  },
-                                  "status": {
-                                    "default": "confirmed",
-                                    "type": "string",
-                                    "enum": [
-                                      "confirmed",
-                                      "superseded"
-                                    ]
+                                    "maxLength": 150
                                   }
                                 },
                                 "required": [
-                                  "text",
-                                  "status"
+                                  "id",
+                                  "text"
                                 ],
                                 "additionalProperties": false
                               }
@@ -36434,7 +36379,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "next": {
@@ -36444,7 +36389,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "constraints": {
@@ -36454,7 +36399,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "notes": {
@@ -36520,7 +36465,6 @@
                             }
                           },
                           "required": [
-                            "context",
                             "decisions",
                             "openQuestions",
                             "next",
@@ -36608,7 +36552,6 @@
                     "titleStatus": "provisional",
                     "summary": "synthetic",
                     "body": {
-                      "context": "",
                       "decisions": [],
                       "openQuestions": [],
                       "next": [],
@@ -36860,40 +36803,31 @@
                         "summary": {
                           "type": "string",
                           "minLength": 1,
-                          "maxLength": 300
+                          "maxLength": 600
                         },
                         "body": {
                           "type": "object",
                           "properties": {
-                            "context": {
-                              "default": "",
-                              "type": "string",
-                              "maxLength": 1000
-                            },
                             "decisions": {
                               "default": [],
-                              "maxItems": 20,
+                              "maxItems": 8,
                               "type": "array",
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
                                   "text": {
                                     "type": "string",
                                     "minLength": 1,
-                                    "maxLength": 300
-                                  },
-                                  "status": {
-                                    "default": "confirmed",
-                                    "type": "string",
-                                    "enum": [
-                                      "confirmed",
-                                      "superseded"
-                                    ]
+                                    "maxLength": 150
                                   }
                                 },
                                 "required": [
-                                  "text",
-                                  "status"
+                                  "id",
+                                  "text"
                                 ],
                                 "additionalProperties": false
                               }
@@ -36905,7 +36839,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "next": {
@@ -36915,7 +36849,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "constraints": {
@@ -36925,7 +36859,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "notes": {
@@ -36991,7 +36925,6 @@
                             }
                           },
                           "required": [
-                            "context",
                             "decisions",
                             "openQuestions",
                             "next",
@@ -37079,7 +37012,6 @@
                     "titleStatus": "provisional",
                     "summary": "synthetic",
                     "body": {
-                      "context": "",
                       "decisions": [],
                       "openQuestions": [],
                       "next": [],
@@ -37331,40 +37263,31 @@
                         "summary": {
                           "type": "string",
                           "minLength": 1,
-                          "maxLength": 300
+                          "maxLength": 600
                         },
                         "body": {
                           "type": "object",
                           "properties": {
-                            "context": {
-                              "default": "",
-                              "type": "string",
-                              "maxLength": 1000
-                            },
                             "decisions": {
                               "default": [],
-                              "maxItems": 20,
+                              "maxItems": 8,
                               "type": "array",
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                  },
                                   "text": {
                                     "type": "string",
                                     "minLength": 1,
-                                    "maxLength": 300
-                                  },
-                                  "status": {
-                                    "default": "confirmed",
-                                    "type": "string",
-                                    "enum": [
-                                      "confirmed",
-                                      "superseded"
-                                    ]
+                                    "maxLength": 150
                                   }
                                 },
                                 "required": [
-                                  "text",
-                                  "status"
+                                  "id",
+                                  "text"
                                 ],
                                 "additionalProperties": false
                               }
@@ -37376,7 +37299,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "next": {
@@ -37386,7 +37309,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "constraints": {
@@ -37396,7 +37319,7 @@
                               "items": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 150
                               }
                             },
                             "notes": {
@@ -37462,7 +37385,6 @@
                             }
                           },
                           "required": [
-                            "context",
                             "decisions",
                             "openQuestions",
                             "next",
@@ -37550,7 +37472,6 @@
                     "titleStatus": "provisional",
                     "summary": "synthetic",
                     "body": {
-                      "context": "",
                       "decisions": [],
                       "openQuestions": [],
                       "next": [],
@@ -37762,40 +37683,31 @@
                             "summary": {
                               "type": "string",
                               "minLength": 1,
-                              "maxLength": 300
+                              "maxLength": 600
                             },
                             "body": {
                               "type": "object",
                               "properties": {
-                                "context": {
-                                  "default": "",
-                                  "type": "string",
-                                  "maxLength": 1000
-                                },
                                 "decisions": {
                                   "default": [],
-                                  "maxItems": 20,
+                                  "maxItems": 8,
                                   "type": "array",
                                   "items": {
                                     "type": "object",
                                     "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                      },
                                       "text": {
                                         "type": "string",
                                         "minLength": 1,
-                                        "maxLength": 300
-                                      },
-                                      "status": {
-                                        "default": "confirmed",
-                                        "type": "string",
-                                        "enum": [
-                                          "confirmed",
-                                          "superseded"
-                                        ]
+                                        "maxLength": 150
                                       }
                                     },
                                     "required": [
-                                      "text",
-                                      "status"
+                                      "id",
+                                      "text"
                                     ],
                                     "additionalProperties": false
                                   }
@@ -37807,7 +37719,7 @@
                                   "items": {
                                     "type": "string",
                                     "minLength": 1,
-                                    "maxLength": 300
+                                    "maxLength": 150
                                   }
                                 },
                                 "next": {
@@ -37817,7 +37729,7 @@
                                   "items": {
                                     "type": "string",
                                     "minLength": 1,
-                                    "maxLength": 300
+                                    "maxLength": 150
                                   }
                                 },
                                 "constraints": {
@@ -37827,7 +37739,7 @@
                                   "items": {
                                     "type": "string",
                                     "minLength": 1,
-                                    "maxLength": 300
+                                    "maxLength": 150
                                   }
                                 },
                                 "notes": {
@@ -37893,7 +37805,6 @@
                                 }
                               },
                               "required": [
-                                "context",
                                 "decisions",
                                 "openQuestions",
                                 "next",
@@ -37996,40 +37907,31 @@
                               "summary": {
                                 "type": "string",
                                 "minLength": 1,
-                                "maxLength": 300
+                                "maxLength": 600
                               },
                               "body": {
                                 "type": "object",
                                 "properties": {
-                                  "context": {
-                                    "default": "",
-                                    "type": "string",
-                                    "maxLength": 1000
-                                  },
                                   "decisions": {
                                     "default": [],
-                                    "maxItems": 20,
+                                    "maxItems": 8,
                                     "type": "array",
                                     "items": {
                                       "type": "object",
                                       "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,96}$"
+                                        },
                                         "text": {
                                           "type": "string",
                                           "minLength": 1,
-                                          "maxLength": 300
-                                        },
-                                        "status": {
-                                          "default": "confirmed",
-                                          "type": "string",
-                                          "enum": [
-                                            "confirmed",
-                                            "superseded"
-                                          ]
+                                          "maxLength": 150
                                         }
                                       },
                                       "required": [
-                                        "text",
-                                        "status"
+                                        "id",
+                                        "text"
                                       ],
                                       "additionalProperties": false
                                     }
@@ -38041,7 +37943,7 @@
                                     "items": {
                                       "type": "string",
                                       "minLength": 1,
-                                      "maxLength": 300
+                                      "maxLength": 150
                                     }
                                   },
                                   "next": {
@@ -38051,7 +37953,7 @@
                                     "items": {
                                       "type": "string",
                                       "minLength": 1,
-                                      "maxLength": 300
+                                      "maxLength": 150
                                     }
                                   },
                                   "constraints": {
@@ -38061,7 +37963,7 @@
                                     "items": {
                                       "type": "string",
                                       "minLength": 1,
-                                      "maxLength": 300
+                                      "maxLength": 150
                                     }
                                   },
                                   "notes": {
@@ -38127,7 +38029,6 @@
                                   }
                                 },
                                 "required": [
-                                  "context",
                                   "decisions",
                                   "openQuestions",
                                   "next",
@@ -38224,7 +38125,6 @@
                       "titleStatus": "provisional",
                       "summary": "synthetic",
                       "body": {
-                        "context": "",
                         "decisions": [],
                         "openQuestions": [],
                         "next": [],
@@ -84884,7 +84784,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.52.0"
+                          "const": "0.53.0"
                         },
                         "checks": {
                           "type": "object",
@@ -84943,7 +84843,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.52.0",
+                    "contractVersion": "0.53.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -85117,7 +85017,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.52.0"
+                          "const": "0.53.0"
                         },
                         "checks": {
                           "type": "object",
@@ -85176,7 +85076,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.52.0",
+                    "contractVersion": "0.53.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",
@@ -85328,7 +85228,7 @@
                         },
                         "contractVersion": {
                           "type": "string",
-                          "const": "0.52.0"
+                          "const": "0.53.0"
                         },
                         "checks": {
                           "type": "object",
@@ -85387,7 +85287,7 @@
                 "example": {
                   "data": {
                     "status": "ok",
-                    "contractVersion": "0.52.0",
+                    "contractVersion": "0.53.0",
                     "checks": {
                       "database": "ok",
                       "storage": "ok",

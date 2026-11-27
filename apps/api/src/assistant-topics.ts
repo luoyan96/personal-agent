@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import {
   AssistantTopic,
   AssistantTopicBody,
+  AssistantTopicBodyInput,
   AssistantTopicHistory,
   AssistantTopicIndex,
   AssistantTopicInput,
@@ -30,6 +31,7 @@ type Row = {
   created_at: string
   updated_at: string
   last_active_at: string
+  next_decision_id: number
 }
 
 /** Curator writes through this shape; it never carries a caller-chosen version. */
@@ -38,7 +40,9 @@ export type AssistantTopicPatch = {
   baseVersion?: number
   title?: string
   summary?: string
-  body?: Partial<AssistantTopicBody>
+  body?: Partial<AssistantTopicBodyInput>
+  /** Decision ids the patch retires. Unknown ids are reported, not written. */
+  retire?: string[]
 }
 
 const now = () => new Date().toISOString()
@@ -115,52 +119,93 @@ const uniqueTexts = (values: string[], limit: number) => {
   return out
 }
 
-/** Owner edits replace the sections they send; dedupe and caps still apply. */
-function replaceBody(current: AssistantTopicBody, patch: Partial<AssistantTopicBody>): AssistantTopicBody {
-  return AssistantTopicBody.parse({
-    context: patch.context ?? current.context,
-    decisions: patch.decisions ? mergeDecisions([], patch.decisions) : current.decisions,
-    openQuestions: patch.openQuestions ? uniqueTexts(patch.openQuestions, 10) : current.openQuestions,
-    next: patch.next ? uniqueTexts(patch.next, 10) : current.next,
-    constraints: patch.constraints ? uniqueTexts(patch.constraints, 10) : current.constraints,
-    notes: patch.notes ? mergeNotes([], patch.notes) : current.notes,
-  })
-}
+/** Decision ids are assigned by the service and never reused: a patch retires an
+ * entry by id instead of matching its text, so rewording cannot leave a stale
+ * conclusion behind. */
+const decisionId = (value: number) => `d${value}`
 
-/** Curator patches keep decisions additive (superseded retires them) and replace
- * the three current-state sections, so an evolving topic can shed stale items. */
-function curatorBody(current: AssistantTopicBody, patch: Partial<AssistantTopicBody>): AssistantTopicBody {
-  return AssistantTopicBody.parse({
-    context: patch.context ?? current.context,
-    decisions: patch.decisions ? mergeDecisions(current.decisions, patch.decisions) : current.decisions,
-    openQuestions: patch.openQuestions ? uniqueTexts(patch.openQuestions, 10) : current.openQuestions,
-    next: patch.next ? uniqueTexts(patch.next, 10) : current.next,
-    constraints: patch.constraints ? uniqueTexts(patch.constraints, 10) : current.constraints,
-    notes: current.notes,
-  })
-}
-
-/** Counts sections with substantive changes; obsolete and superseded entries do not count. */
-function changedSections(before: AssistantTopicBody, after: AssistantTopicBody) {
-  const active = (values: { status: string }[]) => values.filter(value => value.status !== 'obsolete' && value.status !== 'superseded')
-  let count = 0
-  if (before.context !== after.context) count += 1
-  if (JSON.stringify(active(before.decisions)) !== JSON.stringify(active(after.decisions))) count += 1
-  if (JSON.stringify(active(before.notes)) !== JSON.stringify(active(after.notes))) count += 1
-  if (JSON.stringify(before.openQuestions) !== JSON.stringify(after.openQuestions)) count += 1
-  if (JSON.stringify(before.next) !== JSON.stringify(after.next)) count += 1
-  if (JSON.stringify(before.constraints) !== JSON.stringify(after.constraints)) count += 1
-  return count
-}
-
-function mergeDecisions(current: AssistantTopicBody['decisions'], incoming: AssistantTopicBody['decisions']) {
-  const merged = new Map(current.map(decision => [key(decision.text), { ...decision }]))
-  for (const decision of incoming) {
-    const normalized = key(decision.text)
-    const prior = merged.get(normalized)
-    merged.set(normalized, prior ? { text: prior.text, status: decision.status } : { ...decision })
+/** Curator patches retire by id and append new decisions; the service owns ids. */
+function curatorDecisions(current: AssistantTopicBody['decisions'], incoming: AssistantTopicBodyInput['decisions'], retire: string[], start: number) {
+  const retired = new Set(retire)
+  const unmatched = retire.filter(id => !current.some(entry => entry.id === id))
+  const decisions = current.filter(entry => !retired.has(entry.id))
+  const seen = new Set(decisions.map(entry => key(entry.text)))
+  let next = start
+  for (const entry of incoming) {
+    const normalized = key(entry.text)
+    if (seen.has(normalized)) continue
+    seen.add(normalized)
+    decisions.push({ id: decisionId(next), text: entry.text })
+    next += 1
   }
-  return [...merged.values()].slice(-20)
+  // Only the newest eight stay in the body; older ones remain in the revision trail.
+  return { decisions: decisions.slice(-8), next, unmatched }
+}
+
+/** Owner edits replace the whole decisions list; ids they send back are kept. */
+function ownerDecisions(current: AssistantTopicBody['decisions'], incoming: AssistantTopicBodyInput['decisions'], start: number) {
+  const known = new Map(current.map(entry => [entry.id, entry]))
+  const seenIds = new Set<string>()
+  const seenTexts = new Set<string>()
+  const decisions: AssistantTopicBody['decisions'] = []
+  let next = start
+  for (const entry of incoming) {
+    if (entry.id !== undefined) {
+      if (seenIds.has(entry.id)) fail('VALIDATION_ERROR')
+      seenIds.add(entry.id)
+    }
+    const normalized = key(entry.text)
+    if (seenTexts.has(normalized)) continue
+    seenTexts.add(normalized)
+    const prior = entry.id ? known.get(entry.id) : undefined
+    decisions.push({ id: prior ? prior.id : decisionId(next), text: entry.text })
+    if (!prior) next += 1
+  }
+  return { decisions: decisions.slice(0, 8), next }
+}
+
+/** Owner edits replace the sections they send; dedupe and caps still apply. */
+function replaceBody(current: AssistantTopicBody, patch: Partial<AssistantTopicBodyInput>, start: number) {
+  const decisions = ownerDecisions(current.decisions, patch.decisions ?? current.decisions, start)
+  return {
+    body: AssistantTopicBody.parse({
+      decisions: decisions.decisions,
+      openQuestions: patch.openQuestions ? uniqueTexts(patch.openQuestions, 10) : current.openQuestions,
+      next: patch.next ? uniqueTexts(patch.next, 10) : current.next,
+      constraints: patch.constraints ? uniqueTexts(patch.constraints, 10) : current.constraints,
+      notes: patch.notes ? mergeNotes([], patch.notes) : current.notes,
+    }),
+    next: decisions.next,
+  }
+}
+
+/** Curator patches retire by id and append; the three current-state sections are
+ * replaced wholesale, so an evolving topic can shed stale items. */
+function curatorBody(current: AssistantTopicBody, patch: Partial<AssistantTopicBodyInput>, retire: string[], start: number) {
+  const decisions = curatorDecisions(current.decisions, patch.decisions ?? [], retire, start)
+  return {
+    body: AssistantTopicBody.parse({
+      decisions: decisions.decisions,
+      openQuestions: patch.openQuestions ? uniqueTexts(patch.openQuestions, 10) : current.openQuestions,
+      next: patch.next ? uniqueTexts(patch.next, 10) : current.next,
+      constraints: patch.constraints ? uniqueTexts(patch.constraints, 10) : current.constraints,
+      notes: current.notes,
+    }),
+    next: decisions.next,
+    unmatched: decisions.unmatched,
+  }
+}
+
+/** Counts sections that changed. Ids make decisions comparable without text matching. */
+function changedSections(before: AssistantTopicBody, after: AssistantTopicBody) {
+  const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right)
+  return [
+    same(before.decisions, after.decisions),
+    same(before.openQuestions, after.openQuestions),
+    same(before.next, after.next),
+    same(before.constraints, after.constraints),
+    same(before.notes, after.notes),
+  ].filter(equal => !equal).length
 }
 
 function mergeNotes(current: AssistantTopicBody['notes'], incoming: AssistantTopicBody['notes']) {
@@ -176,7 +221,7 @@ function mergeNotes(current: AssistantTopicBody['notes'], incoming: AssistantTop
   return values.filter(note => note.status !== 'obsolete').sort((a, b) => importanceRank[b.importance] - importanceRank[a.importance]).slice(0, noteLimit)
 }
 
-const hasSubstance = (body: AssistantTopicBody) => body.decisions.some(decision => decision.status === 'confirmed') || body.constraints.length > 0
+const hasSubstance = (body: AssistantTopicBody) => body.decisions.length > 0 || body.constraints.length > 0
 
 function nextTitleStatus(current: Row, title: string | undefined, body: AssistantTopicBody) {
   if (title !== undefined && title !== current.title) return 'provisional' as const
@@ -187,7 +232,7 @@ function assertBody(body: AssistantTopicBody) {
   if (bodyBytes(body) > bodyLimit) fail('PAYLOAD_TOO_LARGE')
 }
 
-function write(s: ChatService, value: Row, patch: { title?: string; summary?: string; body?: AssistantTopicBody; state?: Row['state']; origin: Row['origin']; active?: boolean }, at = now()) {
+function write(s: ChatService, value: Row, patch: { title?: string; summary?: string; body?: AssistantTopicBody; state?: Row['state']; origin: Row['origin']; active?: boolean; nextDecisionId?: number }, at = now()) {
   const body = patch.body ?? bodyOf(value)
   assertBody(body)
   const title = patch.title ?? value.title
@@ -202,9 +247,10 @@ function write(s: ChatService, value: Row, patch: { title?: string; summary?: st
     version: value.version + 1,
     updated_at: at,
     last_active_at: patch.active === false ? value.last_active_at : at,
+    next_decision_id: patch.nextDecisionId ?? Number(value.next_decision_id),
   }
-  s.db.prepare('UPDATE assistant_topics SET title=?,title_status=?,summary=?,body_json=?,state=?,origin=?,version=?,updated_at=?,last_active_at=? WHERE id=? AND owner_id=? AND version=?')
-    .run(next.title, next.title_status, next.summary, next.body_json, next.state, next.origin, next.version, next.updated_at, next.last_active_at, value.id, s.c.actor.id, value.version)
+  s.db.prepare('UPDATE assistant_topics SET title=?,title_status=?,summary=?,body_json=?,state=?,origin=?,version=?,updated_at=?,last_active_at=?,next_decision_id=? WHERE id=? AND owner_id=? AND version=?')
+    .run(next.title, next.title_status, next.summary, next.body_json, next.state, next.origin, next.version, next.updated_at, next.last_active_at, next.next_decision_id, value.id, s.c.actor.id, value.version)
   const updated = row(s, value.id)
   revision(s, view(updated))
   return updated
@@ -213,29 +259,38 @@ function write(s: ChatService, value: Row, patch: { title?: string; summary?: st
 export function createTopic(s: ChatService, input: AssistantTopicInput, origin: Row['origin'], subject: ActorFacts, titleStatus: Row['title_status'] = 'final') {
   assertAllowed('personal', 'memory', subject, 'write')
   agentOwner(s, input.assistantId)
-  assertBody(input.body)
+  const decisions = ownerDecisions([], input.body.decisions, 1)
+  const body = AssistantTopicBody.parse({ ...input.body, decisions: decisions.decisions })
+  assertBody(body)
   const existing = s.db.prepare("SELECT id FROM assistant_topics WHERE owner_id=? AND assistant_id=? AND state='active'").get(s.c.actor.id, input.assistantId)
   if (existing) fail('INVALID_STATE')
   const id = randomUUID(), at = now()
-  s.db.prepare('INSERT INTO assistant_topics(id,owner_id,assistant_id,title,title_status,summary,body_json,state,origin,version,created_at,updated_at,last_active_at) VALUES(?,?,?,?,?,?,?,\'active\',?,1,?,?,?)')
-    .run(id, s.c.actor.id, input.assistantId, input.title, titleStatus, input.summary, JSON.stringify(input.body), origin, at, at, at)
+  s.db.prepare('INSERT INTO assistant_topics(id,owner_id,assistant_id,title,title_status,summary,body_json,state,origin,version,created_at,updated_at,last_active_at,next_decision_id) VALUES(?,?,?,?,?,?,?,\'active\',?,1,?,?,?,?)')
+    .run(id, s.c.actor.id, input.assistantId, input.title, titleStatus, input.summary, JSON.stringify(body), origin, at, at, at, decisions.next)
   const created = row(s, id)
   revision(s, view(created))
   return created
 }
 
-/** Curator-only merge path. It records origin='curator' and never trusts a caller version. */
+/** Curator-only merge path. It records origin='curator' and never trusts a caller
+ * version. A patch with no substantive change is not written: version and revision
+ * history stay put instead of recording an empty edit. */
 export function applyTopicPatch(s: ChatService, patch: AssistantTopicPatch, subject: ActorFacts) {
   assertAllowed('personal', 'memory', subject, 'write')
   const current = row(s, patch.topicId)
   if (current.state === 'closed') fail('INVALID_STATE')
   if (patch.baseVersion !== undefined && current.version !== patch.baseVersion) fail('VERSION_CONFLICT')
-  const before = bodyOf(current), body = curatorBody(before, patch.body ?? {})
-  // Any substantive body change may retitle or resummarize: convergence is the
-  // model's judgment, while the server only drops a title that did not change.
-  const accept = changedSections(before, body) >= 1
-  const title = patch.title && !sameTitle(patch.title, current.title) ? patch.title : undefined
-  return write(s, current, { title: accept ? title : undefined, summary: accept ? patch.summary : undefined, body, origin: 'curator' })
+  const before = bodyOf(current)
+  const merged = curatorBody(before, patch.body ?? {}, patch.retire ?? [], Number(current.next_decision_id))
+  const sections = changedSections(before, merged.body)
+  const bytesBefore = bodyBytes(before), bytesAfter = bodyBytes(merged.body)
+  // Title and summary converge only together with a body change; the server never
+  // accepts a rename on its own.
+  const title = sections && patch.title && !sameTitle(patch.title, current.title) ? patch.title : undefined
+  const summary = sections && patch.summary !== undefined && patch.summary !== current.summary ? patch.summary : undefined
+  if (!sections) return { value: current, changed: false, sections, bytesBefore, bytesAfter: bytesBefore, unmatched: merged.unmatched }
+  const value = write(s, current, { title, summary, body: merged.body, origin: 'curator', nextDecisionId: merged.next })
+  return { value, changed: true, sections, bytesBefore, bytesAfter, unmatched: merged.unmatched }
 }
 
 /** Curator switching topics pauses the old active one; closed topics are never injected. */
@@ -281,8 +336,8 @@ export function handleAssistantTopic(s: ChatService, name: string, req: ChatRequ
     const current = row(s, req.params.id!), input = AssistantTopicUpdate.parse(req.body)
     if (current.state === 'closed') fail('INVALID_STATE')
     s.c.checkVersion(current.version, input.expectedVersion)
-    const body = replaceBody(bodyOf(current), input.body ?? {})
-    return { data: view(write(s, current, { title: input.title, summary: input.summary, body, origin: 'owner' })) }
+    const replacement = replaceBody(bodyOf(current), input.body ?? {}, Number(current.next_decision_id))
+    return { data: view(write(s, current, { title: input.title, summary: input.summary, body: replacement.body, origin: 'owner', nextDecisionId: replacement.next })) }
   }
   if (name === 'closeAssistantTopic') {
     const current = row(s, req.params.id!), input = req.body as { expectedVersion: number }
