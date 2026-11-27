@@ -3506,3 +3506,7 @@ Windows x64 安装包为 421,756,210 字节，SHA-256 为 cf11130b297137807368f5
 37 项定向回归和 renderer 类型检查通过。Edge 用合成历史按 1.0.0 OpenIM 消息格式重放，修复前展开问候会显示两遍，修复后在桌面和窄窗口各显示一遍。复制得到完整欢迎语，多行提醒可以展开。截图、重放脚本和日志见 `D:/deepseek-agent/.runtime/deepchat-plain-greetings/`。
 
 Windows x64 本机预览 `DeepChat_1.0.1-preview.1.exe` 为 421,758,604 字节，SHA-256 为 `1ad5edce77f7b6684387c13a34e226930c7684458fb82d2bea075a0d817e01fe`，未签署 Authenticode。安装载荷比对通过，解包后的应用通过隔离启动。证据见 `D:/deepseek-agent/.runtime/deepchat-greeting-preview-1.0.1-preview.1/`。公开稳定版为 1.0.0，生产 API 与 worker 为 `ca17f79`、数据库迁移 042。
+
+## 2026-11-27 · DeepChat 1.0.1 正式发布
+
+PR #264 四项检查通过。发布源码 2ea31cc，Windows 安装包与其余三个更新文件的 SHA-256 均与 GitHub Release 一致。解包启动通过，公开安装包下载地址已验证。

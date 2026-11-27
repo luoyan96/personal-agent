@@ -1,5 +1,9 @@
 # 新 AI 接手：当前项目状态
 
+## DeepChat 1.0.1 已发布
+
+Windows 正式版已修复欢迎语和早安的重复展示。线上 API 和 worker 继续使用 1.0.0 的问候投递逻辑。
+
 ## DeepChat 1.0.1-preview.1 · 个人助理问候
 
 首次欢迎语和每日早安在个人助理私聊中各显示一次，包括 1.0.0 已存的消息。带独立摘要的提醒仍可展开。客户端修复 `1b7ceab` 通过 37 项定向回归及 renderer 类型检查。Edge 使用合成 OpenIM 历史，在 1280×760 和 840×720 的窗口验证了显示、复制和提醒展开。截图和日志位于 `D:/deepseek-agent/.runtime/deepchat-plain-greetings/`。
