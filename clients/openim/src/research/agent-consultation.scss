@@ -1,0 +1,43 @@
+.agent-consultation {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  min-width: 0;
+  color: #45576a;
+  font-size: 13px;
+  line-height: 1.55;
+
+  p {
+    margin: 0;
+  }
+}
+
+.agent-consultation-settings {
+  fieldset {
+    border: 0;
+    margin: 0;
+    min-width: 0;
+    padding: 0;
+  }
+
+  legend {
+    color: #171d24;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    padding: 0;
+  }
+
+  .ant-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+.agent-consultation-status {
+  color: #45576a;
+}
+.agent-consultation-feedback {
+  max-width: 100%;
+}

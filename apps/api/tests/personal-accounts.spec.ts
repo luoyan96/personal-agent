@@ -214,18 +214,17 @@ describe('public accounts and owned models over real local HTTP, synthetic crede
   expect(s.db.prepare('SELECT count(*) n FROM chat_turns').get()!.n).toBe(0)
  })
 
- it('uses requester Key and authorized direct memory for a foreign Agent, preserves private owner memory, and produces pure text without arrangements',async()=>{
+ it('uses the requester Key for text consultation and keeps saved memories private',async()=>{
   const s=await setup(),owner=await s.own()
   await s.call('createChatMemory',{scope:'private_agent',scopeId:owner.agent.id,content:'主人私有合成记忆不共享',source:null})
   const created=await s.call('createPersonalAgent',{displayName:'合成专属专家',introduction:'合成介绍',capabilityDescription:'分析合成文字',personality:'简洁、直接'})
   const agent=created.value.data
-  expect((await s.call('requestContact',{}, {id:agent.id},1)).value.data.relationship.status).toBe('pending_outbound')
-  const req=(await s.call('contactRequests')).value.data[0]
-  expect((await s.call('decideContactRequest',{expectedVersion:req.version,decision:'accept'},{id:req.id},2)).status).toBe(404)
-  expect((await s.call('decideContactRequest',{expectedVersion:req.version,decision:'accept'},{id:req.id})).status).toBe(200)
+  expect((await s.call('requestContact',{}, {id:agent.id},1)).status).toBe(403)
+  expect((await s.call('updateAgentConsultation',{expectedVersion:0,mode:'free'},{id:agent.id},2)).status).toBe(403)
+  expect((await s.call('updateAgentConsultation',{expectedVersion:0,mode:'free'},{id:agent.id})).status).toBe(200)
   await s.call('createChatMemory',{scope:'private_agent',scopeId:agent.id,content:'专家主人的私有合成记忆',source:null})
   const direct=(await s.call('createDirectConversation',{contactId:agent.id},{},1)).value.data
-  await s.call('createChatMemory',{scope:'conversation',scopeId:direct.id,content:'该私聊明确保存的共同合成记忆',source:null},{},1)
+  expect((await s.call('createChatMemory',{scope:'conversation',scopeId:direct.id,content:'共同合成记忆',source:null},{},1)).status).toBe(403)
   expect((await s.call('chatConversation',null,{id:direct.id})).status).toBe(404)
   expect((await s.call('chatMemories',null,{},1,`?scope=private_agent&scopeId=${agent.id}`)).status).toBe(404)
   expect((await s.call('createPersonalModel',modelInput('qwen','qwen-plus','synthetic-requester-key'),{},1)).status).toBe(201)
@@ -236,7 +235,7 @@ describe('public accounts and owned models over real local HTTP, synthetic crede
   const worker=new ChatWorker(s.db,s.config,async(input,_signal,credential)=>{
    callCount++;expect(input).toMatchObject({provider:'qwen',model:'qwen-plus'});expect(credential.apiKey).toBe('synthetic-requester-key')
    expect(input.system).toContain('natural private conversation');expect(input.system).not.toContain('Return JSON')
-   expect(input.prompt).toContain('简洁、直接');expect(input.prompt).toContain('共同合成记忆');expect(input.prompt).not.toContain('主人私有');expect(input.prompt).not.toContain('主人的私有')
+   expect(input.prompt).toContain('简洁、直接');expect(input.prompt).not.toMatch(/共同合成记忆|主人私有|主人的私有/)
    return {text:'你好，可以直接聊。',failure:null,inputTokens:900,outputTokens:100,elapsedMs:10}
   })
   expect(await worker.tick()).toBe(true);expect(callCount).toBe(1)
@@ -308,7 +307,7 @@ it('upgrades exact populated015 twice, preserving IFRC accounts, sessions, chat 
  db.prepare('INSERT INTO im_identities(contact_id,lab_id,user_id,updated_at) VALUES (?,?,?,?)').run('contact_member_old_A','lab_ifrc','u_preserved_old',at)
  const prior={accounts:db.prepare('SELECT * FROM auth_accounts').all(),lab:db.prepare('SELECT * FROM labs').all(),key:db.prepare('SELECT * FROM lab_ai_settings').all(),document:db.prepare('SELECT document FROM chat_conversations').get()!.document,identity:db.prepare('SELECT * FROM im_identities').all()}
  migrate(db);migrate(db);checkDatabase(db)
- expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(42)
+ expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(43)
  expect(db.prepare('SELECT * FROM auth_accounts').all()).toEqual(prior.accounts);expect(db.prepare('SELECT * FROM labs').all()).toEqual(prior.lab);expect(db.prepare('SELECT * FROM lab_ai_settings').all()).toEqual(prior.key);expect(db.prepare('SELECT * FROM im_identities').all()).toEqual(prior.identity);expect(db.prepare('SELECT document FROM chat_conversations').get()!.document).toBe(prior.document)
  expect(db.prepare('SELECT relation_key FROM chat_contact_requests').get()!.relation_key).toBe('human:member_old_A:member_old_B')
  expect(db.prepare('SELECT scope_key FROM chat_conversations').get()!.scope_key).toBe('direct:member_old_A:member_old_B')

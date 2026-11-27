@@ -40,9 +40,9 @@ export function ContactRow({
         </p>
       </div>
       <span className="shrink-0 text-xs text-slate-500">
-        {contact.relationship.status === "pending_outbound"
+        {human && contact.relationship.status === "pending_outbound"
           ? "申请中"
-          : contact.relationship.status === "pending_inbound"
+          : human && contact.relationship.status === "pending_inbound"
           ? "待同意"
           : contact.allowedActions.includes("chat")
           ? "查看 · 聊天"

@@ -6,7 +6,7 @@ import ts from "typescript";
 
 // Exercise the actual composer events and asynchronous pump with controlled
 // stores/SDK/API. The document preparation module is also the real source.
-async function fixture({ failOnce = false, agent = true } = {}) {
+async function fixture({ failOnce = false, agent = true, consultation = false } = {}) {
   const state = [],
     refs = [],
     dependencies = [],
@@ -87,6 +87,7 @@ async function fixture({ failOnce = false, agent = true } = {}) {
   };
   const composer = {
     isGroup: false,
+    consultation,
     mentionContacts: [],
     invalid: false,
     prepareResearch: (text) => (agent ? { ...prepared, body: { text } } : undefined),
@@ -331,4 +332,18 @@ test("real Footer file-only message requests one document reading rather than dr
   );
   assert.equal(f.calls[2].request.route, "agentFileMessage");
   assert.equal(f.calls[2].request.body.text, undefined);
+});
+
+test("consultation rejects attachments and sends text only to the canonical Agent endpoint", async () => {
+  const f = await fixture({ consultation: true });
+  f.stage([document()]);
+  assert.equal(f.find((node) => node.type === "Actions").props.textOnly, true);
+  assert.equal(f.find((node) => node.type === "ImageTray"), undefined);
+  assert.match(f.notices[0].msg, /只支持文字/);
+  f.type("Can you explain this method?");
+  f.send();
+  await settle();
+  assert.deepEqual(f.calls.map(({ kind, request }) => [kind, request.route, request.body.text]), [
+    ["api", "agentChatMessage", "Can you explain this method?"],
+  ]);
 });

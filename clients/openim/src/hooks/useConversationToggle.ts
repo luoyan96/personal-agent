@@ -79,7 +79,9 @@ export function useConversationToggle() {
             .getState()
             .contacts.find((c) => c.userID === sourceID)?.contact;
           if (!contact?.allowedActions.includes("chat"))
-            throw new Error("请先添加联系人并获得同意，才能私聊");
+            throw new Error(contact && contact.identity.kind !== "human"
+              ? "此助理当前无法聊天，请重新查看资料。"
+              : "请先添加联系人并获得同意，才能私聊");
           const canonical = (
             await researchApi("createDirectConversation", {
               body: { contactId: contact.id },

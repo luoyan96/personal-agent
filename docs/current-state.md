@@ -1,5 +1,9 @@
 # 新 AI 接手：当前项目状态
 
+## Agent 免费咨询（开发分支）
+
+个人助理与个人创建的 Agent 由主人设置免费联系或暂不开放，默认关闭。访客的文字咨询使用发起人自己的模型，主人关闭后访客仍可查看自己的历史。真人仍走好友申请。契约 0.53.0，数据库迁移 043，尚待生产部署。
+
 ## 官网与 Windows 下载
 
 [产品官网](https://deepchat.acceptcat.com/) 与 [Windows 1.0.3 安装包](https://deepchat.acceptcat.com/download/DeepChat_1.0.3.exe) 使用广州 ECS 的独立静态目录。[原官网地址](https://chat.acceptcat.com/deepchat/) 仍可访问。网站源码位于 `site/deepchat`。发布新版本时需同步已校验的安装包、官网按钮和下载路由。

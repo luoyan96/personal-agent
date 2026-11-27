@@ -102,7 +102,7 @@ export function ContactFinder({
       ))}
       {contacts && !contacts.length && (
         <p className="py-3 text-sm text-slate-500">
-          {kind === 'agents' ? '没有找到可添加的智能体' : '没有找到可添加的联系人'}，请核对 DeepChat 号或名片。
+          {kind === 'agents' ? '没有找到智能体' : '没有找到可添加的联系人'}，请核对 DeepChat 号或名片。
         </p>
       )}
     </div>

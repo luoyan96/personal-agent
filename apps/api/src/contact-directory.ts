@@ -10,8 +10,9 @@ import { isLabManager } from './invite-management.js'
 import { roleCatalogDigest } from './agent-roles.js'
 import { agentDeleted, requireActiveAgent } from './agent-lifecycle.js'
 import { deletionOwner, deletePersonalAgent } from './agent-removal.js'
+import { agentConsultation, consultationAvailability, consultationContact, consultationPolicy, updateAgentConsultation, visitorAgent } from './agent-consultation.js'
 
-export const directoryCommands = ['deletePersonalAgent','importAgentProfile','exportAgentProfile',...connectionCommands,'chatContact','updateContactProfile','createPersonalAgent','requestContact','contactRequests','decideContactRequest','revokeContact','revokeContactRequest','chatMemories','createChatMemory','reviseChatMemory','revokeChatMemory','chatMemoryHistory'] as const
+export const directoryCommands = ['deletePersonalAgent','importAgentProfile','exportAgentProfile',...connectionCommands,'chatContact','agentConsultation','updateAgentConsultation','updateContactProfile','createPersonalAgent','requestContact','contactRequests','decideContactRequest','revokeContact','revokeContactRequest','chatMemories','createChatMemory','reviseChatMemory','revokeChatMemory','chatMemoryHistory'] as const
 export class ContactDirectory {
   constructor(readonly chat: ChatService) {}
   get db() { return this.chat.db }
@@ -42,6 +43,13 @@ export class ContactDirectory {
       value.relationship = this.owns(value) ? { status: 'own', requestId: null, version: 0 } : { status: 'revoked', requestId: null, version: 0 }
       return Contact.parse(value)
     }
+    if (visitorAgent(this.chat, value)) {
+      const free = consultationPolicy(this.chat, id).mode === 'free'
+      value.relationship = { status: 'none', requestId: null, version: 0 }
+      value.allowedActions = free ? ['chat'] : []
+      value.availability = free ? consultationAvailability(this.chat) : { status: 'unavailable', reason: 'owner_authorization_required' }
+      return Contact.parse(value)
+    }
     const own = this.owns(value), relation = own ? undefined : this.relationRow(value)
     value.relationship = own ? {status:'own',requestId:null,version:0} : relation ? { status: relation.status==='pending' ? relation.requester_id===this.actor.id?'pending_outbound':'pending_inbound' : relation.status as 'accepted'|'declined'|'revoked', requestId:String(relation.id),version:Number(relation.version) } : {status:'none',requestId:null,version:0}
     value.allowedActions=[]
@@ -54,6 +62,10 @@ export class ContactDirectory {
     return Contact.parse(externalContact(this.chat,value))
   }
   requireDirect(contact: Contact) { if (!contact.allowedActions.includes('chat')) fail('FORBIDDEN') }
+  requireFriendTransport(contact: Contact) {
+    if (visitorAgent(this.chat, contact)) fail('FORBIDDEN')
+    this.requireDirect(contact)
+  }
   request(id: string): ContactRequest {
     const row=this.db.prepare('SELECT * FROM chat_contact_requests WHERE id=?').get(id)
     if(!row || (row.requester_id!==this.actor.id && row.decider_id!==this.actor.id))fail('NOT_FOUND')
@@ -91,7 +103,8 @@ export class ContactDirectory {
   modelContext(agentId:string,conversationId:string) {
     const agent=this.contact(agentId), conversation=this.chat.conversation(conversationId,false)
     const privateAllowed=agent.identity.kind==='personal_agent' && agent.identity.ownerMemberId===this.actor.id && (conversation.kind==='personal'||conversation.kind==='direct')
-    const rows=this.db.prepare("SELECT id FROM chat_memories WHERE status='active' AND ((scope='conversation' AND scope_id=?) OR (scope='private_agent' AND scope_id=?)) ORDER BY id").all(conversationId,privateAllowed?agentId:'')
+    const consultation = conversation.kind === 'direct' && visitorAgent(this.chat, agent)
+    const rows=consultation?[]:this.db.prepare("SELECT id FROM chat_memories WHERE status='active' AND ((scope='conversation' AND scope_id=?) OR (scope='private_agent' AND scope_id=?)) ORDER BY id").all(conversationId,privateAllowed?agentId:'')
     const agentRows=privateAllowed?this.db.prepare("SELECT * FROM assistant_memories WHERE owner_id=? AND scope='agent' AND subject_id=? AND status='confirmed' ORDER BY id").all(this.actor.id,agentId):[]
     // Legacy private notes stay in chat_memories. New typed/compressed notes
     // retain their own authority, revisions and payload in assistant_memories.
@@ -100,7 +113,7 @@ export class ContactDirectory {
       return {id:String(row.id),scope:'private_agent' as const,scopeId:agentId,topic:String(row.topic),type:String(row.type),content:String(row.detail??payload.text??payload.value??row.summary),source:row.source_label?String(row.source_label):null,status:'active' as const,version:Number(row.version),createdByMemberId:String(row.owner_id),createdAt:String(row.created_at),updatedAt:String(row.updated_at),allowedActions:[]}
     })
     const memories=[...rows.map(row=>this.memory(String(row.id))),...notes].sort((a,b)=>a.id.localeCompare(b.id))
-    const relation=this.relationRow(agent)
+    const relation=consultation?undefined:this.relationRow(agent)
     // Coordinator recommendations depend on the bounded public roster. A changed
     // candidate profile cannot leave an older matching proposal publishable.
     const roster=agent.profile.role==='coordinator'&&conversation.kind==='personal'?this.db.prepare('SELECT id FROM chat_contacts WHERE lab_id=? ORDER BY id').all(this.actor.labId).flatMap(row=>{try{const c=this.contact(String(row.id));return [{id:c.id,version:c.version,profileVersion:c.profile.version}]}catch{return []}}).slice(0,100):null
@@ -111,18 +124,22 @@ export class ContactDirectory {
     if(!(directoryCommands as readonly string[]).includes(name))return false
     const id=req.params.id!
     if(name==='deletePersonalAgent'){deletionOwner(this.chat,id);return true}
+    if(name==='agentConsultation'||name==='updateAgentConsultation'){consultationContact(this.chat,id,name==='updateAgentConsultation');return true}
     if((connectionCommands as readonly string[]).includes(name)||name==='exportAgentProfile'){ownedSpecialist(this.chat,id);return true}
     if(['chatContact','requestContact','revokeContact','updateContactProfile'].includes(name)) {
       if(name!=='chatContact'&&this.contact(id).groupConversationId)fail('GROUP_AGENT_NOT_ALLOWED')
       const contact=this.contact(id); if(name!=='chatContact')requireActiveAgent(this.db,id); if(name==='updateContactProfile'&&!this.mayEdit(contact))fail('FORBIDDEN')
+      if((name==='requestContact'||name==='revokeContact')&&visitorAgent(this.chat,contact))fail('FORBIDDEN')
     } else if(['decideContactRequest','revokeContactRequest'].includes(name)) {
       const request=this.request(id); if(name==='decideContactRequest'&&request.deciderMemberId!==this.actor.id)fail('FORBIDDEN')
+      if(this.chat.baseContact(request.targetContactId).identity.kind==='personal_agent')fail('FORBIDDEN')
     } else if(name==='chatMemories') this.memoryScope(req.query.scope as ChatMemory['scope'],req.query.scopeId!)
     else if(name==='createChatMemory') {const b=req.body as RequestFor<'createChatMemory'>['body'];this.memoryScope(b.scope,b.scopeId,true)}
     else if(['reviseChatMemory','revokeChatMemory','chatMemoryHistory'].includes(name))this.memory(id,name!=='chatMemoryHistory')
     return true
   }
   replay(name:ChatCommand,previous:any) {
+    if(name==='updateAgentConsultation')return {data:agentConsultation(this.chat,previous.data.contactId)}
     if(name==='importAgentProfile')return {data:{...previous.data,contact:this.contact(previous.data.contact.id),conversation:this.chat.conversation(previous.data.conversation.id)}}
     if(['chatContact','requestContact','revokeContact','updateContactProfile','createPersonalAgent'].includes(name)) return {data:this.contact(previous.data.id)}
     if(['decideContactRequest','revokeContactRequest'].includes(name))return {data:this.request(previous.data.id)}
@@ -144,6 +161,8 @@ export class ContactDirectory {
       return {data:{contact,conversation,reused:!!old,mode:'profile_only'}}
     }
     if(name==='chatContact')return {data:this.contact(id)}
+    if(name==='agentConsultation')return {data:agentConsultation(this.chat,id)}
+    if(name==='updateAgentConsultation')return {data:updateAgentConsultation(this.chat,id,b as RequestFor<'updateAgentConsultation'>['body'])}
     if(name==='updateContactProfile') {
       const contact=this.contact(id),body=b as RequestFor<'updateContactProfile'>['body'];this.chat.c.checkVersion(contact.profile.version,body.expectedVersion)
       if(contact.identity.kind==='human')this.db.prepare('UPDATE members SET display_name=?,version=version+1 WHERE id=?').run(body.displayName,this.actor.id)
@@ -159,6 +178,7 @@ export class ContactDirectory {
     }
     if(name==='requestContact') {
       const contact=this.contact(id);if(this.owns(contact))return {data:contact}
+      if(visitorAgent(this.chat,contact))fail('FORBIDDEN')
       const old=this.relationRow(contact);if(old&&['pending','accepted'].includes(String(old.status)))return {data:contact}
       if(contact.identity.kind==='public_agent'&&this.chat.ai.capability()?.status!=='available')fail('CAPABILITY_UNAVAILABLE')
       const now=instant(),status=contact.identity.kind==='public_agent'?'accepted':'pending',owner=contact.identity.kind==='human'?contact.identity.memberId:contact.identity.ownerMemberId
@@ -167,8 +187,8 @@ export class ContactDirectory {
       return {data:this.contact(id)}
     }
     if(name==='contactRequests') {
-      const rows=this.db.prepare('SELECT id FROM chat_contact_requests WHERE (requester_id=? OR decider_id=?) ORDER BY created_at DESC,id DESC').all(this.actor.id,this.actor.id).map(row=>String(row.id))
-      const project=(id:string)=>{const r=this.request(id);if((req.query.status!=='all'&&r.status!=='pending')||(req.query.direction!=='all'&&(req.query.direction==='incoming'?r.deciderMemberId!==this.actor.id:r.requesterMemberId!==this.actor.id)))fail('NOT_FOUND');return r}
+      const rows=this.db.prepare('SELECT r.id FROM chat_contact_requests r JOIN chat_contacts c ON c.id=r.target_contact_id WHERE (r.requester_id=? OR r.decider_id=?) AND c.kind<>\'personal_agent\' ORDER BY r.created_at DESC,r.id DESC').all(this.actor.id,this.actor.id).map(row=>String(row.id))
+      const project=(id:string)=>{const r=this.request(id);if(this.chat.baseContact(r.targetContactId).identity.kind==='personal_agent'||(req.query.status!=='all'&&r.status!=='pending')||(req.query.direction!=='all'&&(req.query.direction==='incoming'?r.deciderMemberId!==this.actor.id:r.requesterMemberId!==this.actor.id)))fail('NOT_FOUND');return r}
       return this.chat.page(name,req.query,rows,project)
     }
     if(name==='decideContactRequest') {

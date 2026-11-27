@@ -2,6 +2,8 @@
 
 Contract0.17 / chat1.6. Every response has the ordinary `{data:...}` wrapper.
 
+As of contract 0.53, external connections are available to the specialist's owner. Visitors can use free text consultation when the owner enables it, using the visitor's own default model. `allowAcceptedContacts` remains in the owner connection schema for compatibility. The old caller rules below describe the original 0.17 behavior.
+
 - `importAgentProfile`: POST `/api/v1/chat/agents/import`, body `{format:"research-agent-profile/v1",profile:{displayName,introduction,capabilityDescription,personality}}`; response `{data:{contact,conversation,reused,mode:"profile_only"}}`. Public profile only: no credential, memory, endpoint, tool or execution authority. Exactly matching owned local specialists may be reused. The canonical direct is already saved; IM readiness is a separate bridge operation.
 - `exportAgentProfile`: GET `/api/v1/chat/agents/{id}/export`; owner specialist only, response `{data:{format,profile}}`.
 - `agentConnection`: GET `/api/v1/chat/agents/{id}/connection`; owner specialist only, `{data:{connection:null|AgentConnection,version:0|number,lastProbe:null|AgentConnectionProbe}}`.

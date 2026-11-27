@@ -24,11 +24,13 @@ const emojis = [
 ];
 const SendActionBar = ({
   insertEmoji,
+  textOnly = false,
   stageFiles,
   stageImages,
   pasteImages,
 }: {
   insertEmoji: (emoji: string) => void;
+  textOnly?: boolean;
   stageFiles: (files: File[]) => void;
   stageImages: (files: File[]) => void;
   pasteImages: () => void;
@@ -67,38 +69,42 @@ const SendActionBar = ({
             <SmileOutlined />
           </button>
         </Popover>
-        <button
-          type="button"
-          className="chat-tool-button"
-          aria-label="添加附件"
-          title="添加图片或文件"
-          onClick={() => {
-            intent.current?.dispose();
-            intent.current = capture();
-            input.current?.click();
-          }}
-        >
-          <FolderOpenOutlined />
-        </button>
-        <input
-          ref={input}
-          type="file"
-          multiple
-          hidden
-          aria-label="选择聊天附件"
-          onChange={(event) => {
-            const files = Array.from(event.currentTarget.files || []);
-            event.currentTarget.value = "";
-            const operation = intent.current;
-            intent.current = undefined;
-            try {
-              if (operation?.isCurrent()) stageFiles(files);
-            } finally {
-              operation?.dispose();
-            }
-          }}
-        />
-        <ScreenshotAction stageImages={stageImages} pasteImages={pasteImages} />
+        {!textOnly && (
+          <>
+            <button
+              type="button"
+              className="chat-tool-button"
+              aria-label="添加附件"
+              title="添加图片或文件"
+              onClick={() => {
+                intent.current?.dispose();
+                intent.current = capture();
+                input.current?.click();
+              }}
+            >
+              <FolderOpenOutlined />
+            </button>
+            <input
+              ref={input}
+              type="file"
+              multiple
+              hidden
+              aria-label="选择聊天附件"
+              onChange={(event) => {
+                const files = Array.from(event.currentTarget.files || []);
+                event.currentTarget.value = "";
+                const operation = intent.current;
+                intent.current = undefined;
+                try {
+                  if (operation?.isCurrent()) stageFiles(files);
+                } finally {
+                  operation?.dispose();
+                }
+              }}
+            />
+            <ScreenshotAction stageImages={stageImages} pasteImages={pasteImages} />
+          </>
+        )}
       </div>
     </div>
   );

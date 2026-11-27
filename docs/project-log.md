@@ -3534,3 +3534,7 @@ PR #268 四项 CI 通过。Windows x64 正式包已公开发布，四个发布�
 ## 2026-11-27 · DeepChat 官网独立域名
 
 README 和当前状态改用 [产品官网](https://deepchat.acceptcat.com/) 与 [Windows 1.0.3 安装包](https://deepchat.acceptcat.com/download/DeepChat_1.0.3.exe) 的独立域名链接。广州 ECS 验证了新域名的 DNS、HTTPS 和下载安装包的范围请求。新地址返回的安装包大小为 421,760,272 字节，与 GitHub Release 一致。[原官网地址](https://chat.acceptcat.com/deepchat/) 返回 HTTP 200。
+
+## 2026-11-28 个人 Agent 免费咨询
+
+从主线 5ab8056 分支实现主人开关与访客直接文字咨询。迁移 043 终止旧的个人 Agent 好友授权，保留真人关系和历史。桌面通讯录、共享名片与主人设置对接服务端策略。支付与积分登记在路线图。开发验证使用测试账户和模拟模型，生产环境待部署。

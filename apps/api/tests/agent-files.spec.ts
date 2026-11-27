@@ -167,14 +167,16 @@ describe('Agent file reading: real HTTP/SQLite/parser, synthetic model only',{ti
   expect((await s.call('agentFileMessage',uploadBody(),{id:a.conversation.id},1)).status).toBe(404)
   expect((await s.call('chatTurn',null,{id:sent.value.data.turn.id},1)).status).toBe(404)
   expect((await s.call('agentChatMessage',{text:'read',fileSelection:{messageId:sent.value.data.message.id}},{id:b.conversation.id},1)).status).toBe(404)
-  const request=(await s.call('requestContact',{}, {id:a.agent.id},1)).value.data.relationship
-  await s.call('decideContactRequest',{expectedVersion:request.version,decision:'accept'},{id:request.requestId})
+  expect((await s.call('updateAgentConsultation',{expectedVersion:0,mode:'free'},{id:a.agent.id})).status).toBe(200)
   const direct=(await s.call('createDirectConversation',{contactId:a.agent.id},{},1)).value.data
-  const uploaded=await s.call('agentFileMessage',uploadBody(Buffer.from('REQUESTER_FILE'),'mine.csv','text/csv'),{id:direct.id},1);expect(uploaded.status,uploaded.text).toBe(201)
-  await s.tick(async(input,_signal,credential)=>{expect(credential.apiKey).toBe('synthetic-owner-1-only');expect(input.prompt).toContain('REQUESTER_FILE');expect(input.prompt).not.toContain('OWNER_ONLY_MEMORY');expect(input.prompt).not.toContain('PRIVATE_FILE_MARKER');return result()})
+  const uploaded=await s.call('agentFileMessage',uploadBody(Buffer.from('REQUESTER_FILE'),'mine.csv','text/csv'),{id:direct.id},1);expect(uploaded.status,uploaded.text).toBe(403)
+  const asked=await s.call('agentChatMessage',{text:'REQUESTER_TEXT'},{id:direct.id},1);expect(asked.status,asked.text).toBe(201)
+  expect(await s.tick(async(input,_signal,credential)=>{expect(credential.apiKey).toBe('synthetic-owner-1-only');expect(input.prompt).toContain('REQUESTER_TEXT');expect(input.prompt).not.toMatch(/OWNER_ONLY_MEMORY|PRIVATE_FILE_MARKER|REQUESTER_FILE/);return result()})).toBe(true)
+  expect((await s.turn(asked.value.data.turn.id,1)).status).toBe('succeeded')
   expect((await s.call('chatMessages',null,{id:direct.id},0)).status).toBe(404)
-  expect((await s.call('agentChatMessage',{text:'read',fileSelection:{messageId:sent.value.data.message.id}},{id:direct.id},1)).status).toBe(404)
-  await s.call('revokeContactRequest',{expectedVersion:request.version+1},{id:request.requestId});expect((await s.call('agentFileMessage',uploadBody(Buffer.from('REQUESTER_FILE'),'mine.csv','text/csv'),{id:direct.id},1)).status).toBe(404)
+  expect((await s.call('agentChatMessage',{text:'read',fileSelection:{messageId:sent.value.data.message.id}},{id:direct.id},1)).status).toBe(403)
+  expect((await s.call('updateAgentConsultation',{expectedVersion:1,mode:'closed'},{id:a.agent.id})).status).toBe(200)
+  expect((await s.call('agentFileMessage',uploadBody(),{id:direct.id},1)).status).toBe(403)
  })
  it('reauthorizes after real parsing, leaves no records on logout, and fences cancelled late model output',async()=>{
   const s=await setup(),own=await s.own(),original=files.extractAgentFile
