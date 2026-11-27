@@ -66,14 +66,30 @@ const collectOutput = (stream, destination) => {
 collectOutput(child.stdout, process.stdout);
 collectOutput(child.stderr, process.stderr);
 
-const delay = (milliseconds) =>
-  new Promise((resolve) => setTimeout(resolve, milliseconds));
+// A newly extracted Windows build can take longer to load its native SDK and
+// start Chromium. The smoke test still waits for the app's readiness receipt.
+const startupTimeoutMs = process.platform === "win32" ? 45_000 : 15_000;
+const untilDeadline = async (promises, milliseconds, result) => {
+  let deadline;
+  try {
+    return await Promise.race([
+      ...promises,
+      new Promise((resolve) => {
+        deadline = setTimeout(() => resolve(result), milliseconds);
+      }),
+    ]);
+  } finally {
+    clearTimeout(deadline);
+  }
+};
 const exitPromise = new Promise((resolve) => {
   child.once("exit", (code, signal) => resolve({ type: "exit", code, signal }));
 });
 const errorPromise = new Promise((resolve) => {
   child.once("error", (error) => resolve({ type: "error", error }));
 });
+const progress = new Map();
+let poll;
 const readyPromise = new Promise((resolve) => {
   const inspect = () => {
     if (output.includes("OPENIM_ELECTRON_READY")) {
@@ -82,7 +98,7 @@ const readyPromise = new Promise((resolve) => {
   };
   child.stdout.on("data", inspect);
   child.stderr.on("data", inspect);
-  const poll = setInterval(() => {
+  poll = setInterval(() => {
     if (!existsSync(resultPath)) return;
     let value;
     try {
@@ -96,7 +112,10 @@ const readyPromise = new Promise((resolve) => {
       resolve({ type: "failed" });
       return;
     }
-    if (value.phase === "loading") return;
+    if (value.phase === "loading") {
+      progress.set(value.stage, value.at);
+      return;
+    }
     clearInterval(poll);
     if (value.phase === "ready") resolve({ type: "ready" });
     else {
@@ -104,41 +123,38 @@ const readyPromise = new Promise((resolve) => {
       resolve({ type: "failed" });
     }
   }, 100);
-  child.once("exit", () => clearInterval(poll));
 });
 
 const stopChild = async () => {
-  if (child.exitCode !== null || child.signalCode !== null) return;
+  if (!child.pid || child.exitCode !== null || child.signalCode !== null) return;
   child.kill("SIGTERM");
-  await Promise.race([exitPromise, delay(3000)]);
+  await untilDeadline([exitPromise], 3000);
   if (child.exitCode === null && child.signalCode === null) {
     child.kill("SIGKILL");
-    await Promise.race([exitPromise, delay(3000)]);
+    await untilDeadline([exitPromise], 3000);
   }
 };
 
 try {
-  const startupResult = await Promise.race([
-    readyPromise,
-    exitPromise,
-    errorPromise,
-    delay(15000).then(() => ({ type: "timeout" })),
-  ]);
+  const startupResult = await untilDeadline(
+    [readyPromise, exitPromise, errorPromise],
+    startupTimeoutMs,
+    { type: "timeout" },
+  );
   if (startupResult.type !== "ready") {
+    const stages = Array.from(progress, ([stage, at]) => `${at} ${stage}`);
     throw new Error(
       `Packaged Electron app failed startup smoke test (${startupResult.type})\n${
         existsSync(resultPath)
           ? readFileSync(resultPath, "utf8")
           : "No bootstrap receipt"
-      }\n${output}`,
+      }\n${stages.join("\n")}\n${output}`,
     );
   }
 
-  const stabilizationResult = await Promise.race([
-    exitPromise,
-    errorPromise,
-    delay(2000).then(() => ({ type: "stable" })),
-  ]);
+  const stabilizationResult = await untilDeadline([exitPromise, errorPromise], 2000, {
+    type: "stable",
+  });
   if (stabilizationResult.type !== "stable") {
     throw new Error(
       `Packaged Electron app exited during startup (${stabilizationResult.type})\n${output}`,
@@ -160,6 +176,7 @@ try {
     );
   console.log("Packaged Electron startup smoke test passed");
 } finally {
+  clearInterval(poll);
   await stopChild();
   if (
     path.dirname(path.resolve(userDataPath)) !== path.resolve(os.tmpdir()) ||
