@@ -1,6 +1,32 @@
-import { app, Menu } from "electron";
+import { app, BrowserWindow, Menu } from "electron";
 import { t } from "i18next";
 import { isMac } from "../utils";
+
+export function registerEditableContextMenu() {
+  app.on("web-contents-created", (_event, contents) => {
+    contents.on("context-menu", (_event, params) => {
+      const { frame, isEditable, editFlags, menuSourceType } = params;
+      if (!isEditable || !frame) return;
+
+      const window = BrowserWindow.fromWebContents(
+        contents.hostWebContents ?? contents,
+      );
+      if (!window) return;
+
+      Menu.buildFromTemplate([
+        {
+          label: t("system.paste"),
+          enabled: editFlags.canPaste,
+          click: () => {
+            // Dispatch Chromium's paste event in the clicked view, including rich editors.
+            if (!contents.isDestroyed() && contents.focusedFrame === frame)
+              contents.paste();
+          },
+        },
+      ]).popup({ window, frame, sourceType: menuSourceType });
+    });
+  });
+}
 
 const createAppMenu = () => {
   if (isMac) {

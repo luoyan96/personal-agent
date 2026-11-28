@@ -4,8 +4,8 @@ import { createMainWindow } from "./windowManage";
 import { createTray } from "./trayManage";
 import { setIpcMainListener } from "./ipcHandlerManage";
 import { setAppGlobalData, setAppListener, setSingleInstance } from "./appManage";
-import createAppMenu from "./menuManage";
-import { isLinux } from "../utils";
+import createAppMenu, { registerEditableContextMenu } from "./menuManage";
+import { isLinux, isWin } from "../utils";
 import { getLogger } from "../utils/log";
 import { initI18n } from "../i18n";
 import { smokeProgress } from "../utils/smoke";
@@ -28,6 +28,7 @@ setAppGlobalData();
 setIpcMainListener();
 setSingleInstance();
 setAppListener(init);
+if (isWin) registerEditableContextMenu();
 
 app.whenReady().then(() => {
   isLinux ? setTimeout(init, 300) : init();
