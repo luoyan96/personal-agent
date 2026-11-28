@@ -1,5 +1,9 @@
 # 来源与许可说明
 
+## 2026-11-28 科研同伴交流
+
+SurfCore 的分层人设、对话收尾和情境贴图仅作设计参考。DeepChat 的角色文字、会话关系规则与贴图提示自行编写，代码、角色文本、资产和依赖均未从 SurfCore 迁入。[参考版本与采用范围](docs/migration.md#surfcore-交流设计参考)
+
 ## 2026-10-28：任务工作页
 
 0.10.68 使用上述同日固定 DSH 0.2.1-rc.3 发行包的公开 session/workspace Remote API，接口依据为该发行树中的 api-session-controller/api-workspace-controller 说明及类型元数据。AcceptCat 的任务 UI、绑定、权限与回执适配自行编写，不复制上游控制器实现、图标或 luanyujia-workbench 的代码/规则。上游完整许可随既有内置发行树保留；没有新增第三方运行依赖。[接口与验证记录](docs/development/dsh-task-workspace.md)。

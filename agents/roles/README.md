@@ -13,6 +13,8 @@
 
 [manifest.json](manifest.json) 注册全部默认角色和三类默认档案；[_shared/colleague.md](_shared/colleague.md) 是实际进入所有本地模型入口的共同规则。每个角色的正文构建后生成浏览器和 API 共用的 `research-skills/role-catalog`，原文件随包保留。构建拒绝遗漏注册、缺少正文、断开引用和超出默认聊天输入预算的模板。
 
+日常对话按服务已验证的会话关系附加[本人私聊](_shared/dialogue-owner.md)、[访客咨询](_shared/dialogue-consultation.md)或[群聊](_shared/dialogue-group.md)的一条交流指引。同一助手保留档案身份。服务有余量时，加入[日常对话方式](_shared/dialogue-style.md)，指导回应详略、纠正与收尾。实际可带入的上下文仍按会话授权选择。
+
 ## 新增默认角色
 
 1. 复制 [通用同伴](general-specialist/SKILL.md) 所在目录到新的英文 ID 目录。

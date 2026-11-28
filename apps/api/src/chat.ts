@@ -1,4 +1,5 @@
 import { enqueueFeedback } from './feedback-queue.js'
+import { assistantProactiveSettings } from './assistant-greetings.js'
 import { checkIntakeOutputRecovery } from './intake-output-recovery.js'
 import { checkProjectExecution,projectMessageNotice,type ProjectExecution } from './assistant-project-actions.js'
 import {PeerLibraryService} from './peer-library.js'
@@ -13,8 +14,9 @@ import { ResearchLibraryService } from './research-library.js'
 import type { ResearchContextSnapshot, ResearchReadReceipt } from '@research-agent-platform/contracts'
 import { randomUUID, createHmac } from 'node:crypto'
 import { z } from 'zod'
-import { Contact, Conversation, ConversationMember, ConversationViewerState, ChatMessage, ChatAction, ChatActionPayload, AgentTurn, SendChatMessage, ChatResource, routes, chatRoutes, agentIntegrationRoutes, personalAssistantRoutes, assistantMemoryRoutes, assistantTopicRoutes, workspaceRoutes } from '@research-agent-platform/contracts'
+import { Contact, Conversation, ConversationMember, ConversationViewerState, ChatMessage, ChatAction, ChatActionPayload, AgentTurn, SendChatMessage, ChatResource, routes, chatRoutes, agentIntegrationRoutes, personalAssistantRoutes, assistantMemoryRoutes, assistantRelationshipMemoryRoutes, assistantTopicRoutes, workspaceRoutes } from '@research-agent-platform/contracts'
 import { assistantMemoryCommands, assistantMemoryReplay, authorizeAssistantMemory, handleAssistantMemory } from './assistant-memories.js'
+import { listRelationshipMemories, relationshipLearningVersion, relationshipMemoryReceipt, relationshipSourcesCurrent, topicRelationshipSourcesCurrent, updateRelationshipMemory } from './assistant-relationship-memory.js'
 import { assistantTopicCommands, assistantTopicReplay, authorizeAssistantTopic, handleAssistantTopic } from './assistant-topics.js'
 import type { RequestFor } from '@research-agent-platform/contracts'
 import { Collaboration } from './collaboration.js'
@@ -42,7 +44,7 @@ import type { ContinuousInput } from './continuous-chat.js'
 import {dialogueSourcesCurrent,taskSourcesCurrent,type DialogueSelection} from './dialogue-context.js'
 import {workspaceCommands,workspaceAuthorize,workspaceHandle,workspaceReplay,isSocialGroup,socialContactAllowed,checkWorkTurn,personalWork,socialWorkContext,recordSocialWorkTurn} from './workspace.js'
 
-export type ChatCommand = keyof typeof chatRoutes | keyof typeof agentIntegrationRoutes | keyof typeof personalAssistantRoutes | keyof typeof assistantMemoryRoutes | keyof typeof assistantTopicRoutes | keyof typeof workspaceRoutes | 'imCreateGroup' | 'imInviteContact'
+export type ChatCommand = keyof typeof chatRoutes | keyof typeof agentIntegrationRoutes | keyof typeof personalAssistantRoutes | keyof typeof assistantMemoryRoutes | keyof typeof assistantRelationshipMemoryRoutes | keyof typeof assistantTopicRoutes | keyof typeof workspaceRoutes | 'imCreateGroup' | 'imInviteContact'
 type Resource = z.infer<typeof ChatResource>
 export type TurnInput = DialogueSelection & { consultationVersion?:number; projectExecution?:ProjectExecution; intakeOutputLimitRecovery?:{previousTurnId:string}; librarySnapshot?:ResearchContextSnapshot; libraryRead?:ResearchReadReceipt; skill?:SkillCall; workTaskId?:string; workTaskVersion?:number; scheduledFollowupId?:string; scheduledRunId?:string; continuous?:ContinuousInput; budget: { maxTokens: number; maxSeconds: number }; context: Resource[]; conversationVersion: number; inputSequence: number; agentContextFingerprint?: string; modelSelectionFingerprint?:string; dailyChat?:boolean; personalAssistant?:boolean; assistantMode?:'coordinate'; assistantProjectEntry?:boolean; projectEntryInventory?:{specialistIds:string[];humanIds:string[];messageIds:string[];fileMessageIds:string[];taskIds:string[];projects:{id:string;commitmentIds:string[]}[]}; delegatedByTurnId?:string; personalMemoryFingerprint?:string; assistantDirectoryFingerprint?:string; assistantReceipt?:AgentTurn['assistantReceipt'];memoryReceipt?:AgentTurn['memoryReceipt'];followupReceipt?:AgentTurn['followupReceipt']; externalConsent?:boolean; externalAgent?:boolean; externalConnectionVersion?:number; purpose?:'create_agent'; createdAgent?:AgentTurn['createdAgent']; creationFailure?:'AGENT_LIMIT_REACHED'; assistantFailure?:'AGENT_LIMIT_REACHED'; fileDocument?:FileDocument; fileSource?:AgentFileSelection; fileRead?:AgentTurn['fileRead']; modelInputDiagnostic?:{budgetMaxTokens:number;inputTokenBound:number;maxOutputTokens:number;admitted:boolean}; modelOutputDiagnostic?:{stage:string;returnedTextLength:number;trimEmpty:boolean;maxOutputTokens:number;reasoningEffort:string;finishReason?:string;failure?:string;errorCategory?:string} }
 export type ChatRequest = { params: { id?: string; contactId?: string; messageId?: string; noticeId?:string }; query: { known?: string; cursor?: string; limit?: number; search?: string; afterSequence?: number; category?: 'all'|'ongoing'|'awaiting_me'|'completed'|'scheduled'; kind?: 'all'|'human'|'agent'; view?: 'directory'|'mine'|'public'; direction?: 'all'|'incoming'|'outgoing'; status?: 'all'|'pending'|'confirmed'|'candidate'|'revoked'|'active'|'paused'|'completed'|'cancelled'; scope?: 'private_agent'|'conversation'|'local'|'global'|'personal'|'agent'; scopeId?: string; subjectId?: string; assistantId?: string; state?: 'active'|'paused'|'closed'|'all' }; headers: { 'Idempotency-Key'?: string }; body: unknown }
@@ -249,6 +251,8 @@ export class ChatService {
     if(input.skill&&(input.purpose||input.assistantMode||input.personalAssistant))fail('VERSION_CONFLICT')
     if(exact&&input.dialogueSources&&!dialogueSourcesCurrent(this,input.dialogueSources))fail('VERSION_CONFLICT')
     if(exact&&input.dialogueTaskSources&&!taskSourcesCurrent(this,input.dialogueTaskSources))fail('VERSION_CONFLICT')
+    if(exact&&input.relationshipMemorySources&&!relationshipSourcesCurrent(this,input.relationshipMemorySources))fail('VERSION_CONFLICT')
+    if(exact&&input.relationshipTopicIds?.some(id=>!topicRelationshipSourcesCurrent(this,id)))fail('VERSION_CONFLICT')
     checkWorkTurn(this,input,exact)
     checkProjectExecution(this,turnId,input,exact)
     checkIntakeOutputRecovery(this,turnId,input)
@@ -507,6 +511,7 @@ export class ChatService {
     const model = personalModelRuntime(this.db,this.c.actor,this.config)
     input.modelSelectionFingerprint=consultation?model.fingerprint:chatModelFingerprint(this,agentId,model.fingerprint)
     if(connection?.configured===1){input.externalAgent=true;input.externalConnectionVersion=connection.version}
+    if(!root&&message.origin==='human')input.relationshipLearningVersion=relationshipLearningVersion(this,group,agentId,input)
     input.librarySnapshot=captureResearchSnapshot(this,agent,group,input);delete input.libraryRead
     if(root&&this.db.prepare("SELECT 1 FROM chat_turns WHERE root_id=? AND status IN ('queued','running','waiting_input')").get(root))fail('INVALID_STATE')
     if (Number(this.db.prepare("SELECT count(*) n FROM chat_turns WHERE owner_id=? AND status IN ('queued','running')").get(this.c.actor.id)!.n) >= 5) fail('RATE_LIMITED')
@@ -539,6 +544,7 @@ export class ChatService {
   cursorMac(value: string) { return createHmac('sha256', signingKey(this.db)).update(`chat:${value}`).digest('hex') }
   authorize(name: ChatCommand, req: Request) {
     if(authorizeGroupCommand(this,name,req))return
+    if(name==='updateAssistantRelationshipMemory'){relationshipMemoryReceipt(this,req.params.id!);return}
     if((assistantMemoryCommands as readonly string[]).includes(name)){authorizeAssistantMemory(this,name,req);return}
     if((assistantTopicCommands as readonly string[]).includes(name)){authorizeAssistantTopic(this,name,req);return}
     if(workspaceAuthorize(this,name,req))return
@@ -563,13 +569,14 @@ export class ChatService {
     if (cached) {
       if (cached.request_hash !== fingerprint) fail('IDEMPOTENCY_CONFLICT')
       const previous = decode(cached.response_json)
+      if(name==='updateAssistantRelationshipMemory')return route.response.parse(relationshipMemoryReceipt(this,req.params.id!))
       if(name==='withdrawChatMessage')return {data:chatMessageDetails(this,req.params.id!,req.params.messageId!)}
       if(name==='updateGroupLab')return {data:this.conversation(req.params.id!)}
       if(name==='withdrawGroupNotice')return handleGroupCommand(this,name,req)
       const workspaceResponse=workspaceReplay(this,name,previous);if(workspaceResponse)return route.response.parse(workspaceResponse)
       if((assistantMemoryCommands as readonly string[]).includes(name))return route.response.parse(assistantMemoryReplay(this,name,previous))
       if((assistantTopicCommands as readonly string[]).includes(name))return route.response.parse(assistantTopicReplay(this,name,previous))
-      if(personalCommands.includes(name)){if(name==='updatePersonalMemorySettings')return route.response.parse({data:memorySettings(this)});return route.response.parse({data:name.toLowerCase().includes('followup')?followup(this,previous.data.id):memory(this,previous.data.id)})}
+      if(personalCommands.includes(name)){if(name==='updatePersonalMemorySettings')return route.response.parse({data:memorySettings(this)});if(name==='updateAssistantProactiveSettings')return route.response.parse({data:assistantProactiveSettings(this.db,this.c.actor.id)});return route.response.parse({data:name.toLowerCase().includes('followup')?followup(this,previous.data.id):memory(this,previous.data.id)})}
       if(['updateAgentConnection','disconnectAgentConnection'].includes(name))return route.response.parse({data:connectionStateForReplay(this,req.params.id!)})
       const directoryReplay=this.directory.replay(name,previous);if(directoryReplay)return route.response.parse(directoryReplay)
       if (name === 'sendChatMessage'||name==='agentChatMessage'||name==='agentFileMessage') {const message=this.projectedMessage(previous.data.message.id);return route.response.parse({ data: { message, turn: message.turnId ? this.turn(message.turnId) : null,...(previous.data.turns?{turns:previous.data.turns.map((turn:{id:string})=>this.turn(turn.id))}:{}) } })}
@@ -586,6 +593,8 @@ export class ChatService {
     return response
   }
   handle(name: ChatCommand, req: Request, parsedFile?:ParsedAgentFile): unknown {
+    if(name==='assistantRelationshipMemories')return listRelationshipMemories(this,req)
+    if(name==='updateAssistantRelationshipMemory')return updateRelationshipMemory(this,req)
     if((assistantMemoryCommands as readonly string[]).includes(name))return handleAssistantMemory(this,name,req)
     if((assistantTopicCommands as readonly string[]).includes(name))return handleAssistantTopic(this,name,req)
     const governed=handleGroupCommand(this,name,req);if(governed)return governed
@@ -771,6 +780,8 @@ export class ChatService {
         nextInput.assistantMode=!skill&&!nextInput.continuous.structuredSuppressed&&!nextInput.purpose&&!fileSource&&group.kind==='personal'&&agent?.profile.role==='coordinator'&&personalWorkRequest(combined)?'coordinate':undefined
         nextInput.assistantProjectEntry=nextInput.assistantProjectEntry&&!nextInput.purpose&&!nextInput.continuous.structuredSuppressed||undefined
         nextInput.personalAssistant=nextInput.assistantMode==='coordinate'||undefined
+        const relationshipVersion=relationshipLearningVersion(this,group,input.agentContactId!,nextInput)
+        if(relationshipVersion===previous.relationshipLearningVersion)nextInput.relationshipLearningVersion=relationshipVersion
         nextInput.personalMemoryFingerprint=personalMemoryContext(this,agent!,group,combined).fingerprint||undefined
         nextInput.agentContextFingerprint=this.directory.modelContext(input.agentContactId!,group.id).fingerprint
         const model = personalModelRuntime(this.db,this.c.actor,this.config)

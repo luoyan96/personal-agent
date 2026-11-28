@@ -35,7 +35,9 @@ import {intakeRecoverySystem,queueIntakeOutputRecovery} from './intake-output-re
 import { assistantStickerSystem, readAssistantStickerReply } from './assistant-sticker.js'
 import {createWork,recordAssistantAnswerWork} from './workspace.js'
 import {recentDialogue,olderDialogue,dialogueTaskState,packDialogueLayers,saveDialogueSelection,dialogueSources,memoryContextSources,dialogueContextSystem,type DialogueLayers} from './dialogue-context.js'
+import { fitRelationshipContext, relationshipTurn } from './assistant-relationship-memory.js'
 import { modelAgentProfile } from './agent-roles.js'
+import { conversationDialoguePolicy, conversationDialogueStyle } from './conversation-policy.js'
 import { isDatabaseBusy, waitForWorkerDatabase } from './worker-database.js'
 
 // Local model protocol: validated JSON, no model-side tools or business authority.
@@ -62,9 +64,6 @@ export function reconcileChat(db: DatabaseSync, config: Config) {
     }
   }
 }
-// Re-evaluate conversational style from the dialogue actually selected for this turn.
-const dialogueStyle = 'Adapt reply length, tone and approach to the sender’s latest feedback.'
-
 function topicMemoryTurn(input: TurnInput) {
   return input.dailyChat && !input.externalConsent && !input.fileSource && !input.skill &&
     !input.purpose && !input.scheduledFollowupId && !input.assistantMode &&
@@ -133,7 +132,7 @@ export class ChatWorker {
         if(personal.records.length||agentContext.memories.length)console.log(`CHAT_MEMORY conversation=${group.id} ${lifecycleReceipt({preference:personal.records.length+agentContext.memories.length,turn:1})} omitted=${personal.omitted}`)
         const required=new Set(input.continuous?.messageIds??[turn.inputMessageId]),recent=recentDialogue(s,group.id,input.inputSequence,[...required]),notes=olderDialogue(s,group.id,input.inputSequence,recent,current),tasks=dialogueTaskState(s,group,current)
         let layers:DialogueLayers={messages:[],notes:{method:'source_quotes',scope:'current_conversation',summary:[],recalled:[]},tasks:[]}
-        system=personalAssistantSystem+'\n'+dialogueStyle+(complex?'\nComplex work: JSON {kind:"team",title:string,contactIds:[listed_ID]}. Save only a proposal. Owner confirms group creation; humans and Agent owners accept independently. No automatic execution or material sharing.':'')
+        system=personalAssistantSystem+'\n'+conversationDialoguePolicy.owner+(complex?'\nComplex work: JSON {kind:"team",title:string,contactIds:[listed_ID]}. Save only a proposal. Owner confirms group creation; humans and Agent owners accept independently. No automatic execution or material sharing.':'')
         if(input.assistantProjectEntry)system+='\n'+assistantProjectCompactSystem
         system+=rulesSuffix
         const baseSystem=system,contextSystem=(selection:DialogueLayers)=>baseSystem+projectDecisionSuffix()+(selection.notes.summary.length||selection.notes.recalled.length||selection.tasks.length?'\n'+dialogueContextSystem:'\nAnswer currentRequest only; forwarded names may differ from the sender.')
@@ -186,8 +185,8 @@ export class ChatWorker {
       const contactColumns=['id','displayName','identity','availability','profile']
       const selectedTasks=input.context.filter(ref=>ref.kind==='task').map(ref=>s.c.task(ref.ref.id))
       system=group.kind==='group'?groupAssistantSystem:input.dailyChat?dailyChatSystem:chatModelSystem({group:group.kind==='personal'&&agentContext.agent.profile.role==='coordinator',inviteContact:false,inviteTask:false,runTask:false})
-      if (input.dailyChat && !input.scheduledFollowupId) {
-        system += '\n' + dialogueStyle
+      if (input.dailyChat && group.kind!=='group' && !input.scheduledFollowupId) {
+        system += '\n' + (input.consultationVersion ? conversationDialoguePolicy.consultation : conversationDialoguePolicy.owner)
       }
       if(input.scheduledFollowupId)system+='\nThe latest service message is an explicitly owner-authorized scheduled instruction. Execute that instruction within the provided conversation text only, and return the result conversationally. It does not grant web browsing, tools, filesystem access, business mutations, contact creation, or further scheduling. State any missing inputs/access plainly; never claim to have performed actions outside this scope.'
       if(input.assistantMode==='coordinate')system=personalAssistantSystem+'\n'+chatModelSystem({group:true,inviteContact:false,inviteTask:false,runTask:false}).split('\n').filter(line=>/^(Ref=|Group=|Item=|S=|s=string)/.test(line)).join('\n')
@@ -260,6 +259,11 @@ export class ChatWorker {
       }
       if(projectSources)input.projectEntryInventory={specialistIds:[...new Set([...shownProjectSpecialistIds,...(projectSources.localSpecialists??[]).map(c=>c.id)])],humanIds:[...new Set([...shownProjectHumanIds,...(projectSources.humans??[]).map(c=>c.id)])],messageIds:projectSources.messages.map(m=>m.id),fileMessageIds:projectSources.fileMessageIds,taskIds:projectSources.existingTasks.map(t=>t.id),projects:projectSources.projects.map(p=>({id:p.id,commitmentIds:p.commitments.map(c=>c.id)}))}
       if(projectSources)input.dialogueSources=dialogueSources(s,[...new Set([...(input.dialogueSources??[]).map(source=>source.id),...projectSources.messages.map(message=>message.id)])])
+      if(relationshipTurn(s,group,turn.agentContactId,input)){
+        const current=currentTurnText(s,turn.id)
+        const fitted=fitRelationshipContext(s,turn.agentContactId,current,system,prompt,input.budget.maxTokens,this.clock())
+        if(fitted){system=fitted.system;prompt=fitted.prompt;input.relationshipMemorySources=fitted.sources}
+      }
       // Topic context is optional. Keep existing sources and the reply reserve
       // in place, and never include it in group, remote, tool or scheduled work.
       if(!external && topicMemoryTurn(input)) {
@@ -269,12 +273,12 @@ export class ChatWorker {
           const withTopic=JSON.stringify({...JSON.parse(prompt),currentTopic:reference.topic})
           const topicInstructions=system+'\n'+topicSystem
           if(withTopic.length<=100000&&input.budget.maxTokens-chatInputTokenBound(topicInstructions,withTopic)>=chatReplyTokenReserve(system,prompt,input.budget.maxTokens)){
-            prompt=withTopic;system=topicInstructions;console.log(`${topicReceipt(reference.topic)} index=${indexWanted?'on':'off'} conversation=${group.id}`)
+            prompt=withTopic;system=topicInstructions;input.relationshipTopicIds=[reference.topic.id];console.log(`${topicReceipt(reference.topic)} index=${indexWanted?'on':'off'} conversation=${group.id}`)
           }
         }
         if(reference?.index){
           const fitted=fitTopicIndex(system,prompt,reference.index,input.budget.maxTokens)
-          if(fitted){prompt=fitted.prompt;system=fitted.system;console.log(`${topicIndexReceipt(fitted)} conversation=${group.id}`)}
+          if(fitted){prompt=fitted.prompt;system=fitted.system;input.relationshipTopicIds=[...new Set([...(input.relationshipTopicIds??[]),...fitted.entries.map(entry=>entry.id)])];console.log(`${topicIndexReceipt(fitted)} conversation=${group.id}`)}
           else console.log(`CHAT_TOPIC mode=index-skip entries=${reference.index.entries.length} budget=${input.budget.maxTokens} conversation=${group.id}`)
         }
       }
@@ -284,6 +288,13 @@ export class ChatWorker {
         const replyReserve=Math.min(4096,input.budget.maxTokens-chatInputTokenBound(system,prompt))
         assistantStickers=input.budget.maxTokens-chatInputTokenBound(stickerSystem,prompt)>=replyReserve
         if(assistantStickers)system=stickerSystem
+      }
+      // Conversation guidance can use spare room after the current request,
+      // its selected sources, the response protocol and ordinary reply reserve.
+      if(!external&&input.dailyChat&&!input.scheduledFollowupId&&!input.projectExecution&&!input.intakeOutputLimitRecovery&&!turn.purpose){
+        const styledSystem=system+'\n'+conversationDialogueStyle
+        const replyReserve=chatReplyTokenReserve(system,prompt,input.budget.maxTokens)
+        if(input.budget.maxTokens-chatInputTokenBound(styledSystem,prompt)>=replyReserve)system=styledSystem
       }
       const inputTokenBound=chatInputTokenBound(system,prompt),remainingOutput=input.budget.maxTokens-inputTokenBound
       const admitted=prompt.length <= (input.skill?256000:100000) && remainingOutput>=(input.intakeOutputLimitRecovery?1024:64)

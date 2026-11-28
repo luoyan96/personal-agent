@@ -12,6 +12,7 @@ import { currentHabit } from '../src/feedback-queue.js'
 import { ChatWorker } from '../src/chat-worker.js'
 import { FeedbackWorker } from '../src/feedback-worker.js'
 import { MemoryCompressionWorker } from '../src/memory-compression-worker.js'
+import { TopicCuratorWorker } from '../src/topic-curator-worker.js'
 import type { ModelCall, ModelResult } from '../src/execution-worker.js'
 
 const cleanup: (() => unknown | Promise<unknown>)[] = []
@@ -30,9 +31,9 @@ async function fixture() {
   const app = createServer(config), url = await app.listen({ host: '127.0.0.1', port: 0 })
   cleanup.push(() => app.close())
   let cookie = '', csrf = ''
-  const call = async (name: RouteName, body: unknown = null, params: Record<string, string> = {}, query = '') => {
+  const call = async (name: RouteName, body: unknown = null, params: Record<string, string> = {}, query = '', auth = { cookie, csrf }) => {
     const route = routes[name]
-    const response = await fetch(url + route.path.replace(/\{(\w+)\}/g, (_, id: string) => params[id]!) + query, { method: route.method, headers: { origin: config.origin, 'content-type': 'application/json', 'idempotency-key': randomUUID(), cookie, 'x-csrf-token': csrf }, ...(route.method === 'GET' ? {} : { body: JSON.stringify(body) }) })
+    const response = await fetch(url + route.path.replace(/\{(\w+)\}/g, (_, id: string) => params[id]!) + query, { method: route.method, headers: { origin: config.origin, 'content-type': 'application/json', 'idempotency-key': randomUUID(), cookie: auth.cookie, 'x-csrf-token': auth.csrf }, ...(route.method === 'GET' ? {} : { body: JSON.stringify(body) }) })
     const text = await response.text()
     return { status: response.status, value: JSON.parse(text), text, cookie: response.headers.get('set-cookie')?.split(';')[0] ?? '' }
   }
@@ -49,8 +50,55 @@ async function fixture() {
     return response.value.data
   }
   const tick = (model: ModelCall) => new ChatWorker(db, config, model).tick()
-  return { db, config, call, own, send, tick, url, owner: login.value.data.id }
+  return { db, config, call, own, send, tick, url, username, owner: login.value.data.id }
 }
+
+it('shares the same companion, conversation and greeting policy across two independent owner sessions', async () => {
+  const s = await fixture()
+  const phone = { cookie: '', csrf: '' }
+  const call = (name: RouteName, body: unknown = null, params: Record<string, string> = {}) =>
+    s.call(name, body, params, '', phone)
+  phone.cookie = (await call('login', { username: s.username, password: '12345678' })).cookie
+  phone.csrf = (await call('session')).value.data.csrfToken
+  expect((await call('personalConversation', {})).value.data.conversation.id).toBe(s.own.conversation.id)
+  const policy = (await call('assistantProactiveSettings')).value.data
+  expect(policy.learnFromChat).toBe(false)
+  expect((await call('updateAssistantProactiveSettings', { mode: 'contextual', learnFromChat: true, expectedVersion: policy.version })).status).toBe(200)
+  expect((await s.call('assistantProactiveSettings')).value.data).toEqual({ mode: 'contextual', learnFromChat: true, version: policy.version + 1 })
+  expect((await s.call('updateAssistantProactiveSettings', { mode: 'off', expectedVersion: policy.version })).status).toBe(409)
+  const quote = '下次组会要把两篇论文的评测方法放在一起比较。'
+  const sent = await call('agentChatMessage', { text: quote }, { id: s.own.conversation.id })
+  expect(sent.status, sent.text).toBe(201)
+  const prompts: string[] = []
+  await s.tick(async input => {
+    prompts.push(input.prompt)
+    return result('好，我们从评测方法开始。')
+  })
+  await s.send('接着刚才的讨论。')
+  await s.tick(async input => {
+    prompts.push(input.prompt)
+    return result('先看它们用的测试集。')
+  })
+  expect(prompts).toHaveLength(2)
+  for (const prompt of prompts) expect(prompt).toContain('两篇论文的评测方法')
+  const curator = new TopicCuratorWorker(s.db, s.config, Date.now, async () => result(JSON.stringify({
+    action: 'no_change',
+    relationship: { remember: [{ kind: 'open_thread', subject: '评测方法', quote, messageId: sent.value.data.message.id }] },
+  })))
+  expect(await curator.tick()).toBe(true)
+  const [episode] = (await s.call('assistantRelationshipMemories')).value.data
+  expect(episode).toMatchObject({ text: quote, source: { messageId: sent.value.data.message.id } })
+  const edited = await s.call('updateAssistantRelationshipMemory', {
+    expectedVersion: episode.version, operation: 'edit', subject: '评测方法', text: '只对比测试集构成。',
+  }, { id: episode.id })
+  expect(edited.status, edited.text).toBe(200)
+  const [fromPhone] = (await call('assistantRelationshipMemories')).value.data
+  expect(fromPhone.text).toBe('只对比测试集构成。')
+  expect((await call('updateAssistantRelationshipMemory', {
+    expectedVersion: fromPhone.version, operation: 'forget',
+  }, { id: fromPhone.id })).status).toBe(200)
+  expect((await s.call('assistantRelationshipMemories')).value.data).toEqual([])
+})
 
 it('keeps old memory routes and revisions authoritative alongside compressed agent notes, and drops revoked-note dialogue', { timeout: 30000 }, async () => {
   const s = await fixture()

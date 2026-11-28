@@ -6,24 +6,28 @@ import { expect, it } from 'vitest'
 import { checkDatabase, migrate, openDatabase, seed } from '../src/database.js'
 import { currentHabit, preferenceTopic } from '../src/feedback-queue.js'
 
+function buildHistoricalSchema(db: ReturnType<typeof openDatabase>, version: number) {
+  db.exec('PRAGMA foreign_keys=OFF; CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY,checksum TEXT NOT NULL,applied_at TEXT NOT NULL) STRICT')
+  const migrationRoot = new URL('../migrations/', import.meta.url)
+  const oldFiles = readdirSync(migrationRoot).filter(name => /^\d{3}-/.test(name) && Number(name.slice(0, 3)) <= version).sort()
+  expect(oldFiles).toHaveLength(version)
+  for (const name of oldFiles) {
+    const sql = readFileSync(new URL(name, migrationRoot), 'utf8')
+    const checksum = createHash('sha256').update(sql).digest('hex')
+    db.exec(sql)
+    db.prepare('INSERT INTO schema_migrations VALUES(?,?,?)').run(Number(name.slice(0, 3)), checksum, '2026-11-14T01:07:26Z')
+  }
+  db.exec('PRAGMA foreign_keys=ON')
+  seed(db, 'test')
+}
+
 it('upgrades the deployed 036 schema twice without losing habits, revocations, owners, learning settings or queued feedback', () => {
   const folder = mkdtempSync(join(tmpdir(), 'assistant-upgrade-036-'))
   const filename = join(folder, 'research.sqlite')
   let db = openDatabase(filename, true)
   try {
-    db.exec('PRAGMA foreign_keys=OFF; CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY,checksum TEXT NOT NULL,applied_at TEXT NOT NULL) STRICT')
-    const migrationRoot = new URL('../migrations/', import.meta.url)
-    const oldFiles = readdirSync(migrationRoot).filter(name => /^\d{3}-/.test(name) && Number(name.slice(0, 3)) <= 36).sort()
-    expect(oldFiles).toHaveLength(36)
-    for (const name of oldFiles) {
-      const sql = readFileSync(new URL(name, migrationRoot), 'utf8')
-      const checksum = createHash('sha256').update(sql).digest('hex')
-      db.exec(sql)
-      db.prepare('INSERT INTO schema_migrations VALUES(?,?,?)').run(Number(name.slice(0, 3)), checksum, '2026-11-14T01:07:26Z')
-    }
+    buildHistoricalSchema(db, 36)
     expect(db.prepare('SELECT checksum FROM schema_migrations WHERE version=36').get()!.checksum).toBe('d79a7e934d65e7ee3f32c547e8c5d0886f6f331b72a582abbe912af310a73eda')
-    db.exec('PRAGMA foreign_keys=ON')
-    seed(db, 'test')
     const at = '2026-11-14T02:00:00Z'
     db.prepare('INSERT INTO runtime_meta VALUES (?,?)').run('signing_key', Buffer.alloc(32, 7).toString('hex'))
     db.prepare('INSERT INTO personal_memory_settings VALUES(?,?,?,?,?)').run('member_A', 1, 'Asia/Shanghai', '{"start":"23:00","end":"07:00"}', 7)
@@ -49,7 +53,7 @@ it('upgrades the deployed 036 schema twice without losing habits, revocations, o
     checkDatabase(db)
     expect(snapshot()).toEqual(before)
     expect(db.prepare('SELECT * FROM schema_migrations WHERE version<=36 ORDER BY version').all()).toEqual(history)
-    expect(db.prepare('SELECT max(version) version FROM schema_migrations').get()!.version).toBe(43)
+    expect(db.prepare('SELECT max(version) version FROM schema_migrations').get()!.version).toBe(45)
     expect(db.prepare('SELECT count(*) n FROM assistant_memories').get()!.n).toBe(0)
     expect(db.prepare("SELECT name FROM sqlite_master WHERE name='assistant_memory_settings'").get()).toBeUndefined()
     expect(currentHabit(db, 'member_A')).toMatchObject({ content: '先列证据，再讲判断。', revoked: false, version: 4 })
@@ -61,6 +65,33 @@ it('upgrades the deployed 036 schema twice without losing habits, revocations, o
     db = openDatabase(filename)
     expect(snapshot()).toEqual(before)
     checkDatabase(db)
+  } finally {
+    db.close()
+    rmSync(folder, { recursive: true, force: true })
+  }
+}, 20000)
+
+it('upgrades schema 043 without opting old habit learners into chat learning or changing the greeting schedule', () => {
+  const folder = mkdtempSync(join(tmpdir(), 'assistant-upgrade-043-'))
+  const db = openDatabase(join(folder, 'research.sqlite'), true)
+  try {
+    buildHistoricalSchema(db, 43)
+    db.prepare('INSERT INTO personal_memory_settings(member_id,candidate_learning,version) VALUES (?,?,?)').run('member_A', 1, 6)
+    const conversation = { id: 'personal_old' }
+    db.prepare('INSERT INTO chat_conversations VALUES (?,?,?,?,?,?)').run(conversation.id, 'lab_synthetic', 'member_A', 'personal', null, JSON.stringify(conversation))
+    const welcome = { id: 'greeting_old', sequence: 1, text: '合成问候证据。' }
+    db.prepare('INSERT INTO chat_messages VALUES (?,?,?,?)').run(welcome.id, conversation.id, welcome.sequence, JSON.stringify(welcome))
+    const next = '2026-11-28T01:00:00.000Z'
+    db.prepare('INSERT INTO assistant_greetings VALUES (?,?,?,?,?)').run('member_A', welcome.id, 'Asia/Shanghai', '2026-11-27', next)
+    const history = db.prepare('SELECT * FROM schema_migrations ORDER BY version').all()
+    migrate(db); migrate(db); checkDatabase(db)
+    expect(db.prepare('SELECT * FROM schema_migrations WHERE version<=43 ORDER BY version').all()).toEqual(history)
+    expect(db.prepare('SELECT max(version) version FROM schema_migrations').get()?.version).toBe(45)
+    expect(db.prepare('SELECT * FROM assistant_proactive_settings').all()).toEqual([])
+    expect(db.prepare('SELECT candidate_learning,version FROM personal_memory_settings').get()).toEqual({ candidate_learning: 1, version: 6 })
+    expect(db.prepare('SELECT welcome_message_id,next_daily_at,last_daily_at FROM assistant_greetings').get()).toEqual({ welcome_message_id: welcome.id, next_daily_at: next, last_daily_at: null })
+    expect(db.prepare('SELECT document FROM chat_messages WHERE id=?').get(welcome.id)?.document).toBe(JSON.stringify(welcome))
+    expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
   } finally {
     db.close()
     rmSync(folder, { recursive: true, force: true })

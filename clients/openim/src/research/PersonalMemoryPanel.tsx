@@ -7,7 +7,7 @@ import {
   SearchOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import type {
   PersonalMemory,
   PersonalMemorySettings,
@@ -21,6 +21,8 @@ import {
 } from "./PersonalMemoryEditors";
 import "./personal-memory.scss";
 import { MemoryText, memoryOrigins } from "./memory-presentation";
+import { CompanionMemoryDialog } from "./CompanionMemoryDialog";
+import { subscribeServiceVersion, supportsCompanionMemory } from "./service-version";
 
 const origins = memoryOrigins;
 const filters = { confirmed: "已记住", candidate: "待确认", revoked: "已移除" };
@@ -170,6 +172,8 @@ export function PersonalMemoryPanel({
     active,
   );
   const [policy, setPolicy] = useState<PersonalMemorySettings>();
+  const companionAvailable = useSyncExternalStore(subscribeServiceVersion, supportsCompanionMemory);
+  const [companionScope, setCompanionScope] = useState("");
   const [editorOpen, setEditorOpen] = useState(false),
     [settingsOpen, setSettingsOpen] = useState(false);
   const [topic, setTopic] = useState(""),
@@ -343,6 +347,7 @@ export function PersonalMemoryPanel({
           </p>
         </div>
         <div className="memory-heading-actions">
+          {companionAvailable && <Button onClick={() => setCompanionScope(operation.scope)}>助理近况与问候</Button>}
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -530,6 +535,9 @@ export function PersonalMemoryPanel({
           )
         }
       />
+      {active && companionAvailable && companionScope === operation.scope && (
+        <CompanionMemoryDialog key={operation.scope} onClose={() => setCompanionScope("")} />
+      )}
       <PersonalMemorySettingsEditor
         rootClassName={editorClass}
         open={settingsOpen && active}

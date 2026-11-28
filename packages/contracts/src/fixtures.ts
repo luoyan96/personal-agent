@@ -75,6 +75,9 @@ function sample(s: JsonShape, key = ''): unknown {
 export const endpointExamples = Object.fromEntries(Object.entries(routes).map(([name, route]) => {
   const request = sample(z.toJSONSchema(route.request, { unrepresentable: 'any' }) as JsonShape)
   if(name==='saveTeamRepository') (request as {body:{url:string}}).body.url='https://github.com/synthetic/team-library'
+  if (name === 'updateAssistantProactiveSettings') (request as { body: unknown }).body = { mode: 'contextual', learnFromChat: true, expectedVersion: 1 }
   const response = name === 'content' || name === 'researchFileContent' ? new Uint8Array([120]) : sample(z.toJSONSchema(route.response, { unrepresentable: 'any' }) as JsonShape)
+  if (name === 'assistantProactiveSettings') (response as { data: unknown }).data = { mode: 'greeting', learnFromChat: false, version: 1 }
+  if (name === 'updateAssistantProactiveSettings') (response as { data: unknown }).data = { mode: 'contextual', learnFromChat: true, version: 2 }
   return [name, { contractVersion: m.contractVersion, synthetic: true, method: route.method, path: route.path, stage: route.stage, status: route.status, request: route.request.parse(request), response: route.response.parse(response) }]
 }))

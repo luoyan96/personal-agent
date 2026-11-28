@@ -11,7 +11,7 @@ export const curatorSystem = [
   '',
   '输出为一个 JSON 对象，不含 Markdown 与解释。',
   'action 取 update_topic、new_topic、no_change 之一。',
-  '输出只有话题 patch。偏好、规则与公开标签不在输出范围内。',
+  '话题 patch 只包含话题内容。偏好、规则与公开标签不在输出范围内。',
   '',
   'update_topic 的 topicId 与 baseVersion 取自 currentTopic。',
   'topicId 或 baseVersion 缺失时输出无效。',

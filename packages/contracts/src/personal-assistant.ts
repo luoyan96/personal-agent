@@ -27,6 +27,8 @@ export const PersonalMemoryInput=z.strictObject({topic:z.string().trim().min(1).
 export const PersonalMemory=z.strictObject({id:Id,topic:z.string().min(1).max(80),content:z.string().min(1).max(1000),scope:z.enum(['general','topic']),status:PersonalMemoryStatus,origin:z.enum(['explicit','feedback','inferred']),sourceMessageId:Id.nullable(),version:Version,createdAt:Instant,updatedAt:Instant,allowedActions:z.array(z.enum(['edit','confirm','revoke'])).max(3)})
 export const QuietHours=z.strictObject({start:z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/),end:z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/)}).refine(v=>v.start!==v.end,'Quiet interval must not be a whole day')
 export const PersonalMemorySettings=z.strictObject({candidateLearning:z.boolean(),timeZone:Timezone,quietHours:QuietHours.nullable(),version:Version})
+export const AssistantProactiveMode = z.enum(['off', 'greeting', 'contextual'])
+export const AssistantProactiveSettings = z.strictObject({ mode: AssistantProactiveMode, learnFromChat: z.boolean(), version: Version })
 export const FollowupRecurrence=z.discriminatedUnion('frequency',[
  z.strictObject({frequency:z.literal('daily')}),
  z.strictObject({frequency:z.literal('weekly'),weekdays:z.array(z.number().int().min(1).max(7)).min(1).max(7).refine(v=>new Set(v).size===v.length,'Duplicate weekday')}),
@@ -58,6 +60,7 @@ export type PersonalFollowup=z.infer<typeof PersonalFollowup>
 export type PersonalFollowupRun=z.infer<typeof PersonalFollowupRun>
 export type FollowupRecurrence=z.infer<typeof FollowupRecurrence>
 export type PersonalMemorySettings=z.infer<typeof PersonalMemorySettings>
+export type AssistantProactiveSettings = z.infer<typeof AssistantProactiveSettings>
 export type PersonalAssistantReceipt=z.infer<typeof PersonalAssistantReceipt>
 export type PersonalMemoryReceipt=z.infer<typeof PersonalMemoryReceipt>
 export type PersonalFollowupReceipt=z.infer<typeof PersonalFollowupReceipt>
@@ -66,6 +69,8 @@ function route<P extends z.ZodType,Q extends z.ZodType,B extends z.ZodType,R ext
 export const personalAssistantRoutes={
  personalMemorySettings:route('GET','/me/memory-settings',empty,empty,z.null(),data(PersonalMemorySettings),200,'Current member only; candidate learning defaults false; timezone defaults Asia/Shanghai and is visible. No model call.'),
  updatePersonalMemorySettings:route('POST','/me/memory-settings',empty,empty,z.strictObject({expectedVersion:Version,candidateLearning:z.boolean(),timeZone:Timezone,quietHours:QuietHours.nullable()}),data(PersonalMemorySettings),200,'Owner versioned learning/timezone/quiet policy; fences local personal memory consumers. No model required.'),
+ assistantProactiveSettings:route('GET','/me/assistant-proactive-settings',empty,empty,z.null(),data(AssistantProactiveSettings),200,'Current account proactive message policy. Defaults to a short morning greeting.'),
+ updateAssistantProactiveSettings:route('POST','/me/assistant-proactive-settings',empty,empty,z.strictObject({mode:AssistantProactiveMode,learnFromChat:z.boolean().optional(),expectedVersion:Version}),data(AssistantProactiveSettings),200,'Owner versioned proactive message and conversation learning settings, shared across devices. Contextual follow-up and conversation learning each require explicit opt-in. Existing timezone and quiet hours apply.'),
  personalMemories:route('GET','/me/memories',empty,pagination.extend({status:z.enum(['confirmed','candidate','revoked','all']).default('all')}),z.null(),page(PersonalMemory),200,'Current member memories only, separate from Agent and conversation memory; candidates are not applied until confirmed.'),
  personalMemory:route('GET','/me/memories/{id}',id,empty,z.null(),data(PersonalMemory),200,'Current member only, including immutable revoked record; no cross-owner discovery.'),
  createPersonalMemory:route('POST','/me/memories',empty,empty,PersonalMemoryInput,data(PersonalMemory),201,'Explicit owner save; correct current confirmed topic atomically instead of duplicating preference; max50 active confirmed records. No model required.'),

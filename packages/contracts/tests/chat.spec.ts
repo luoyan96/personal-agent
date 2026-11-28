@@ -35,7 +35,15 @@ describe('CHAT1 dispatch and sharing boundaries', () => {
   })
   it('marks all CHAT1 endpoints implemented with the service milestone', () => {
     const chat = Object.values(routes).filter(r => r.stage === 'CHAT1')
-    expect(chat).toHaveLength(101)
+    expect(chat).toHaveLength(105)
     for (const r of chat) expect(r.implemented).toBe(true)
+    for (const [route, method, path] of [
+      [routes.assistantRelationshipMemories, 'GET', '/me/assistant-relationship-memories'],
+      [routes.updateAssistantRelationshipMemory, 'POST', '/me/assistant-relationship-memories/{id}'],
+      [routes.assistantProactiveSettings, 'GET', '/me/assistant-proactive-settings'],
+      [routes.updateAssistantProactiveSettings, 'POST', '/me/assistant-proactive-settings'],
+    ] as const) {
+      expect(route).toMatchObject({ stage: 'CHAT1', access: 'session', method, path: `/api/v1${path}`, idempotent: method === 'POST' })
+    }
   })
 })
