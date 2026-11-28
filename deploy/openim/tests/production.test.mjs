@@ -54,7 +54,7 @@ test('production preparation refuses existing/synthetic data and preserves indep
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('real production CLI and HTTP: explicit 023 migration, private bootstrap, one-use manager, Origin/CSRF, restart and IM unavailable', async () => {
+test('real production CLI and HTTP: explicit 045 migration, private bootstrap, one-use manager, Origin/CSRF, restart and IM unavailable', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'rap-im-production-cli-'));
   let child;
   try {
@@ -75,7 +75,7 @@ test('real production CLI and HTTP: explicit 023 migration, private bootstrap, o
     assert.equal(run('migrate').status, 0); assert.equal(run('migrate').status, 0);
     let db = new DatabaseSync(databasePath);
     try {
-      assert.equal(db.prepare('SELECT max(version) v FROM schema_migrations').get().v, 43);
+      assert.equal(db.prepare('SELECT max(version) v FROM schema_migrations').get().v, 45);
       assert.equal(db.prepare('SELECT count(*) n FROM members').get().n, 0);
       assert.equal(db.prepare('SELECT count(*) n FROM labs').get().n, 0);
     } finally { db.close(); }
