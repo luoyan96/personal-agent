@@ -3587,3 +3587,9 @@ Windows Edge 使用合成材料实际点选 PPT 和 Word 模板、个人参考�
 - GitHub Latest 指向 1.0.5，四项公开附件的大小与摘要同本机回执一致。公开下载的 `latest.yml` 与本机构建一致。[发布说明](https://github.com/luoyan96/personal-agent/releases/tag/v1.0.5)
 - 广州 ECS 官网于北京时间 10:50:58 切换到 1.0.5。两个公开入口首页摘要一致，安装包响应均为 425,244,159 字节的附件。经 Nginx 读取完整安装包重新校验 SHA-256，与发布包相同。[产品官网](https://deepchat.acceptcat.com/) · [原官网地址](https://chat.acceptcat.com/deepchat/)
 - 生产 API 和 worker 沿用 `641c7f2`，数据库迁移版本 043。公网就绪检查返回契约 0.53.0，数据库、存储和身份验证为正常，真实模型未验证。发布与验证证据位于 `D:/deepseek-agent/.runtime/deepchat-release-1.0.5/`。
+
+## 2026-11-28 · Windows 输入框右键粘贴
+
+开发分支 `fix/deepchat-editable-paste` 基于 `7deddab`。Electron 主进程在可编辑内容上显示系统语言的「粘贴」，将原生粘贴命令发回触发菜单的视图与焦点框架。普通消息、附件自己的右键菜单沿用原流程。公开版为 1.0.5，生产 API 与 worker 为 `641c7f2`，数据库迁移 043。
+
+77 项定向测试、客户端与 Electron 类型检查、Vite 生产构建通过。Windows Electron 43.8.4 使用私有窗口站的合成剪贴板实测普通输入框、密码框、多行输入、跨源内嵌框架、富文本捕获文字与图片、资源管理器文件和空剪贴板。原生菜单选项通过 Electron 命令分派验证；权限隔离的 BrowserView 以合成右键事件打开原生菜单并实际粘贴。日志位于 `D:/deepseek-agent/.runtime/deepchat-editable-paste-20261128/native-fixture.log`。隔离测试前后用户剪贴板序列与格式计数一致。
