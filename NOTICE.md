@@ -113,3 +113,5 @@ B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `
 聊天贴图来自大肥鱼娘社区作者，逐图来源、作者和许可见[贴图署名](clients/openim/public/third-party/dafeiyu/STICKERS.md)。
 
 2026-11-28：开发分支内置同一作者科研工作台的 0.6.0 开发快照，固定 [dcf61c0](https://github.com/luoyan96/dsh-research-workbench/commit/dcf61c0cd16e2cfca8cbba00a7892a57ecd790d7)。沿用插件包的 Office、Mimir、PDF.js、XML 和 SSH 组件及包内原始许可证，安装时使用上游文件清单。该快照并非已发布的正式版安装包。
+
+2026-11-28：助理论文推荐的桌面开发分支固定科研工作台 0.7.1 候选快照，沿用插件文件清单和包内许可证。构建校验源码归档和 npm 打包产物的 SHA-256。[固定源码](https://github.com/luoyan96/dsh-research-workbench/commit/1452359497de4c93348f3f14247f63f32e53d2cf)

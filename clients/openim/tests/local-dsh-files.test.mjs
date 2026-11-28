@@ -5,20 +5,25 @@ import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { buildLocalDshRuntime } from '../../../integrations/deepseek-harness/desktop/build.mjs';
 
 const require = createRequire(import.meta.url), client = fileURLToPath(new URL('../', import.meta.url));
 const esbuild = createRequire(require.resolve('vite'))('esbuild');
+const runtime = { exports: {} };
+vm.runInNewContext(buildLocalDshRuntime(client).outputFiles[0].text, {module:runtime,exports:runtime.exports,require,Buffer,URL,TextEncoder,process,setTimeout,clearTimeout});
 const preload = (await esbuild.build({entryPoints:[path.join(client,'electron/preload/localDsh.ts')],bundle:true,platform:'node',format:'cjs',external:['electron'],write:false})).outputFiles[0].text;
 
 test('DSH file bridge accepts native Files and material commands require user activation', async () => {
   class File { constructor(path) { this.path = path; } }
   for (const [main,protocol,hostname,enabled] of [[true,'http:','127.0.0.1',true],[false,'http:','127.0.0.1',false],[true,'https:','example.com',false]]) {
-    const exposed={},calls=[],activation={isActive:false};
-    vm.runInNewContext(preload,{File,navigator:{userActivation:activation},process:{isMainFrame:main},location:{protocol,hostname},require:id=>{
-      assert.equal(id,'electron');return{contextBridge:{exposeInMainWorld:(k,v)=>exposed[k]=v},ipcRenderer:{invoke:(...args)=>calls.push(args)},webUtils:{getPathForFile:f=>f.path||''}};
+    const exposed={},calls=[],activation={isActive:false},subscribed=new Map(),events=[];
+    vm.runInNewContext(preload,{File,Event,window:{dispatchEvent:event=>events.push(event.type)},navigator:{userActivation:activation},process:{isMainFrame:main},location:{protocol,hostname},require:id=>{
+      assert.equal(id,'electron');return{contextBridge:{exposeInMainWorld:(k,v)=>exposed[k]=v},ipcRenderer:{invoke:(...args)=>calls.push(args),on:(name,callback)=>subscribed.set(name,callback)},webUtils:{getPathForFile:f=>f.path||''}};
     }});
-    assert.equal(Object.keys(exposed).length,enabled?3:0);
+    assert.equal(Object.keys(exposed).length,enabled?4:0);
     if(!enabled) continue;
+    subscribed.get('dsh-workbench-literature-reset')();
+    assert.deepEqual(events,['dsh-workbench-literature-reset']);
     assert.equal(exposed.__DSH_HOST_PATHS__.pathFor(new File('C:\\public\\paper.pdf')),'C:\\public\\paper.pdf');
     assert.equal(exposed.__DSH_HOST_PATHS__.pathFor(new File()),'');
     assert.equal(exposed.__DSH_HOST_PATHS__.pathFor({path:'C:\\forged.pdf'}),'');
@@ -26,12 +31,14 @@ test('DSH file bridge accepts native Files and material commands require user ac
     await assert.rejects(exposed.__DSH_WORKBENCH_MATERIALS__.read({kind:'reference',id:'synthetic'}),/手动选择/);
     await assert.rejects(exposed.__DSH_WORKBENCH_MATERIALS__.readMany({selections:[]}),/手动选择/);
     assert.deepEqual(calls,[]);
+    exposed.__DSH_WORKBENCH_LITERATURE__.listRecommendations({refresh:true,url:'https://forged.example',account:'other'});
     activation.isActive=true;
     exposed.__DSH_DIRECTORY_PICKER__.pick();
     exposed.__DSH_WORKBENCH_MATERIALS__.list({kind:'template',extensions:['.pptx'],path:'forged'});
     exposed.__DSH_WORKBENCH_MATERIALS__.read({kind:'template',id:'selected',path:'forged'});
     exposed.__DSH_WORKBENCH_MATERIALS__.readMany({selections:[{kind:'reference',id:'other'}],path:'forged'});
     assert.deepEqual(JSON.parse(JSON.stringify(calls)),[
+      ['dsh-workbench-literature-recommendations'],
       ['local-dsh-pick-directory'],
       ['dsh-workbench-materials-list',{kind:'template',extensions:['.pptx']}],
       ['dsh-workbench-materials-read',{kind:'template',id:'selected'}],
@@ -48,20 +55,30 @@ const managed = (await esbuild.build({entryPoints:[path.join(client,'electron/ma
     build.onLoad({filter:/dshWorkbenchMaterials\.ts$/},()=>({contents:'export const registerDshWorkbenchMaterialBridge=connect=>globalThis.fixtureMaterials(connect);',loader:'js'}));
     // This fixture tests the frame/account boundary, not package installation.
     // The real bootstrap has separate filesystem/process tests in dsh-plugin.
-    build.onLoad({filter:/dshPlugin\.ts$/},()=>({contents:'export const researchPlugin={name:"dsh-research-workbench",version:"0.6.0"};export const ensureResearchPlugin=async()=>({changed:false});export const ensureTaskContextPlugin=async()=>({changed:false});',loader:'js'}));
+    build.onLoad({filter:/dshPlugin\.ts$/},()=>({contents:'export const researchPlugin={name:"dsh-research-workbench",version:"0.7.1"};export const ensureResearchPlugin=async()=>({changed:false});export const ensureTaskContextPlugin=async()=>({changed:false});',loader:'js'}));
   }}],
 })).outputFiles[0].text;
 
-test('native directory picker is restricted to the owned DSH main frame and rechecks account after the dialog', async () => {
+test('the DSH main frame exclusively reads account data and revocation closes it without leaking a late recommendation', async () => {
   const handlers=new Map();let view,valid=true,materials,hostUrl='http://app/#/dsh',afterPick=()=>{},selection={canceled:false,filePaths:['C:\\synthetic']},picks=0;
+  const requests=[],events=[]; let accountChanged;
   const owner={isDestroyed:()=>false,removeBrowserView:()=>{}};
   const contents=Object.assign(new EventEmitter(),{getURL:()=>hostUrl});
   class View {
-    constructor(){view=this;const wc=this.webContents=Object.assign(new EventEmitter(),{isDestroyed:()=>false,close:()=>{},getURL:()=> 'http://127.0.0.1:1234/',loadURL:async()=>{},setWindowOpenHandler:()=>{},debugger:{attach:()=>{},sendCommand:async()=>{}}});wc.mainFrame={url:'http://127.0.0.1:1234/'};}
+    constructor(){view=this;let closed=false;const wc=this.webContents=Object.assign(new EventEmitter(),{isDestroyed:()=>closed,close:()=>{closed=true;},getURL:()=> 'http://127.0.0.1:1234/',loadURL:async()=>{},send:(...args)=>events.push(args),setWindowOpenHandler:()=>{},debugger:{attach:()=>{},sendCommand:async()=>{}}});wc.mainFrame={url:'http://127.0.0.1:1234/'};}
   }
-  const account={identity:'synthetic',lease:'one',metadata:{enabled:true,fingerprint:'one'},valid:async()=>{if(!valid)throw Error('expired');}};
+  const account={identity:'synthetic',lease:'one',metadata:{enabled:true,fingerprint:'one'},valid:async()=>{if(!valid)throw Error('expired');},
+    watch: callback => { accountChanged=callback;return () => {accountChanged=undefined;}; },
+    request: (route, method) => {
+      const request=Object.assign(new EventEmitter(),{
+        aborted:false, headers:{},
+        setHeader(name,value){this.headers[name]=value;}, end(){requests.push({route,method,request});}, abort(){this.aborted=true;},
+      });
+      return request;
+    },
+  };
   const mod={exports:{}};
-  vm.runInNewContext(managed,{module:mod,exports:mod.exports,global:{pathConfig:{publicPath:client}},process,URL,__dirname:path.join(client,'dist-electron/main'),fixtureAccount:account,fixtureMaterials:connect=>{materials=connect;},
+  vm.runInNewContext(managed,{module:mod,exports:mod.exports,global:{pathConfig:{publicPath:client}},process,URL,AbortController,Buffer,setTimeout,clearTimeout,__dirname:path.join(client,'dist-electron/main'),fixtureAccount:account,fixtureMaterials:connect=>{materials=connect;},
     setInterval:()=>({unref(){}}),require:id=>id==='electron'?{
       nativeImage:{createFromPath:()=>({resize:()=>({toDataURL:()=>"data:image/png;base64,AA=="})})},
       app:{isPackaged:false,getAppPath:()=>client,getPath:()=>client,on:()=>{}},BrowserView:View,BrowserWindow:{fromWebContents:()=>owner},
@@ -69,6 +86,7 @@ test('native directory picker is restricted to the owned DSH main frame and rech
       dialog:{showOpenDialog:async()=>{picks++;afterPick();return selection;}},shell:{},
     }:id==='./localDshRuntime'?{
       prepareAccountProfile:async()=>'',dshBrowserCompatibility:'',
+      LiteratureRecommendationFeed:runtime.exports.LiteratureRecommendationFeed,
       LocalDshRuntime:class {state={phase:'stopped'};async start(){this.state.phase='running';return 'http://127.0.0.1:1234/';}async stop(){this.state.phase='stopped';}},
     }:require(id),
   });
@@ -81,10 +99,59 @@ test('native directory picker is restricted to the owned DSH main frame and rech
   const authorized=await materials(event());
   assert.equal(authorized.account,account);
   assert.equal(authorized.hostEvent.sender,contents);
-  hostUrl='http://app/#/chat';await assert.rejects(authorized.valid(),/连接已变化/);
-  hostUrl='http://app/#/dsh';
+  hostUrl='http://app/#/chat';contents.emit('did-navigate-in-page',{},hostUrl,true);await assert.rejects(authorized.valid(),/连接已变化/);
+  hostUrl='http://app/#/dsh';contents.emit('did-navigate-in-page',{},hostUrl,true);
+  assert.deepEqual(events,[['dsh-workbench-literature-reset']]);
   assert.equal(await pick(event()),'C:\\synthetic');
   selection={canceled:true,filePaths:[]};assert.equal(await pick(event()),undefined);
+  const list=handlers.get('dsh-workbench-literature-recommendations');
+  const unavailable={source:'unavailable',directions:[],items:[]};
+  const simplify=value=>JSON.parse(JSON.stringify(value));
+  assert.deepEqual(simplify(await list({sender:contents,senderFrame:{url:'http://app/'}})),unavailable);
+  assert.deepEqual(simplify(await list({sender:view.webContents,senderFrame:{url:'http://127.0.0.1:1234/'}})),unavailable);
+  assert.equal(requests.length,0);
+  const flush=()=>new Promise(resolve=>setImmediate(resolve));
+  const respond=(request,data)=>{
+    const response=Object.assign(new EventEmitter(),{statusCode:200});
+    request.emit('response',response);
+    response.emit('data',Buffer.from(JSON.stringify({data})));
+    response.emit('end');
+  };
+  const expected={id:'2502.12345',title:'Synthetic paper',authors:['Example Author'],summary:'Example abstract',reason:'Direction match'};
+  const provenance={batchId:'internal-batch',messageId:'internal-message'};
+  const paper={...expected,...provenance};
+  const personal=list(event(),{account:'forged',url:'https://forged.example'});
+  await flush();
+  assert.equal(requests[0].route,'/api/v1/me/literature/recommendations');
+  assert.equal(requests[0].method,undefined);
+  assert.deepEqual(simplify(requests[0].request.headers),{Accept:'application/json','Cache-Control':'no-cache'});
+  respond(requests[0].request,{source:'personal',directions:['Learning theory'],items:[paper],...provenance});
+  assert.deepEqual(simplify(await personal),{source:'personal',directions:['Learning theory'],items:[expected]});
+
+  const late=list(event());
+  await flush();
+  const previousView=view;
+  valid=false;accountChanged();
+  await flush();
+  assert.equal(previousView.webContents.isDestroyed(),true);
+  assert.equal(requests[1].request.aborted,true);
+  await assert.rejects(authorized.valid(),/连接已变化/);
+
+  valid=true;account.lease='two';account.identity='second';
+  await handlers.get('local-dsh-connect')({sender:contents});
+  assert.notEqual(view,previousView);
+  const team=list(event());
+  await flush();
+  respond(requests[1].request,{source:'personal',directions:['Private direction'],items:[paper]});
+  assert.deepEqual(simplify(await late),unavailable);
+  const groupPaper={id:'2503.12345',title:'Synthetic group paper',authors:['Group Author']};
+  respond(requests[2].request,{source:'team',directions:['Shared direction'],items:[{...groupPaper,...provenance}]});
+  assert.deepEqual(simplify(await team),{source:'team',directions:['Shared direction'],items:[groupPaper]});
+
+  const empty=list(event());
+  await flush();
+  respond(requests[3].request,{source:'none',directions:[],items:[]});
+  assert.deepEqual(simplify(await empty),{source:'none',directions:[],items:[]});
+
   selection={canceled:false,filePaths:['C:\\synthetic']};afterPick=()=>{valid=false;};await assert.rejects(pick(event()),/expired/);
-  await assert.rejects(authorized.valid(),/expired/);
 });

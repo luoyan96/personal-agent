@@ -26,12 +26,12 @@ export const tools = [
   },
   {
     name: 'dsh-research-workbench',
-    version: '0.6.0',
+    version: '0.7.1',
     archive: 'tgz',
-    url: 'https://codeload.github.com/luoyan96/dsh-research-workbench/tar.gz/dcf61c0cd16e2cfca8cbba00a7892a57ecd790d7',
-    sourceDigest: '7ae094498dedbf9c470da2a1a6a2d8c47e33d4d2ddcbf0740867db4e3c72a0b7',
-    sha256: '79ff2d0bec2dc46fbfdac1577a1fc9cf780afe17224b56c650ee736d7403ced4',
-    member: 'dsh-research-workbench-0.6.0.tgz',
+    url: 'https://codeload.github.com/luoyan96/dsh-research-workbench/tar.gz/1452359497de4c93348f3f14247f63f32e53d2cf',
+    sourceDigest: '536ff03da4c20f7d37520a1d012dd182819f158c4226179c2b42fa70dab82e81',
+    sha256: '5e3523bd3e5842133e8f6589b6cef2238081ec2b94a4341c7cb5075fdcbc5689',
+    member: 'dsh-research-workbench-0.7.1.tgz',
     target: 'tools/plugins',
   },
 ];
