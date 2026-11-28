@@ -6,7 +6,7 @@ const read = (file) => readFile(new URL(file, import.meta.url), "utf8");
 
 test("the index tab only appears once the server has the routes", async () => {
   const page = await read("../src/research/LibraryWorkspace.tsx");
-  assert.match(page, /label: "资料索引"/);
+  assert.match(page, /label: "课题组文件索引"/);
   assert.match(page, /const indexReady = availability\.supports\(41\)/);
   assert.match(page, /=== "index" && indexReady/);
 });

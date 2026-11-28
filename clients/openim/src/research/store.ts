@@ -34,6 +34,7 @@ export const useResearchStore = create<State>((set) => ({
   error: "",
   setSession: (session, actor) => {
     void window.electronAPI?.localDsh?.connect().catch(() => {});
+    void window.electronAPI?.localLibrary?.personalStatus?.().catch(() => {});
     set((state) => ({
       session,
       actor,

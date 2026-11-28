@@ -44,7 +44,6 @@ import { usePersonalOperation } from "./usePersonalOperation";
 import { useResearchStore } from "./store";
 import { nativeWorkbenchTaskPath } from "./workbench-links";
 import { RepositoryEditor } from "./RepositoryEditor";
-import { LibraryIndexPage } from "./LibraryIndexPage";
 import SafeMessageMarkdown from "./SafeMessageMarkdown";
 import { TeamLibraryFileImport } from "./TeamLibraryFileImport";
 import { useOwnAssistantConversation } from "./useOwnAssistantConversation";
@@ -87,13 +86,7 @@ function FileIcon({ entry }: { entry: TeamLibraryEntry }) {
 }
 
 /** Git publishes curated metadata and small text; originals retain their existing ACL. */
-export function TeamLibraryWorkspace({
-  supported,
-  tab = "team",
-}: {
-  supported: boolean;
-  tab?: "team" | "mine";
-}) {
+export function TeamLibraryWorkspace({ supported }: { supported: boolean }) {
   const navigate = useNavigate(),
     actor = useResearchStore((s) => s.actor);
   const openAssistant = useOwnAssistantConversation();
@@ -494,65 +487,59 @@ export function TeamLibraryWorkspace({
   return (
     <section className="team-library" aria-label="团队资料工作区">
       <div className="team-library-bar">
-        <h2 className="team-library-page-title">
-          {tab === "mine" ? "我的资料" : "团队资料"}
-        </h2>
+        <h2 className="team-library-page-title">团队资料</h2>
         <div className="team-library-tools">
-          {tab === "team" && (
-            <>
-              {current?.canConfigure && snapshot && !showSyncRecovery && (
-                <Button
-                  icon={<SettingOutlined />}
-                  aria-label="仓库设置"
-                  onClick={() => setConfigure(true)}
-                />
-              )}
-              {snapshot && !showSyncRecovery && (
-                <Button
-                  icon={<ReloadOutlined />}
-                  disabled={!binding || !bridge}
-                  loading={busy}
-                  onClick={sync}
-                >
-                  同步
-                </Button>
-              )}
-              {snapshot && (
-                <Button
-                  type="primary"
-                  icon={<UploadOutlined />}
-                  disabled={!snapshot || !bridge}
-                  onClick={() => {
-                    setImportTarget("");
-                    fileInput.current?.click();
-                  }}
-                >
-                  导入文件
-                </Button>
-              )}
-              {snapshot && (
-                <Dropdown
-                  trigger={["click"]}
-                  menu={{
-                    items: [
-                      { key: "history", label: "更新记录", icon: <HistoryOutlined /> },
-                      {
-                        key: "sources",
-                        label: "添加更多来源",
-                        icon: <PlusOutlined />,
-                        disabled: !bridge,
-                      },
-                    ],
-                    onClick: ({ key }) => {
-                      if (key === "history") void openHistory();
-                      else setEditing(true);
-                    },
-                  }}
-                >
-                  <Button icon={<MoreOutlined />} aria-label="更多资料操作" />
-                </Dropdown>
-              )}
-            </>
+          {current?.canConfigure && snapshot && !showSyncRecovery && (
+            <Button
+              icon={<SettingOutlined />}
+              aria-label="仓库设置"
+              onClick={() => setConfigure(true)}
+            />
+          )}
+          {snapshot && !showSyncRecovery && (
+            <Button
+              icon={<ReloadOutlined />}
+              disabled={!binding || !bridge}
+              loading={busy}
+              onClick={sync}
+            >
+              同步
+            </Button>
+          )}
+          {snapshot && (
+            <Button
+              type="primary"
+              icon={<UploadOutlined />}
+              disabled={!snapshot || !bridge}
+              onClick={() => {
+                setImportTarget("");
+                fileInput.current?.click();
+              }}
+            >
+              导入文件
+            </Button>
+          )}
+          {snapshot && (
+            <Dropdown
+              trigger={["click"]}
+              menu={{
+                items: [
+                  { key: "history", label: "更新记录", icon: <HistoryOutlined /> },
+                  {
+                    key: "sources",
+                    label: "添加更多来源",
+                    icon: <PlusOutlined />,
+                    disabled: !bridge,
+                  },
+                ],
+                onClick: ({ key }) => {
+                  if (key === "history") void openHistory();
+                  else setEditing(true);
+                },
+              }}
+            >
+              <Button icon={<MoreOutlined />} aria-label="更多资料操作" />
+            </Dropdown>
           )}
         </div>
       </div>
@@ -565,7 +552,7 @@ export function TeamLibraryWorkspace({
           event.target.value = "";
         }}
       />
-      {tab === "team" && snapshot && (
+      {snapshot && (
         <div className="team-library-status">
           {snapshot?.manifest.title || "课题组资料"}
           {snapshot && (
@@ -590,10 +577,10 @@ export function TeamLibraryWorkspace({
           )}
         </div>
       )}
-      {tab === "team" && (error || (snapshot && repository.error)) && (
+      {(error || (snapshot && repository.error)) && (
         <Alert type="error" showIcon message={error || repository.error} />
       )}
-      {tab === "team" && snapshot && syncIssue && (
+      {snapshot && syncIssue && (
         <Alert
           type="warning"
           showIcon
@@ -606,12 +593,7 @@ export function TeamLibraryWorkspace({
           }
         />
       )}
-      {tab === "mine" ? (
-        <div className="team-library-personal">
-          <LibraryIndexPage />
-        </div>
-      ) : (
-        <>
+      <>
           {!supported ? (
             <Alert
               type="info"
@@ -1154,8 +1136,7 @@ export function TeamLibraryWorkspace({
               )}
             </div>
           )}
-        </>
-      )}
+      </>
       <Drawer
         open={panel === "history"}
         width="85vw"
@@ -1665,7 +1646,7 @@ function EntryEditor({
               }
             }}
           >
-            选择本地资料文件夹
+            选择课题组文件的本机目录
           </Button>
           <Select
             style={{ width: "100%" }}

@@ -12,6 +12,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { LabStandards } from "./LabStandards";
 import { LibraryIndexPage } from "./LibraryIndexPage";
+import { PersonalFilesPage } from "./PersonalFilesPage";
 import { ResearchLibrary } from "./ResearchLibrary";
 import { useWorkspaceAvailability } from "./useWorkspaceAvailability";
 import { WorkspaceReports } from "./WorkspaceReports";
@@ -21,6 +22,7 @@ import "./record-workspace.scss";
 const librarySections = [
   { key: "team", label: "团队资料", Icon: FolderOutlined },
   { key: "mine", label: "我的资料", Icon: FolderOutlined },
+  { key: "index", label: "课题组文件索引", Icon: FileTextOutlined },
   { key: "standards", label: "课题组规范", Icon: SafetyCertificateOutlined },
   { key: "templates", label: "模板与方法", Icon: ReadOutlined },
   { key: "reports", label: "本机报告", Icon: FileTextOutlined },
@@ -37,10 +39,19 @@ export function LibraryWorkspace() {
   const reports = params.get("panel") === "reports";
   const standards = params.get("panel") === "standards" && standardsReady;
   const index = params.get("panel") === "index" && indexReady;
+  const mine = !params.has("panel") && params.get("scope") === "mine";
+  const openSection = (key: string) => {
+    const next = new URLSearchParams();
+    if (key === "mine") next.set("scope", "mine");
+    else if (key === "templates") {
+      next.set("panel", "standards");
+      next.set("section", "templates");
+    } else if (key !== "team") next.set("panel", key);
+    setParams(next);
+  };
   // Unknown compatibility is not an old server. Do not mount the legacy
   // library (and its Agent) while the first health read is still pending.
-  // Local reports remain usable without waiting for the backend.
-  if (!availability.version && !reports)
+  if (!availability.version && !reports && !mine)
     return (
       <main className="social-workspace workspace-library">
         <header className="workspace-heading">
@@ -62,10 +73,11 @@ export function LibraryWorkspace() {
               <p>正在确认资料服务…</p>
             </>
           )}
+          <Button onClick={() => openSection("mine")}>我的资料</Button>
         </section>
       </main>
     );
-  if (availability.supports(44)) {
+  if (availability.supports(44) || (!availability.version && mine)) {
     const active = reports
       ? "reports"
       : standards
@@ -73,27 +85,21 @@ export function LibraryWorkspace() {
         ? "templates"
         : "standards"
       : index
-      ? "mine"
+      ? "index"
       : params.get("panel") === "collections"
       ? "collections"
-      : params.get("scope") === "mine"
+      : mine
       ? "mine"
       : "team";
-    const openSection = (key: string) => {
-      const next = new URLSearchParams();
-      if (key === "mine") next.set("scope", "mine");
-      else if (key === "templates") {
-        next.set("panel", "standards");
-        next.set("section", "templates");
-      } else if (key !== "team") next.set("panel", key);
-      setParams(next);
-    };
+    const sections = availability.version
+      ? librarySections
+      : librarySections.filter(({ key }) => ["team", "mine", "reports"].includes(key));
     return (
       <main className="social-workspace workspace-library library-page-shell">
         <aside className="library-section-sidebar">
           <h1>资料</h1>
           <nav className="library-section-nav" aria-label="资料导航">
-            {librarySections.map(({ key, label, Icon }) => (
+            {sections.map(({ key, label, Icon }) => (
               <button
                 key={key}
                 type="button"
@@ -111,7 +117,7 @@ export function LibraryWorkspace() {
             value={active}
             onChange={(event) => openSection(event.target.value)}
           >
-            {librarySections.map(({ key, label }) => (
+            {sections.map(({ key, label }) => (
               <option key={key} value={key}>{label}</option>
             ))}
           </select>
@@ -123,7 +129,11 @@ export function LibraryWorkspace() {
             </div>
           ) : standards ? (
             <LabStandards />
-          ) : index || params.get("scope") === "mine" ? (
+          ) : mine ? (
+            <div className="library-workspace-content">
+              <PersonalFilesPage />
+            </div>
+          ) : index ? (
             <div className="library-workspace-content">
               <LibraryIndexPage />
             </div>
@@ -155,22 +165,18 @@ export function LibraryWorkspace() {
               ? "standards"
               : index
               ? "index"
+              : mine
+              ? "mine"
               : "collections"
           }
           options={[
             { label: "资料库", value: "collections" },
-            ...(indexReady ? [{ label: "资料索引", value: "index" }] : []),
+            { label: "我的资料", value: "mine" },
+            ...(indexReady ? [{ label: "课题组文件索引", value: "index" }] : []),
             ...(standardsReady ? [{ label: "课题组规范", value: "standards" }] : []),
             { label: "本机报告", value: "reports" },
           ]}
-          onChange={(value) => {
-            const next = new URLSearchParams(params);
-            // Old "peers" links fall back to the library instead of a blank tab.
-            if (value === "reports" || value === "standards" || value === "index")
-              next.set("panel", value);
-            else next.delete("panel");
-            setParams(next);
-          }}
+          onChange={(value) => openSection(String(value))}
         />
       </div>
       <div className={`library-workspace-content ${reports ? "is-reports" : ""}`}>
@@ -180,6 +186,8 @@ export function LibraryWorkspace() {
           <LabStandards />
         ) : index ? (
           <LibraryIndexPage />
+        ) : mine ? (
+          <PersonalFilesPage />
         ) : (
           <ResearchLibrary />
         )}

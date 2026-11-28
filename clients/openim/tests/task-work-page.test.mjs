@@ -80,7 +80,7 @@ async function workPageHost({ kind = "research", status = "completed", deliverie
     react: { useState(value) {
       const index = hook++;
       if (!(index in state)) state[index] = index === 1 ? localState : value;
-      return [state[index], (next) => { state[index] = next; }];
+      return [state[index], (next) => { state[index] = typeof next === "function" ? next(state[index]) : next; }];
     }, useRef: value => ({ current: value }), useEffect() {} },
     "react/jsx-runtime": { jsx, jsxs: jsx, Fragment: "fragment" },
     "react-router-dom": { useNavigate: () => () => {}, Link: "Link" },
@@ -283,6 +283,40 @@ test("work folder headings keep the verified path available while hiding legacy 
     const hint = nodes(tree).find(node => node.props?.className === "task-work-section-hint" && node.props.title === directory);
     assert.equal(hint?.props.children, label);
   }
+});
+
+test("local task materials copy from the explicitly selected personal or shared folder", async () => {
+  const calls = [];
+  const render = await workPageHost({
+    status: "in_progress",
+    allowedActions: ["submit"],
+    localState: { phase: "ready", files: [], events: [], binding: { directory: "synthetic_folder", sources: [] } },
+    bridge: {
+      taskImportPersonalLibrary: async (_target, rels) => { calls.push(["personal", ...rels]); },
+      taskImportLibrary: async (_target, rels) => { calls.push(["shared", ...rels]); },
+    },
+  });
+  const openSection = (title) => nodes(render())
+    .find(node => node.type === "section" && node.props["aria-label"] === title)
+    .props.children[0].props.onClick();
+  const click = (label) => nodes(render())
+    .find(node => node.type === "Button" && node.props.children === label)
+    .props.onClick();
+  const pick = (source, rel) => {
+    const modal = nodes(render()).find(node => node.type === "LocalLibraryPicker");
+    assert.equal(modal.props.source, source);
+    assert.equal(modal.props.open, true);
+    modal.props.onPick([rel]);
+  };
+  openSection("工作");
+  click("从我的资料取用");
+  pick("personal", "personal.md");
+  await new Promise(setImmediate);
+  openSection("资料与归档");
+  click("从课题组本机目录取用");
+  pick("shared", "group.md");
+  await new Promise(setImmediate);
+  assert.deepEqual(calls, [["personal", "personal.md"], ["shared", "group.md"]]);
 });
 test("review grants place exactly one control by the latest result for both task types", async () => {
   const team = await renderWorkPage({ status: "in_review", deliveries: [delivery(1, "changes_requested"), { ...delivery(2), review: null }], allowedActions: ["review"] });

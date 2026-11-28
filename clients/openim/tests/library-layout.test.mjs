@@ -17,12 +17,13 @@ async function fixture() {
     react: { useRef(value) { const index = cursor++; return refs[index] ||= { current: value }; }, useEffect() {}, useSyncExternalStore(_subscribe, get) { return get(); } },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     antd: { Button: 'Button', Segmented: 'Segmented', Spin: 'Spin' },
-    'react-router-dom': { useSearchParams: () => [new URLSearchParams(f.panel), () => {}] },
+    'react-router-dom': { useSearchParams: () => [new URLSearchParams(f.panel), params => { f.panel = params.toString(); }] },
     './useResearchRead': { useResearchRead: () => f.read },
     './store': { useResearchStore: selector => selector({ generation: f.generation }) },
     './workspace.scss': {}, './library-workspace.scss': {},
     './LabStandards': { LabStandards: 'Standards' },
     './LibraryIndexPage': { LibraryIndexPage: 'Index' },
+    './PersonalFilesPage': { PersonalFilesPage: 'PersonalFiles' },
     './ResearchLibrary': { ResearchLibrary: 'Legacy' },
     './TeamLibraryWorkspace': { TeamLibraryWorkspace: 'Team' },
     './WorkspaceReports': { WorkspaceReports: 'Reports' },
@@ -32,7 +33,7 @@ async function fixture() {
     const module = { exports: {} };
     vm.runInNewContext(ts.transpileModule(source, { compilerOptions: {
       module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
-    } }).outputText, { module, exports: module.exports, require: name => {
+    } }).outputText, { module, exports: module.exports, URLSearchParams, require: name => {
       assert(Object.hasOwn(imports, name), name); return imports[name];
     } });
     return module.exports;
@@ -113,12 +114,25 @@ test('disabling or creating a fresh renderer does not inherit a confirmed versio
   const fresh = await fixture(); assert.equal(fresh.hook().version, undefined);
 });
 
-test('my materials and existing index links mount the local index without a team Git workspace', async () => {
+test('my materials and existing index links open separate local and shared screens', async () => {
   const f = await fixture(); f.confirm('0.49.0');
-  for (const panel of ['scope=mine', 'panel=index']) {
+  for (const [panel, screen] of [['scope=mine', 'PersonalFiles'], ['panel=index', 'Index']]) {
     f.panel = panel;
     const tree = f.render();
-    assert(has(tree, 'Index'));
+    assert(has(tree, screen));
     assert.equal(has(tree, 'Team'), false);
+    assert.equal(has(tree, screen === 'Index' ? 'PersonalFiles' : 'Index'), false);
   }
+});
+
+test('personal files open before a server version is known and with a legacy server', async () => {
+  const f = await fixture();
+  f.read.error = 'offline';
+  nodes(f.render()).find(node => node.type === 'Button' && node.props.children === '我的资料').props.onClick();
+  assert.equal(f.panel, 'scope=mine');
+  assert(has(f.render(), 'PersonalFiles'));
+  assert.equal(has(f.render(), 'Index'), false);
+  f.confirm('0.40.0');
+  assert(has(f.render(), 'PersonalFiles'));
+  assert.equal(has(f.render(), 'Legacy'), false);
 });
