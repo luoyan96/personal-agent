@@ -1,3 +1,4 @@
+import { ResearchDirections } from "./ResearchDirections";
 import { Alert, Button, Input } from "antd";
 import { EditOutlined, IdcardOutlined } from "@ant-design/icons";
 import { useState } from "react";
@@ -159,6 +160,7 @@ export function MyProfile() {
               <ContactCardShare contact={contact} active />
             </SettingsDisclosure>
           </div>
+          <ResearchDirections />
           <section className="my-profile-details" aria-labelledby="my-profile-fields">
             <h3 id="my-profile-fields">{draft ? "编辑个人资料" : "名片资料"}</h3>
             {draft ? (
