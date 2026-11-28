@@ -76,8 +76,16 @@ export const endpointExamples = Object.fromEntries(Object.entries(routes).map(([
   const request = sample(z.toJSONSchema(route.request, { unrepresentable: 'any' }) as JsonShape)
   if(name==='saveTeamRepository') (request as {body:{url:string}}).body.url='https://github.com/synthetic/team-library'
   if (name === 'updateAssistantProactiveSettings') (request as { body: unknown }).body = { mode: 'contextual', learnFromChat: true, expectedVersion: 1 }
+  if (name === 'updateMyResearchDirections' || name === 'updateLabResearchDirections') (request as { body: unknown }).body = { directions: ['Synthetic imaging'], expectedVersion: 1 }
   const response = name === 'content' || name === 'researchFileContent' ? new Uint8Array([120]) : sample(z.toJSONSchema(route.response, { unrepresentable: 'any' }) as JsonShape)
   if (name === 'assistantProactiveSettings') (response as { data: unknown }).data = { mode: 'greeting', learnFromChat: false, version: 1 }
   if (name === 'updateAssistantProactiveSettings') (response as { data: unknown }).data = { mode: 'contextual', learnFromChat: true, version: 2 }
+  if (name === 'myResearchDirections' || name === 'labResearchDirections') (response as { data: unknown }).data = { directions: [], canEdit: name === 'myResearchDirections', version: 1 }
+  if (name === 'updateMyResearchDirections' || name === 'updateLabResearchDirections') (response as { data: unknown }).data = { directions: ['Synthetic imaging'], canEdit: true, version: 2 }
+  if (name === 'assistantLiteratureRecommendations') (response as { data: unknown }).data = {
+    source: 'personal', directions: ['Synthetic imaging'], updatedAt: at,
+    batchId: 'synthetic_batch', messageId: 'synthetic_assistant_reply',
+    items: [{ id: '9999.99999v1', title: 'Synthetic paper for an interface example', authors: ['Synthetic Author'], batchId: 'synthetic_batch', messageId: 'synthetic_assistant_reply' }],
+  }
   return [name, { contractVersion: m.contractVersion, synthetic: true, method: route.method, path: route.path, stage: route.stage, status: route.status, request: route.request.parse(request), response: route.response.parse(response) }]
 }))

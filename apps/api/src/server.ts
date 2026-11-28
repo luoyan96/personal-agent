@@ -53,6 +53,7 @@ import { OpenImBridge } from './openim-bridge.js'
 import { OpenImClient } from './openim-client.js'
 import { OpenImCallbacks } from './openim-callback.js'
 import { readCommunityCatalog, readCommunityEntry } from './community-catalog.js'
+import { assistantLiteratureCommands, runAssistantLiterature, type AssistantLiteratureCommand } from './assistant-literature.js'
 
 export function createServer(config: Config, options:{imClient?:OpenImClient;externalCall?:ExternalAgentCall;feishuTransport?:FeishuTransport;dshTransport?:DshTransport}={}) {
   if(options.dshTransport&&config.mode!=='test')throw new Error('Injected DSH transport is test-only')
@@ -245,6 +246,7 @@ export function createServer(config: Config, options:{imClient?:OpenImClient;ext
         const actor = authenticate(connection, token)
         if (route.method !== 'GET') requireCsrf(actor, request.headers['x-csrf-token'])
         if (name === 'session') return routes.session.response.parse({ data: { member: new Collaboration(connection, actor).member(actor.id), csrfToken: csrfToken(connection, token), expiresAt: actor.expiresAt, isLabManager:isLabManager(connection,actor), spaceKind:connection.prepare('SELECT 1 FROM personal_spaces WHERE lab_id=?').get(teamLabId(actor))?'personal':'laboratory' } })
+        if (assistantLiteratureCommands.has(name)) return route.response.parse(runAssistantLiterature(connection, actor, name as AssistantLiteratureCommand, parsed.data as RequestFor<AssistantLiteratureCommand>))
         if((labMembershipCommands as readonly string[]).includes(name))return runLabMembership(connection,actor,name as LabMembershipCommand,parsed.data as RequestFor<LabMembershipCommand>)
         if(route.stage==='PEER1')return route.response.parse(new PeerLibraryService(connection,actor,actor.csrfHash,config).run(name as keyof typeof import('@research-agent-platform/contracts').peerLibraryRoutes,parsed.data as RequestFor<keyof typeof import('@research-agent-platform/contracts').peerLibraryRoutes>))
         if (name === 'logout') {

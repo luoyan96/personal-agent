@@ -1,5 +1,8 @@
 /** Use only when simulating a historical schema from a fully migrated fixture. */
 export const rewindCompanionMigrations = `
+  DROP TABLE IF EXISTS assistant_literature_batches;
+  DROP TABLE IF EXISTS lab_research_directions;
+  DROP TABLE IF EXISTS personal_research_directions;
   DROP TABLE IF EXISTS assistant_proactive_deliveries;
   DROP TABLE IF EXISTS assistant_proactive_settings;
   ALTER TABLE assistant_greetings DROP COLUMN last_daily_at;
