@@ -3574,3 +3574,8 @@ Windows 本地 97 项定向测试通过，客户端和 Electron 类型检查通�
 开发分支基于个人目录改动 154b54b。科研插件源码固定为 dcf61c0cd16e2cfca8cbba00a7892a57ecd790d7。桌面安装流程验证下载内容和内置包两份 SHA-256，使用已构建模块离线安装。数据迁移、线上服务和官网无需随这项功能更新。
 
 Windows Edge 使用合成材料实际点选 PPT 和 Word 模板、个人参考资料及 LaTeX 稿件。核对工作副本、已缓存 PDF 的原始字节与可提取文字、恢复后的会话范围。隔离 Electron 验证真实预加载和 IPC；真实内置 pnpm 在空缓存离线升级成功。测试入口为 clients/openim/tests/dsh-workbench-materials.test.mjs、dsh-plugin-upgrade.test.mjs 和插件 tests/paper-materials.test.mjs；本地操作截图在 D:/deepseek-agent/.runtime/workbench-library-qa。未调用用户模型或编辑真实个人论文，正式版待发布。
+
+
+## 2026-11-28 · DeepChat 1.0.5 发布准备
+
+以 PR #276 与 #277 合入的桌面个人资料和科研工作台取材为本版范围。Windows 客户端和官网静态下载路径同步到 1.0.5，内置科研插件固定为 0.6.0。沿用现有生产 API 和数据库，不需要新增迁移。稳定版安装包和官网待发布。
