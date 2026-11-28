@@ -498,3 +498,20 @@
   padding-inline: 0;
   margin-block: 2px 6px;
 }
+
+.companion-memory {
+  display: grid;
+  gap: 12px;
+  label { display: grid; gap: 6px; }
+  h3, p { margin: 0; }
+  article {
+    border-top: 1px solid #dce3ea;
+    padding-block: 12px 0;
+    display: grid;
+    gap: 6px;
+    overflow-wrap: anywhere;
+  }
+  small { color: #566779; }
+  p { white-space: pre-wrap; }
+  .companion-learning { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+}
