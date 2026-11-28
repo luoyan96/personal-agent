@@ -20,6 +20,14 @@ export async function dshAccount(event: Electron.IpcMainInvokeEvent) {
     if (auth.contents.isDestroyed() || authority(event).contents !== auth.contents || (await cookie()) !== token || new URL(getResearchServiceStatus().address).origin !== service)
       throw Error('DeepChat 登录已变化，请重新打开 DSH。');
   };
+  const watch = (onChange: () => void) => {
+    const cookies = auth.contents.session.cookies;
+    const changed = (_event: Electron.Event, changedCookie: Electron.Cookie) => {
+      if (changedCookie.name === name) onChange();
+    };
+    cookies.on('changed', changed);
+    return () => cookies.removeListener('changed', changed);
+  };
   const request = (url: string, method = 'GET') => {
     const req = net.request({ url: service + url, method, session: auth.contents.session, useSessionCookies: false, redirect: 'error' });
     req.setHeader('Cookie', 'rap_session=' + token); req.setHeader('Origin', service);
@@ -45,7 +53,7 @@ export async function dshAccount(event: Electron.IpcMainInvokeEvent) {
   if (session?.member?.id !== metadata.memberId || !/^[a-f0-9]{64}$/.test(session?.csrfToken)) throw Error('账号核对失败。');
   await valid();
   return {
-    metadata, valid, request, csrf: session.csrfToken as string,
+    metadata, valid, watch, request, csrf: session.csrfToken as string,
     identity: desktopAccountIdentity(service, metadata.memberId),
     lease: createHash('sha256').update(token).digest('hex'),
   };

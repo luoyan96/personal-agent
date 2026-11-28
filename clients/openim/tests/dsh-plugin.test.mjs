@@ -6,9 +6,11 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import vm from "node:vm";
+import { tools } from "../../../scripts/desktop-tools.mjs";
 
 const require = createRequire(import.meta.url);
 const esbuild = createRequire(require.resolve("vite"))("esbuild");
+const bundled = tools.find(entry => entry.name === "dsh-research-workbench").version;
 const compiled = await esbuild.build({
   entryPoints: [new URL("../electron/utils/dshPlugin.ts", import.meta.url).pathname.replace(/^\/(\w:)/, "$1")],
   bundle: true, platform: "node", format: "cjs", write: false,
@@ -40,7 +42,7 @@ async function fixture(t, current, options = {}) {
     void (async () => {
       await new Promise(resolve => setImmediate(resolve));
       if (options.fail) { child.emit("close", 1); return; }
-      await writeFile(installed, JSON.stringify({ version: options.installVersion ?? "0.6.0" }));
+      await writeFile(installed, JSON.stringify({ version: options.installVersion ?? bundled }));
       child.emit("close", 0);
     })().catch(error => child.emit("error", error));
     return child;
@@ -59,11 +61,11 @@ test("fresh profile is left to DSH before the plugin bootstrap runs", async t =>
   assert.equal(f.calls.length, 0);
 });
 
-for (const current of [undefined, "0.3.3", "0.4.0", "0.5.1", "0.6.0-rc.1"]) {
+for (const current of [undefined, "0.3.3", "0.4.0", "0.5.1", "0.6.0", "0.7.0", `${bundled}-rc.1`]) {
   test(`missing/older plugin ${current} installs the pinned offline bundle and verifies the actual version`, async t => {
     const f = await fixture(t, current, { bundles: ["other-plugin"] });
     const r = await f.run();
-    assert.equal(r.changed, true); assert.equal(r.version, "0.6.0");
+    assert.equal(r.changed, true); assert.equal(r.version, bundled);
     assert.equal(f.calls.length, 1);
     assert.deepEqual(Array.from(f.calls[0].args.slice(-4)), ["add", `dsh-research-workbench@file:${f.tarball}`, "--offline", "--ignore-scripts"]);
     assert.equal(f.calls[0].options.cwd, f.profile);
@@ -75,7 +77,7 @@ for (const current of [undefined, "0.3.3", "0.4.0", "0.5.1", "0.6.0-rc.1"]) {
   });
 }
 
-for (const current of ["0.6.0", "0.6.0+local", "0.6.1", "0.10.0", "0.7.0-rc.1", "1.0.0"]) {
+for (const current of [bundled, `${bundled}+local`, "0.7.2", "0.10.0", "0.8.0-rc.1", "1.0.0"]) {
   test(`restart preserves independently installed ${current} without downgrading or rewriting its profile`, async t => {
     const f = await fixture(t, current);
     const before = await readFile(f.manifestPath, "utf8");

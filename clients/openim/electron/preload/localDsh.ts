@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import type { WorkbenchMaterialBridge } from "../../src/types/dshWorkbenchMaterials";
+import type { WorkbenchLiteratureBridge } from "../../src/types/dshWorkbenchLiterature";
 
 // Match DSH rc.3's desktop extension points. Keep this preload separate from
 // DeepChat's application preload: the DSH document receives no app IPC or Node API.
@@ -21,4 +22,12 @@ if (process.isMainFrame && location.protocol === "http:" && location.hostname ==
     readMany: ({ selections }) => fromUser(() => ipcRenderer.invoke("dsh-workbench-materials-read-many", { selections })),
   };
   contextBridge.exposeInMainWorld("__DSH_WORKBENCH_MATERIALS__", materials);
+  const literature: WorkbenchLiteratureBridge = {
+    // Both initial load and explicit refresh read the current saved feed.
+    listRecommendations: () => ipcRenderer.invoke("dsh-workbench-literature-recommendations"),
+  };
+  contextBridge.exposeInMainWorld("__DSH_WORKBENCH_LITERATURE__", literature);
+  ipcRenderer.on("dsh-workbench-literature-reset", () => {
+    window.dispatchEvent(new Event("dsh-workbench-literature-reset"));
+  });
 }

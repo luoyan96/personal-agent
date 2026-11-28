@@ -1,3 +1,4 @@
+import { ResearchDirections } from "./ResearchDirections";
 import { EllipsisOutlined } from "@ant-design/icons";
 import { Alert, App, AutoComplete, Button, Dropdown, Input, Select, Space } from "antd";
 import { useEffect, useRef, useState } from "react";
@@ -282,6 +283,7 @@ export function LabWorkspace() {
           }
         />
       </section>
+      {current && <ResearchDirections labId={current.id} />}
       {current && (
         <section aria-label="课题组成员">
           <h3>成员管理</h3>

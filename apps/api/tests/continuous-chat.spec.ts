@@ -2,7 +2,7 @@ import {randomBytes,randomUUID} from 'node:crypto'
 import {mkdtempSync,mkdirSync,writeFileSync,rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
-import {afterEach,describe,it,expect} from 'vitest'
+import {afterEach,describe,it,expect,vi} from 'vitest'
 import {routes,Id,Budget,ModelUsage,Version,Instant,ChatAvailability,type RouteName} from '@research-agent-platform/contracts'
 import {z} from 'zod'
 import {readConfig} from '../src/config.js'
@@ -12,6 +12,7 @@ import {masterAvailable} from '../src/lab-ai-settings.js'
 import {ChatWorker,reconcileChat} from '../src/chat-worker.js'
 import {TopicCuratorWorker} from '../src/topic-curator-worker.js'
 import {extendContinuous,startContinuous} from '../src/continuous-chat.js'
+import {arxivRecommendationRequest, parseArxivRecommendations, type ArxivSearch} from '../src/arxiv-recommendations.js'
 import type {ModelCall,ModelResult} from '../src/execution-worker.js'
 import {DatabaseSync} from 'node:sqlite'
 
@@ -31,21 +32,120 @@ async function setup(){
  expect(masterAvailable(config)).toBe(true)
  mkdirSync(config.blobRoot);const db=openDatabase(config.databasePath,true);migrate(db);clean.push(()=>db.close())
  let app=createServer(config),url=await app.listen({host:'127.0.0.1',port:0});clean.push(()=>app.close())
- const actors:{cookie:string;csrf:string;id:string}[]=[]
+ const actors:{cookie:string;csrf:string;id:string;username:string}[]=[]
  const call=async(name:RouteName,body:unknown=null,id?:string,actor=0,key:string=randomUUID())=>{
   const route=routes[name],response=await fetch(url+route.path.replace('{id}',id??''),{method:route.method,headers:{origin:config.origin,'content-type':'application/json','idempotency-key':key,...(actors[actor]?{cookie:actors[actor]!.cookie,'x-csrf-token':actors[actor]!.csrf}:{})},...(route.method==='GET'?{}:{body:JSON.stringify(body)})})
   return {status:response.status,value:await response.json() as any,cookie:response.headers.get('set-cookie')?.split(';')[0]??''}
  }
- for(const actor of [0,1]){const username=`continuous_${randomUUID().slice(0,8)}`,password='12345678';expect((await call('register',{username,password,displayName:`连续聊天者${actor}`},undefined,actor)).status).toBe(201);const login=await call('login',{username,password},undefined,actor);actors[actor]={cookie:login.cookie,csrf:'',id:login.value.data.id};actors[actor]!.csrf=(await call('session',null,undefined,actor)).value.data.csrfToken;const model=await call('createPersonalModel',{name:'合成模型',provider:'deepseek',model:'deepseek-flash',apiKey:'synthetic-no-live-key',enabled:true},undefined,actor);expect(model.status,JSON.stringify(model.value)).toBe(201)}
+ for(const actor of [0,1]){const username=`continuous_${randomUUID().slice(0,8)}`,password='12345678';expect((await call('register',{username,password,displayName:`连续聊天者${actor}`},undefined,actor)).status).toBe(201);const login=await call('login',{username,password},undefined,actor);actors[actor]={cookie:login.cookie,csrf:'',id:login.value.data.id,username};actors[actor]!.csrf=(await call('session',null,undefined,actor)).value.data.csrfToken;const model=await call('createPersonalModel',{name:'合成模型',provider:'deepseek',model:'deepseek-flash',apiKey:'synthetic-no-live-key',enabled:true},undefined,actor);expect(model.status,JSON.stringify(model.value)).toBe(201)}
  const own=(await call('personalConversation',{})).value.data
  const send=async(text:string,key:string=randomUUID(),continuous=true)=>{const r=await call('agentChatMessage',{text,continuous},own.conversation.id,0,key);expect(r.status,JSON.stringify(r.value)).toBe(201);return r.value.data}
  const turn=async(id:string)=>(await call('chatTurn',null,id)).value.data
  const progress=async(id:string)=>(await call('chatTurnProgress',null,id)).value.data
- const tick=(model:ModelCall,ready=true)=>new ChatWorker(db,config,model,undefined,ready?()=>Date.now()+10000:Date.now).tick()
+ const tick=(model:ModelCall,ready=true,paperSearch?:ArxivSearch)=>new ChatWorker(db,config,model,undefined,ready?()=>Date.now()+10000:Date.now,paperSearch).tick()
  const count=(table:string)=>Number(db.prepare(`SELECT count(*) n FROM ${table}`).get()!.n)
  const restart=async()=>{await app.close();app=createServer(config);url=await app.listen({host:'127.0.0.1',port:0})}
  return {db,config,call,own,send,turn,progress,tick,count,actors,restart}
 }
+
+describe('assistant paper recommendations',{timeout:20000},()=>{
+ const example = {id:'2611.03739',title:'Synthetic benchmark for video retrieval',authors:['Jia Yang'],published:'2026-11-04T17:00:00.000Z'}
+ const unexpectedModel: ModelCall = async () => { throw new Error('Search must not use the model for English directions') }
+
+ it('recognizes direct requests and distinguishes paper revision or a negated recommendation',()=>{
+  expect(arxivRecommendationRequest('推荐几篇论文')).toEqual({recent:false})
+  expect(arxivRecommendationRequest('有什么值得读的文献？')).toEqual({recent:false})
+  expect(arxivRecommendationRequest('推荐几篇这个方向的最新论文')).toEqual({recent:true})
+  expect(arxivRecommendationRequest('按我的研究方向，推荐几篇论文。')).toEqual({recent:false})
+  expect(arxivRecommendationRequest('下周组会要讲这个方向，有没有值得读的论文？')).toEqual({recent:false})
+  expect(arxivRecommendationRequest('我的组会要用，帮我推荐几篇论文')).toEqual({recent:false})
+  expect(arxivRecommendationRequest('给我推几篇论文')).toEqual({recent:false})
+  expect(arxivRecommendationRequest('Could you recommend a few recent arXiv papers?')).toEqual({recent:true})
+  for (const text of ['不要推荐论文', '推荐几篇论文，不过不要做', '请帮我修改这篇论文', '帮我找论文里的错字', '推荐论文写作工具', '翻译「推荐几篇论文」','把“下周组会要讲这个方向，帮我推荐几篇论文”译成英文','> 帮我推荐几篇论文'])
+   expect(arxivRecommendationRequest(text), text).toBeNull()
+ })
+
+ it('extracts only real Atom records and distinguishes a validated empty result from a provider error',()=>{
+  const feed = (total:number, entries:string) => '<feed xmlns="http://www.w3.org/2005/Atom" xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/"><opensearch:totalResults>' + total + '</opensearch:totalResults>' + entries + '</feed>'
+  const entry = (version:string) => '<entry><id>http://arxiv.org/abs/2611.03739' + version + '</id><title>Video &amp; retrieval</title><author><name>Jia Yang</name></author><published>2026-11-04T17:00:00Z</published><summary>  First line.\nSecond line.</summary></entry>'
+  expect(parseArxivRecommendations(feed(2, entry('v2') + entry('v1')))).toEqual([{...example,title:'Video & retrieval',summary:'First line. Second line.'}])
+  expect(parseArxivRecommendations(feed(0, ''))).toEqual([])
+  expect(() => parseArxivRecommendations(feed(1, '<entry><id>https://arxiv.org/api/errors</id></entry>'))).toThrow()
+  expect(() => parseArxivRecommendations('<html>bad gateway</html>')).toThrow()
+ })
+
+ it('publishes the same batch in authenticated chat and the feed, then falls back to the selected group without sharing batches',async()=>{
+  const s=await setup()
+  const team=(await s.call('createLab',{name:'Synthetic video lab'})).value.data
+  expect(team.id).toBeTruthy()
+  expect((await s.call('updateLabResearchDirections',{directions:['video retrieval'],expectedVersion:1},team.id)).status).toBe(200)
+  const invitation=(await s.call('inviteLabMember',{username:s.actors[1]!.username},team.id)).value.data
+  expect((await s.call('decideLabInvitation',{expectedVersion:invitation.version,decision:'accepted'},invitation.id,1)).status).toBe(200)
+  expect((await s.call('updateMyResearchDirections',{directions:['多模态基准'],expectedVersion:1})).status).toBe(200)
+  const key=randomUUID(), question='推荐几篇这个方向的最新论文', sent=await s.send(question,key)
+  expect(await s.tick(async input=>{
+   expect(JSON.parse(input.prompt)).toEqual(['多模态基准'])
+   return result(JSON.stringify(['multimodal benchmark']))
+  },true,async (terms, options)=>{
+   expect(terms).toEqual(['multimodal benchmark'])
+   expect(options.recent).toBe(true)
+   return [example]
+  })).toBe(true)
+  const progress=await s.progress(sent.turn.id)
+  expect(progress).toMatchObject({phase:'final',text:expect.stringContaining('https://arxiv.org/abs/'+example.id)})
+  const read=async(actor=0)=>{const response = await s.call('assistantLiteratureRecommendations',null,undefined,actor);expect(response.status).toBe(200);return response.value.data}
+  const personal=await read()
+  expect(personal).toMatchObject({source:'personal',directions:['多模态基准'],messageId:progress.finalMessageId,items:[{...example,batchId:personal.batchId,messageId:progress.finalMessageId}]})
+  const replies=(await s.call('chatMessages',null,s.own.conversation.id)).value.data
+  expect(replies).toEqual(expect.arrayContaining([expect.objectContaining({id:personal.messageId,text:expect.stringContaining(personal.items[0].title)})]))
+  expect((await s.send(question,key)).turn.id).toBe(sent.turn.id)
+  expect(await s.tick(unexpectedModel,true,async()=>{throw new Error('duplicate search')})).toBe(false)
+  expect(s.count('assistant_literature_batches')).toBe(1)
+  expect(await read(1)).toEqual({source:'team',directions:['video retrieval'],items:[]})
+  expect((await s.call('chatTurn',null,sent.turn.id,1)).status).toBe(404)
+  expect((await s.call('updateMyResearchDirections',{directions:[],expectedVersion:2})).status).toBe(200)
+  const second=await s.send('有什么值得读的文献？')
+  expect(await s.tick(unexpectedModel,true,async terms=>{expect(terms).toEqual(['video retrieval']);return [example]})).toBe(true)
+  const teamRead=await read()
+  expect(teamRead).toMatchObject({source:'team',directions:['video retrieval'],messageId:(await s.progress(second.turn.id)).finalMessageId,items:[example]})
+  expect(teamRead.batchId).not.toBe(personal.batchId)
+  expect(await read(1)).toEqual({source:'team',directions:['video retrieval'],items:[]})
+
+  const errorTurn=await s.send('推荐几篇论文')
+  await s.tick(unexpectedModel,true,async()=>{throw new Error('provider unavailable')})
+  expect((await s.progress(errorTurn.turn.id)).text).toContain('暂时无法从 arXiv 检索论文')
+  expect(await read()).toEqual(teamRead)
+  const emptyTurn=await s.send('推荐几篇论文')
+  await s.tick(unexpectedModel,true,async()=>[])
+  expect((await s.progress(emptyTurn.turn.id)).text).toContain('暂未在 arXiv 找到匹配的论文')
+  expect(await read()).toMatchObject({source:'team',items:[]})
+  expect(s.count('assistant_literature_batches')).toBe(3)
+ })
+
+ it('fences a delayed search after directions change and skips external search for no direction',async()=>{
+  const s=await setup()
+  const absent=await s.send('推荐几篇论文')
+  let calls = 0
+  const countSearch: ArxivSearch = async () => {calls++;return [example]}
+  await s.tick(unexpectedModel,true,countSearch)
+  expect((await s.progress(absent.turn.id)).text).toContain('没有可用的研究方向')
+  expect(calls).toBe(0)
+  expect((await s.call('updateMyResearchDirections',{directions:['graph neural networks'],expectedVersion:1})).status).toBe(200)
+  const pending=await s.send('推荐几篇论文')
+  let release!: () => void, entered!: () => void
+  const ready=new Promise<void>(resolve=>{entered=resolve})
+  const gate=new Promise<void>(resolve=>{release=resolve})
+  const tick=s.tick(unexpectedModel,true,async()=>{entered();await gate;return [example]})
+  try {
+   await Promise.race([ready,tick.then(()=>{throw new Error('Search was not run')})])
+   expect((await s.call('updateMyResearchDirections',{directions:['compiler verification'],expectedVersion:2})).status).toBe(200)
+  } finally { release(); await tick }
+  expect((await s.progress(pending.turn.id)).text).toContain('检索期间研究方向发生了变化')
+  expect((await s.call('assistantLiteratureRecommendations')).value.data).toEqual({source:'personal',directions:['compiler verification'],items:[]})
+  expect(s.count('assistant_literature_batches')).toBe(0)
+ })
+})
+
 describe('continuous local chat: actual HTTP/SQLite, synthetic ModelCall only',{timeout:20000},()=>{
  it('continues a resumed topic through chat and keeps original messages and habits',async()=>{
   const s=await setup(),habit='比较方案时先给结论，再列证据。'
@@ -147,16 +247,32 @@ describe('continuous local chat: actual HTTP/SQLite, synthetic ModelCall only',{
  })
  it('persists seven queued supplements as one batch/call/budget, replays exactly, and exposes real deltas before canonical final',async()=>{
   const s=await setup(),ids:string[]=[],keys:string[]=[],sent:any[]=[]
-  for(let i=0;i<7;i++){keys.push(randomUUID());const r=await s.send(`第${i+1}条补充完整文字。`,keys[i]);ids.push(r.message.id);sent.push(r);expect(r.turn.id).toBe(sent[0].turn.id)}
-  expect(s.count('chat_turns')).toBe(1);expect(s.count('chat_messages')).toBe(7);expect(s.count('chat_attempts')).toBe(0)
-  expect(await s.tick(async()=>{throw new Error('must not call inside merge window')},false)).toBe(false)
-  expect(await s.progress(sent[0].turn.id)).toMatchObject({phase:'queued',text:'',inputMessageIds:ids})
-  expect((await s.send('第1条补充完整文字。',keys[0])).message.id).toBe(ids[0])
+  const startedAt=Date.now(), clock=vi.spyOn(Date,'now')
+  try {
+   // Request scheduling in CI may exceed the merge window. Advance the chat
+   // clock per accepted supplement while keeping real HTTP and SQLite.
+   for(let i=0;i<7;i++){
+    clock.mockReturnValue(startedAt+i*100)
+    keys.push(randomUUID())
+    const r=await s.send(`第${i+1}条补充完整文字。`,keys[i])
+    ids.push(r.message.id);sent.push(r);expect(r.turn.id).toBe(sent[0].turn.id)
+   }
+   expect(s.count('chat_turns')).toBe(1);expect(s.count('chat_messages')).toBe(7);expect(s.count('chat_attempts')).toBe(0)
+   expect(await s.tick(async()=>{throw new Error('must not call inside merge window')},false)).toBe(false)
+   expect(await s.progress(sent[0].turn.id)).toMatchObject({phase:'queued',text:'',inputMessageIds:ids})
+   expect((await s.send('第1条补充完整文字。',keys[0])).message.id).toBe(ids[0])
+  } finally { clock.mockRestore() }
   let release!:(v:ModelResult)=>void,enter!:()=>void;const ready=new Promise<void>(r=>{enter=r})
   const pending=s.tick(async(input,_signal,_credential,onDelta)=>{for(let i=0;i<7;i++)expect(input.prompt).toContain(`第${i+1}条补充完整文字。`);expect(input.maxTokens).toBeGreaterThan(64);onDelta?.('我收到了');enter();return new Promise(r=>{release=r})})
-  await ready;const streamed=await s.progress(sent[0].turn.id);expect(streamed).toMatchObject({phase:'streaming',text:'我收到了',finalMessageId:null})
-  expect(s.count('chat_messages')).toBe(7);release(result('我收到了全部补充。'));await pending
-  const final=await s.progress(sent[0].turn.id);expect(final).toMatchObject({phase:'final',text:'我收到了全部补充。',inputMessageIds:ids});expect(final.finalMessageId).toBe((await s.turn(sent[0].turn.id)).outputMessageId);expect(final.revision).toBeGreaterThan(streamed.revision)
+  let streamedRevision:number
+  try {
+   await Promise.race([ready,pending.then(()=>{throw new Error('The merged turn did not start streaming')})])
+   const streamed=await s.progress(sent[0].turn.id)
+   expect(streamed).toMatchObject({phase:'streaming',text:'我收到了',finalMessageId:null})
+   expect(s.count('chat_messages')).toBe(7)
+   streamedRevision=streamed.revision
+  } finally { release?.(result('我收到了全部补充。'));await pending }
+  const final=await s.progress(sent[0].turn.id);expect(final).toMatchObject({phase:'final',text:'我收到了全部补充。',inputMessageIds:ids});expect(final.finalMessageId).toBe((await s.turn(sent[0].turn.id)).outputMessageId);expect(final.revision).toBeGreaterThan(streamedRevision)
   expect(s.count('chat_attempts')).toBe(1);expect(await s.tick(async()=>{throw new Error('no duplicate charge')})).toBe(false)
   const stored=JSON.parse(String(s.db.prepare('SELECT document FROM chat_turns').get()!.document));expect(stored).not.toHaveProperty('continuous');expect(LegacyTurn.safeParse(stored).success).toBe(true);expect(LegacyTurn.safeParse(await s.turn(sent[0].turn.id)).success).toBe(true)
   await s.restart();expect((await s.progress(sent[0].turn.id)).finalMessageId).toBe(final.finalMessageId)

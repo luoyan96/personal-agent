@@ -55,7 +55,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: clients/openim/tools/.cache
-          key: desktop-tools-${{ runner.os }}-tectonic-0.17.0-dsh-research-workbench-0.6.0
+          key: desktop-tools-${{ runner.os }}-tectonic-0.17.0-dsh-research-workbench-0.7.1
       - name: Stage pinned DSH and tools for offline plugin upgrade tests
         run: |
           node integrations/deepseek-harness/desktop/stage-runtime.mjs clients/openim

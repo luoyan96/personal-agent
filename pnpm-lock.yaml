@@ -32,6 +32,9 @@ importers:
       '@research-agent-platform/research-skills':
         specifier: workspace:*
         version: link:../../packages/research-skills
+      '@rgrove/parse-xml':
+        specifier: 5.0.0
+        version: 5.0.0
       fastify:
         specifier: 5.12.5
         version: 5.12.5
@@ -333,6 +336,10 @@ packages:
 
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
+
+  '@rgrove/parse-xml@5.0.0':
+    resolution: {integrity: sha512-SgHFyisNAkS2ZbM8SCriUm1N0bxLiz0POKvpDeAtrnLrXaYG1PawNwu1rSjmE/vcVHbZzYWNgVP6xkep6R4uXg==}
+    engines: {node: '>=22.12.0'}
 
   '@rolldown/binding-android-arm-eabi@1.2.9':
     resolution: {integrity: sha512-tNISae1QEf/vkb3xkRcjV5SEdzPE97We5IVaa2Z8jSszQPZ8U60B/YCYpw4QI7VidYsBtKavczXf+DyDs9WGxw==}
@@ -1123,6 +1130,8 @@ snapshots:
   '@phosphor-icons/web@2.1.2': {}
 
   '@pinojs/redact@0.4.0': {}
+
+  '@rgrove/parse-xml@5.0.0': {}
 
   '@rolldown/binding-android-arm-eabi@1.2.9':
     optional: true

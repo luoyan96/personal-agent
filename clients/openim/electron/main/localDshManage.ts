@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { authority } from "./localFolderManage";
 import { dshAccount, createDshRelay } from "./localDshAccount";
 import { registerDshWorkbenchMaterialBridge } from "./dshWorkbenchMaterials";
+import { registerDshWorkbenchLiteratureBridge } from "./dshWorkbenchLiterature";
 import { registerTaskDshBridge } from './taskDshManage';
 import type { DshBounds } from "../../src/types/localDsh";
 import { ensureResearchPlugin, ensureTaskContextPlugin, researchPlugin } from "../utils/dshPlugin";
@@ -12,8 +13,8 @@ const { LocalDshRuntime, prepareAccountProfile, dshBrowserCompatibility } = requ
 
 export function registerLocalDshBridge() {
   let view: BrowserView | undefined, owner: BrowserWindow | undefined;
-  let viewHost: { event: Electron.IpcMainInvokeEvent; origin: string } | undefined;
-  let pageReady = false, pageError = "", starting: Promise<void> | undefined;
+  let viewHost: { event: Electron.IpcMainInvokeEvent; origin: string; lifetime: AbortController } | undefined;
+  let pageReady = false, pageError = "", starting: Promise<void> | undefined, stopping: Promise<void> | undefined;
   let quitting = false, observed: Electron.WebContents | undefined;
   const avatar = nativeImage.createFromPath(path.join(global.pathConfig.publicPath, 'icons', 'icon.png'))
     .resize({ width: 96 }).toDataURL();
@@ -21,15 +22,20 @@ export function registerLocalDshBridge() {
   let runtime = new LocalDshRuntime(directory, '');
   let relay: Awaited<ReturnType<typeof createDshRelay>> | undefined;
   let account: Awaited<ReturnType<typeof dshAccount>> | undefined;
-  let generation = 0;
+  let generation = 0, displayRequest = 0;
+  let unwatchAccount: (() => void) | undefined;
   let taskHooks:ReturnType<typeof registerTaskDshBridge>;
-  const accountWatch = setInterval(() => { if (account) void account.valid().catch(() => stop().catch(() => {})); }, 2000);
+  const accountWatch = setInterval(() => { if (account) void verifyAccount(account).catch(() => {}); }, 2000);
   accountWatch.unref();
   const snapshot = () => ({ ...runtime.state, ...(pageError ? { error: pageError } : {}), pageReady,
     accountId: account?.metadata.memberId, model: account?.metadata.model, bundled: true });
-  const hide = () => { if (view && owner && !owner.isDestroyed()) owner.removeBrowserView(view); };
+  const hide = () => {
+    displayRequest++;
+    if (view && owner && !owner.isDestroyed()) owner.removeBrowserView(view);
+  };
   function disposeView() {
     hide();
+    viewHost?.lifetime.abort();
     if (view && !view.webContents.isDestroyed()) view.webContents.close();
     view = undefined;
     viewHost = undefined;
@@ -44,9 +50,14 @@ export function registerLocalDshBridge() {
     owner = window;
     if (observed !== auth.contents) {
       observed = auth.contents;
+      let onDshPage = isPage(auth.contents.getURL());
       auth.contents.on("did-navigate-in-page", (_e, url, main) => {
         if (!main) return;
-        if (!isPage(url)) hide();
+        const nextOnDshPage = isPage(url);
+        if (!nextOnDshPage) hide();
+        else if (!onDshPage && view && !view.webContents.isDestroyed())
+          view.webContents.send("dsh-workbench-literature-reset");
+        onDshPage = nextOnDshPage;
         if (new URL(url).hash.startsWith("#/login")) void stop().catch(() => {});
       });
       auth.contents.on("did-start-navigation", (_e, _url, inPlace, main) => {
@@ -57,13 +68,35 @@ export function registerLocalDshBridge() {
     }
     return auth;
   }
-  async function stop() {
+  function clearAccount() {
+    unwatchAccount?.();
+    unwatchAccount = undefined;
+    account = undefined;
+    const current = relay;
+    relay = undefined;
+    return current?.close();
+  }
+  async function verifyAccount(current: Awaited<ReturnType<typeof dshAccount>>) {
+    try { await current.valid(); }
+    catch (error) {
+      if (account === current) void stop().catch(() => {});
+      throw error;
+    }
+  }
+  function stop() {
+    if (stopping) return stopping;
     generation++;
     disposeView();
     pageError = "";
-    await relay?.close(); relay = undefined; account = undefined;
-    await runtime.stop();
-    await starting?.catch(() => {});
+    const close = clearAccount(), inFlight = starting;
+    stopping = (async () => {
+      try { await close; }
+      finally {
+        try { await runtime.stop(); }
+        finally { await inFlight?.catch(() => {}); }
+      }
+    })().finally(() => { stopping = undefined; });
+    return stopping;
   }
   function openExternal(url: string) {
     try {
@@ -73,6 +106,7 @@ export function registerLocalDshBridge() {
     } catch { /* Ignore non-web schemes. */ }
   }
   async function start(event: Electron.IpcMainInvokeEvent) {
+    if (stopping) await stopping;
     if (starting) return starting;
     const auth = authorize(event, false), epoch = generation;
     starting = (async () => {
@@ -81,7 +115,7 @@ export function registerLocalDshBridge() {
       if (epoch !== generation) return;
       if (!next.metadata.enabled) throw Error('请先在 DeepChat「我的 → 模型设置」启用并选择默认模型，然后点击重试。');
       if (!account || account.identity !== next.identity || account.lease !== next.lease || account.metadata.fingerprint !== next.metadata.fingerprint || runtime.state.phase !== 'running') {
-        disposeView(); await relay?.close(); relay = undefined; account = undefined;
+        disposeView(); await clearAccount();
         await runtime.stop();
         if (epoch !== generation) return;
         const connection = await createDshRelay(next,{
@@ -90,6 +124,7 @@ export function registerLocalDshBridge() {
         });
         if (epoch !== generation) { await connection.close(); return; }
         relay = connection; account = next;
+        unwatchAccount = next.watch(() => { void verifyAccount(next).catch(() => {}); });
         const home = path.join(app.getPath('userData'), 'local-dsh', 'accounts', next.identity);
         const patch = await prepareAccountProfile(home, { ...next.metadata, baseURL: connection.baseURL }, avatar);
         if (epoch !== generation) return;
@@ -136,7 +171,7 @@ export function registerLocalDshBridge() {
       } });
       view = current;
       const origin = new URL(url).origin;
-      viewHost = { event, origin };
+      viewHost = { event, origin, lifetime: new AbortController() };
       current.webContents.setWindowOpenHandler(({ url: target }) => {
         openExternal(target);
         return { action: "deny" };
@@ -165,33 +200,39 @@ export function registerLocalDshBridge() {
         if (view === current) { disposeView(); pageError = "DSH 页面加载失败，请点击重新连接。"; }
       }
     })().catch(async (error) => {
-      disposeView(); await relay?.close(); relay = undefined; account = undefined;
+      if (epoch !== generation) return;
+      disposeView(); await clearAccount();
       await runtime.stop();
       pageError = error instanceof Error ? error.message : '本地 DSH 连接失败，请重试。';
     }).finally(() => { starting = undefined; });
     return starting;
   }
   ipcMain.handle("local-dsh-status", (event) => { authorize(event); return snapshot(); });
-  registerDshWorkbenchMaterialBridge(async (event) => {
+  async function workbenchConnection(event: Electron.IpcMainInvokeEvent, requireActivePage: boolean) {
     const current = view, currentAccount = account, currentHost = viewHost, epoch = generation;
     if (!current || !currentAccount || !currentHost) throw Error("工作台尚未连接。");
     const contents = current.webContents;
     const assertView = () => {
       if (current !== view || currentAccount !== account || currentHost !== viewHost || epoch !== generation ||
-          runtime.state.phase !== "running" || !pageReady || contents.isDestroyed() ||
+          runtime.state.phase !== "running" || contents.isDestroyed() ||
           event.sender !== contents || event.senderFrame !== contents.mainFrame ||
           new URL(event.senderFrame.url).origin !== currentHost.origin ||
-          !isPage(currentHost.event.sender.getURL()))
-        throw Error("工作台连接已变化，请重新打开资料选择。");
+          (requireActivePage && (!pageReady || !isPage(currentHost.event.sender.getURL()))))
+        throw Error("工作台连接已变化，请重新打开工作台。");
     };
     const valid = async () => {
       assertView();
-      await currentAccount.valid();
+      await verifyAccount(currentAccount);
       assertView();
     };
     await valid();
-    return { account: currentAccount, hostEvent: currentHost.event, contents, valid };
-  });
+    const revoke = () => {
+      if (currentAccount === account) void stop().catch(() => {});
+    };
+    return { account: currentAccount, hostEvent: currentHost.event, contents, valid, revoke, signal: currentHost.lifetime.signal };
+  }
+  registerDshWorkbenchMaterialBridge((event) => workbenchConnection(event, true));
+  registerDshWorkbenchLiteratureBridge((event) => workbenchConnection(event, false));
   ipcMain.handle('local-dsh-pick-directory', async (event) => {
     const current = view, currentAccount = account, epoch = generation;
     const validate = async () => {
@@ -245,10 +286,14 @@ export function registerLocalDshBridge() {
     if (result.response === 1) await stop();
     return snapshot();
   });
-  ipcMain.handle("local-dsh-show", (event, bounds: DshBounds | null) => {
+  ipcMain.handle("local-dsh-show", async (event, bounds: DshBounds | null) => {
     authorize(event, bounds !== null);
     if (!bounds) { hide(); return; }
-    if (!pageReady || !view) return;
+    if (!pageReady || !view || !account) return;
+    const current = view, currentAccount = account, request = ++displayRequest;
+    await verifyAccount(currentAccount);
+    if (request !== displayRequest || current !== view || currentAccount !== account || !pageReady) return;
+    authorize(event);
     const zoom = event.sender.getZoomFactor();
     const size = owner!.getContentBounds();
     if (![bounds.x, bounds.y, bounds.width, bounds.height].every(Number.isFinite)) throw Error("页面尺寸无效。");
@@ -256,8 +301,8 @@ export function registerLocalDshBridge() {
     const width = Math.min(Math.round(bounds.width * zoom), size.width - x);
     const height = Math.min(Math.round(bounds.height * zoom), size.height - y);
     if (width < 1 || height < 1) { hide(); return; }
-    owner!.addBrowserView(view);
-    view.setBounds({ x, y, width, height });
+    owner!.addBrowserView(current);
+    current.setBounds({ x, y, width, height });
   });
   app.on("before-quit", (event) => {
     if (quitting || runtime.state.phase === "stopped") return;

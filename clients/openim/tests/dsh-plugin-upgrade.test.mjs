@@ -7,6 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import { tools } from "../../../scripts/desktop-tools.mjs";
 
 const require = createRequire(import.meta.url);
 const client = fileURLToPath(new URL("../", import.meta.url));
@@ -14,8 +15,9 @@ const esbuild = createRequire(require.resolve("vite"))("esbuild");
 const compiled = await esbuild.build({ entryPoints: [path.join(client, "electron/utils/dshPlugin.ts")],
   bundle: true, platform: "node", format: "cjs", write: false });
 const runtime = path.join(client, ".dsh-runtime");
-const tarball = path.join(client, "tools/plugins/dsh-research-workbench-0.6.0.tgz");
 const name = "dsh-research-workbench";
+const bundled = tools.find(entry => entry.name === name);
+const tarball = path.join(client, bundled.target, bundled.member);
 const oldRef = "https://codeload.github.com/luoyan96/dsh-research-workbench/tar.gz/3d2805c87676505a635cbdc619bf85c95ee40bc4";
 
 for (const incomplete of [false, true]) {
@@ -60,11 +62,14 @@ for (const incomplete of [false, true]) {
           return child;
         } } : require(id) });
       const result = await module.exports.ensureResearchPlugin({ runtime, home, tarball });
-      assert.equal(result.changed, true); assert.equal(result.version, "0.6.0");
+      assert.equal(result.changed, true); assert.equal(result.version, bundled.version);
       const manifest = JSON.parse(await readFile(path.join(profile, "package.json"), "utf8"));
       assert.match(manifest.dependencies[name], /^file:/); assert.equal(manifest.dependencies["synthetic-other-plugin"], otherSpec);
       assert.deepEqual(manifest.dsh.profile, { bundles, retainedSetting: "synthetic preference" });
-      assert.equal(JSON.parse(await readFile(path.join(profile, "node_modules", name, "package.json"), "utf8")).version, "0.6.0");
+      assert.equal(JSON.parse(await readFile(path.join(profile, "node_modules", name, "package.json"), "utf8")).version, bundled.version);
+      const browser = await readFile(path.join(profile, "node_modules", name, "lib/client.js"), "utf8");
+      assert.match(browser, /__DSH_WORKBENCH_LITERATURE__/);
+      assert.match(browser, /dsh-workbench-literature-reset/);
       assert.equal(JSON.parse(await readFile(path.join(profile, "node_modules/synthetic-other-plugin/package.json"), "utf8")).version, "1.2.3");
       assert(!(await readFile(path.join(profile, "pnpm-lock.yaml"), "utf8")).includes(oldRef));
       const after = await Promise.all(sentinels.map(file => readFile(file)));

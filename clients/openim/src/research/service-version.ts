@@ -32,3 +32,8 @@ export function subscribeServiceVersion(listener: () => void) {
     listeners.delete(listener);
   };
 }
+export function supportsLiteratureRecommendations() {
+  if (!version) return false;
+  const [major, minor] = version.split(".").map(Number);
+  return major === 0 && minor >= 55;
+}
