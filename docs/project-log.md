@@ -3579,3 +3579,11 @@ Windows Edge 使用合成材料实际点选 PPT 和 Word 模板、个人参考�
 ## 2026-11-28 · DeepChat 1.0.5 发布准备
 
 以 PR #276 与 #277 合入的桌面个人资料和科研工作台取材为本版范围。Windows 客户端和官网静态下载路径同步到 1.0.5，内置科研插件固定为 0.6.0。沿用现有生产 API 和数据库，不需要新增迁移。稳定版安装包和官网待发布。
+
+## 2026-11-28 · DeepChat 1.0.5 Windows 正式发布
+
+- PR #276 与 #277 随 Windows x64 正式版交付。PR #278 合并提交 `cc4c3e0` 是 `v1.0.5` 标签目标，源码树与本机打包提交 `b03b7d4` 一致。四项 GitHub 检查、44 项本机定向测试、客户端和 Electron 类型检查通过。
+- 安装包大小 425,244,159 字节，SHA-256 为 `573ceb6895c4dfb52121b90cdbf3bd6c20015b583f24692735c7c37d446af764`，未签署 Authenticode。独立空白配置启动通过，日志记录了一次重复的 Electron 日志初始化。校验覆盖 2,108 个 ASAR 文件、165 个编译产物、24 张贴图、固定的 DSH 运行时、科研插件 0.6.0 和从安装包重新生成的 blockmap。
+- GitHub Latest 指向 1.0.5，四项公开附件的大小与摘要同本机回执一致。公开下载的 `latest.yml` 与本机构建一致。[发布说明](https://github.com/luoyan96/personal-agent/releases/tag/v1.0.5)
+- 广州 ECS 官网于北京时间 10:50:58 切换到 1.0.5。两个公开入口首页摘要一致，安装包响应均为 425,244,159 字节的附件。经 Nginx 读取完整安装包重新校验 SHA-256，与发布包相同。[产品官网](https://deepchat.acceptcat.com/) · [原官网地址](https://chat.acceptcat.com/deepchat/)
+- 生产 API 和 worker 沿用 `641c7f2`，数据库迁移版本 043。公网就绪检查返回契约 0.53.0，数据库、存储和身份验证为正常，真实模型未验证。发布与验证证据位于 `D:/deepseek-agent/.runtime/deepchat-release-1.0.5/`。

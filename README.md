@@ -9,9 +9,9 @@
 
 <p align="center">
   <a href="https://deepchat.acceptcat.com/">产品官网</a>
-  · <a href="https://deepchat.acceptcat.com/download/DeepChat_1.0.3.exe">下载 Windows 版 · 1.0.3</a>
+  · <a href="https://deepchat.acceptcat.com/download/DeepChat_1.0.5.exe">下载 Windows 版 · 1.0.5</a>
   · <a href="#第一次使用">第一次使用</a>
-  · <a href="https://github.com/luoyan96/personal-agent/releases/tag/v1.0.3">发布说明</a>
+  · <a href="https://github.com/luoyan96/personal-agent/releases/tag/v1.0.5">发布说明</a>
 </p>
 
 ## 下周组会，汇报一下项目进展
