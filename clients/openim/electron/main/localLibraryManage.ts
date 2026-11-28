@@ -1,5 +1,4 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
-import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import {
@@ -13,7 +12,7 @@ import {
   sharedLibraryFolder,
   type LocalLibraryManifest,
 } from "../utils/localLibrary";
-import { desktopCredentials, desktopSessionMemberId } from "./desktopAccount";
+import { desktopAccountIdentity, desktopCredentials, desktopSessionMemberId } from "./desktopAccount";
 
 const userData = () => app.getPath("userData");
 
@@ -54,9 +53,7 @@ async function personalFolder(event: Electron.IpcMainInvokeEvent) {
   }
   const memberId = await verified.memberId;
   await valid();
-  const identity = createHash("sha256")
-    .update(JSON.stringify([current.service, memberId]))
-    .digest("hex");
+  const identity = desktopAccountIdentity(current.service, memberId);
   const root = await ensurePersonalLibrary(userData(), identity);
   await valid();
   return { root, valid };

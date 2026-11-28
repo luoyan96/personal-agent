@@ -1,4 +1,5 @@
 import { net, type IpcMainInvokeEvent } from "electron";
+import { createHash } from "node:crypto";
 
 import { desktopSessionCookie } from "../utils/desktopServer";
 import { authority } from "./localFolderManage";
@@ -10,6 +11,10 @@ export type DesktopCredentials = {
   token: string;
   session: Electron.Session;
 };
+
+/** Stable across reauthentication, scoped to the service that issued the member ID. */
+export const desktopAccountIdentity = (service: string, memberId: string) =>
+  createHash("sha256").update(JSON.stringify([service, memberId])).digest("hex");
 
 export async function desktopCredentials(
   event: IpcMainInvokeEvent,
