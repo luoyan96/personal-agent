@@ -1,16 +1,12 @@
 # 新 AI 接手：当前项目状态
 
-## 工作台从资料库取材（开发分支）
+## DeepChat 1.0.5 发布准备
 
-Windows 科研工作台可从个人 myfiles、已连接的团队 Git 和当前账号可访问的研究资料库中取用实际文件。PPT、项目书、专利与软著可以从模板建工作副本并选参考资料。论文管理可将参考文件加入指定 LaTeX 项目的写作会话。文献题录、缓存 PDF、阅读笔记，以及其他论文项目里的源文件分别列出。开发依赖见 [科研插件 PR #4](https://github.com/luoyan96/dsh-research-workbench/pull/4)。桌面正式安装包尚未更新。
+主线已通过 PR #276 和 #277 合入 Windows 个人资料目录与科研工作台取材。每个已登录账号会自动建立自己的 `myfiles`，可添加文件、打开目录和定位文件。原有的课题组本机文件登记从「课题组文件索引」进入。
 
-## 桌面端个人资料目录（开发分支）
+PPT、项目书、专利、软著和 LaTeX 写作会话可从 `myfiles`、已连接的团队 Git 和有权访问的研究资料库选择实际文件。文献题录、缓存 PDF、阅读笔记和其他论文项目的源文件分别列出。桌面包固定使用科研插件 0.6.0。
 
-桌面客户端为每个已登录账号在当前 Windows 用户的 DeepChat 应用数据目录下建立 `myfiles`。资料页可添加文件、打开目录和定位文件。原有的课题组本机文件登记从「课题组文件索引」进入。个人资料目录和团队的 Git 仓库各自独立。本项改动尚未随正式版分发。
-
-## DeepChat 1.0.4 发布准备
-
-客户端和官网源码已切换到 1.0.4。公开稳定版仍为 1.0.3。正式安装包和更新清单通过校验后发布，再切换官网页面和下载入口。免费咨询依赖生产 API、worker 和数据库迁移 043。
+客户端与官网源码已切换到 1.0.5。Windows 安装包和自动更新清单待发布。公开稳定版为 1.0.4，本次桌面更新无需数据库迁移。
 
 ## Agent 免费咨询（开发分支）
 
@@ -22,7 +18,7 @@ Windows 科研工作台可从个人 myfiles、已连接的团队 Git 和当前�
 
 ## 官网与 Windows 下载
 
-[产品官网](https://deepchat.acceptcat.com/) 与 [Windows 1.0.3 安装包](https://deepchat.acceptcat.com/download/DeepChat_1.0.3.exe) 使用广州 ECS 的独立静态目录。[原官网地址](https://chat.acceptcat.com/deepchat/) 仍可访问。网站源码位于 `site/deepchat`。发布新版本时需同步已校验的安装包、官网按钮和下载路由。
+[产品官网](https://deepchat.acceptcat.com/) 使用广州 ECS 的独立静态目录。源码位于 `site/deepchat`。公开稳定版下载可从 [GitHub Releases](https://github.com/luoyan96/personal-agent/releases/tag/v1.0.4) 取得。发布新版本时同步已校验的安装包、官网按钮和下载路由。
 
 ## DeepChat 1.0.3 已发布
 
