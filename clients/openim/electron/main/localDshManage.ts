@@ -3,6 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { authority } from "./localFolderManage";
 import { dshAccount, createDshRelay } from "./localDshAccount";
+import { registerDshWorkbenchMaterialBridge } from "./dshWorkbenchMaterials";
 import { registerTaskDshBridge } from './taskDshManage';
 import type { DshBounds } from "../../src/types/localDsh";
 import { ensureResearchPlugin, ensureTaskContextPlugin, researchPlugin } from "../utils/dshPlugin";
@@ -11,6 +12,7 @@ const { LocalDshRuntime, prepareAccountProfile, dshBrowserCompatibility } = requ
 
 export function registerLocalDshBridge() {
   let view: BrowserView | undefined, owner: BrowserWindow | undefined;
+  let viewHost: { event: Electron.IpcMainInvokeEvent; origin: string } | undefined;
   let pageReady = false, pageError = "", starting: Promise<void> | undefined;
   let quitting = false, observed: Electron.WebContents | undefined;
   const avatar = nativeImage.createFromPath(path.join(global.pathConfig.publicPath, 'icons', 'icon.png'))
@@ -30,6 +32,7 @@ export function registerLocalDshBridge() {
     hide();
     if (view && !view.webContents.isDestroyed()) view.webContents.close();
     view = undefined;
+    viewHost = undefined;
     pageReady = false;
   }
   const isPage = (url: string) => { try { return new URL(url).hash.split("?")[0] === "#/dsh"; } catch { return false; } };
@@ -133,6 +136,7 @@ export function registerLocalDshBridge() {
       } });
       view = current;
       const origin = new URL(url).origin;
+      viewHost = { event, origin };
       current.webContents.setWindowOpenHandler(({ url: target }) => {
         openExternal(target);
         return { action: "deny" };
@@ -168,6 +172,26 @@ export function registerLocalDshBridge() {
     return starting;
   }
   ipcMain.handle("local-dsh-status", (event) => { authorize(event); return snapshot(); });
+  registerDshWorkbenchMaterialBridge(async (event) => {
+    const current = view, currentAccount = account, currentHost = viewHost, epoch = generation;
+    if (!current || !currentAccount || !currentHost) throw Error("工作台尚未连接。");
+    const contents = current.webContents;
+    const assertView = () => {
+      if (current !== view || currentAccount !== account || currentHost !== viewHost || epoch !== generation ||
+          runtime.state.phase !== "running" || !pageReady || contents.isDestroyed() ||
+          event.sender !== contents || event.senderFrame !== contents.mainFrame ||
+          new URL(event.senderFrame.url).origin !== currentHost.origin ||
+          !isPage(currentHost.event.sender.getURL()))
+        throw Error("工作台连接已变化，请重新打开资料选择。");
+    };
+    const valid = async () => {
+      assertView();
+      await currentAccount.valid();
+      assertView();
+    };
+    await valid();
+    return { account: currentAccount, hostEvent: currentHost.event, contents, valid };
+  });
   ipcMain.handle('local-dsh-pick-directory', async (event) => {
     const current = view, currentAccount = account, epoch = generation;
     const validate = async () => {

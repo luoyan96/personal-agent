@@ -107,3 +107,5 @@ B3 的受限运行组合依赖官方 DeepSeek Harness `@deepseek-ai/dsh-llm` / `
 2026-11-18 产品更名为 DeepChat，继续使用上文记录的大肥鱼图标、来源和许可。历史条目沿用发布当时的名称。
 
 聊天贴图来自大肥鱼娘社区作者，逐图来源、作者和许可见[贴图署名](clients/openim/public/third-party/dafeiyu/STICKERS.md)。
+
+2026-11-28：开发分支内置同一作者科研工作台的 0.6.0 开发快照，固定 [dcf61c0](https://github.com/luoyan96/dsh-research-workbench/commit/dcf61c0cd16e2cfca8cbba00a7892a57ecd790d7)。沿用插件包的 Office、Mimir、PDF.js、XML 和 SSH 组件及包内原始许可证，安装时使用上游文件清单。该快照并非已发布的正式版安装包。

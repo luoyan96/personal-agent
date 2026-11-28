@@ -40,7 +40,7 @@ async function fixture(t, current, options = {}) {
     void (async () => {
       await new Promise(resolve => setImmediate(resolve));
       if (options.fail) { child.emit("close", 1); return; }
-      await writeFile(installed, JSON.stringify({ version: options.installVersion ?? "0.4.0" }));
+      await writeFile(installed, JSON.stringify({ version: options.installVersion ?? "0.6.0" }));
       child.emit("close", 0);
     })().catch(error => child.emit("error", error));
     return child;
@@ -59,11 +59,11 @@ test("fresh profile is left to DSH before the plugin bootstrap runs", async t =>
   assert.equal(f.calls.length, 0);
 });
 
-for (const current of [undefined, "0.3.3", "0.4.0-rc.1"]) {
+for (const current of [undefined, "0.3.3", "0.4.0", "0.5.1", "0.6.0-rc.1"]) {
   test(`missing/older plugin ${current} installs the pinned offline bundle and verifies the actual version`, async t => {
     const f = await fixture(t, current, { bundles: ["other-plugin"] });
     const r = await f.run();
-    assert.equal(r.changed, true); assert.equal(r.version, "0.4.0");
+    assert.equal(r.changed, true); assert.equal(r.version, "0.6.0");
     assert.equal(f.calls.length, 1);
     assert.deepEqual(Array.from(f.calls[0].args.slice(-4)), ["add", `dsh-research-workbench@file:${f.tarball}`, "--offline", "--ignore-scripts"]);
     assert.equal(f.calls[0].options.cwd, f.profile);
@@ -75,7 +75,7 @@ for (const current of [undefined, "0.3.3", "0.4.0-rc.1"]) {
   });
 }
 
-for (const current of ["0.4.0", "0.4.0+local", "0.4.1", "0.10.0", "0.5.0-rc.1", "1.0.0"]) {
+for (const current of ["0.6.0", "0.6.0+local", "0.6.1", "0.10.0", "0.7.0-rc.1", "1.0.0"]) {
   test(`restart preserves independently installed ${current} without downgrading or rewriting its profile`, async t => {
     const f = await fixture(t, current);
     const before = await readFile(f.manifestPath, "utf8");

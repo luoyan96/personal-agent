@@ -423,6 +423,12 @@ export class TeamLibraryStore {
       return snapshot;
     });
   }
+  async verifyPublishedRevision(revision: string) {
+    const ref = `refs/heads/${this.binding.branch}`;
+    const result = (await this.run(["ls-remote", "--exit-code", "origin", ref], { maxBytes: 4096 })).toString();
+    if (result.trimEnd() !== `${revision}\t${ref}`)
+      throw Error("团队仓库版本已变化，请刷新后重新选择资料。");
+  }
   async readPath(selected: TeamLibraryPathSelection) {
     if (!selected || typeof selected !== "object") throw Error("仓库文件选择无效。");
     repositoryPath(selected.path);

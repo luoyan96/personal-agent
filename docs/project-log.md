@@ -3568,3 +3568,9 @@ README 和当前状态改用 [产品官网](https://deepchat.acceptcat.com/) 与
 基于主线 4f829eb。首次登录时按服务和账号在桌面应用数据目录自动建立 myfiles。「我的资料」支持复制文件、定位原件与打开目录。个人资料可显式复制到本机任务工作区。原有资料目录仍供课题组文件索引使用，索引扫描排除应用管理的个人目录。安装包、线上服务和官网未在本次改动中更新。
 
 Windows 本地 97 项定向测试通过，客户端和 Electron 类型检查通过。另用真实 Electron 进程和合成账号验证首次建目录、写入文件后重新读取、同机切换账号、切回恢复、团队目录独立和退出后的访问限制。证据见 clients/openim/tests/local-library.test.mjs、personal-files-renderer.test.mjs 和 task-material-bridge.test.mjs。完整文件可在资源管理器中查看，应用内列表受扫描深度、数量与耗时上限约束。
+
+## 2026-11-28 · 工作台共享材料选择
+
+开发分支基于个人目录改动 154b54b。科研插件源码固定为 dcf61c0cd16e2cfca8cbba00a7892a57ecd790d7。桌面安装流程验证下载内容和内置包两份 SHA-256，使用已构建模块离线安装。数据迁移、线上服务和官网无需随这项功能更新。
+
+Windows Edge 使用合成材料实际点选 PPT 和 Word 模板、个人参考资料及 LaTeX 稿件。核对工作副本、已缓存 PDF 的原始字节与可提取文字、恢复后的会话范围。隔离 Electron 验证真实预加载和 IPC；真实内置 pnpm 在空缓存离线升级成功。测试入口为 clients/openim/tests/dsh-workbench-materials.test.mjs、dsh-plugin-upgrade.test.mjs 和插件 tests/paper-materials.test.mjs；本地操作截图在 D:/deepseek-agent/.runtime/workbench-library-qa。未调用用户模型或编辑真实个人论文，正式版待发布。

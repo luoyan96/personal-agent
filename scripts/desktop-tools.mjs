@@ -3,7 +3,8 @@
 // existing verified file is reused so repeat builds stay offline.
 import { createHash } from 'node:crypto';
 import { createWriteStream, existsSync, readdirSync } from 'node:fs';
-import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import { execFile } from 'node:child_process';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -25,11 +26,12 @@ export const tools = [
   },
   {
     name: 'dsh-research-workbench',
-    version: '0.4.0',
+    version: '0.6.0',
     archive: 'tgz',
-    url: 'https://github.com/luoyan96/dsh-research-workbench/releases/download/v0.4.0/dsh-research-workbench-0.4.0.tgz',
-    sha256: '583de48caac441a2fe97c316a09e08fa13b23af512a7b9b7435643316b594585',
-    member: 'dsh-research-workbench-0.4.0.tgz',
+    url: 'https://codeload.github.com/luoyan96/dsh-research-workbench/tar.gz/dcf61c0cd16e2cfca8cbba00a7892a57ecd790d7',
+    sourceDigest: '7ae094498dedbf9c470da2a1a6a2d8c47e33d4d2ddcbf0740867db4e3c72a0b7',
+    sha256: '79ff2d0bec2dc46fbfdac1577a1fc9cf780afe17224b56c650ee736d7403ced4',
+    member: 'dsh-research-workbench-0.6.0.tgz',
     target: 'tools/plugins',
   },
 ];
@@ -84,6 +86,26 @@ async function download(url, file) {
 
 async function unpack(entry, archive, destination) {
   if (entry.archive === 'tgz') {
+    if (entry.sourceDigest) {
+      // The pinned plugin commit includes its built JS and notices. Use its npm
+      // files list so the installed profile gets the same layout as a release.
+      const staging = await mkdtemp(path.join(os.tmpdir(), 'deepchat-plugin-pack-'));
+      try {
+        await run('tar', ['-xzf', archive, '--strip-components', '1', '-C', staging]);
+        const manifest = JSON.parse(await readFile(path.join(staging, 'package.json'), 'utf8'));
+        if (manifest.name !== entry.name || manifest.version !== entry.version)
+          throw Error('科研插件源码版本与构建配置不匹配。');
+        const windows = process.platform === 'win32';
+        if (windows) await run('cmd.exe', ['/d', '/c', 'npm.cmd pack --ignore-scripts --silent'], { cwd: staging });
+        else await run('npm', ['pack', '--ignore-scripts', '--silent'], { cwd: staging });
+        const packed = path.join(staging, entry.member);
+        if (await digest(packed) !== entry.sha256) throw Error('科研插件打包结果校验失败。');
+        await copyFile(packed, path.join(destination, entry.member));
+      } finally {
+        await rm(staging, { recursive: true, force: true });
+      }
+      return;
+    }
     await copyFile(archive, path.join(destination, entry.member));
     return;
   }
@@ -117,14 +139,15 @@ export async function prepareTools(client) {
       manifest.push({ ...entry, path: `${entry.target}/${entry.member}` });
       continue;
     }
-    if (!existsSync(cache) || (await digest(cache)) !== entry.sha256) {
+    const downloadDigest = entry.sourceDigest || entry.sha256;
+    if (!existsSync(cache) || (await digest(cache)) !== downloadDigest) {
       await mkdir(path.dirname(cache), { recursive: true });
       console.log(`Downloading ${entry.name} ${entry.version}…`);
       await rm(cache, { force: true });
       await download(entry.url, cache);
       const actual = await digest(cache);
-      if (actual !== entry.sha256)
-        throw Error(`${entry.name} 校验失败：期望 ${entry.sha256}，实际 ${actual}`);
+      if (actual !== downloadDigest)
+        throw Error(`${entry.name} 校验失败：期望 ${downloadDigest}，实际 ${actual}`);
     }
     await unpack(entry, cache, destination);
     const installed = await digest(file);
