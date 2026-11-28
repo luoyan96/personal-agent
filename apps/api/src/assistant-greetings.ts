@@ -58,7 +58,15 @@ export function updateAssistantProactiveSettings(chat: ChatService, body: Reques
   chat.db.prepare(`INSERT INTO assistant_proactive_settings(member_id,mode,learn_from_chat,version) VALUES (?,?,?,?)
     ON CONFLICT(member_id) DO UPDATE SET mode=excluded.mode,learn_from_chat=excluded.learn_from_chat,version=excluded.version`)
     .run(memberId, body.mode, learnFromChat ? 1 : 0, current.version + 1)
-  if (body.mode !== current.mode) rescheduleAssistantGreeting(chat.db, memberId, chat.clock())
+  if (body.mode !== current.mode) {
+    if (body.mode !== 'contextual') {
+      chat.db.prepare(`UPDATE im_message_outbox SET status='denied',lease_until=NULL
+        WHERE operation_id IS NULL AND status IN ('pending','sending') AND message_id IN (
+          SELECT message_id FROM assistant_proactive_deliveries WHERE member_id=? AND (?='off' OR context_key IS NOT NULL)
+        )`).run(memberId, body.mode)
+    }
+    rescheduleAssistantGreeting(chat.db, memberId, chat.clock())
+  }
   return assistantProactiveSettings(chat.db, memberId)
 }
 

@@ -249,6 +249,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     await s.login(0)
     expect((await s.request('updateAssistantProactiveSettings', { mode: 'greeting', expectedVersion: 2 })).status).toBe(200)
     expect((await s.request('updateAssistantProactiveSettings', off, {}, 0, key)).value).toEqual({ data: { mode: 'greeting', learnFromChat: true, version: 3 } })
+    expect(s.db.prepare('SELECT status FROM im_message_outbox WHERE message_id=?').get(pendingGreeting)?.status).toBe('denied')
     expect(await worker.tick()).toBe(true)
     expect(messageCount()).toBe(3)
   })
