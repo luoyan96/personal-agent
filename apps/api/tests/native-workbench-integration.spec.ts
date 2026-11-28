@@ -127,14 +127,15 @@ async function fixture() {
   }
   const bridge = nativeModule('taskDshManage.ts', {
     electron, './localDshRuntime': nativeRuntime, './localFolderManage': { authority: (event: any) => ({ contents: event.sender }) },
-    './teamLibraryManage': { teamLibraryContext: () => { throw Error('No Git library requested') } }, './localLibraryManage': { localLibraryPaths: async () => [] },
+    './teamLibraryManage': { teamLibraryContext: () => { throw Error('No Git library requested') } },
+    '../utils/localLibrary': { localLibraryPaths: async () => [], personalLibraryPaths: async () => [] },
   }, timers)
   const hooks = bridge.registerTaskDshBridge(async () => ({ account, session: {}, origin: 'http://127.0.0.1:9' }), async (id: string) => { selected.push(id) })
   cleanup.push(() => timers.forEach(clearInterval))
   const event = { sender: { getURL: () => 'http://renderer.invalid/' + route } }
   const ipc = (name: string, ...args: any[]) => handlers.get(name)!(event, target, ...args)
   const relayModule = nativeModule('localDshAccount.ts', {
-    electron, './localDshRuntime': nativeRuntime, './localFolderManage': {}, './windowManage': {}, '../utils/desktopServer': {},
+    electron, './localDshRuntime': nativeRuntime, './localFolderManage': {}, './windowManage': {}, './desktopAccount': {}, '../utils/desktopServer': {},
   })
   const relay = await relayModule.createDshRelay(account, hooks)
   cleanup.push(() => relay.close())
