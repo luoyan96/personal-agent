@@ -7,7 +7,7 @@ import ts from "typescript";
 const nodes = (node) => !node || typeof node !== "object" ? [] : Array.isArray(node)
   ? node.flatMap(nodes) : [node, ...nodes(node.props?.children)];
 const jsx = (type, props) => ({ type, props });
-const load = async (file, imports = {}, bridge) => {
+const load = async (file, imports = {}, bridge, stage) => {
   const source = await readFile(new URL(`../src/research/${file}`, import.meta.url), "utf8");
   const module = { exports: {} };
   vm.runInNewContext(ts.transpileModule(source, {
@@ -15,31 +15,40 @@ const load = async (file, imports = {}, bridge) => {
       module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
     },
   }).outputText, {
-    module, exports: module.exports, Error, window: { electronAPI: { localLibrary: bridge } },
+    module, exports: module.exports, Error, window: { electronAPI: { localLibrary: bridge, localDsh: { stageMaterialUseIn: stage } } },
     require(name) { assert(Object.hasOwn(imports, name), name); return imports[name]; },
   });
   return module.exports;
 };
 
-async function fixture(bridge) {
+async function fixture(bridge, stage) {
   let cursor = 0;
   const state = [];
   const f = { actorId: "synthetic-account", data: undefined, loading: false, error: "" };
-  const { PersonalFilesPage } = await load("PersonalFilesPage.tsx", {
-    "./personal-files.scss": {},
-    "./local-file-size": await load("local-file-size.ts"),
-    "@ant-design/icons": new Proxy({}, { get: (_, key) => String(key) }),
-    antd: { Button: "Button", Alert: "Alert", Input: { Search: "Search" } },
+  const shared = {
+    antd: { Button: "Button", Alert: "Alert", Checkbox: "Checkbox", Dropdown: "Dropdown", Input: { Search: "Search" } },
     "react/jsx-runtime": { jsx, jsxs: jsx },
     react: { useState(initial) {
       const index = cursor++;
       if (!(index in state)) state[index] = initial;
-      return [state[index], (next) => { state[index] = next; }];
+      return [state[index], (next) => { state[index] = typeof next === "function" ? next(state[index]) : next; }];
     } },
     "./usePersonalOperation": { usePersonalOperation: (active) => {
       const actorId = f.actorId;
       return { actorId, scope: actorId, capture: () => ({ isCurrent: () => active && actorId === f.actorId }) };
     } },
+  };
+  const material = await load("MaterialUseIn.tsx", {
+    ...shared,
+    "react-router-dom": { useNavigate: () => (route) => { f.destination = route; } },
+  }, bridge, stage);
+  const { PersonalFilesPage } = await load("PersonalFilesPage.tsx", {
+    ...shared,
+    "./personal-files.scss": {},
+    "./local-file-size": await load("local-file-size.ts"),
+    "../../electron/utils/workbenchMaterialFormats": await load("../../electron/utils/workbenchMaterialFormats.js"),
+    "./MaterialUseIn": material,
+    "@ant-design/icons": new Proxy({}, { get: (_, key) => String(key) }),
     "./useResearchRead": { useResearchRead: (read, identity, enabled, options) => {
       assert.equal(identity, "personal-files");
       assert.equal(options.poll, false);
@@ -55,8 +64,12 @@ async function fixture(bridge) {
       };
       return { data: enabled ? f.data : undefined, loading: f.loading, error: f.error, refresh: f.refresh };
     } },
-  }, bridge);
+  }, bridge, stage);
   f.render = () => { cursor = 0; return nodes(PersonalFilesPage()); };
+  f.materialMenu = () => {
+    const item = f.render().find((node) => node.type === material.MaterialUseIn);
+    return nodes(item.type(item.props)).find((node) => node.type === "Dropdown");
+  };
   f.button = (label, aria = false) => f.render().find(node =>
     node.type === "Button" && (aria ? node.props["aria-label"] : node.props.children) === label
   );
@@ -116,4 +129,22 @@ test("a failed scan can be retried and cancellation leaves the list unchanged", 
   f.button("添加文件").props.onClick();
   await flush();
   assert.equal(scans, 2);
+});
+
+test("uses selected personal files as workbench references and navigates without paths or account IDs", async () => {
+  const record = { rel: "articles\\reference.pdf", name: "reference.pdf", size: 40, updatedAt: "2026-11-28T00:00:00.000Z" };
+  const requests = [];
+  const f = await fixture({ personalScan: async () => ({ ...empty, files: [record] }) },
+    async (...request) => { requests.push(request); });
+  f.render();
+  await f.refresh();
+  assert.equal(f.materialMenu().props.children.props.disabled, true);
+  const checkbox = f.render().find((node) => node.type === "Checkbox");
+  checkbox.props.onChange({ target: { checked: true } });
+  const menu = f.materialMenu();
+  assert.equal(menu.props.children.props.disabled, false);
+  menu.props.menu.onClick({ key: "existing-paper" });
+  await flush();
+  assert.deepEqual(JSON.parse(JSON.stringify(requests)), [["existing-paper", { source: "personal", files: [record] }]]);
+  assert.equal(f.destination, "/dsh");
 });

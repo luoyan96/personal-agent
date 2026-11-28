@@ -1,12 +1,14 @@
 import "./personal-files.scss";
 
 import { FileTextOutlined, FolderOpenOutlined, PlusOutlined, ReloadOutlined } from "@ant-design/icons";
-import { Alert, Button, Input } from "antd";
+import { Alert, Button, Checkbox, Input } from "antd";
 import { useState } from "react";
 
 import { usePersonalOperation } from "./usePersonalOperation";
 import { useResearchRead } from "./useResearchRead";
 import { formatLocalFileSize } from "./local-file-size";
+import { canUseInWorkbench, workbenchReferenceMaxBytes } from "../../electron/utils/workbenchMaterialFormats";
+import { MaterialUseIn, useMaterialSelection } from "./MaterialUseIn";
 
 const errorMessage = (error: unknown) =>
   error instanceof Error
@@ -36,6 +38,9 @@ export function PersonalFilesPage() {
   const busy = action?.scope === operation.scope ? action.name : undefined;
   const actionError = failure?.scope === operation.scope ? failure.message : "";
   const files = read.data?.files ?? [];
+  const selection = useMaterialSelection(operation.scope);
+  const canStage = Boolean(window.electronAPI?.localDsh?.stageMaterialUseIn);
+  const selected = files.filter((file) => selection.paths.has(file.rel));
   const search = query.trim().toLocaleLowerCase();
   const visible = search
     ? files.filter((file) => file.rel.toLocaleLowerCase().includes(search))
@@ -62,6 +67,7 @@ export function PersonalFilesPage() {
         </div>
         {ready && (
           <div className="personal-files-actions">
+            <MaterialUseIn source={{ source: "personal", files: selected }} busy={Boolean(busy) || read.loading} />
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -124,6 +130,13 @@ export function PersonalFilesPage() {
         <ul className="personal-files-list">
           {visible.map((file) => (
             <li key={file.rel}>
+              {canStage && <Checkbox
+                aria-label={`选择 ${file.rel}`}
+                disabled={!canUseInWorkbench(file.name) || file.size < 1 || file.size > workbenchReferenceMaxBytes ||
+                  (selection.paths.size >= 10 && !selection.paths.has(file.rel))}
+                checked={selection.paths.has(file.rel)}
+                onChange={(event) => selection.toggle(file.rel, event.target.checked)}
+              />}
               <FileTextOutlined aria-hidden="true" />
               <div className="personal-files-name">
                 <strong>{file.name}</strong>

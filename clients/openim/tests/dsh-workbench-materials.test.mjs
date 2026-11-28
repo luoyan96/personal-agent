@@ -52,7 +52,7 @@ async function fixture(t) {
   const routes = [], prompts = [], handlers = new Map(), contents = {};
   let approved = true, accountActive = true, requestCallback, promptCallback;
   const account = {
-    identity, metadata: { memberId: "member_A" },
+    identity, lease: "synthetic-account-lease", metadata: { memberId: "member_A" },
     request(url) {
       assert.match(url, /^\/api\/v1\/research-library\//);
       const request = new EventEmitter();
@@ -78,7 +78,7 @@ async function fixture(t) {
   const valid = async () => { if (!accountActive) throw Error("DeepChat 登录已变化。"); };
   const mod = { exports: {} };
   vm.runInNewContext(code, {
-    module: mod, exports: mod.exports, process, Buffer, setTimeout, clearTimeout,
+    module: mod, exports: mod.exports, process, Buffer, URL, setTimeout, clearTimeout,
     require: (id) => {
       if (id === "./localDshRuntime") return libraryRuntime;
       if (id !== "electron") return require(id);
@@ -95,12 +95,15 @@ async function fixture(t) {
     },
     teamSession: (action) => action({ identity: "team_1", memberId: "member_A", store: git.store }),
   });
-  mod.exports.registerDshWorkbenchMaterialBridge(async (event) => {
+  const connection = async (event) => {
     await valid();
     return { account, hostEvent: { sender: {} }, contents: event.contents, valid };
-  });
+  };
+  const bridge = mod.exports.registerDshWorkbenchMaterialBridge(connection);
   const call = (method, input, view = contents) => handlers.get(`dsh-workbench-materials-${method}`)({ contents: view }, input);
   return { git, own, routes, prompts, paper, collection, call, libraryBytes,
+    stage: async (target, source) => bridge.stageUseIn(await connection({ contents }), target, source),
+    renewLease: () => { account.lease += "-new"; },
     approve: (value) => { approved = value; },
     expire: () => { accountActive = false; },
     onRequest: (callback) => { requestCallback = callback; },
@@ -132,6 +135,10 @@ test("lists only scoped material metadata on approval and accepts a single mixed
   const metadata = find(refs, "Synthetic reference");
   assert.equal(note.availability, "text");
   assert.equal(git.source, "team");
+  assert.equal(git.provenance.kind, "team-git");
+  assert.equal(git.provenance.path.split("/").at(-1), "项目要求.md");
+  assert.match(git.provenance.repository, /^github\.com\/[^/]+\/[^/]+$/);
+  assert.match(git.provenance.revision, /^[a-f0-9]{40}$/);
   assert.equal(paper.availability, "file");
   assert.equal(metadata.availability, "metadata");
   assert.ok(refs.items.every((item) => !("bytes" in item) && !item.path?.includes(f.own)));
@@ -186,4 +193,40 @@ test("rechecks live Git, source revisions, collection scope, and the account lea
   const requestCount = f.routes.length;
   await assert.rejects(read("paper.pdf"), /登录已变化/);
   assert.equal(f.routes.length, requestCount);
+});
+
+test("stages only selected workbench references and combines a master and references in one authorized transfer", async (t) => {
+  const f = await fixture(t);
+  const templates = await f.call("list", { kind: "template", extensions: [".pptx"] });
+  const master = find(templates, "template.pptx");
+  const git = find(await f.call("list", { kind: "reference" }), "项目要求.md");
+  await assert.rejects(f.stage("group-meeting", { source: "team-git", revision: "0".repeat(40), paths: [git.path] }), /版本已变化/);
+  await f.stage("group-meeting", { source: "team-git", revision: git.provenance.revision, paths: [git.path] });
+  const pending = await f.call("pending-use-in");
+  assert.equal(pending.target, "group-meeting");
+  assert.equal(pending.items[0].provenance.path, git.provenance.path);
+  assert.equal(await f.call("pending-use-in", null, {}), null);
+  await assert.rejects(f.call("read-use-in", { id: pending.id, selectionIds: [git.id] }), /资料选择无效/);
+  const request = { id: pending.id, selectionIds: [pending.items[0].id], selections: [{ kind: "template", id: master.id }] };
+  f.approve(false);
+  await assert.rejects(f.call("read-use-in", request), /已取消/);
+  assert.equal((await f.call("pending-use-in")).id, pending.id);
+  f.approve(true);
+  const before = f.prompts.length;
+  const output = await f.call("read-use-in", request);
+  assert.equal(f.prompts.length, before + 1);
+  assert.equal(persistedBytes(output[0]).toString(), "Selected PPT template.");
+  assert.equal(persistedBytes(output[1]).toString(), f.git.text);
+  await f.call("clear-use-in", { id: pending.id });
+  assert.equal(await f.call("pending-use-in"), null);
+
+  await fs.mkdir(path.join(f.own, "folder"));
+  const file = path.join(f.own, "folder", "notes.txt");
+  await fs.writeFile(file, "Private notes.");
+  const stat = await fs.stat(file);
+  const selected = { source: "personal", files: [{ rel: path.relative(f.own, file), size: stat.size, updatedAt: stat.mtime.toISOString() }] };
+  await f.stage("existing-document", selected);
+  assert.equal((await f.call("pending-use-in")).items[0].name, "notes.txt");
+  f.renewLease();
+  assert.equal(await f.call("pending-use-in"), null);
 });

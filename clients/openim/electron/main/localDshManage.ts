@@ -6,9 +6,15 @@ import { dshAccount, createDshRelay } from "./localDshAccount";
 import { registerDshWorkbenchMaterialBridge } from "./dshWorkbenchMaterials";
 import { registerTaskDshBridge } from './taskDshManage';
 import type { DshBounds } from "../../src/types/localDsh";
+import type { WorkbenchUseTarget } from "../../src/types/dshWorkbenchMaterials";
 import { ensureResearchPlugin, ensureTaskContextPlugin, researchPlugin } from "../utils/dshPlugin";
 // Built independently by vite.config.ts; the packaged module has no repository-relative imports.
 const { LocalDshRuntime, prepareAccountProfile, dshBrowserCompatibility } = require("./localDshRuntime") as typeof import("../../../../integrations/deepseek-harness/desktop/local-runtime");
+const materialPanels: Record<WorkbenchUseTarget, string> = {
+  "group-meeting": "research-slides",
+  "existing-document": "research-documents",
+  "existing-paper": "research-literature",
+};
 
 export function registerLocalDshBridge() {
   let view: BrowserView | undefined, owner: BrowserWindow | undefined;
@@ -21,6 +27,7 @@ export function registerLocalDshBridge() {
   let runtime = new LocalDshRuntime(directory, '');
   let relay: Awaited<ReturnType<typeof createDshRelay>> | undefined;
   let account: Awaited<ReturnType<typeof dshAccount>> | undefined;
+  let materialPanel: { name: string; expiresAt: number } | undefined;
   let generation = 0;
   let taskHooks:ReturnType<typeof registerTaskDshBridge>;
   const accountWatch = setInterval(() => { if (account) void account.valid().catch(() => stop().catch(() => {})); }, 2000);
@@ -34,6 +41,7 @@ export function registerLocalDshBridge() {
     view = undefined;
     viewHost = undefined;
     pageReady = false;
+    materialPanel = undefined;
   }
   const isPage = (url: string) => { try { return new URL(url).hash.split("?")[0] === "#/dsh"; } catch { return false; } };
   function authorize(event: Electron.IpcMainInvokeEvent, requirePage = true) {
@@ -172,7 +180,7 @@ export function registerLocalDshBridge() {
     return starting;
   }
   ipcMain.handle("local-dsh-status", (event) => { authorize(event); return snapshot(); });
-  registerDshWorkbenchMaterialBridge(async (event) => {
+  const materialBridge = registerDshWorkbenchMaterialBridge(async (event) => {
     const current = view, currentAccount = account, currentHost = viewHost, epoch = generation;
     if (!current || !currentAccount || !currentHost) throw Error("工作台尚未连接。");
     const contents = current.webContents;
@@ -191,6 +199,52 @@ export function registerLocalDshBridge() {
     };
     await valid();
     return { account: currentAccount, hostEvent: currentHost.event, contents, valid };
+  });
+  async function materialNavigation(contents: Electron.WebContents, panel: string, open: boolean) {
+    const ready = await contents.executeJavaScript(`new Promise(resolve => {
+      const nonce = ${JSON.stringify(randomUUID())};
+      const finish = ok => {
+        clearInterval(retry); clearTimeout(deadline);
+        window.removeEventListener('deepchat-material-panel-ready', accepted);
+        resolve(ok);
+      };
+      const accepted = event => { if (event.detail === nonce) finish(true); };
+      const check = () => window.dispatchEvent(new CustomEvent('deepchat-prepare-material-panel', {
+        detail: { nonce, panel: ${JSON.stringify(panel)}, open: ${open} },
+      }));
+      window.addEventListener('deepchat-material-panel-ready', accepted);
+      const deadline = setTimeout(() => finish(false), 3200);
+      const retry = setInterval(check, 160);
+      check();
+    })`);
+    if (ready !== true) throw Error("当前科研插件尚不支持从资料打开项目，请在工作台的「插件」中更新后重试。");
+  }
+  ipcMain.handle("local-dsh-stage-material-use-in", async (event, target: unknown, selection: unknown) => {
+    const { contents: host } = authorize(event, false);
+    const source = host.getURL();
+    if (new URL(source).hash.split("?")[0] !== "#/library" || typeof target !== "string" ||
+        !Object.prototype.hasOwnProperty.call(materialPanels, target)) throw Error("请从资料页选择所需文件。");
+    const destination = target as WorkbenchUseTarget;
+    await start(event);
+    const current = view, currentAccount = account, currentHost = viewHost, epoch = generation;
+    if (!current || !currentAccount || !currentHost || !pageReady) throw Error(pageError || "工作台尚未连接。");
+    const contents = current.webContents;
+    const checkSource = () => {
+      if (current !== view || currentAccount !== account || epoch !== generation || runtime.state.phase !== "running" ||
+          contents.isDestroyed() || new URL(contents.getURL()).origin !== currentHost.origin ||
+          authority(event).contents !== host || host.getURL() !== source)
+        throw Error("工作台连接或资料页已变化，请重新选择。");
+    };
+    const valid = async () => {
+      checkSource();
+      await currentAccount.valid();
+      checkSource();
+    };
+    await valid();
+    const panel = materialPanels[destination];
+    await materialNavigation(contents, panel, false);
+    await materialBridge.stageUseIn({ account: currentAccount, hostEvent: event, contents, valid }, destination, selection);
+    materialPanel = { name: panel, expiresAt: Date.now() + 15 * 60 * 1000 };
   });
   ipcMain.handle('local-dsh-pick-directory', async (event) => {
     const current = view, currentAccount = account, epoch = generation;
@@ -245,7 +299,7 @@ export function registerLocalDshBridge() {
     if (result.response === 1) await stop();
     return snapshot();
   });
-  ipcMain.handle("local-dsh-show", (event, bounds: DshBounds | null) => {
+  ipcMain.handle("local-dsh-show", async (event, bounds: DshBounds | null) => {
     authorize(event, bounds !== null);
     if (!bounds) { hide(); return; }
     if (!pageReady || !view) return;
@@ -258,6 +312,21 @@ export function registerLocalDshBridge() {
     if (width < 1 || height < 1) { hide(); return; }
     owner!.addBrowserView(view);
     view.setBounds({ x, y, width, height });
+    const pending = materialPanel;
+    if (pending) {
+      const current = view, currentAccount = account;
+      materialPanel = undefined;
+      if (pending.expiresAt <= Date.now()) return;
+      try {
+        await currentAccount?.valid();
+        if (current !== view || currentAccount !== account || !isPage(event.sender.getURL())) return;
+        await materialNavigation(current.webContents, pending.name, true);
+      } catch (error) {
+        if (view !== current || currentAccount !== account) return;
+        if (!current.webContents.isDestroyed()) materialBridge.clearPending(current.webContents);
+        pageError = error instanceof Error ? error.message : "资料无法在工作台打开，请重新选择。";
+      }
+    }
   });
   app.on("before-quit", (event) => {
     if (quitting || runtime.state.phase === "stopped") return;

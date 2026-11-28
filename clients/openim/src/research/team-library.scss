@@ -351,6 +351,8 @@
 }
 .team-library-discussion {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   justify-content: flex-end;
   margin-top: 16px;
 }
@@ -998,6 +1000,19 @@
 }
 .team-library-tree-table {
   border-block: 1px solid #e7ebe8;
+}
+.team-library-material-row {
+  display: flex;
+  align-items: stretch;
+  > button {
+    flex: 1 1 auto;
+  }
+}
+.team-library-material-checkbox {
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
+  border-bottom: 1px solid #edf0ee;
 }
 .team-library-tree-row {
   width: 100%;

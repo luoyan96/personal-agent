@@ -25,17 +25,20 @@ test('DSH file bridge accepts native Files and material commands require user ac
     await assert.rejects(exposed.__DSH_WORKBENCH_MATERIALS__.list({kind:'reference'}),/手动选择/);
     await assert.rejects(exposed.__DSH_WORKBENCH_MATERIALS__.read({kind:'reference',id:'synthetic'}),/手动选择/);
     await assert.rejects(exposed.__DSH_WORKBENCH_MATERIALS__.readMany({selections:[]}),/手动选择/);
+    await assert.rejects(exposed.__DSH_WORKBENCH_MATERIALS__.readUseIn({id:'pending'}),/手动选择/);
     assert.deepEqual(calls,[]);
     activation.isActive=true;
     exposed.__DSH_DIRECTORY_PICKER__.pick();
     exposed.__DSH_WORKBENCH_MATERIALS__.list({kind:'template',extensions:['.pptx'],path:'forged'});
     exposed.__DSH_WORKBENCH_MATERIALS__.read({kind:'template',id:'selected',path:'forged'});
     exposed.__DSH_WORKBENCH_MATERIALS__.readMany({selections:[{kind:'reference',id:'other'}],path:'forged'});
+    exposed.__DSH_WORKBENCH_MATERIALS__.readUseIn({id:'pending',selectionIds:['selected'],selections:[{kind:'template',id:'master'}],path:'forged'});
     assert.deepEqual(JSON.parse(JSON.stringify(calls)),[
       ['local-dsh-pick-directory'],
       ['dsh-workbench-materials-list',{kind:'template',extensions:['.pptx']}],
       ['dsh-workbench-materials-read',{kind:'template',id:'selected'}],
       ['dsh-workbench-materials-read-many',{selections:[{kind:'reference',id:'other'}]}],
+      ['dsh-workbench-materials-read-use-in',{id:'pending',selectionIds:['selected'],selections:[{kind:'template',id:'master'}]}],
     ]);
   }
 });

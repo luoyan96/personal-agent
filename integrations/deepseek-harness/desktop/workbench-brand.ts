@@ -35,8 +35,9 @@ export function workbenchBrandClient(avatar: string) {
     });
   }
 
-  // The pinned DSH sidebar exposes navigation through its More menu. The app
-  // compacts known secondary entries and leaves other installed plugins alone.
+  // Older research plugins use the host's entries in the native More menu.
+  const researchEntries = ['research-literature', 'research-documents', 'research-slides', 'research-contests'];
+  const hasFourResearchEntries = entries => researchEntries.every(id => entries.some(entry => entry.id === id));
   const secondary = new Set([
     'schedules', 'research-proposals', 'research-ip', 'research-ccf',
     'research-competitions', 'research-servers',
@@ -45,8 +46,22 @@ export function workbenchBrandClient(avatar: string) {
   const { resolveSlotLabel } = loadDshModule('@deepseek-ai/dsh-client-ui-slots');
   const moreName = 'sidebar.panellist.actions';
   const panelName = 'sidebar.panellist';
-  const secondaryTools = ({ entries, onOpen, onDismiss }) =>
-    entries.filter(({ id }) => secondary.has(id)).map(({ id, label, active }) =>
+  ctx.effect(() => {
+    const open = ({ detail }) => {
+      if (!detail || !researchEntries.includes(detail.panel) ||
+          !hasFourResearchEntries(ctx.slots.entriesOfSlot(panelName).map(({ options }) => options))) return;
+      if (detail.open) {
+        ctx.layout.selectPanel(detail.panel);
+        window.dispatchEvent(new CustomEvent('deepchat-workbench-use-in'));
+      }
+      window.dispatchEvent(new CustomEvent('deepchat-material-panel-ready', { detail: detail.nonce }));
+    };
+    window.addEventListener('deepchat-prepare-material-panel', open);
+    return () => window.removeEventListener('deepchat-prepare-material-panel', open);
+  }, 'DeepChat material navigation');
+  const secondaryTools = ({ entries, onOpen, onDismiss }) => {
+    if (hasFourResearchEntries(entries)) return null;
+    return entries.filter(({ id }) => secondary.has(id)).map(({ id, label, active }) =>
       jsx(MenuItemButton, {
         current: active,
         onSelect: () => {
@@ -55,6 +70,7 @@ export function workbenchBrandClient(avatar: string) {
         },
         children: label,
       }, id));
+  };
   ctx.slots.inject(moreName, () =>
     ctx.slots.register({ name: moreName, id: 'deepchat-secondary-tools', order: -10 }, secondaryTools));
   ctx.effect(() => {
@@ -68,6 +84,8 @@ export function workbenchBrandClient(avatar: string) {
       }));
       const uniqueLabels = new Set(panels.map(({ label }) => label));
       for (const { label } of panels.filter(({ id }) => !secondary.has(id))) uniqueLabels.delete(label);
+      const panelList = 'nav[class$="_panelList"]';
+      const moreAnchor = panelList + ' [class$="_moreAnchor"]';
       const collapsed = 'html:not([data-windows-titlebar]) [class*="_collapsed"]';
       const buttons = [
         collapsed + ' button[class*="_panelRow"][aria-label]',
@@ -76,13 +94,15 @@ export function workbenchBrandClient(avatar: string) {
       // DSH owns its 56px compact rail. Retain its controls and accessible
       // names, then make the same names visible under the compact icons.
       style.textContent = [
-        // The bundled research plugin hides DSH's More launcher. Restore
-        // that exact launcher when these navigation actions are provided.
-        'nav[class*="_panelList"] button[class*="_panelRow"][aria-haspopup="menu"] { display: flex !important; }',
+        // DSH rc.3 renders the More menu in a portal. Hide both its wrapper
+        // and any open menu when the four research panels are registered.
+        hasFourResearchEntries(panels)
+          ? moreAnchor + ', [role="menu"][class*="_moreMenu"] { display: none !important; }'
+          : moreAnchor + ' button[class$="_panelRow"][aria-haspopup="menu"] { display: flex !important; }',
         buttons.join(',') + ' { flex-direction: column; gap: 2px; width: calc(100% - 4px); max-width: 52px; height: auto; min-height: 40px; justify-content: center; margin-inline: 2px; padding: 4px 2px; }',
         buttons.map(selector => selector + '::after').join(',') + ' { content: attr(aria-label); color: inherit; font-size: 10px; line-height: 12px; text-align: center; white-space: normal; overflow-wrap: anywhere; }',
         ...panels.filter(({ id, label }) => secondary.has(id) && uniqueLabels.has(label))
-          .map(({ label }) => 'button[class*="_panelRow"][aria-label="' + CSS.escape(label) + '"] { display: none; }'),
+          .map(({ label }) => panelList + ' button[class*="_panelRow"][aria-label="' + CSS.escape(label) + '"] { display: none; }'),
       ].join(' ');
     };
     const unsubscribePanels = ctx.slots.subscribe(panelName, refreshTools);
