@@ -245,7 +245,7 @@ function researchFileMaterials(file: ResearchFile, collection: ResearchCollectio
     });
   }
   const { title, authors, year, doi, tags, note } = file.metadata;
-  if (kind === "reference" && (title || authors.length || year || doi || tags.length || note.trim())) {
+  if (kind === "reference" && filter.allowed.has(".md") && (title || authors.length || year || doi || tags.length || note.trim())) {
     materials.push({
       item: { ...item, name: (safeDisplay(title) || safeDisplay(file.filename) || file.id).slice(0, 160), availability: "metadata", representation: "metadata",
         title: title ? safeDisplay(title).slice(0, 200) : undefined,
@@ -305,7 +305,12 @@ function listFilter(value: unknown): Filter {
   const kind = selectionKind(value);
   const requested = (value as { extensions?: unknown }).extensions;
   if (requested === undefined) return { kind, allowed: extensions[kind] };
-  if (kind !== "template" || !Array.isArray(requested) || !requested.length || requested.length > extensions.template.size ||
+  if (kind === "reference") {
+    if (!Array.isArray(requested) || requested.length !== 1 || requested[0] !== ".pdf")
+      throw Error("参考资料格式无效。");
+    return { kind, allowed: new Set([".pdf"]) };
+  }
+  if (!Array.isArray(requested) || !requested.length || requested.length > extensions.template.size ||
       requested.some((extension) => typeof extension !== "string" || !extensions.template.has(extension)))
     throw Error("模板格式无效。");
   return { kind, allowed: new Set<string>(requested) };

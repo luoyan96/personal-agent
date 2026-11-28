@@ -32,9 +32,10 @@ export function MaterialUseIn({ source, busy }: { source: WorkbenchUseSource; bu
   const count = source.source === "personal" ? source.files.length : source.paths.length;
   const current = status?.scope === operation.scope ? status : undefined;
   const working = current !== undefined && current.error === undefined;
+  const disabled = !count || !stage || busy || working;
   const useIn = async (target: WorkbenchUseTarget) => {
     const { isCurrent } = operation.capture();
-    if (!stage || !isCurrent() || !count || working) return;
+    if (!stage || !isCurrent() || disabled) return;
     setStatus({ scope: operation.scope });
     try {
       await stage(target, source);
@@ -46,8 +47,8 @@ export function MaterialUseIn({ source, busy }: { source: WorkbenchUseSource; bu
   };
   return (
     <div className="material-use-in">
-      <Dropdown menu={{ items: targets, onClick: ({ key }) => void useIn(key as WorkbenchUseTarget) }} trigger={["click"]}>
-        <Button disabled={!count || !stage || busy} loading={working} title={stage ? undefined : "请在 Windows 桌面客户端操作"}>
+      <Dropdown disabled={disabled} menu={{ items: targets, onClick: ({ key }) => void useIn(key as WorkbenchUseTarget) }} trigger={["click"]}>
+        <Button disabled={disabled} loading={working} title={stage ? undefined : "请在 Windows 桌面客户端操作"}>
           用于…{count ? `（${count}）` : ""}
         </Button>
       </Dropdown>

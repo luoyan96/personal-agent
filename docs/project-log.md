@@ -3592,5 +3592,5 @@ Windows Edge 使用合成材料实际点选 PPT 和 Word 模板、个人参考�
 
 - 宿主导航由 `integrations/deepseek-harness/desktop/workbench-brand.ts` 控制。固定 DSH `0.2.1-rc.3` 中，四个科研面板同时注册时收起「更多」与其中的浏览 / 创建插件动作，并隐藏工作台内的定时任务入口。DeepChat「任务」和 DSH「插件」、设置、新建会话与工作区仍可使用。0.6.0 走既有「更多」菜单。
 - 「资料」页的「用于…」支持选择个人 `myfiles` 原件或团队 Git 文件，打开目标工作台。原件在确认复制时按当前登录、选中文件及版本重新校验。团队原件保留仓库、相对路径与提交版本。接入范围为桌面端本机代码。
-- Windows 本机通过 89 项定向测试、renderer 和 Electron 类型检查。在已准备固定依赖的 `clients/openim` 运行 `node node_modules/vite/bin/vite.js build`，生成 `dist` 和 `dist-electron`。构建与测试日志位于 `D:/dc-workbench-nav/.runtime/host-four-entry/`，实际桌面联调另行记录。
+- Windows 本机通过客户端测试、renderer 和 Electron 类型检查以及 Vite 构建。在实际 DeepChat 1.0.5 账号中，用真实团队 Git 的两篇 PDF、个人笔记和团队 PPT 母版创建组会工作副本。重开后仍可查看三份参考资料、母版来源和第一页引用。再从资料页将同一篇 PDF 带入升级前已存在的验收项目书，核对双方保存的资料摘要和来源相同，两份原件摘要保持一致。[实际截图和流程](https://github.com/luoyan96/dsh-research-workbench/pull/5)
 - 两侧 PR 合并并取得插件发布版本后，更新 `scripts/desktop-tools.mjs` 中的 `version`、固定源码提交 `url`、源码归档 SHA-256 `sourceDigest`、npm 打包文件名 `member` 及产物 SHA-256 `sha256`。同步 `clients/openim/electron/utils/dshPlugin.ts` 的内置版本和 `clients/openim/tests/dsh-plugin-upgrade.test.mjs` 的归档测试路径。先核对 tgz 内容，再运行 `corepack pnpm@11.21.0 run desktop:win` 重建 Windows x64 并检查最终包内 `resources/tools/plugins` 的实际版本、摘要及隔离运行。该构建入口默认 `--publish never`。

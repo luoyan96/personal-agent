@@ -138,10 +138,12 @@ test("uses selected personal files as workbench references and navigates without
     async (...request) => { requests.push(request); });
   f.render();
   await f.refresh();
+  assert.equal(f.materialMenu().props.disabled, true);
   assert.equal(f.materialMenu().props.children.props.disabled, true);
   const checkbox = f.render().find((node) => node.type === "Checkbox");
   checkbox.props.onChange({ target: { checked: true } });
   const menu = f.materialMenu();
+  assert.equal(menu.props.disabled, false);
   assert.equal(menu.props.children.props.disabled, false);
   menu.props.menu.onClick({ key: "existing-paper" });
   await flush();

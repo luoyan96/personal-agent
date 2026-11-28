@@ -687,6 +687,7 @@ export function TeamLibraryWorkspace({ supported }: { supported: boolean }) {
                   >
                     资料目录
                   </Button>
+                  <MaterialUseIn source={{ source: "team-git", revision: snapshot.revision, paths: [...materialSelection.paths] }} busy={busy} />
                 </div>
                 {nav.mode === "catalog" && (
                   <>
@@ -976,7 +977,6 @@ export function TeamLibraryWorkspace({ supported }: { supported: boolean }) {
                   </div>
                 )}
                 <div className="team-library-discussion">
-                  <MaterialUseIn source={{ source: "team-git", revision: snapshot.revision, paths: [...materialSelection.paths] }} busy={busy} />
                   <Button
                     icon={<CommentOutlined aria-hidden="true" />}
                     onClick={() => void discussMaterials()}

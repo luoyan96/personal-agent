@@ -4,17 +4,18 @@ import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 import ts from "typescript";
 
-const source = await readFile(
-  new URL("../src/research/TeamLibraryWorkspace.tsx", import.meta.url),
-  "utf8",
-);
-const code = ts.transpileModule(source, {
+const compile = async (file) => ts.transpileModule(await readFile(new URL(file, import.meta.url), "utf8"), {
   compilerOptions: {
     module: ts.ModuleKind.CommonJS,
     target: ts.ScriptTarget.ES2022,
     jsx: ts.JsxEmit.ReactJSX,
   },
 }).outputText;
+const [workspaceCode, materialUseInCode, formatsCode] = await Promise.all([
+  compile("../src/research/TeamLibraryWorkspace.tsx"),
+  compile("../src/research/MaterialUseIn.tsx"),
+  compile("../electron/utils/workbenchMaterialFormats.js"),
+]);
 const nodes = (node) =>
   !node || typeof node !== "object"
     ? []
@@ -196,38 +197,44 @@ function fixture(initial = snapshot()) {
     },
     "./team-library.scss": {},
   };
-  const module = { exports: {} };
-  vm.runInNewContext(code, {
-    module,
-    exports: module.exports,
-    require: (name) => {
-      assert(Object.hasOwn(imports, name), name);
-      return imports[name];
-    },
-    Error,
-    URLSearchParams,
-    window: {
-      electronAPI: {
-        teamLibrary: {
-          cached: () => f.cached(),
-          sync: () => f.sync(),
-          preview: (s) => {
-            f.previews.push({ ...s });
-            return f.preview(s);
-          },
-          previewPath: (s) => {
-            f.paths.push({ ...s });
-            return f.previewPath(s);
+  function load(code) {
+    const module = { exports: {} };
+    vm.runInNewContext(code, {
+      module,
+      exports: module.exports,
+      require: (name) => {
+        assert(Object.hasOwn(imports, name), name);
+        return imports[name];
+      },
+      Error,
+      URLSearchParams,
+      window: {
+        electronAPI: {
+          teamLibrary: {
+            cached: () => f.cached(),
+            sync: () => f.sync(),
+            preview: (s) => {
+              f.previews.push({ ...s });
+              return f.preview(s);
+            },
+            previewPath: (s) => {
+              f.paths.push({ ...s });
+              return f.previewPath(s);
+            },
           },
         },
       },
-    },
-  });
+    });
+    return module.exports;
+  }
+  imports["../../electron/utils/workbenchMaterialFormats"] = load(formatsCode);
+  imports["./MaterialUseIn"] = load(materialUseInCode);
+  const { TeamLibraryWorkspace } = load(workspaceCode);
   f.render = () => {
     cursor = 0;
     refCursor = 0;
     effectCursor = 0;
-    return module.exports.TeamLibraryWorkspace({ supported: true });
+    return TeamLibraryWorkspace({ supported: true });
   };
   f.settle = async () => {
     for (let i = 0; i < 12; i++) {

@@ -195,6 +195,29 @@ test("rechecks live Git, source revisions, collection scope, and the account lea
   assert.equal(f.routes.length, requestCount);
 });
 
+test("PDF reference listings filter before each source limit and omit metadata documents", async (t) => {
+  const f = await fixture(t);
+  const sync = f.git.store.sync.bind(f.git.store);
+  const paperPath = "team/paper-after-500.pdf";
+  f.git.store.sync = async () => {
+    const snapshot = await sync();
+    return { ...snapshot, tree: [
+      ...Array.from({ length: 501 }, (_, index) => ({ kind: "file", path: `notes/note-${index}.md` })),
+      { kind: "file", path: paperPath },
+    ] };
+  };
+  await assert.rejects(f.call("list", { kind: "reference", extensions: [".pdf", ".txt"] }), /参考资料格式无效/);
+  const all = await f.call("list", { kind: "reference" });
+  assert.ok(all.warnings.some((warning) => warning.includes("团队 Git 资料过多")));
+  assert.ok(!all.items.some((item) => item.provenance?.path === paperPath));
+  const pdfs = await f.call("list", { kind: "reference", extensions: [".pdf"] });
+  assert.deepEqual(Array.from(pdfs.items, ({ name }) => name), ["paper-after-500.pdf", "paper.pdf"]);
+  assert.equal(pdfs.items[0].provenance.path, paperPath);
+  assert.ok(pdfs.items.every((item) => item.availability === "file"));
+  assert.ok(!pdfs.warnings.some((warning) => warning.includes("团队 Git 资料过多")));
+  assert.ok(f.routes.every((route) => !route.includes("/content")));
+});
+
 test("stages only selected workbench references and combines a master and references in one authorized transfer", async (t) => {
   const f = await fixture(t);
   const templates = await f.call("list", { kind: "template", extensions: [".pptx"] });

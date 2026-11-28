@@ -805,6 +805,20 @@
   }
   .team-library-grid.has-selection { grid-template-columns: minmax(0, 1fr) 310px; }
   .team-library-center { padding: 0; min-width: 0; }
+  .team-library-view-switch {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    align-items: flex-start;
+    padding-block: 6px;
+    background: var(--library-canvas);
+
+    .material-use-in {
+      min-width: 0;
+      max-width: 100%;
+      margin-inline-start: auto;
+    }
+  }
   .team-library-center > header {
     display: flex;
     flex-direction: row;
