@@ -8,7 +8,7 @@ import path from "node:path";
  * own package manager, so the profile stays DSH's: pnpm writes the manifest and
  * lockfile, and we only add the bundle name DSH needs to load it.
  */
-export const researchPlugin = { name: "dsh-research-workbench", version: "0.4.0" };
+export const researchPlugin = { name: "dsh-research-workbench", version: "0.6.0" };
 
 type EnsureResult = { changed: boolean; version?: string; reason?: string };
 

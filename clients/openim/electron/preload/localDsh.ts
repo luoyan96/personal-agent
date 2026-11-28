@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
+import type { WorkbenchMaterialBridge } from "../../src/types/dshWorkbenchMaterials";
 
 // Match DSH rc.3's desktop extension points. Keep this preload separate from
 // DeepChat's application preload: the DSH document receives no app IPC or Node API.
@@ -11,4 +12,13 @@ if (process.isMainFrame && location.protocol === "http:" && location.hostname ==
   contextBridge.exposeInMainWorld("__DSH_DIRECTORY_PICKER__", {
     pick: () => ipcRenderer.invoke("local-dsh-pick-directory"),
   });
+  const fromUser = <T>(read: () => Promise<T>) => navigator.userActivation?.isActive
+    ? read()
+    : Promise.reject(new Error("请从工作台中手动选择资料。"));
+  const materials: WorkbenchMaterialBridge = {
+    list: ({ kind, extensions }) => fromUser(() => ipcRenderer.invoke("dsh-workbench-materials-list", { kind, extensions })),
+    read: ({ kind, id }) => fromUser(() => ipcRenderer.invoke("dsh-workbench-materials-read", { kind, id })),
+    readMany: ({ selections }) => fromUser(() => ipcRenderer.invoke("dsh-workbench-materials-read-many", { selections })),
+  };
+  contextBridge.exposeInMainWorld("__DSH_WORKBENCH_MATERIALS__", materials);
 }

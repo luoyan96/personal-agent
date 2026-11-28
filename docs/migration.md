@@ -159,3 +159,7 @@ paper-framework-figure-studio-pro 固定修订仅在 Git 外测试完整包往�
 ## 2026-11-16 · 个人助理项目跟进
 
 个人项目委派与跟进机制参考了 [DeepSeek dsh-superagent-prototype](https://github.com/deepseek-ai/dsh-superagent-prototype/tree/8c32a9dc5d72c033816c6a8110b37f40cf94fba4) 的持久任务、事件送达和执行者分工设计。AcceptCat 使用自己的个人任务、聊天权限和 SQLite worker 实现。 迁移 040 新增项目、分工与事件表，已有任务继续使用原 ID 和验收入口。
+
+## 2026-11-28 · 工作台资料选择
+
+DeepChat 的账号和共享权限仍由宿主校验。文件选定后读取对应版本，在本机科研插件的文档或论文项目下建立工作副本。上游插件的文献缓存与已保存项目继续使用各自的存放位置。参见[工作台改动](https://github.com/luoyan96/dsh-research-workbench/pull/4)。

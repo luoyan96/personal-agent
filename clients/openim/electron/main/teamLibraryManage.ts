@@ -143,7 +143,7 @@ function previewBytes(bytes: Buffer, filename: string, name: string): TeamLibrar
   if (type[ext]) return { kind: "image", dataUrl: `data:${type[ext]};base64,${bytes.toString("base64")}` };
   return { kind: "file", name, size: bytes.length };
 }
-async function inContext<T>(
+export async function inContext<T>(
   event: IpcMainInvokeEvent,
   action: (c: Awaited<ReturnType<typeof teamLibraryContext>>) => Promise<T>,
 ) {

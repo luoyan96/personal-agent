@@ -7,11 +7,13 @@ import {TeamLibraryPath} from '../../../packages/contracts/dist/team-library.js'
 
 test('real Git fetch, verified originals, cached reopen and failed refresh preserve the published version',async t=>{
  const f=await libraryFixture(t),snap=await f.store.sync(),selected={revision:snap.revision,entryId:f.entry.id};
+ await f.store.verifyPublishedRevision(snap.revision);
  assert.equal((await f.store.read(selected)).bytes.toString(),f.text);
  const original=await f.store.materialize(selected);assert.equal(await fs.readFile(original.file,'utf8'),f.text);
  assert.equal((await new TeamLibraryStore(path.join(f.root,'cache'),f.binding).cached()).revision,snap.revision);
- f.offline(true);await assert.rejects(f.store.sync(),/offline/);assert.equal((await f.store.cached()).revision,snap.revision);f.offline(false);
+ f.offline(true);await assert.rejects(f.store.sync(),/offline/);await assert.rejects(f.store.verifyPublishedRevision(snap.revision),/offline/);assert.equal((await f.store.cached()).revision,snap.revision);f.offline(false);
  const corrupt=structuredClone(f.manifest);corrupt.entries[0].source.sha256='0'.repeat(64);await f.publish(corrupt);
+ await assert.rejects(f.store.verifyPublishedRevision(snap.revision),/版本已变化/);
  const next=await f.store.sync();await assert.rejects(f.store.read({...selected,revision:next.revision}),/校验失败/);
  await assert.rejects(f.store.read(selected),/版本已变化/);
 });
