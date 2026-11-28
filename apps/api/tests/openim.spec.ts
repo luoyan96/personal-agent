@@ -15,6 +15,7 @@ import { OpenImBridge } from '../src/openim-bridge.js'
 import { OpenImWorker } from '../src/openim-worker.js'
 import { AssistantGreetingWorker } from '../src/assistant-greetings.js'
 import { ChatWorker } from '../src/chat-worker.js'
+import { PersonalFollowupWorker } from '../src/personal-followups.js'
 import { backup,restore } from '../src/recovery.js'
 
 const cleanup:(()=>unknown|Promise<unknown>)[]=[]
@@ -74,7 +75,14 @@ async function setup(configured=true){
   }
   const client=new OpenImClient(config,call);app=createServer(config,{imClient:client});cleanup.push(()=>app.close())
   const clients:{cookie:string;csrf:string;token:string}[]=[]
-  for(const account of accounts){const login=await app.inject({method:'POST',url:'/api/v1/auth/login',headers:{origin:config.origin},payload:{username:account.username,password:account.password}});expect(login.statusCode).toBe(200);const cookie=String(login.headers['set-cookie']).split(';')[0]!,session=await app.inject({url:'/api/v1/auth/session',headers:{cookie}});clients.push({cookie,csrf:session.json().data.csrfToken,token:cookie.slice('rap_session='.length)})}
+  async function login(index:number){
+    const account=accounts[index]!
+    const response=await app.inject({method:'POST',url:'/api/v1/auth/login',headers:{origin:config.origin},payload:{username:account.username,password:account.password}})
+    expect(response.statusCode).toBe(200)
+    const cookie=String(response.headers['set-cookie']).split(';')[0]!,session=await app.inject({url:'/api/v1/auth/session',headers:{cookie}})
+    clients[index]={cookie,csrf:session.json().data.csrfToken,token:cookie.slice('rap_session='.length)}
+  }
+  for(let index=0;index<accounts.length;index++)await login(index)
   async function request(name:RouteName,body:unknown=null,params:Record<string,string>={},actor=0,keyValue=randomUUID(),headers:Record<string,string>={}){
     const route=routes[name],response=await app.inject({method:route.method,url:route.path.replace(/\{(\w+)\}/g,(_,k:string)=>params[k]!),headers:{origin:config.origin,cookie:clients[actor]!.cookie,'x-csrf-token':clients[actor]!.csrf,'idempotency-key':keyValue,...headers},...(route.method==='GET'?{}:{payload:body as B})})
     return {status:response.statusCode,value:response.json(),raw:response.body}
@@ -84,7 +92,7 @@ async function setup(configured=true){
   const bridge=new OpenImBridge(db,config,client),actor=(index=0)=>authenticate(db,clients[index]!.token)
   const identity=(id:string,index=0)=>transaction(db,()=>bridge.identity(bridge.chat(actor(index)),id).userID)
   async function connect(id:string,index=0){const relation=(await request('requestContact',{}, {id},index)).value.data.relationship;if(relation.status==='pending_outbound'){const contact=contacts.find(c=>c.id===id)!,owner=contact.identity.kind==='human'?contact.identity.memberId:contact.identity.ownerMemberId;expect((await request('decideContactRequest',{expectedVersion:relation.version,decision:'accept'},{id:relation.requestId},['member_A','member_B','member_C'].indexOf(owner))).status).toBe(200)}}
-  return {dir,db,config,app,clients,accounts,request,callback,bridge,client,calls,groups,friends,sent,contacts,human,agent,publicAgent,actor,identity,connect,setFailSend:(v:boolean)=>{failSend=v},setFailManagement:(v:boolean)=>{failManagement=v},setSkipProfileHook:(v:boolean)=>{skipProfileHook=v},setAfterSend:(v:boolean)=>{afterSend=v},setOnToken:(v:(()=>Promise<void>)|null)=>{onToken=v},setOnFriendList:(v:(()=>Promise<void>)|null)=>{onFriendList=v},setFriendListResult:(v:Record<string,unknown>|null)=>{friendListResult=v}}
+  return {dir,db,config,app,clients,accounts,login,request,callback,bridge,client,calls,groups,friends,sent,contacts,human,agent,publicAgent,actor,identity,connect,setFailSend:(v:boolean)=>{failSend=v},setFailManagement:(v:boolean)=>{failManagement=v},setSkipProfileHook:(v:boolean)=>{skipProfileHook=v},setAfterSend:(v:boolean)=>{afterSend=v},setOnToken:(v:(()=>Promise<void>)|null)=>{onToken=v},setOnFriendList:(v:(()=>Promise<void>)|null)=>{onFriendList=v},setFriendListResult:(v:Record<string,unknown>|null)=>{friendListResult=v}}
 }
 
 describe('OpenIM bridge with explicit synthetic management adapter, not live server verification',{timeout:20000},()=>{
@@ -147,7 +155,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     const {data:messages}=(await s.request('chatMessages',null,{id:personal.id})).value
     expect(messages).toMatchObject([
       {id:manual.value.data.message.id,origin:'human',text:'原有聊天内容',sequence:1},
-      {id:state.get('member_A')!.welcome_message_id,origin:'service',senderContactId:s.agent('member_A').id,text:expect.stringContaining('你好，我是你的个人助理'),sequence:2,turnId:null},
+      {id:state.get('member_A')!.welcome_message_id,origin:'service',senderContactId:s.agent('member_A').id,text:'你好呀，以后咱们一起做研究。',sequence:2,turnId:null},
     ])
     expect((await s.request('chatMessages',null,{id:personal.id},1)).status).toBe(404)
     expect(s.db.prepare('SELECT status FROM im_message_outbox WHERE message_id=?').get(messages[1].id)?.status).toBe('pending')
@@ -198,6 +206,145 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     expect(await offline.tick()).toBe(true)
     expect(received()).toHaveLength(2)
     expect(s.db.prepare('SELECT next_daily_at FROM assistant_greetings WHERE member_id=?').get('member_A')?.next_daily_at).toBe('2026-11-03T17:00:00.000Z')
+  })
+
+  it('applies an account-wide morning message policy and defers past quiet hours', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    cleanup.push(() => vi.useRealTimers())
+    vi.setSystemTime(new Date('2026-11-11T16:00:00Z'))
+    const s = await setup()
+    const session = await s.request('imSession', { platformID: 5 }, {}, 0, undefined, { 'x-acceptcat-time-zone': 'Europe/Paris' })
+    const id = session.value.data.coordinator.researchConversationId
+    const messageCount = () => s.db.prepare('SELECT count(*) n FROM chat_messages WHERE conversation_id=?').get(id)!.n
+    const next = () => s.db.prepare('SELECT next_daily_at FROM assistant_greetings WHERE member_id=?').get('member_A')!.next_daily_at
+    const worker = new AssistantGreetingWorker(s.db, s.config)
+    expect((await s.request('assistantProactiveSettings')).value).toEqual({ data: { mode: 'greeting', learnFromChat: false, version: 1 } })
+    expect((await s.request('updatePersonalMemorySettings', {
+      expectedVersion: 1, timeZone: 'UTC', quietHours: { start: '22:00', end: '10:15' }, candidateLearning: false,
+    })).status).toBe(200)
+    expect(next()).toBe('2026-11-12T10:15:00.000Z')
+    vi.setSystemTime(new Date('2026-11-12T09:00:00Z'))
+    expect(await worker.tick()).toBe(false)
+    expect(messageCount()).toBe(1)
+    vi.setSystemTime(new Date('2026-11-12T10:15:00Z'))
+    expect(await worker.tick()).toBe(true)
+    expect(messageCount()).toBe(2)
+    const pendingGreeting = String(s.db.prepare('SELECT message_id FROM assistant_proactive_deliveries').get()!.message_id)
+    const imWorker = new OpenImWorker(s.db, s.config, s.client)
+    expect(() => imWorker.snapshot(pendingGreeting)).not.toThrow()
+
+    await s.login(0)
+    await s.login(1)
+    const key = randomUUID()
+    const off = { mode: 'off', learnFromChat: true, expectedVersion: 1 }
+    expect((await s.request('updateAssistantProactiveSettings', off, {}, 0, key)).value).toEqual({ data: { mode: 'off', learnFromChat: true, version: 2 } })
+    expect(() => imWorker.snapshot(pendingGreeting)).toThrow('FORBIDDEN')
+    expect((await s.request('updateAssistantProactiveSettings', { mode: 'contextual', expectedVersion: 1 })).status).toBe(409)
+    await s.request('imSession', { platformID: 3 }, {}, 0, undefined, { 'x-acceptcat-time-zone': 'Asia/Tokyo' })
+    expect((await s.request('assistantProactiveSettings')).value).toEqual({ data: { mode: 'off', learnFromChat: true, version: 2 } })
+    expect((await s.request('assistantProactiveSettings', null, {}, 1)).value).toEqual({ data: { mode: 'greeting', learnFromChat: false, version: 1 } })
+    vi.setSystemTime(new Date('2026-11-13T10:15:00Z'))
+    expect(await worker.tick()).toBe(false)
+    expect(messageCount()).toBe(2)
+    await s.login(0)
+    expect((await s.request('updateAssistantProactiveSettings', { mode: 'greeting', expectedVersion: 2 })).status).toBe(200)
+    expect((await s.request('updateAssistantProactiveSettings', off, {}, 0, key)).value).toEqual({ data: { mode: 'greeting', learnFromChat: true, version: 3 } })
+    expect(await worker.tick()).toBe(true)
+    expect(messageCount()).toBe(3)
+  })
+
+  it('asks once about a verified owner thread in the afternoon after recent chat has settled', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    cleanup.push(() => vi.useRealTimers())
+    vi.setSystemTime(new Date('2026-11-11T16:00:00Z'))
+    const s = await setup()
+    const session = await s.request('imSession', { platformID: 5 }, {}, 0, undefined, { 'x-acceptcat-time-zone': 'UTC' })
+    const id = session.value.data.coordinator.researchConversationId
+    expect((await s.request('updateAssistantProactiveSettings', { mode: 'contextual', expectedVersion: 1 })).status).toBe(200)
+    const worker = new AssistantGreetingWorker(s.db, s.config)
+    vi.setSystemTime(new Date('2026-11-12T09:00:00Z'))
+    expect(await worker.tick()).toBe(true)
+    const subject = '合成转录数据质控'
+    vi.setSystemTime(new Date('2026-11-12T12:15:00Z'))
+    await s.login(0)
+    await s.login(1)
+    const source = await s.request('sendChatMessage', { text: `「${subject}」还没做完，下次聊到时可以问问我。` }, { id })
+    expect(source.status, source.raw).toBe(201)
+    const sourceId = source.value.data.message.id
+    const insertThread = s.db.prepare(`INSERT INTO assistant_relationship_memories
+      (id,owner_id,assistant_id,conversation_id,message_id,kind,subject,text,status,proactive,version,created_at,updated_at,expires_at)
+      VALUES (?,'member_A',?,?,?,'open_thread',?,?,'active',1,1,?,?, '2026-12-12T00:00:00.000Z')`)
+    const stamp = new Date().toISOString()
+    insertThread.run(randomUUID(), s.agent('member_A').id, id, sourceId, subject, source.value.data.message.text, stamp, stamp)
+
+    vi.setSystemTime(new Date('2026-11-12T14:00:00Z'))
+    expect(await worker.tick()).toBe(true)
+    expect(s.db.prepare('SELECT * FROM assistant_proactive_deliveries WHERE context_key IS NOT NULL').all()).toEqual([])
+    expect(s.db.prepare('SELECT next_daily_at FROM assistant_greetings WHERE member_id=?').get('member_A')!.next_daily_at).toBe('2026-11-12T14:15:00.000Z')
+    vi.setSystemTime(new Date('2026-11-12T14:15:00Z'))
+    const reopened = openDatabase(s.config.databasePath)
+    cleanup.push(() => reopened.close())
+    expect(await Promise.all([worker.tick(), new AssistantGreetingWorker(reopened, s.config).tick()])).toEqual([true, false])
+    const contextual = () => s.db.prepare('SELECT * FROM assistant_proactive_deliveries WHERE context_key IS NOT NULL').all()
+    const logged = contextual()
+    expect(logged).toMatchObject([{ member_id: 'member_A', local_date: '2026-11-12', source_message_id: sourceId }])
+    const messageId = String(logged[0]!.message_id)
+    const detail = await s.request('chatMessageDetails', null, { id, messageId })
+    expect(detail.value.data).toMatchObject({
+      message: { origin: 'service', senderContactId: s.agent('member_A').id, text: `要接着聊「${subject}」吗？`, turnId: null },
+      replyTo: { messageId: sourceId },
+    })
+    expect((await s.request('chatMessageDetails', null, { id, messageId }, 1)).status).toBe(404)
+    expect(s.db.prepare('SELECT count(*) n FROM chat_turns').get()!.n).toBe(0)
+    const imWorker = new OpenImWorker(s.db, s.config, s.client)
+    expect(() => imWorker.snapshot(messageId)).not.toThrow()
+
+    vi.setSystemTime(new Date('2026-11-13T09:00:00Z'))
+    expect(await worker.tick()).toBe(true)
+    vi.setSystemTime(new Date('2026-11-13T14:15:00Z'))
+    expect(await worker.tick()).toBe(true)
+    expect(contextual()).toEqual(logged)
+    s.db.prepare('INSERT INTO chat_message_retractions VALUES (?,?,?)').run(sourceId, 'member_A', new Date().toISOString())
+    expect(() => imWorker.snapshot(messageId)).toThrow('FORBIDDEN')
+  })
+
+  it('leaves an explicit scheduled reminder to its worker and skips withdrawn context', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    cleanup.push(() => vi.useRealTimers())
+    vi.setSystemTime(new Date('2026-11-11T16:00:00Z'))
+    const s = await setup()
+    const session = await s.request('imSession', { platformID: 5 }, {}, 0, undefined, { 'x-acceptcat-time-zone': 'UTC' })
+    const id = session.value.data.coordinator.researchConversationId
+    expect((await s.request('updateAssistantProactiveSettings', { mode: 'contextual', expectedVersion: 1 })).status).toBe(200)
+    vi.setSystemTime(new Date('2026-11-12T10:00:00Z'))
+    await s.login(0)
+    const subject = '合成实验质控表'
+    const insertThread = s.db.prepare(`INSERT INTO assistant_relationship_memories
+      (id,owner_id,assistant_id,conversation_id,message_id,kind,subject,text,status,proactive,version,created_at,updated_at,expires_at)
+      VALUES (?,'member_A',?,?,?,'open_thread',?,?,'active',1,1,?,?, '2026-12-12T00:00:00.000Z')`)
+    for (const title of [subject, '应撤回的内容']) {
+      const source = await s.request('sendChatMessage', { text: `「${title}」还没做完，下次可以问我。` }, { id })
+      expect(source.status, source.raw).toBe(201)
+      const message = source.value.data.message
+      const now = new Date().toISOString()
+      insertThread.run(randomUUID(), s.agent('member_A').id, id, message.id, title, message.text, now, now)
+      if (title !== subject) expect((await s.request('withdrawChatMessage', { expectedVersion: 1 }, { id, messageId: message.id })).status).toBe(200)
+    }
+    const dueAt = '2026-11-12T14:10:00.000Z'
+    expect((await s.request('createPersonalFollowup', { title: subject, body: '整理合成实验的质控表', dueAt, timeZone: 'UTC' })).status).toBe(201)
+    const worker = new AssistantGreetingWorker(s.db, s.config)
+    vi.setSystemTime(new Date('2026-11-12T14:00:00Z'))
+    expect(await worker.tick()).toBe(true)
+    expect(s.db.prepare('SELECT count(*) n FROM assistant_proactive_deliveries WHERE context_key IS NOT NULL').get()!.n).toBe(0)
+    vi.setSystemTime(new Date(dueAt))
+    const reminders = new PersonalFollowupWorker(s.db, s.config)
+    expect(await reminders.tick()).toBe(true)
+    expect(await reminders.tick()).toBe(false)
+    expect(s.db.prepare('SELECT count(*) n FROM personal_followup_runs').get()!.n).toBe(1)
+
+    vi.setSystemTime(new Date('2026-11-13T14:00:00Z'))
+    expect(await worker.tick()).toBe(true)
+    expect(s.db.prepare('SELECT count(*) n FROM assistant_proactive_deliveries WHERE context_key IS NOT NULL').get()!.n).toBe(0)
   })
 
   it('reconciles native withdrawals after and before send callbacks without trusting another actor',async()=>{
@@ -580,7 +727,7 @@ describe('OpenIM bridge with explicit synthetic management adapter, not live ser
     const names=['001-foundation.sql','002-collaboration.sql','003-invitation-decisions.sql','004-discovery.sql','005-coordination.sql','006-execution.sql','007-authorized-reuse.sql','008-pilot-operations.sql','009-invite-registration.sql','010-lab-invite-management.sql','011-lab-ai-settings.sql','012-research-chat.sql','013-chat-viewer-state.sql','014-agent-contacts.sql']
     for(const [index,name] of names.entries()){const sql=readFileSync(new URL(`../migrations/${name}`,import.meta.url),'utf8');db.exec(sql);db.prepare('INSERT INTO schema_migrations VALUES (?,?,?)').run(index+1,createHash('sha256').update(sql).digest('hex'),'2026-01-01T00:00:00Z')}
     seed(db,'test');db.prepare("INSERT INTO chat_conversations VALUES ('old','lab_synthetic','member_A','personal','old_scope','{}')").run();db.prepare("INSERT INTO chat_messages VALUES ('old_message','old',1,'{}')").run()
-    migrate(db);migrate(db);checkDatabase(db);expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(43)
+    migrate(db);migrate(db);checkDatabase(db);expect(db.prepare('SELECT count(*) n FROM schema_migrations').get()!.n).toBe(45)
     expect(db.prepare('SELECT count(*) n FROM chat_messages').get()!.n).toBe(1);expect(db.prepare('SELECT count(*) n FROM im_message_outbox').get()!.n).toBe(0)
   })
 })

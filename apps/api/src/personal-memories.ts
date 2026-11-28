@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import { PersonalMemory,PersonalMemoryInput,PersonalMemorySettings,personalAssistantRoutes,type Contact,type Conversation,type ChatMessage } from '@research-agent-platform/contracts'
+import { PersonalMemory,PersonalMemoryInput,PersonalMemorySettings,personalAssistantRoutes,type Contact,type Conversation,type ChatMessage,type RequestFor } from '@research-agent-platform/contracts'
 import { hash } from './auth.js'
 import { memoryBudget } from '@research-agent-platform/constitution'
 import { fail } from './errors.js'
 import type { ChatService,ChatRequest } from './chat.js'
 import {contextTerms,relatedScore} from './dialogue-context.js'
 import { personalPreferencesFingerprint, readPersonalPreferences } from './personal-preferences.js'
-import { rescheduleAssistantGreeting } from './assistant-greetings.js'
+import { assistantProactiveSettings, rescheduleAssistantGreeting, updateAssistantProactiveSettings } from './assistant-greetings.js'
 export const personalCommands=Object.keys(personalAssistantRoutes)
 export function memorySettings(s:ChatService){s.db.prepare('INSERT INTO personal_memory_settings(member_id) VALUES(?) ON CONFLICT DO NOTHING').run(s.c.actor.id);const r=s.db.prepare('SELECT * FROM personal_memory_settings WHERE member_id=?').get(s.c.actor.id)!;return PersonalMemorySettings.parse({candidateLearning:r.candidate_learning===1,timeZone:r.time_zone,quietHours:r.quiet_hours_json?JSON.parse(String(r.quiet_hours_json)):null,version:r.version})}
 export function memory(s:ChatService,id:string){const r=s.db.prepare('SELECT * FROM personal_memories WHERE id=? AND member_id=?').get(id,s.c.actor.id);if(!r)fail('NOT_FOUND');return PersonalMemory.parse({id:r.id,topic:r.topic,content:r.content,scope:r.scope,status:r.status,origin:r.origin,sourceMessageId:r.source_message_id,version:r.version,createdAt:r.created_at,updatedAt:r.updated_at,allowedActions:r.status==='revoked'?[]:r.status==='candidate'?['edit','confirm','revoke']:['edit','revoke']})}
@@ -30,12 +30,14 @@ export function saveMemory(s:ChatService,value:unknown,origin:'explicit'|'feedba
  return revision(s,target)
 }
 export function handleMemory(s:ChatService,name:string,req:ChatRequest):unknown{
+ if(name==='assistantProactiveSettings')return {data:assistantProactiveSettings(s.db,s.c.actor.id)}
+ if(name==='updateAssistantProactiveSettings')return {data:updateAssistantProactiveSettings(s,req.body as RequestFor<'updateAssistantProactiveSettings'>['body'])}
  if(name==='personalMemorySettings')return {data:memorySettings(s)}
  if(name==='updatePersonalMemorySettings'){
   const current=memorySettings(s),b=req.body as PersonalMemorySettings&{expectedVersion:number}
   s.c.checkVersion(current.version,b.expectedVersion)
   s.db.prepare('UPDATE personal_memory_settings SET candidate_learning=?,time_zone=?,quiet_hours_json=?,version=version+1 WHERE member_id=?').run(b.candidateLearning?1:0,b.timeZone,b.quietHours?JSON.stringify(b.quietHours):null,s.c.actor.id)
-  if(current.version===1||current.timeZone!==b.timeZone)rescheduleAssistantGreeting(s.db,s.c.actor.id,s.clock())
+  rescheduleAssistantGreeting(s.db,s.c.actor.id,s.clock())
   return {data:memorySettings(s)}
  }
  if(name==='personalMemories'){

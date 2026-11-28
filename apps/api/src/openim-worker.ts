@@ -1,5 +1,6 @@
 import { AssistantStickerId, OpenImResearchPointer } from '@research-agent-platform/contracts'
 import { randomUUID } from 'node:crypto'
+import { authorizeProactiveDelivery } from './assistant-greetings.js'
 import { transaction } from './database.js'
 import { serviceFor } from './execution-worker.js'
 import { OpenImBridge } from './openim-bridge.js'
@@ -23,6 +24,7 @@ export class OpenImWorker {
       json_extract(request_json,'$.assistantSticker.id') sticker_id FROM chat_turns WHERE id=?`).get(document.turnId):null
     const contact=document.senderContactId?this.db.prepare('SELECT owner_id,kind FROM chat_contacts WHERE id=?').get(document.senderContactId):null
     const owner=String(turn?.owner_id??(document.origin==='human'?contact?.owner_id:null)??row.owner_id),actor=serviceFor(this.db,owner,this.config).c.actor,chat=this.bridge.chat(actor),message=chat.projectedMessage(id),mapping=this.bridge.mapping(chat,message.conversationId)
+    authorizeProactiveDelivery(chat,message)
     const senderContact=message.senderContactId??chat.human().id,sender=this.bridge.identity(chat,senderContact),pointer=OpenImResearchPointer.parse({type:'research_message',bridgeVersion:'1.0.0',conversationId:message.conversationId,messageId:id,sequence:message.sequence})
     const stickerId=message.origin==='model'&&message.turnId&&turn?.sticker_message_id===message.id
       ? AssistantStickerId.safeParse(turn.sticker_id).data : undefined
