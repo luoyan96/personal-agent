@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { buildLocalDshRuntime } from '../../../integrations/deepseek-harness/desktop/build.mjs';
 import { libraryFixture } from './helpers/team-library.mjs';
 const require = createRequire(import.meta.url), client = fileURLToPath(new URL('../', import.meta.url));
+const accountIdentity = 'a'.repeat(64);
 const esbuild = createRequire(require.resolve('vite'))('esbuild');
 const bundled = await esbuild.build({ entryPoints: [path.join(client, 'electron/main/taskDshManage.ts')], bundle: true, platform: 'node', format: 'cjs', write: false,
   external: ['electron', './localDshRuntime', '@research-agent-platform/research-skills/import'],
@@ -57,7 +58,7 @@ async function fixture(t, library, kind = "research") {
   t.after(()=>timers.forEach(clearInterval));
   const mod={exports:{}};
   vm.runInNewContext(bundled.outputFiles[0].text,{module:mod,exports:mod.exports,teamLibraryFixture:()=>library,require:id=>id==='electron'?electron:id==='./localDshRuntime'?runtime.exports:require(id),process,Buffer,TextEncoder,URL,URLSearchParams,setTimeout,clearTimeout});
-  const account={metadata:{memberId:'member_A'},identity:'synthetic',lease:'one',csrf:'synthetic',valid:async()=>{if(!valid)throw Error('expired');},request:url=>respond(raw=>{
+  const account={metadata:{memberId:'member_A'},identity:accountIdentity,lease:'one',csrf:'synthetic',valid:async()=>{if(!valid)throw Error('expired');},request:url=>respond(raw=>{
     const body=raw ? JSON.parse(raw) : undefined;
     if(url==='/api/v1/research-library/collections'&&body){duringCollection();deliveryMode=true;return{data:{id:'collection',name:body.name,scope:body.scope,taskIds:body.taskIds,owned:true,version:1}};}
     if(url.endsWith('/deliverables') || url.endsWith('/result')){submissions.push(body);if(loseSubmit){loseSubmit=false;throw Error('response lost');}return{data:{id:'delivery'}};}
@@ -88,6 +89,27 @@ test('native material picker cancels without reading, rechecks navigation after 
   assert.equal(await f.call('task-dsh-add-local'),true);assert.equal(f.uploads(),0);
   await f.call('task-dsh-reveal');assert.equal(await fs.realpath(f.revealed[0]),await fs.realpath(path.join(f.root,'work')));
   await assert.rejects(f.call('task-dsh-reveal','../input.txt'),/路径/);
+});
+
+test('private files enter a task only through explicit import from the current account', async t => {
+  const f = await fixture(t);
+  await f.call('task-dsh-open', true);
+  const home = path.join(f.root, 'personal-files');
+  const mine = path.join(home, accountIdentity, 'myfiles');
+  const other = path.join(home, 'b'.repeat(64), 'myfiles');
+  await fs.mkdir(mine, { recursive: true });
+  await fs.mkdir(other, { recursive: true });
+  await fs.writeFile(path.join(mine, 'private.zip'), 'synthetic original');
+  await fs.writeFile(path.join(other, 'other.txt'), 'different account');
+  await assert.rejects(f.call('task-dsh-import-personal-library', [path.relative(mine, path.join(other, 'other.txt'))]), /不在登记/);
+  assert.deepEqual(await fs.readdir(path.join(f.root, 'work')), []);
+  await assert.rejects(f.call('task-dsh-import-library', ['private.zip']), /还没有登记课题组/);
+  await f.call('task-dsh-import-personal-library', ['private.zip']);
+  const state = await f.call('task-dsh-status');
+  assert.equal(state.binding.localMaterials.length, 1);
+  assert.equal(await fs.readFile(path.join(f.root, 'work', state.binding.localMaterials[0].localName), 'utf8'), 'synthetic original');
+  assert.equal(await fs.readFile(path.join(mine, 'private.zip'), 'utf8'), 'synthetic original');
+  assert.equal(f.uploads(), 0);
 });
 test('archive IPC enforces writable collection, confirmed sharing scope, idle local host and current account',async t=>{
   const f=await fixture(t);await f.call('task-dsh-open',true);await fs.writeFile(path.join(f.root,'work','plan.pptx'),'synthetic');

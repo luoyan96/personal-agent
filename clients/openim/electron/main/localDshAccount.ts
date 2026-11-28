@@ -4,6 +4,7 @@ import type { Socket } from 'node:net';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 const { LocalDshConfiguration, localDshPaths } = require('./localDshRuntime') as typeof import('../../../../integrations/deepseek-harness/desktop/local-runtime');
 import { authority } from './localFolderManage';
+import { desktopAccountIdentity } from './desktopAccount';
 import { getResearchServiceStatus } from './windowManage';
 import { desktopSessionCookie } from '../utils/desktopServer';
 
@@ -45,7 +46,7 @@ export async function dshAccount(event: Electron.IpcMainInvokeEvent) {
   await valid();
   return {
     metadata, valid, request, csrf: session.csrfToken as string,
-    identity: createHash('sha256').update(JSON.stringify([service, metadata.memberId])).digest('hex'),
+    identity: desktopAccountIdentity(service, metadata.memberId),
     lease: createHash('sha256').update(token).digest('hex'),
   };
 }

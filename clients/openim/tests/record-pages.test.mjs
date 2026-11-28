@@ -415,9 +415,9 @@ test("template browsing is visible and creation stays in the manager menu", asyn
   const itemsFor = (tree) => nodes(tree)
     .find(node => node.type === "Dropdown" && text(node.props.children) === "管理模板")
     .props.menu.items;
-  assert.deepEqual(Array.from(itemsFor(tree), item => item.label), ["新增模板", "设置本地资料文件夹"]);
+  assert.deepEqual(Array.from(itemsFor(tree), item => item.label), ["新增模板", "关联课题组本机目录"]);
   assert.equal(button(tree, "新增模板"), undefined);
   f.canPublish = false;
   tree = f.render();
-  assert.deepEqual(Array.from(itemsFor(tree), item => item.label), ["设置本地资料文件夹"]);
+  assert.deepEqual(Array.from(itemsFor(tree), item => item.label), ["关联课题组本机目录"]);
 });

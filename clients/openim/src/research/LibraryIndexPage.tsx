@@ -166,7 +166,7 @@ export function LibraryIndexPage() {
     return (
       <div className="library-workspace-content">
         <WorkspaceUnavailable
-          feature="资料索引"
+          feature="课题组文件索引"
           pending={!availability.data && !availability.error}
           error={availability.error}
           onRetry={availability.refresh}
@@ -174,10 +174,10 @@ export function LibraryIndexPage() {
       </div>
     );
   return (
-    <section className="library-index" aria-label="资料索引">
+    <section className="library-index" aria-label="课题组文件索引">
       <div className="library-index-head">
         <div>
-          <h2>我的资料</h2>
+          <h2>课题组文件索引</h2>
         </div>
         {entries.length > 0 && addIndex}
       </div>
@@ -186,13 +186,13 @@ export function LibraryIndexPage() {
           <div>
             {local.status?.registered ? (
               <p>
-                本地文件夹 <strong>{local.status.name}</strong>
+                课题组文件的本机目录 <strong>{local.status.name}</strong>
                 {local.manifest
                   ? `（${local.manifest.files.length} 个可用文件）`
                   : local.status.available ? "" : "（现在打不开）"}
               </p>
             ) : (
-              <p><strong>选择存放资料的文件夹</strong></p>
+              <p><strong>关联课题组文件的本机目录</strong></p>
             )}
             <p>原件保留在本机。登记的文件名、相对路径和用途可由课题组成员查阅。</p>
           </div>
@@ -201,7 +201,7 @@ export function LibraryIndexPage() {
             loading={local.busy}
             onClick={() => void local.pick()}
           >
-            {local.status?.registered ? "更换文件夹" : "选择资料文件夹"}
+            {local.status?.registered ? "更换本机目录" : "关联本机目录"}
           </Button>
         </div>
       )}
@@ -214,7 +214,7 @@ export function LibraryIndexPage() {
           allowClear
         />
       )}
-      {!bridge && <p>请在 Windows 桌面客户端选择本地资料文件夹。</p>}
+      {!bridge && <p>请在 Windows 桌面客户端关联课题组文件的本机目录。</p>}
       {(failure || local.failure) && (
         <Alert type="error" message={failure || local.failure} />
       )}
@@ -378,7 +378,7 @@ export function LibraryIndexPage() {
               disabled={busy || !local.status?.registered}
               onClick={() => setPicking(true)}
             >
-              从本地资料文件夹选择
+              从课题组本机目录选择
             </Button>
           </div>
           <Input

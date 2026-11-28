@@ -24,4 +24,10 @@ export type LocalLibraryBridge = {
   scan: () => Promise<LocalLibraryManifest>;
   /** Reads the file to compare "same name" with "same content". */
   hash: (rel: string) => Promise<{ sha256: string; size: number }>;
+  personalStatus: () => Promise<LocalLibraryStatus>;
+  personalScan: () => Promise<LocalLibraryManifest>;
+  openPersonalFolder: () => Promise<void>;
+  revealPersonalFile: (rel: string) => Promise<void>;
+  /** Copies files selected in a native picker into the current account's folder. */
+  addPersonalFiles: () => Promise<LocalLibraryManifest | null>;
 };

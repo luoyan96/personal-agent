@@ -1,84 +1,14 @@
-import { app, ipcMain, net, type IpcMainInvokeEvent } from "electron";
+import { app, ipcMain, type IpcMainInvokeEvent } from "electron";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { authority } from "./localFolderManage";
 import { getResearchServiceStatus } from "./windowManage";
-import { desktopSessionCookie } from "../utils/desktopServer";
+import { desktopCredentials, desktopSessionMemberId, type DesktopCredentials } from "./desktopAccount";
 import { ChatHistoryDatabase } from "../utils/chatHistory";
 import { knownMember, rememberIdentity } from "../utils/chatHistoryIdentity";
 import type { ChatHistoryBridge } from "../../src/types/chatHistory";
 
-type Credentials = { owner: string; service: string; token: string; session: Electron.Session };
-type Lease = Credentials & { db: ChatHistoryDatabase };
-
-/**
- * Reads the session cookie this machine already holds. The desktop build keeps
- * it under a hashed name on the local origin; a build served from the service
- * origin keeps `rap_session` directly.
- */
-async function credentials(event: IpcMainInvokeEvent): Promise<Credentials | null> {
-  const auth = authority(event);
-  const service = new URL(getResearchServiceStatus().address).origin;
-  const origin = new URL(auth.contents.getURL()).origin;
-  const name = origin === service ? "rap_session" : desktopSessionCookie(service);
-  const token = (
-    await auth.contents.session.cookies.get({ url: origin, name })
-  )[0]?.value;
-  if (!token || !/^[A-Za-z0-9_-]{16,256}$/.test(token)) return null;
-  // A closed or replaced window must not keep a lease alive.
-  if (authority(event).owner !== auth.owner) return null;
-  return { owner: auth.owner, service, token, session: auth.contents.session };
-}
-
-/**
- * The account is decided by the server, not by the renderer: the cookie is
- * exchanged for the member it belongs to. A page cannot ask for someone
- * else's transcript by passing a different id.
- */
-function sessionMemberId(current: Credentials) {
-  return new Promise<string>((resolve, reject) => {
-    const request = net.request({
-      url: current.service + "/api/v1/auth/session",
-      session: current.session,
-      useSessionCookies: false,
-      redirect: "error",
-    });
-    request.setHeader("Cookie", "rap_session=" + current.token);
-    const timer = setTimeout(() => {
-      request.abort();
-      reject(new Error("账号核对超时。"));
-    }, 10000);
-    request.on("error", () => {
-      clearTimeout(timer);
-      reject(new Error("无法核对聊天账号。"));
-    });
-    request.on("response", (response) => {
-      const chunks: Buffer[] = [];
-      let bytes = 0;
-      response.on("error", () => {
-        clearTimeout(timer);
-        reject(new Error("无法核对聊天账号。"));
-      });
-      response.on("data", (chunk) => {
-        bytes += chunk.length;
-        if (bytes > 1048576) request.abort();
-        else chunks.push(Buffer.from(chunk));
-      });
-      response.on("end", () => {
-        clearTimeout(timer);
-        try {
-          const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-          if (response.statusCode !== 200 || typeof body.data?.member?.id !== "string")
-            throw new Error();
-          resolve(body.data.member.id as string);
-        } catch {
-          reject(new Error("聊天登录已失效。"));
-        }
-      });
-    });
-    request.end();
-  });
-}
+type Lease = DesktopCredentials & { db: ChatHistoryDatabase };
 
 export function registerChatHistoryBridge() {
   const leases = new Map<string, Lease>();
@@ -95,7 +25,7 @@ export function registerChatHistoryBridge() {
   async function authorize(event: IpcMainInvokeEvent, key: string) {
     const lease = leases.get(key);
     if (!lease) throw new Error("本机聊天记录已关闭，请重新打开会话。");
-    const current = await credentials(event);
+    const current = await desktopCredentials(event);
     if (
       !current ||
       lease.owner !== current.owner ||
@@ -112,9 +42,9 @@ export function registerChatHistoryBridge() {
     // No verified session means no cache: the caller falls back to the server
     // path it already had, rather than showing another account's transcript.
     if (!getResearchServiceStatus().connected) return null;
-    let current: Credentials | null;
+    let current: DesktopCredentials | null;
     try {
-      current = await credentials(event);
+      current = await desktopCredentials(event);
     } catch {
       return null;
     }
@@ -129,7 +59,7 @@ export function registerChatHistoryBridge() {
     // so a matching hash cannot be a different account.
     let memberId = knownMember(identity, current.service, current.token);
     if (memberId) {
-      void sessionMemberId(current)
+      void desktopSessionMemberId(current)
         .then((actual) => {
           if (actual === memberId)
             rememberIdentity(identity, current!.service, current!.token, actual);
@@ -142,17 +72,18 @@ export function registerChatHistoryBridge() {
         });
     } else {
       try {
-        memberId = await sessionMemberId(current);
+        memberId = await desktopSessionMemberId(current);
       } catch {
         return null;
       }
       rememberIdentity(identity, current.service, current.token, memberId);
     }
-    const verified = await credentials(event);
+    const verified = await desktopCredentials(event);
     if (
       !verified ||
       verified.owner !== current.owner ||
-      verified.token !== current.token
+      verified.token !== current.token ||
+      verified.service !== current.service
     )
       return null;
     reset();

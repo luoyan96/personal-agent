@@ -12,7 +12,7 @@ import type { ArchiveSelection } from '../../../../integrations/deepseek-harness
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { authority } from "./localFolderManage";
-import { localLibraryPaths } from "./localLibraryManage";
+import { localLibraryPaths, personalLibraryPaths } from "../utils/localLibrary";
 import type { dshAccount } from "./localDshAccount";
 import type {
   TaskContext,
@@ -478,8 +478,8 @@ export function registerTaskDshBridge(
           const file=path.join(folder,path.basename(current.source.path));await writeFile(file,local.bytes,{flag:'wx'});files.push(file);
           receipts.push({id:current.id,name:current.name,projectId:current.projectId,purpose:current.purpose,source:current.source,sha256:current.source.sha256});
         }else if(current.source.kind==='local'){
-          const local=await localLibraryPaths([current.source.path]);
-          if(local.length!==1)throw Error('本机缺少这份资料，请先在“我的资料”登记资料文件夹。');
+          const local=await localLibraryPaths(app.getPath('userData'),[current.source.path]);
+          if(local.length!==1)throw Error('本机缺少这份资料，请先登记课题组原件文件夹。');
           if(!current.source.sha256)throw Error('本地资料尚未登记校验值，请维护者先确认版本。');
           const folder=path.join(temporary,current.id);await mkdir(folder);const file=path.join(folder,path.basename(current.source.path));await copyFile(local[0],file);
           const hash=createHash('sha256');for await(const chunk of createReadStream(file))hash.update(chunk);const digest=hash.digest('hex');
@@ -505,10 +505,18 @@ export function registerTaskDshBridge(
       return {count:entries.length,revision:selection.revision};
     }finally{await rm(temporary,{recursive:true,force:true});}
   });
-  ipcMain.handle('task-dsh-import-library', async (event, target: TaskTarget, rels: string[]) => {
+  const importLibrary = async (
+    event: Electron.IpcMainInvokeEvent,
+    target: TaskTarget,
+    rels: string[],
+    personal: boolean,
+  ) => {
     const a = await authorized(event, target, true);
-    // Paths arrive relative to the registered folder; the main process resolves them.
-    const files = await localLibraryPaths(Array.isArray(rels) ? rels.filter(r => typeof r === 'string') : []);
+    const selected = Array.isArray(rels) ? rels.filter(r => typeof r === 'string') : [];
+    const userData = app.getPath('userData');
+    const files = await (personal
+      ? personalLibraryPaths(userData, a.c.account.identity, selected)
+      : localLibraryPaths(userData, selected));
     if (!files.length) throw Error('请先选择要从本地资料夹取用的文件。');
     await a.coordinator.idle(target);
     await authorized(event, target, true);
@@ -516,7 +524,11 @@ export function registerTaskDshBridge(
     if ((await a.store.status(target))?.phase === 'running') throw Error('请等本轮结束后添加素材。');
     await a.store.importLocal(target, files);
     return true;
-  });
+  };
+  ipcMain.handle('task-dsh-import-library', (event, target, rels) =>
+    importLibrary(event, target, rels, false));
+  ipcMain.handle('task-dsh-import-personal-library', (event, target, rels) =>
+    importLibrary(event, target, rels, true));
   ipcMain.handle('task-dsh-add-local', async (event, target: TaskTarget) => {
     const a = await authorized(event, target, true);
     await a.coordinator.idle(target);

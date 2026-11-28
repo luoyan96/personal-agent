@@ -196,7 +196,13 @@ export function TaskWorkPage({
   const [note, setNote] = useState(""),
     [noteText, setNoteText] = useState(""),
     [preview, setPreview] = useState("");
-  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [librarySelection, setLibrarySelection] = useState<{
+    scope: string;
+    source: "personal" | "shared";
+  }>();
+  const librarySource = librarySelection?.scope === operation.scope
+    ? librarySelection.source
+    : undefined;
   const [showTaskDetails, setShowTaskDetails] = useState(Boolean(deliveryOpen));
   const [collection, setCollection] = useState(""),
     [notice, setNotice] = useState("");
@@ -917,12 +923,12 @@ export function TaskWorkPage({
               >
                 添加本地素材
               </Button>
-              {bridge?.taskImportLibrary && (
+              {bridge?.taskImportPersonalLibrary && (
                 <Button
                   disabled={busy || !canWork || state.phase === "running"}
-                  onClick={() => setLibraryOpen(true)}
+                  onClick={() => setLibrarySelection({ scope: operation.scope, source: "personal" })}
                 >
-                  从本地资料夹取用
+                  从我的资料取用
                 </Button>
               )}
               <Button
@@ -1065,6 +1071,14 @@ export function TaskWorkPage({
         <details className="task-work-more">
           <summary>取用共享资料（可选）</summary>
           <p>只把你选定的版本取到本机，不必先上传本地素材。</p>
+          {state && bridge?.taskImportLibrary && (
+            <Button
+              disabled={busy || !canWork || state.phase === "running"}
+              onClick={() => setLibrarySelection({ scope: operation.scope, source: "shared" })}
+            >
+              从课题组本机目录取用
+            </Button>
+          )}
           {detail.data?.artifacts.map((a) => (
             <div className="task-work-file" key={a.id}>
               <span>
@@ -1174,17 +1188,20 @@ export function TaskWorkPage({
         />
       </Section>
       <LocalLibraryPicker
-        open={libraryOpen}
+        key={operation.scope}
+        open={Boolean(librarySource)}
+        source={librarySource}
         confirmLabel="复制到工作文件夹"
-        onClose={() => setLibraryOpen(false)}
+        onClose={() => setLibrarySelection(undefined)}
         onPick={(rels) => {
-          setLibraryOpen(false);
+          setLibrarySelection(undefined);
           void command(async () => {
             const { isCurrent } = operation.capture();
-            await bridge!.taskImportLibrary(target, rels);
+            if (librarySource === "personal") await bridge!.taskImportPersonalLibrary(target, rels);
+            else await bridge!.taskImportLibrary(target, rels);
             if (isCurrent())
               setNotice(
-                `已从本地资料夹复制 ${rels.length} 个文件到工作文件夹，未上传。`,
+                `已复制 ${rels.length} 个文件到本机工作文件夹。`,
               );
           });
         }}

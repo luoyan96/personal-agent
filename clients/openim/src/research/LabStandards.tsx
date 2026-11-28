@@ -370,7 +370,7 @@ export function LabStandards() {
               menu={{
                 items: [
                   ...(canAdd ? [{ key: "new", label: "新增模板", disabled: busy }] : []),
-                  { key: "folder", label: "设置本地资料文件夹" },
+                  { key: "folder", label: "关联课题组本机目录" },
                 ],
                 onClick: ({ key }) => key === "new" ? edit() : navigate("/library?panel=index"),
               }}
@@ -751,7 +751,7 @@ export function LabStandards() {
                     disabled={busy || !library?.registered}
                     onClick={() => setPicking(true)}
                   >
-                    从本地资料文件夹选择
+                    从课题组本机目录选择
                   </Button>
                   <span className="workspace-muted">
                     选完写成相对路径，换机器只要目录结构相同就能用。
