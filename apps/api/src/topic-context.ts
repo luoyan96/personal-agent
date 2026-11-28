@@ -1,6 +1,7 @@
 import type { AssistantTopicBody, AssistantTopicState } from '@research-agent-platform/contracts'
 import type { ChatService } from './chat.js'
 import { chatInputTokenBound, chatReplyTokenReserve } from './chat-model-input.js'
+import { topicRelationshipSourcesCurrent } from './assistant-relationship-memory.js'
 
 /**
  * The active topic is selected by lifecycle, not by similarity: one personal
@@ -71,12 +72,13 @@ export function topicReference(s: ChatService, assistantId: string, conversation
   const active = s.db.prepare("SELECT id,version,title,summary,body_json,last_active_at FROM assistant_topics WHERE owner_id=? AND assistant_id=? AND state='active'")
     .get(s.c.actor.id, assistantId) as ActiveRow | undefined
   const reference: TopicReference = {}
-  if (active && Date.parse(String(active.last_active_at)) >= (options.now ?? Date.now()) - freshMs) reference.topic = contextOf(active)
+  if (active && topicRelationshipSourcesCurrent(s, active.id) && Date.parse(active.last_active_at) >= (options.now ?? Date.now()) - freshMs) reference.topic = contextOf(active)
   if (options.includeIndex) {
     const rows = s.db.prepare("SELECT id,title,summary,state,count(*) OVER () AS total FROM assistant_topics WHERE owner_id=? AND assistant_id=? AND state IN ('active','paused') ORDER BY last_active_at DESC,id DESC LIMIT ?")
       .all(s.c.actor.id, assistantId, indexLimit) as (TopicIndexEntry & { total: number })[]
-    if (rows.length) {
-      const entries = rows.map(({ id, title, summary, state }) => ({ id, title, summary: clipSummary(summary), state }))
+    const readable = rows.filter(row => topicRelationshipSourcesCurrent(s, row.id))
+    if (readable.length) {
+      const entries = readable.map(({ id, title, summary, state }) => ({ id, title, summary: clipSummary(summary), state }))
       reference.index = { entries, omitted: rows[0]!.total - entries.length }
     }
   }

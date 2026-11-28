@@ -10,6 +10,7 @@ import { ApiError } from './errors.js'
 import { applyTopicPatch, createTopic, pauseActiveTopic } from './assistant-topics.js'
 import { personalModelKey, personalModelRuntime } from './personal-models.js'
 import { curatorSystem } from './topic-curator-prompt.js'
+import { applyRelationshipCuration, expireRelationshipMemories, privateRelationshipMessage, relationshipCuratorInput, relationshipCuratorSystem, topicRelationshipSourcesCurrent, trackTopicRelationshipSources } from './assistant-relationship-memory.js'
 import { waitForWorkerDatabase } from './worker-database.js'
 
 type Job = { id: string; owner_id: string; assistant_id: string; conversation_id: string; turn_id: string; attempts: number }
@@ -138,6 +139,7 @@ function shapeTopic(value: unknown, body: unknown, capNew: boolean) {
 
 /** Asynchronous topic curator. It never runs inside a chat turn and never blocks replies. */
 export class TopicCuratorWorker {
+  private nextExpirySweep = 0
   constructor(readonly db: DatabaseSync, readonly config: Config,
     readonly clock: () => number = Date.now, readonly call: ModelCall = callHarness, readonly modelTimeoutMs = 20_000) {}
 
@@ -165,9 +167,9 @@ export class TopicCuratorWorker {
 
     const topic = service.db.prepare("SELECT id,version,title,summary,body_json FROM assistant_topics WHERE owner_id=? AND assistant_id=? AND state='active'").get(job.owner_id, job.assistant_id) as
       { id: string; version: number; title: string; summary: string; body_json: string } | undefined
-    const currentTopic = topic ? { id: String(topic.id), version: Number(topic.version), title: String(topic.title), summary: String(topic.summary), body: JSON.parse(String(topic.body_json)) as unknown } : null
-    const request = JSON.parse(String(saved.request_json)) as Pick<TurnInput, 'continuous'>
-    const currentIds = request.continuous?.messageIds ?? [input.id]
+    const currentTopic = topic && topicRelationshipSourcesCurrent(service, topic.id) ? { id: topic.id, version: topic.version, title: topic.title, summary: topic.summary, body: JSON.parse(topic.body_json) as unknown } : null
+    const request = JSON.parse(String(saved.request_json)) as TurnInput
+    const currentIds = (request.continuous?.messageIds ?? [input.id]).slice(-9)
     const ids = service.db.prepare('SELECT id FROM chat_messages WHERE conversation_id=? AND sequence<? ORDER BY sequence DESC LIMIT ?')
       .all(job.conversation_id, input.sequence, Math.max(0, 9 - currentIds.length)).map(value => String(value.id)).reverse()
     ids.push(...currentIds)
@@ -178,23 +180,26 @@ export class TopicCuratorWorker {
         const message = service.projectedMessage(id)
         const ownInput = message.origin === 'human' && message.senderContactId === humanId
         const ownReply = message.origin === 'model' && message.senderContactId === job.assistant_id
-        return message.conversationId === conversation.id && message.text && (ownInput || ownReply)
+        return message.conversationId === conversation.id && message.text && (ownInput || ownReply) && privateRelationshipMessage(service, message)
           ? [{ id: message.id, role: ownInput ? 'user' : 'assistant', text: message.text.slice(0, 1500) }]
           : []
       } catch { return [] }
     })
+    const evidence = messages.filter(message => message.role === 'user' && currentIds.includes(message.id))
+    if (!evidence.length) return
+    const relationship = relationshipCuratorInput(service, conversation, job.assistant_id, request, evidence, this.clock())
     // A body that overflowed last time is a split signal for the next patch, not a
     // reason to retry the same patch.
     const previous = service.db.prepare("SELECT failure FROM assistant_topic_curator_jobs WHERE owner_id=? AND assistant_id=? AND conversation_id=? AND turn_id<>? AND status IN ('succeeded','failed') ORDER BY created_at DESC,rowid DESC LIMIT 1")
       .get(job.owner_id, job.assistant_id, job.conversation_id, job.turn_id) as { failure: string | null } | undefined
-    return { currentTopic, messages, ...(previous?.failure === 'PAYLOAD_TOO_LARGE' ? { previousFailure: 'over_limit' as const } : {}) }
+    return { currentTopic, messages, ...(relationship ? { relationship } : {}), ...(previous?.failure === 'PAYLOAD_TOO_LARGE' ? { previousFailure: 'over_limit' as const } : {}) }
   }
 
-  private async complete(prepared: { prompt: string; runtime: ReturnType<typeof personalModelRuntime>; apiKey: string | undefined }, signal: AbortSignal) {
+  private async complete(prepared: { prompt: string; system: string; runtime: ReturnType<typeof personalModelRuntime>; apiKey: string | undefined }, signal: AbortSignal) {
     let deadline: ReturnType<typeof setTimeout> | undefined
     let abort: (() => void) | undefined
     try {
-      const call = this.call({ provider: prepared.runtime.provider, ...(prepared.runtime.provider === 'deepseek' ? { reasoningEffort: 'off' as const } : {}), system: curatorSystem, prompt: prepared.prompt,
+      const call = this.call({ provider: prepared.runtime.provider, ...(prepared.runtime.provider === 'deepseek' ? { reasoningEffort: 'off' as const } : {}), system: prepared.system, prompt: prepared.prompt,
         model: prepared.runtime.model, maxTokens, timeoutMs: this.modelTimeoutMs }, signal, { apiKey: prepared.apiKey! })
       const stopped = new Promise<undefined>(resolve => {
         abort = () => resolve(undefined)
@@ -245,6 +250,10 @@ export class TopicCuratorWorker {
   }
 
   async tick(): Promise<boolean> {
+    if (this.clock() >= this.nextExpirySweep) {
+      await waitForWorkerDatabase(() => expireRelationshipMemories(this.db, this.clock()))
+      this.nextExpirySweep = this.clock() + 60 * 60_000
+    }
     const job = await waitForWorkerDatabase(() => transaction(this.db, () => {
       const at = new Date(this.clock()).toISOString()
       this.db.prepare("UPDATE assistant_topic_curator_jobs SET status='failed',lease_until=NULL,failure='LEASE_EXPIRED',updated_at=? WHERE status='running' AND COALESCE(lease_until,0)<=? AND attempts>=3").run(at, this.clock())
@@ -272,7 +281,9 @@ export class TopicCuratorWorker {
         const service = this.service(job), runtime = personalModelRuntime(this.db, service.c.actor, this.config)
         if (!runtime.enabled || runtime.source !== 'personal') return { owned: true as const, enabled: false as const }
         const input = this.input(service, job)
-        return { owned: true as const, enabled: true as const, runtime, input, prompt: JSON.stringify(input), apiKey: input ? personalModelKey(this.db, service.c.actor, this.config) : undefined }
+        return { owned: true as const, enabled: true as const, runtime, input, prompt: JSON.stringify(input),
+          system: input?.relationship ? curatorSystem + '\n' + relationshipCuratorSystem : curatorSystem,
+          apiKey: input ? personalModelKey(this.db, service.c.actor, this.config) : undefined }
       }))
       if (!prepared.owned) return true
       if (!prepared.enabled) { await waitForWorkerDatabase(() => this.fail(job, 'MODEL_UNAVAILABLE')); return true }
@@ -281,9 +292,11 @@ export class TopicCuratorWorker {
       if (!text) { await waitForWorkerDatabase(() => this.fail(job, 'MODEL_UNAVAILABLE')); return true }
       const raw = parseJson(text)
       const action = raw && typeof raw === 'object' ? (raw as { action?: unknown }).action : undefined
+      // Keep the optional relationship result out of strict topic validation.
+      const { relationship, ...topicOutput } = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : {}
       // Only an update counts new entries against the three-item patch cap; a new
       // topic carries its own first body.
-      const shaped = shapeTopic(raw, prepared.input?.currentTopic?.body ?? null, action === 'update_topic')
+      const shaped = shapeTopic(topicOutput, prepared.input.currentTopic?.body ?? null, action === 'update_topic')
       const parsed = CuratorOutput.safeParse(shaped.value)
       if (!parsed.success) throw new Error('INVALID_MODEL_OUTPUT')
       const output = parsed.data
@@ -298,6 +311,12 @@ export class TopicCuratorWorker {
           (output.action === 'update_topic' && output.topicId !== activeId)
         if (stale) { this.finish(job, { action: 'stale' }); return }
         const result = this.apply(service, job, output)
+        if (result.topicId && result.version) trackTopicRelationshipSources(service, result.topicId, prepared.input!.messages.map(message => message.id))
+        if (prepared.input!.relationship) {
+          const conversation = service.conversation(job.conversation_id, false)
+          applyRelationshipCuration(service, conversation, job.assistant_id,
+            prepared.input!.messages.filter(message => message.role === 'user'), prepared.input!.relationship, relationship, this.clock())
+        }
         this.finish(job, shaped.counts.trimmed || shaped.counts.dropped ? { ...result, shaped: shaped.counts } : result)
       })).catch(error => {
         if (!(error instanceof ApiError) || error.code !== 'PAYLOAD_TOO_LARGE') throw error

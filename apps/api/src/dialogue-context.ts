@@ -4,6 +4,7 @@ import {hash} from './auth.js'
 import {personalWork} from './workspace.js'
 import {libraryHistoryCurrent} from './research-chat-context.js'
 import { personalPreferencesFingerprint, readPersonalPreferences } from './personal-preferences.js'
+import { relationshipSourceSuppressed, relationshipDerivedContextCurrent, type RelationshipSource } from './assistant-relationship-memory.js'
 
 // Derived only from durable, currently readable messages. There is no second
 // permanent copy of private dialogue and no extra model/embedding API call.
@@ -12,7 +13,7 @@ export type DialogueQuote={messageId:string;sequence:number;origin:ChatMessage['
 export type DialogueNotes={method:'source_quotes';scope:'current_conversation';summary:DialogueQuote[];recalled:DialogueQuote[]}
 export type DialogueSource={id:string;fingerprint:string}
 export type TaskSource={id:string;version:number}
-export type DialogueSelection={dialogueSources?:DialogueSource[];dialogueTaskSources?:TaskSource[];memoryContextSources?:{id:string;version:number;kind:'personal'|'agent'|'assistant'|'assistant_personal'}[];contextAudit?:{version:1;recentMessages:number;summaryQuotes:number;recalledQuotes:number;taskStates:number;earlierMessagesOmitted:boolean}}
+export type DialogueSelection={dialogueSources?:DialogueSource[];dialogueTaskSources?:TaskSource[];memoryContextSources?:{id:string;version:number;kind:'personal'|'agent'|'assistant'|'assistant_personal'}[];relationshipLearningVersion?:number;relationshipMemorySources?:RelationshipSource[];relationshipTopicIds?:string[];contextAudit?:{version:1;recentMessages:number;summaryQuotes:number;recalledQuotes:number;taskStates:number;earlierMessagesOmitted:boolean}}
 const stop=new Set(['帮我','给我','为我','一个','这个','那个','什么','怎么','一下','现在','之前','还是','已经','我们','你们','时候','请你','看看','继续','分析','研究','项目','任务','整理','帮助','工作','内容','问题','能力','智能','个人','助手','the','and','that','this','with','please','what'])
 export function contextTerms(text:string){
  const value=text.normalize('NFKC').toLocaleLowerCase(),terms=new Set(value.match(/[a-z0-9_][a-z0-9_-]{1,47}/g)??[])
@@ -26,6 +27,7 @@ export function relatedScore(text:string,query:string){
 function message(s:ChatService,id:string,fileMessageId?:string):DialogueMessage|null{
  try{
   const m=s.projectedMessage(id)
+  if(relationshipSourceSuppressed(s,id))return null
   // Memory management/candidate receipts must never teach a revoked, corrected,
   // or unconfirmed preference again through ordinary history retrieval.
   const receipt=m.turnId?s.db.prepare('SELECT owner_id,request_json FROM chat_turns WHERE id=?').get(m.turnId):null
@@ -38,6 +40,7 @@ function message(s:ChatService,id:string,fileMessageId?:string):DialogueMessage|
    if(input.memoryReceipt)return null
    if(input.librarySnapshot&&!libraryHistoryCurrent(s,input))return null
    if(m.origin==='model'){
+    if(!relationshipDerivedContextCurrent(s,input))return null
     let effectivePersonal:ReturnType<typeof readPersonalPreferences>['effective']|undefined
     for(const source of (input.memoryContextSources??[]) as NonNullable<DialogueSelection['memoryContextSources']>){
      if(source.kind==='personal'||source.kind==='assistant_personal'){
@@ -109,7 +112,8 @@ function sourceFingerprint(s:ChatService,id:string){
  const m=s.projectedMessage(id)
  const receipt=m.turnId?s.db.prepare('SELECT request_json FROM chat_turns WHERE id=?').get(m.turnId):null
  const libraryCurrent=receipt?libraryHistoryCurrent(s,JSON.parse(String(receipt.request_json))):true
- return hash(JSON.stringify({id:m.id,conversationId:m.conversationId,sequence:m.sequence,origin:m.origin,senderContactId:m.senderContactId,text:m.text,mentions:m.mentions,resources:m.resources,...(!libraryCurrent?{libraryCurrent:false}:{})}))
+ const relationshipCurrent=!relationshipSourceSuppressed(s,id) && (m.origin!=='model'||!receipt||relationshipDerivedContextCurrent(s,JSON.parse(String(receipt.request_json))))
+ return hash(JSON.stringify({id:m.id,conversationId:m.conversationId,sequence:m.sequence,origin:m.origin,senderContactId:m.senderContactId,text:m.text,mentions:m.mentions,resources:m.resources,...(!libraryCurrent?{libraryCurrent:false}:{}),...(!relationshipCurrent?{relationshipCurrent:false}:{})}))
 }
 export function dialogueSourcesCurrent(s:ChatService,sources:DialogueSource[]){return sources.every(source=>sourceFingerprint(s,source.id)===source.fingerprint)}
 

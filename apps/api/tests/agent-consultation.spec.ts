@@ -1,3 +1,4 @@
+import { rewindCompanionMigrations } from './helpers/legacy-companion-migrations.js'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -158,7 +159,7 @@ describe('Agent consultation access', { timeout: 20000 }, () => {
     const humanId = (discovered.body.data as Contact[]).find(c => c.identity.kind === 'human')!.id
     const human = (await s.call('requestContact', {}, { id: humanId }, 1)).body.data.relationship
     await s.call('decideContactRequest', { decision: 'accept', expectedVersion: human.version }, { id: human.requestId })
-    s.db.exec('DROP TABLE agent_consultations')
+    s.db.exec(rewindCompanionMigrations+'DROP TABLE agent_consultations')
     s.db.prepare('DELETE FROM schema_migrations WHERE version=43').run()
     const now = new Date().toISOString()
     for (const [viewer, status] of [[1, 'accepted'], [2, 'pending']] as const) {

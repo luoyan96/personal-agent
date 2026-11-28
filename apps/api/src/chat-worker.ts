@@ -35,6 +35,7 @@ import {intakeRecoverySystem,queueIntakeOutputRecovery} from './intake-output-re
 import { assistantStickerSystem, readAssistantStickerReply } from './assistant-sticker.js'
 import {createWork,recordAssistantAnswerWork} from './workspace.js'
 import {recentDialogue,olderDialogue,dialogueTaskState,packDialogueLayers,saveDialogueSelection,dialogueSources,memoryContextSources,dialogueContextSystem,type DialogueLayers} from './dialogue-context.js'
+import { fitRelationshipContext, relationshipTurn } from './assistant-relationship-memory.js'
 import { modelAgentProfile } from './agent-roles.js'
 import { conversationDialoguePolicy, conversationDialogueStyle } from './conversation-policy.js'
 import { isDatabaseBusy, waitForWorkerDatabase } from './worker-database.js'
@@ -258,6 +259,11 @@ export class ChatWorker {
       }
       if(projectSources)input.projectEntryInventory={specialistIds:[...new Set([...shownProjectSpecialistIds,...(projectSources.localSpecialists??[]).map(c=>c.id)])],humanIds:[...new Set([...shownProjectHumanIds,...(projectSources.humans??[]).map(c=>c.id)])],messageIds:projectSources.messages.map(m=>m.id),fileMessageIds:projectSources.fileMessageIds,taskIds:projectSources.existingTasks.map(t=>t.id),projects:projectSources.projects.map(p=>({id:p.id,commitmentIds:p.commitments.map(c=>c.id)}))}
       if(projectSources)input.dialogueSources=dialogueSources(s,[...new Set([...(input.dialogueSources??[]).map(source=>source.id),...projectSources.messages.map(message=>message.id)])])
+      if(relationshipTurn(s,group,turn.agentContactId,input)){
+        const current=currentTurnText(s,turn.id)
+        const fitted=fitRelationshipContext(s,turn.agentContactId,current,system,prompt,input.budget.maxTokens,this.clock())
+        if(fitted){system=fitted.system;prompt=fitted.prompt;input.relationshipMemorySources=fitted.sources}
+      }
       // Topic context is optional. Keep existing sources and the reply reserve
       // in place, and never include it in group, remote, tool or scheduled work.
       if(!external && topicMemoryTurn(input)) {
@@ -267,12 +273,12 @@ export class ChatWorker {
           const withTopic=JSON.stringify({...JSON.parse(prompt),currentTopic:reference.topic})
           const topicInstructions=system+'\n'+topicSystem
           if(withTopic.length<=100000&&input.budget.maxTokens-chatInputTokenBound(topicInstructions,withTopic)>=chatReplyTokenReserve(system,prompt,input.budget.maxTokens)){
-            prompt=withTopic;system=topicInstructions;console.log(`${topicReceipt(reference.topic)} index=${indexWanted?'on':'off'} conversation=${group.id}`)
+            prompt=withTopic;system=topicInstructions;input.relationshipTopicIds=[reference.topic.id];console.log(`${topicReceipt(reference.topic)} index=${indexWanted?'on':'off'} conversation=${group.id}`)
           }
         }
         if(reference?.index){
           const fitted=fitTopicIndex(system,prompt,reference.index,input.budget.maxTokens)
-          if(fitted){prompt=fitted.prompt;system=fitted.system;console.log(`${topicIndexReceipt(fitted)} conversation=${group.id}`)}
+          if(fitted){prompt=fitted.prompt;system=fitted.system;input.relationshipTopicIds=[...new Set([...(input.relationshipTopicIds??[]),...fitted.entries.map(entry=>entry.id)])];console.log(`${topicIndexReceipt(fitted)} conversation=${group.id}`)}
           else console.log(`CHAT_TOPIC mode=index-skip entries=${reference.index.entries.length} budget=${input.budget.maxTokens} conversation=${group.id}`)
         }
       }
