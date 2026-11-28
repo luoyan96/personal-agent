@@ -36,7 +36,7 @@ import { assistantStickerSystem, readAssistantStickerReply } from './assistant-s
 import {createWork,recordAssistantAnswerWork} from './workspace.js'
 import {recentDialogue,olderDialogue,dialogueTaskState,packDialogueLayers,saveDialogueSelection,dialogueSources,memoryContextSources,dialogueContextSystem,type DialogueLayers} from './dialogue-context.js'
 import { modelAgentProfile } from './agent-roles.js'
-import { conversationDialoguePolicy } from './conversation-policy.js'
+import { conversationDialoguePolicy, conversationDialogueStyle } from './conversation-policy.js'
 import { isDatabaseBusy, waitForWorkerDatabase } from './worker-database.js'
 
 // Local model protocol: validated JSON, no model-side tools or business authority.
@@ -184,7 +184,7 @@ export class ChatWorker {
       const contactColumns=['id','displayName','identity','availability','profile']
       const selectedTasks=input.context.filter(ref=>ref.kind==='task').map(ref=>s.c.task(ref.ref.id))
       system=group.kind==='group'?groupAssistantSystem:input.dailyChat?dailyChatSystem:chatModelSystem({group:group.kind==='personal'&&agentContext.agent.profile.role==='coordinator',inviteContact:false,inviteTask:false,runTask:false})
-      if (group.kind!=='group' && !input.scheduledFollowupId) {
+      if (input.dailyChat && group.kind!=='group' && !input.scheduledFollowupId) {
         system += '\n' + (input.consultationVersion ? conversationDialoguePolicy.consultation : conversationDialoguePolicy.owner)
       }
       if(input.scheduledFollowupId)system+='\nThe latest service message is an explicitly owner-authorized scheduled instruction. Execute that instruction within the provided conversation text only, and return the result conversationally. It does not grant web browsing, tools, filesystem access, business mutations, contact creation, or further scheduling. State any missing inputs/access plainly; never claim to have performed actions outside this scope.'
@@ -282,6 +282,13 @@ export class ChatWorker {
         const replyReserve=Math.min(4096,input.budget.maxTokens-chatInputTokenBound(system,prompt))
         assistantStickers=input.budget.maxTokens-chatInputTokenBound(stickerSystem,prompt)>=replyReserve
         if(assistantStickers)system=stickerSystem
+      }
+      // Conversation guidance can use spare room after the current request,
+      // its selected sources, the response protocol and ordinary reply reserve.
+      if(!external&&input.dailyChat&&!input.scheduledFollowupId&&!input.projectExecution&&!input.intakeOutputLimitRecovery&&!turn.purpose){
+        const styledSystem=system+'\n'+conversationDialogueStyle
+        const replyReserve=chatReplyTokenReserve(system,prompt,input.budget.maxTokens)
+        if(input.budget.maxTokens-chatInputTokenBound(styledSystem,prompt)>=replyReserve)system=styledSystem
       }
       const inputTokenBound=chatInputTokenBound(system,prompt),remainingOutput=input.budget.maxTokens-inputTokenBound
       const admitted=prompt.length <= (input.skill?256000:100000) && remainingOutput>=(input.intakeOutputLimitRecovery?1024:64)

@@ -8,7 +8,7 @@ const stickerReply = z.strictObject({
 })
 
 const available = Object.entries(assistantStickerLabels).map(([id, label]) => `${id}=${label}`).join(', ')
-export const assistantStickerSystem = `Use text by default. An owner message starting ${personalStickerInputPrefix.trim()} describes a sent sticker; respond to the reaction naturally. Use plain text for serious discussion, research analysis, or work status. Respect the owner's sticker preferences. On request or when a light reaction fits, use at most one 大肥鱼 sticker; no automatic mirroring or repeats. To use one, return only JSON {"kind":"dafeiyu_sticker","id":"listed_id","answer":string|null}. Choices: ${available}. Use null only for a sticker-only request or a purely social reaction. Answer substantive questions fully. Use a single short reply when it suffices. Never claim delivery or show the protocol.`
+export const assistantStickerSystem = `Use text by default. A current owner message starting ${personalStickerInputPrefix.trim()} describes a sent sticker; respond to the reaction naturally. Use plain text for serious discussion, research analysis, or work status. Respect the owner's sticker preferences. On request or when a light reaction fits, use at most one 大肥鱼 sticker; no automatic mirroring or repeats. To use one, return only JSON {"kind":"dafeiyu_sticker","id":"listed_id","answer":string|null}. Choices: ${available}. Use null only for a sticker-only request or a purely social reaction. Answer substantive questions fully. Use a single short reply when it suffices. Never claim delivery or show the protocol.`
 
 export function readAssistantStickerReply(text: string) {
   const trimmed = text.trim()

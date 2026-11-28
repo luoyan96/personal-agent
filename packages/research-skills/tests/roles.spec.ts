@@ -1,6 +1,6 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
-import { agentRoles, roleDefaults, sharedRolePolicy, sharedDialoguePolicy, roleCatalogDigest, legacyRoleProfiles } from '../dist/role-catalog.js'
+import { agentRoles, roleDefaults, sharedRolePolicy, sharedDialogueStyle, sharedDialoguePolicy, roleCatalogDigest, legacyRoleProfiles } from '../dist/role-catalog.js'
 import { createRoleBundle, roleProfileFromBundle, effectiveRoleProfile, resolveRoleProfile } from '../dist/roles.js'
 
 const source = new URL('../../../agents/roles/', import.meta.url)
@@ -23,6 +23,7 @@ describe('canonical role documents used by server and desktop', () => {
     }
     expect(sharedRolePolicy).toBe(normalized(await readFile(new URL('_shared/colleague.md', source), 'utf8')))
     expect(Buffer.byteLength(sharedRolePolicy)).toBeLessThanOrEqual(600)
+    expect(sharedDialogueStyle).toBe(normalized(await readFile(new URL('_shared/dialogue-style.md', source), 'utf8')))
     expect(Object.keys(sharedDialoguePolicy)).toEqual(['owner', 'consultation', 'group'])
     for (const [audience, policy] of Object.entries(sharedDialoguePolicy)) {
       const file = `_shared/dialogue-${audience}.md`

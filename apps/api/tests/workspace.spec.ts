@@ -12,7 +12,7 @@ import {OpenImBridge} from '../src/openim-bridge.js'
 import {OpenImCallbacks} from '../src/openim-callback.js'
 import {serviceFor,type ModelCall,type ModelResult} from '../src/execution-worker.js'
 import {ChatService} from '../src/chat.js'
-import { conversationDialoguePolicy, researchConversationPolicy } from '../src/conversation-policy.js'
+import { conversationDialoguePolicy, conversationDialogueStyle, researchConversationPolicy } from '../src/conversation-policy.js'
 const clean:(()=>unknown|Promise<unknown>)[]=[]
 afterEach(async()=>{for(const f of clean.splice(0).reverse())await f()})
 const model=(text:string,overrides:Partial<ModelResult>={}):ModelResult=>({text,inputTokens:80,outputTokens:90,elapsedMs:10,failure:null,...overrides})
@@ -105,6 +105,7 @@ describe('social workspace actual HTTP/SQLite; model and IM transport deliberate
   await s.tick(async input=>{
    expect(input.prompt).not.toContain('OWNER_PRIVATE_NOT_GROUP')
    expect(input.system).toContain(researchConversationPolicy)
+   expect(input.system).toContain(conversationDialogueStyle)
    expect(input.system).toContain(conversationDialoguePolicy.group)
    expect(input.system).not.toContain(conversationDialoguePolicy.owner)
    expect(input.system).not.toContain(conversationDialoguePolicy.consultation)
