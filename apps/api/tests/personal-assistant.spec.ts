@@ -21,7 +21,7 @@ import { personalWorkRequest } from '../src/personal-assistant.js'
 import { readAssistantStickerReply } from '../src/assistant-sticker.js'
 import { agentCreationBoundary } from '../src/agent-creation.js'
 import { chatInputTokenBound } from '../src/chat-model-input.js'
-import { researchConversationPolicy } from '../src/conversation-policy.js'
+import { conversationDialoguePolicy, researchConversationPolicy } from '../src/conversation-policy.js'
 import { agentStyleInstruction } from '../src/agent-style.js'
 import { backup,restore } from '../src/recovery.js'
 const profile={displayName:'论文修改助手',introduction:'阅读提供的文字。',capabilityDescription:'讨论论文结构与改写。',personality:'直接、简洁。'}
@@ -70,6 +70,9 @@ describe('personal assistant actual HTTP/SQLite; model callbacks are synthetic',
    expect(p.requestedAgent.profile.personality).toBe(personal.profile.personality)
    expect(p.requestedAgent.profile.capabilityDescription).toBe(personal.profile.capabilityDescription)
    expect(input.system).toContain(researchConversationPolicy)
+   expect(input.system).toContain(conversationDialoguePolicy.owner)
+   expect(input.system).not.toContain(conversationDialoguePolicy.consultation)
+   expect(input.system).not.toContain(conversationDialoguePolicy.group)
    expect(chatInputTokenBound(input.system,input.prompt)+input.maxTokens).toBeLessThanOrEqual(first.turn.budget.maxTokens)
    return modelResult('我们先看看眼下最值得推进的事。')
   })
@@ -275,7 +278,15 @@ describe('personal assistant actual HTTP/SQLite; model callbacks are synthetic',
   expect((await s.call('updateAgentConsultation',{expectedVersion:0,mode:'free'},{id:agent.id})).status).toBe(200)
   const other=(await s.call('createDirectConversation',{contactId:agent.id},{},1)).value.data
   const visitor=await s.send(other.id,'调整你的交流方式：FOREIGN_STYLE_MUST_NOT_SAVE',1)
-  expect(await s.tick(async input=>{expect(input.prompt).not.toContain('PRIVATE_STYLE_ONLY');return modelResult('只能当前讨论。')})).toBe(true)
+  expect(await s.tick(async input=>{
+   expect(input.prompt).not.toContain('PRIVATE_STYLE_ONLY')
+   expect(JSON.parse(input.prompt).requestedAgent.displayName).toBe(agent.displayName)
+   expect(input.system).toContain(researchConversationPolicy)
+   expect(input.system).toContain(conversationDialoguePolicy.consultation)
+   expect(input.system).not.toContain(conversationDialoguePolicy.owner)
+   expect(input.system).not.toContain('dafeiyu_sticker')
+   return modelResult('只能当前讨论。')
+  })).toBe(true)
   expect((await s.turn(visitor.turn.id,1)).status).toBe('succeeded')
   expect(s.db.prepare("SELECT content FROM chat_memories WHERE scope_id=? AND status='active'").all(agent.id)).toHaveLength(1)
   const late=await s.send(direct.id,'继续分析');let release!:(v:ModelResult)=>void,entered!:()=>void

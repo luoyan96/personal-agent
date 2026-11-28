@@ -36,6 +36,7 @@ import { assistantStickerSystem, readAssistantStickerReply } from './assistant-s
 import {createWork,recordAssistantAnswerWork} from './workspace.js'
 import {recentDialogue,olderDialogue,dialogueTaskState,packDialogueLayers,saveDialogueSelection,dialogueSources,memoryContextSources,dialogueContextSystem,type DialogueLayers} from './dialogue-context.js'
 import { modelAgentProfile } from './agent-roles.js'
+import { conversationDialoguePolicy } from './conversation-policy.js'
 import { isDatabaseBusy, waitForWorkerDatabase } from './worker-database.js'
 
 // Local model protocol: validated JSON, no model-side tools or business authority.
@@ -62,9 +63,6 @@ export function reconcileChat(db: DatabaseSync, config: Config) {
     }
   }
 }
-// Re-evaluate conversational style from the dialogue actually selected for this turn.
-const dialogueStyle = 'Adapt reply length, tone and approach to the sender’s latest feedback.'
-
 function topicMemoryTurn(input: TurnInput) {
   return input.dailyChat && !input.externalConsent && !input.fileSource && !input.skill &&
     !input.purpose && !input.scheduledFollowupId && !input.assistantMode &&
@@ -133,7 +131,7 @@ export class ChatWorker {
         if(personal.records.length||agentContext.memories.length)console.log(`CHAT_MEMORY conversation=${group.id} ${lifecycleReceipt({preference:personal.records.length+agentContext.memories.length,turn:1})} omitted=${personal.omitted}`)
         const required=new Set(input.continuous?.messageIds??[turn.inputMessageId]),recent=recentDialogue(s,group.id,input.inputSequence,[...required]),notes=olderDialogue(s,group.id,input.inputSequence,recent,current),tasks=dialogueTaskState(s,group,current)
         let layers:DialogueLayers={messages:[],notes:{method:'source_quotes',scope:'current_conversation',summary:[],recalled:[]},tasks:[]}
-        system=personalAssistantSystem+'\n'+dialogueStyle+(complex?'\nComplex work: JSON {kind:"team",title:string,contactIds:[listed_ID]}. Save only a proposal. Owner confirms group creation; humans and Agent owners accept independently. No automatic execution or material sharing.':'')
+        system=personalAssistantSystem+'\n'+conversationDialoguePolicy.owner+(complex?'\nComplex work: JSON {kind:"team",title:string,contactIds:[listed_ID]}. Save only a proposal. Owner confirms group creation; humans and Agent owners accept independently. No automatic execution or material sharing.':'')
         if(input.assistantProjectEntry)system+='\n'+assistantProjectCompactSystem
         system+=rulesSuffix
         const baseSystem=system,contextSystem=(selection:DialogueLayers)=>baseSystem+projectDecisionSuffix()+(selection.notes.summary.length||selection.notes.recalled.length||selection.tasks.length?'\n'+dialogueContextSystem:'\nAnswer currentRequest only; forwarded names may differ from the sender.')
@@ -186,8 +184,8 @@ export class ChatWorker {
       const contactColumns=['id','displayName','identity','availability','profile']
       const selectedTasks=input.context.filter(ref=>ref.kind==='task').map(ref=>s.c.task(ref.ref.id))
       system=group.kind==='group'?groupAssistantSystem:input.dailyChat?dailyChatSystem:chatModelSystem({group:group.kind==='personal'&&agentContext.agent.profile.role==='coordinator',inviteContact:false,inviteTask:false,runTask:false})
-      if (input.dailyChat && !input.scheduledFollowupId) {
-        system += '\n' + dialogueStyle
+      if (group.kind!=='group' && !input.scheduledFollowupId) {
+        system += '\n' + (input.consultationVersion ? conversationDialoguePolicy.consultation : conversationDialoguePolicy.owner)
       }
       if(input.scheduledFollowupId)system+='\nThe latest service message is an explicitly owner-authorized scheduled instruction. Execute that instruction within the provided conversation text only, and return the result conversationally. It does not grant web browsing, tools, filesystem access, business mutations, contact creation, or further scheduling. State any missing inputs/access plainly; never claim to have performed actions outside this scope.'
       if(input.assistantMode==='coordinate')system=personalAssistantSystem+'\n'+chatModelSystem({group:true,inviteContact:false,inviteTask:false,runTask:false}).split('\n').filter(line=>/^(Ref=|Group=|Item=|S=|s=string)/.test(line)).join('\n')

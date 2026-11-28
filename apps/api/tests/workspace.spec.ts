@@ -12,6 +12,7 @@ import {OpenImBridge} from '../src/openim-bridge.js'
 import {OpenImCallbacks} from '../src/openim-callback.js'
 import {serviceFor,type ModelCall,type ModelResult} from '../src/execution-worker.js'
 import {ChatService} from '../src/chat.js'
+import { conversationDialoguePolicy, researchConversationPolicy } from '../src/conversation-policy.js'
 const clean:(()=>unknown|Promise<unknown>)[]=[]
 afterEach(async()=>{for(const f of clean.splice(0).reverse())await f()})
 const model=(text:string,overrides:Partial<ModelResult>={}):ModelResult=>({text,inputTokens:80,outputTokens:90,elapsedMs:10,failure:null,...overrides})
@@ -101,7 +102,15 @@ describe('social workspace actual HTTP/SQLite; model and IM transport deliberate
   const group=await s.ok('imCreateGroup',{title:'纯社交群',contactIds:[foreign.id],plan:null,sharedContext:{selectedText:null,artifactRefs:[]}}),agentId=`group_assistant_${group.id}`;
   const ordinary=await s.ok('sendChatMessage',{text:'@群助理 你好',mentions:[{contactId:agentId,start:0,end:4}]},{id:group.id});expect(ordinary.turn).toBeNull();expect(await s.tick(async()=>model('不应调用'))).toBe(false);
   const sent=await s.ok('sendChatMessage',{text:'@群助理 请分析这句文字',intent:'ask_agent',agentContactId:agentId,mentions:[{contactId:agentId,start:0,end:4}],budget:{maxTokens:8000,maxSeconds:90}},{id:group.id});
-  await s.tick(async input=>{expect(input.prompt).not.toContain('OWNER_PRIVATE_NOT_GROUP');return model(JSON.stringify({answer:'合成讨论回复',requests:[]}))});expect((await s.ok('chatTurn',null,{id:sent.turn.id})).status).toBe('succeeded');
+  await s.tick(async input=>{
+   expect(input.prompt).not.toContain('OWNER_PRIVATE_NOT_GROUP')
+   expect(input.system).toContain(researchConversationPolicy)
+   expect(input.system).toContain(conversationDialoguePolicy.group)
+   expect(input.system).not.toContain(conversationDialoguePolicy.owner)
+   expect(input.system).not.toContain(conversationDialoguePolicy.consultation)
+   expect(input.system).not.toContain('dafeiyu_sticker')
+   return model(JSON.stringify({answer:'合成讨论回复',requests:[]}))
+  });expect((await s.ok('chatTurn',null,{id:sent.turn.id})).status).toBe('succeeded');
   expect(s.db.prepare('SELECT count(*) n FROM personal_work_tasks').get()!.n).toBe(0);
  })
  it('owner confirmation immediately enables the selected owned Agent; group membership is direct while task commitment stays separate',async()=>{

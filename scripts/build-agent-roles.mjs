@@ -13,8 +13,14 @@ if (new Set(ids).size !== ids.length || ids.some(id => typeof id !== 'string' ||
 const directories = (await readdir(source, { withFileTypes: true })).filter(e => e.isDirectory() && e.name !== '_shared').map(e => e.name).sort()
 if (JSON.stringify(directories) !== JSON.stringify([...ids].sort())) throw Error('Every role directory must be registered in manifest.json')
 const sharedRolePolicy = (await read('_shared/colleague.md')).trim()
+const dialogueAudiences = ['owner', 'consultation', 'group']
+const sharedDialoguePolicy = Object.fromEntries(await Promise.all(dialogueAudiences.map(async audience =>
+  [audience, (await read(`_shared/dialogue-${audience}.md`)).trim()])))
 const legacyRoleProfiles = JSON.parse(await read('legacy-profiles.json'))
 if (!sharedRolePolicy || Buffer.byteLength(sharedRolePolicy) > 600) throw Error('Shared conversation policy must fit the existing chat budget')
+for (const [audience, policy] of Object.entries(sharedDialoguePolicy)) {
+  if (!policy || Buffer.byteLength(policy) > 200) throw Error(`Dialogue policy must fit the existing chat budget: ${audience}`)
+}
 const { createRoleBundle, roleCategories, roleTeams } = await import('../packages/research-skills/dist/roles.js')
 const roles = []
 for (const id of ids) {
@@ -43,10 +49,10 @@ for (const legacy of legacyRoleProfiles) {
   if (!roles.some(role => role.id === legacy.id)) throw Error('Unknown legacy role')
   createRoleBundle(legacy.profile, 'specialist', 1)
 }
-const roleCatalogDigest = createHash('sha256').update(JSON.stringify({ manifest, sharedRolePolicy, roles, legacyRoleProfiles })).digest('hex')
+const roleCatalogDigest = createHash('sha256').update(JSON.stringify({ manifest, sharedRolePolicy, sharedDialoguePolicy, roles, legacyRoleProfiles })).digest('hex')
 await mkdir(output, { recursive: true })
-await writeFile(resolve(output, 'role-catalog.js'), `// Generated from agents/roles. Do not edit.\nexport const agentRoles = ${JSON.stringify(roles)};\nexport const sharedRolePolicy = ${JSON.stringify(sharedRolePolicy)};\nexport const roleDefaults = ${JSON.stringify(manifest.defaults)};\nexport const roleCatalogDigest = ${JSON.stringify(roleCatalogDigest)};\nexport const legacyRoleProfiles = ${JSON.stringify(legacyRoleProfiles)};\n`)
-await writeFile(resolve(output, 'role-catalog.d.ts'), "import type { AgentRoleDefinition, AgentRoleKind, AgentRoleProfile } from './roles.js';\nexport declare const agentRoles: readonly AgentRoleDefinition[];\nexport declare const sharedRolePolicy: string;\nexport declare const roleDefaults: Record<AgentRoleKind, string>;\nexport declare const roleCatalogDigest: string;\nexport declare const legacyRoleProfiles: readonly {id: string; profile: AgentRoleProfile}[];\n")
+await writeFile(resolve(output, 'role-catalog.js'), `// Generated from agents/roles. Do not edit.\nexport const agentRoles = ${JSON.stringify(roles)};\nexport const sharedRolePolicy = ${JSON.stringify(sharedRolePolicy)};\nexport const sharedDialoguePolicy = ${JSON.stringify(sharedDialoguePolicy)};\nexport const roleDefaults = ${JSON.stringify(manifest.defaults)};\nexport const roleCatalogDigest = ${JSON.stringify(roleCatalogDigest)};\nexport const legacyRoleProfiles = ${JSON.stringify(legacyRoleProfiles)};\n`)
+await writeFile(resolve(output, 'role-catalog.d.ts'), `import type { AgentRoleDefinition, AgentRoleKind, AgentRoleProfile } from './roles.js';\nexport declare const agentRoles: readonly AgentRoleDefinition[];\nexport declare const sharedRolePolicy: string;\nexport declare const sharedDialoguePolicy: Readonly<Record<${dialogueAudiences.map(audience => `'${audience}'`).join(' | ')}, string>>;\nexport declare const roleDefaults: Record<AgentRoleKind, string>;\nexport declare const roleCatalogDigest: string;\nexport declare const legacyRoleProfiles: readonly {id: string; profile: AgentRoleProfile}[];\n`)
 const target = resolve(output, 'roles'), child = relative(output, target)
 if (!child || child.startsWith('..') || isAbsolute(child)) throw Error('Invalid generated role path')
 await rm(target, { recursive: true, force: true })

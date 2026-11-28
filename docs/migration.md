@@ -1,5 +1,9 @@
 # 初始迁移记录
 
+## SurfCore 交流设计参考
+
+2026-11-28 参考 SurfCore 在 `0ce8580048d3dddb21860114edb8b115d5d79d1e` 的分层人格、对话收尾与贴图适配设计。DeepChat 在现有角色包中保留稳定的科研同伴身份，按本人私聊、访客咨询、群聊切换交流提示；贴图沿用大肥鱼现有素材和校验链路。交流规则独立编写，沿用 DeepChat 的权限、上下文和消息协议。[角色设计](https://github.com/Mieksido/surfcore/blob/0ce8580048d3dddb21860114edb8b115d5d79d1e/docs/guides/CHARACTER_PERSONA.md) · [对话收尾](https://github.com/Mieksido/surfcore/blob/0ce8580048d3dddb21860114edb8b115d5d79d1e/docs/guides/PURPOSE_OUTREACH.md) · [贴图适配](https://github.com/Mieksido/surfcore/blob/0ce8580048d3dddb21860114edb8b115d5d79d1e/docs/guides/MODULE-CORE-B.md)
+
 2026-11-18 产品显示名由 AcceptCat 更名为 DeepChat。账号及本地数据继续使用原 Electron 数据路径，NSIS appId、GUID、更新源及缓存目录沿用原身份。更名兼容处理和验证范围见[交接记录](development/deepchat-branding.md)。
 
 2026-10-28 新增 Windows 本地 DSH 试用页面。安装包不迁入 DSH 本体，运行时通过用户安装的 0.2.1-rc.3 官方命令入口调用。适配代码位于 integrations/deepseek-harness/desktop，客户端只负责沙箱容器、主窗口权限、菜单与状态。复用已锁定 core-js 3.49.0 并保留许可，用于兼容 AcceptCat Electron 22；原 OpenIM ABI、后台接口、共享包和 Skill 均未变更。DSH_HOME 独立保存在本机 AcceptCat userData，不迁移用户已有 DSH 数据。详见[试用说明](development/local-dsh-page.md)。
