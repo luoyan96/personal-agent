@@ -1,4 +1,5 @@
 import type { TaskDocument, TaskTarget } from "../../../../integrations/deepseek-harness/desktop/task-workspace";
+import type { WorkbenchUseSource, WorkbenchUseTarget } from "./dshWorkbenchMaterials";
 
 export type LocalDshSnapshot = {
   phase: "stopped" | "starting" | "running" | "stopping" | "error";
@@ -13,6 +14,7 @@ export type LocalDshSnapshot = {
 };
 export type DshBounds = { x: number; y: number; width: number; height: number };
 export type LocalDshBridge = {
+  stageMaterialUseIn?: (target: WorkbenchUseTarget, source: WorkbenchUseSource) => Promise<void>;
   taskReadDocument?: (target: TaskTarget, name: string) => Promise<TaskDocument>;
   taskSaveDocument: (target: TaskTarget, name: string, text: string, digest: string) => Promise<TaskDocument>;
   taskOpenDocument: (target: TaskTarget, name: string) => Promise<void>;

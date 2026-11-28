@@ -51,7 +51,7 @@ test('loopback relay rejects browser-origin, wrong and non-ASCII tokens, restric
   await relay.close(); await assert.rejects(call());
 });
 
-test('embedded workbench overrides the official DSH brand slots and supplies a real welcome label', async t => {
+test('embedded workbench applies its brand and switches navigation when all four research panels register', async t => {
   const home = mkdtempSync(path.join(tmpdir(), 'dsh-brand-'));
   t.after(() => rmSync(home, { recursive: true, force: true }));
   const avatar = 'data:image/png;base64,fixture';
@@ -60,41 +60,93 @@ test('embedded workbench overrides the official DSH brand slots and supplies a r
   }, avatar);
   const components = new Map();
   const element = (type, props) => ({ type, ...props });
-  const window = { dispatchEvent() {}, __ModuleLoader__: {
+  const style = { remove() {} };
+  const panelName = 'sidebar.panellist';
+  const moreName = 'sidebar.panellist.actions';
+  const entries = [
+    { id: 'research-slides', label: 'PPT 工作台', active: false },
+    { id: 'research-ip', label: '专利与软著', active: true },
+    { id: 'schedules', label: '定时任务', active: false },
+    { id: 'plugins', label: '插件', active: false },
+    { id: 'independent-plugin', label: '其他插件', active: false },
+  ];
+  let onPanelsChanged, onLocaleChanged;
+  const panelsOpened = [];
+  const window = Object.assign(new EventTarget(), { __ModuleLoader__: {
     load({ factory }) {
-      factory(() => ({ jsx: element, jsxs: element })).apply({
+      factory(() => ({ jsx: element, jsxs: element, resolveSlotLabel: label => label })).apply({
         slots: {
           inject(name, callback) { callback()?.[Symbol.iterator]?.()?.next(); },
           register({ name, priority }, component) {
-            if (name !== 'sidebar.panellist.actions')
+            if (name !== moreName)
               assert.ok(priority < 0, 'brand must precede the built-in slot at priority zero');
             components.set(name, component);
           },
+          entriesOfSlot(name) { return name === panelName ? entries.map(options => ({ options })) : []; },
+          subscribe(name, listener) { if (name === panelName) onPanelsChanged = listener; },
         },
-        effect() {},
+        layout: { selectPanel(id) { panelsOpened.push(id); } },
+        locale: { subscribe(listener) { onLocaleChanged = listener; } },
+        effect(callback, name) { if (name?.startsWith('DeepChat ')) callback(); },
       });
     },
-  } };
-  vm.runInNewContext(readFileSync(path.join(home, 'acceptcat-task-context/client.mjs'), 'utf8'), { window, CustomEvent });
+  } });
+  const document = { createElement: () => style, head: { appendChild() {} } };
+  vm.runInNewContext(readFileSync(path.join(home, 'acceptcat-task-context/client.mjs'), 'utf8'), {
+    window, CustomEvent, document, CSS: { escape: value => value.replaceAll(' ', '\\ ') },
+  });
   assert.equal(components.get('sidebar.brand.mark')({ size: 24 }), null);
   assert.equal(components.get('sidebar.brand.name')().className, 'deepchat-sidebar-layout');
   const hero = components.get('conversation.hero.brand.mark')();
   assert.equal(hero.children.find(node => node.type === 'img').src, avatar);
   assert.ok(hero.children.some(node => node.type === 'span' && node.children.includes('？')));
   const events = [];
-  const tools = components.get('sidebar.panellist.actions')({
-    entries: [
-      { id: 'research-slides', label: 'PPT 工作台', active: false },
-      { id: 'research-ip', label: '专利与软著', active: true },
-      { id: 'independent-plugin', label: '其他插件', active: false },
-    ],
+  const renderTools = () => components.get(moreName)({
+    entries,
     onDismiss: () => events.push('dismiss'),
     onOpen: id => events.push(id),
   });
-  assert.deepEqual(Array.from(tools, row => row.children), ['专利与软著']);
+  const tools = renderTools();
+  assert.deepEqual(Array.from(tools, row => row.children), ['专利与软著', '定时任务']);
   assert.equal(tools[0].current, true);
   tools[0].onSelect();
   assert.deepEqual(events, ['dismiss', 'research-ip']);
+  const legacyStyle = style.textContent;
+  assert.ok(legacyStyle.includes('[aria-haspopup="menu"] { display: flex !important; }'));
+  const ready = [];
+  window.addEventListener('deepchat-material-panel-ready', (event) => ready.push(event.detail));
+  const prepare = (nonce, open) => window.dispatchEvent(new CustomEvent('deepchat-prepare-material-panel', {
+    detail: { nonce, open, panel: 'research-literature' },
+  }));
+  prepare('legacy', false);
+  assert.deepEqual(ready, []);
+
+  entries.push(
+    { id: 'research-literature', label: '论文' },
+    { id: 'research-documents', label: '文档写作' },
+    { id: 'research-contests', label: '竞赛' },
+  );
+  onPanelsChanged();
+  prepare('check', false);
+  assert.deepEqual(panelsOpened, []);
+  prepare('open', true);
+  assert.deepEqual(ready, ['check', 'open']);
+  assert.deepEqual(panelsOpened, ['research-literature']);
+  assert.equal(renderTools(), null);
+  assert.ok(style.textContent.includes('nav[class$="_panelList"] [class$="_moreAnchor"], [role="menu"][class*="_moreMenu"] { display: none !important; }'));
+  assert.ok(style.textContent.includes('[aria-label="定时任务"] { display: none; }'));
+  assert.ok(!style.textContent.includes('[aria-label="插件"]'));
+  assert.ok(!style.textContent.includes('display: flex !important;'));
+
+  entries.find(({ id }) => id === 'schedules').label = 'Scheduled tasks';
+  onLocaleChanged();
+  assert.ok(style.textContent.includes('[aria-label="Scheduled\\ tasks"] { display: none; }'));
+  assert.ok(!style.textContent.includes('定时任务'));
+
+  entries.pop();
+  onPanelsChanged();
+  assert.deepEqual(Array.from(renderTools(), row => row.children), ['专利与软著', 'Scheduled tasks']);
+  assert.ok(style.textContent.includes('[aria-haspopup="menu"] { display: flex !important; }'));
 });
 
 test('managed account overlay preserves user plugins and contains only a credential reference', async t => {

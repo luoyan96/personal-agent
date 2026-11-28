@@ -8,6 +8,10 @@ PPT、项目书、专利、软著和 LaTeX 写作会话可从 `myfiles`、已连
 
 GitHub Latest 指向 1.0.5，公开安装包、稳定版更新清单和官网入口均已核对。生产 API 与 worker 沿用 `641c7f2`，契约 0.53.0，数据库迁移版本 043。[发布说明](https://github.com/luoyan96/personal-agent/releases/tag/v1.0.5)
 
+## 工作台四入口与资料转用（开发分支）
+
+`fix/deepchat-four-entry-navigation` 基于 `7deddab`。宿主检测到新版科研插件注册四个入口时启用精简导航。资料页的「用于…」可将选中的个人文件或团队 Git 原件带入组会 PPT 或已有 Word / LaTeX 项目。现有 1.0.5 内置插件仍为 0.6.0。后续集成与打包步骤见[项目日志](project-log.md#2026-11-28--工作台四入口与资料转用)。
+
 ## Agent 免费咨询
 
 个人助理与个人创建的 Agent 由主人设置免费咨询或暂不开放，默认关闭。访客的文字咨询使用发起人自己的模型，主人关闭后访客仍可查看自己的历史。真人仍走好友申请。

@@ -201,6 +201,9 @@ const Api: IElectronAPI = {
     addPersonalFiles: () => ipcRenderer.invoke("personal-library-add-files"),
   },
   localDsh: {
+    stageMaterialUseIn: (target, source) => navigator.userActivation?.isActive
+      ? ipcRenderer.invoke("local-dsh-stage-material-use-in", target, source)
+      : Promise.reject(new Error("请从资料页选择所需文件。")),
       taskAddLocal: target => ipcRenderer.invoke('task-dsh-add-local', target),
       taskImportLibrary: (target, rels) => ipcRenderer.invoke('task-dsh-import-library', target, rels),
       taskImportPersonalLibrary: (target, rels) => ipcRenderer.invoke('task-dsh-import-personal-library', target, rels),

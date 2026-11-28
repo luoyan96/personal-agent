@@ -19,6 +19,9 @@ if (process.isMainFrame && location.protocol === "http:" && location.hostname ==
     list: ({ kind, extensions }) => fromUser(() => ipcRenderer.invoke("dsh-workbench-materials-list", { kind, extensions })),
     read: ({ kind, id }) => fromUser(() => ipcRenderer.invoke("dsh-workbench-materials-read", { kind, id })),
     readMany: ({ selections }) => fromUser(() => ipcRenderer.invoke("dsh-workbench-materials-read-many", { selections })),
+    pendingUseIn: () => ipcRenderer.invoke("dsh-workbench-materials-pending-use-in"),
+    readUseIn: ({ id, selectionIds, selections }) => fromUser(() => ipcRenderer.invoke("dsh-workbench-materials-read-use-in", { id, selectionIds, selections })),
+    clearUseIn: ({ id }) => ipcRenderer.invoke("dsh-workbench-materials-clear-use-in", { id }),
   };
   contextBridge.exposeInMainWorld("__DSH_WORKBENCH_MATERIALS__", materials);
 }

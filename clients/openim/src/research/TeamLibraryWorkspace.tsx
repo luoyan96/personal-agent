@@ -47,6 +47,8 @@ import { RepositoryEditor } from "./RepositoryEditor";
 import SafeMessageMarkdown from "./SafeMessageMarkdown";
 import { TeamLibraryFileImport } from "./TeamLibraryFileImport";
 import { useOwnAssistantConversation } from "./useOwnAssistantConversation";
+import { canUseInWorkbench } from "../../electron/utils/workbenchMaterialFormats";
+import { MaterialUseIn, useMaterialSelection } from "./MaterialUseIn";
 import "./team-library.scss";
 
 const canUseMaterials = (card: WorkbenchCard) =>
@@ -170,6 +172,18 @@ export function TeamLibraryWorkspace({ supported }: { supported: boolean }) {
   activeScope.current = snapshotScope;
   const snapshot =
     snapshotRecord?.scope === snapshotScope ? snapshotRecord.value : undefined;
+  const materialSelection = useMaterialSelection(`${snapshotScope}:${snapshot?.revision ?? ""}`);
+  const canStage = Boolean(window.electronAPI?.localDsh?.stageMaterialUseIn);
+  const materialCheckbox = (filePath?: string) => canStage && (
+    <span className="team-library-material-checkbox">
+      {filePath && canUseInWorkbench(filePath) && <Checkbox
+        aria-label={`选择 ${filePath}`}
+        checked={materialSelection.paths.has(filePath)}
+        disabled={materialSelection.paths.size >= 10 && !materialSelection.paths.has(filePath)}
+        onChange={(event) => materialSelection.toggle(filePath, event.target.checked)}
+      />}
+    </span>
+  );
   const setSnapshot = (value: TeamLibrarySnapshot | undefined) =>
     setSnapshotRecord(value ? { scope: snapshotScope, value } : undefined);
   const matchesBinding = (value: TeamLibrarySnapshot) =>
@@ -673,6 +687,7 @@ export function TeamLibraryWorkspace({ supported }: { supported: boolean }) {
                   >
                     资料目录
                   </Button>
+                  <MaterialUseIn source={{ source: "team-git", revision: snapshot.revision, paths: [...materialSelection.paths] }} busy={busy} />
                 </div>
                 {nav.mode === "catalog" && (
                   <>
@@ -855,8 +870,9 @@ export function TeamLibraryWorkspace({ supported }: { supported: boolean }) {
                           </button>
                         )}
                         {treeRows?.map((item) => (
+                          <div className="team-library-material-row" key={item.path} role="presentation">
+                          {materialCheckbox(item.kind === "file" ? item.path : undefined)}
                           <button
-                            key={item.path}
                             role="row"
                             aria-selected={nav.path === item.path}
                             className={`team-library-tree-row ${
@@ -891,6 +907,7 @@ export function TeamLibraryWorkspace({ supported }: { supported: boolean }) {
                               }
                             </span>
                           </button>
+                          </div>
                         ))}
                         {!treeRows?.length && (
                           <Empty
@@ -914,10 +931,11 @@ export function TeamLibraryWorkspace({ supported }: { supported: boolean }) {
                       <span role="columnheader">位置</span>
                     </div>
                     {visible.map((e) => (
+                      <div className="team-library-material-row" key={e.id} role="presentation">
+                      {materialCheckbox(e.source.kind === "git" ? e.source.path : undefined)}
                       <button
                         role="row"
                         aria-selected={entry?.id === e.id}
-                        key={e.id}
                         className={
                           "team-library-row " + (entry?.id === e.id ? "selected" : "")
                         }
@@ -948,6 +966,7 @@ export function TeamLibraryWorkspace({ supported }: { supported: boolean }) {
                             : "本地文件"}
                         </span>
                       </button>
+                      </div>
                     ))}
                     {!visible.length && (
                       <Empty
