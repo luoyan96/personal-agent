@@ -2,7 +2,7 @@ import {randomBytes,randomUUID} from 'node:crypto'
 import {mkdtempSync,mkdirSync,writeFileSync,rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
-import {afterEach,describe,it,expect} from 'vitest'
+import {afterEach,describe,it,expect,vi} from 'vitest'
 import {routes,Id,Budget,ModelUsage,Version,Instant,ChatAvailability,type RouteName} from '@research-agent-platform/contracts'
 import {z} from 'zod'
 import {readConfig} from '../src/config.js'
@@ -247,16 +247,32 @@ describe('continuous local chat: actual HTTP/SQLite, synthetic ModelCall only',{
  })
  it('persists seven queued supplements as one batch/call/budget, replays exactly, and exposes real deltas before canonical final',async()=>{
   const s=await setup(),ids:string[]=[],keys:string[]=[],sent:any[]=[]
-  for(let i=0;i<7;i++){keys.push(randomUUID());const r=await s.send(`第${i+1}条补充完整文字。`,keys[i]);ids.push(r.message.id);sent.push(r);expect(r.turn.id).toBe(sent[0].turn.id)}
-  expect(s.count('chat_turns')).toBe(1);expect(s.count('chat_messages')).toBe(7);expect(s.count('chat_attempts')).toBe(0)
-  expect(await s.tick(async()=>{throw new Error('must not call inside merge window')},false)).toBe(false)
-  expect(await s.progress(sent[0].turn.id)).toMatchObject({phase:'queued',text:'',inputMessageIds:ids})
-  expect((await s.send('第1条补充完整文字。',keys[0])).message.id).toBe(ids[0])
+  const startedAt=Date.now(), clock=vi.spyOn(Date,'now')
+  try {
+   // Request scheduling in CI may exceed the merge window. Advance the chat
+   // clock per accepted supplement while keeping real HTTP and SQLite.
+   for(let i=0;i<7;i++){
+    clock.mockReturnValue(startedAt+i*100)
+    keys.push(randomUUID())
+    const r=await s.send(`第${i+1}条补充完整文字。`,keys[i])
+    ids.push(r.message.id);sent.push(r);expect(r.turn.id).toBe(sent[0].turn.id)
+   }
+   expect(s.count('chat_turns')).toBe(1);expect(s.count('chat_messages')).toBe(7);expect(s.count('chat_attempts')).toBe(0)
+   expect(await s.tick(async()=>{throw new Error('must not call inside merge window')},false)).toBe(false)
+   expect(await s.progress(sent[0].turn.id)).toMatchObject({phase:'queued',text:'',inputMessageIds:ids})
+   expect((await s.send('第1条补充完整文字。',keys[0])).message.id).toBe(ids[0])
+  } finally { clock.mockRestore() }
   let release!:(v:ModelResult)=>void,enter!:()=>void;const ready=new Promise<void>(r=>{enter=r})
   const pending=s.tick(async(input,_signal,_credential,onDelta)=>{for(let i=0;i<7;i++)expect(input.prompt).toContain(`第${i+1}条补充完整文字。`);expect(input.maxTokens).toBeGreaterThan(64);onDelta?.('我收到了');enter();return new Promise(r=>{release=r})})
-  await ready;const streamed=await s.progress(sent[0].turn.id);expect(streamed).toMatchObject({phase:'streaming',text:'我收到了',finalMessageId:null})
-  expect(s.count('chat_messages')).toBe(7);release(result('我收到了全部补充。'));await pending
-  const final=await s.progress(sent[0].turn.id);expect(final).toMatchObject({phase:'final',text:'我收到了全部补充。',inputMessageIds:ids});expect(final.finalMessageId).toBe((await s.turn(sent[0].turn.id)).outputMessageId);expect(final.revision).toBeGreaterThan(streamed.revision)
+  let streamedRevision:number
+  try {
+   await Promise.race([ready,pending.then(()=>{throw new Error('The merged turn did not start streaming')})])
+   const streamed=await s.progress(sent[0].turn.id)
+   expect(streamed).toMatchObject({phase:'streaming',text:'我收到了',finalMessageId:null})
+   expect(s.count('chat_messages')).toBe(7)
+   streamedRevision=streamed.revision
+  } finally { release?.(result('我收到了全部补充。'));await pending }
+  const final=await s.progress(sent[0].turn.id);expect(final).toMatchObject({phase:'final',text:'我收到了全部补充。',inputMessageIds:ids});expect(final.finalMessageId).toBe((await s.turn(sent[0].turn.id)).outputMessageId);expect(final.revision).toBeGreaterThan(streamedRevision)
   expect(s.count('chat_attempts')).toBe(1);expect(await s.tick(async()=>{throw new Error('no duplicate charge')})).toBe(false)
   const stored=JSON.parse(String(s.db.prepare('SELECT document FROM chat_turns').get()!.document));expect(stored).not.toHaveProperty('continuous');expect(LegacyTurn.safeParse(stored).success).toBe(true);expect(LegacyTurn.safeParse(await s.turn(sent[0].turn.id)).success).toBe(true)
   await s.restart();expect((await s.progress(sent[0].turn.id)).finalMessageId).toBe(final.finalMessageId)
